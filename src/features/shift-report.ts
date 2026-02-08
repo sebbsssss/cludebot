@@ -22,18 +22,23 @@ interface ShiftData {
   departures: number;
 }
 
-function aggregateShiftData(): ShiftData {
+async function aggregateShiftData(): Promise<ShiftData> {
   const db = getDb();
   const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 
-  const events = db.prepare(
-    'SELECT * FROM token_events WHERE created_at >= ? AND processed = FALSE ORDER BY timestamp'
-  ).all(twelveHoursAgo) as any[];
+  const { data: events } = await db
+    .from('token_events')
+    .select('*')
+    .gte('created_at', twelveHoursAgo)
+    .eq('processed', false)
+    .order('timestamp', { ascending: true });
 
-  const buys = events.filter(e => e.event_type === 'swap_buy');
-  const sells = events.filter(e => e.event_type === 'swap_sell');
-  const transfers = events.filter(e => e.event_type === 'transfer');
-  const uniqueWallets = new Set(events.map(e => e.wallet_address)).size;
+  const rows = events || [];
+
+  const buys = rows.filter((e: any) => e.event_type === 'swap_buy');
+  const sells = rows.filter((e: any) => e.event_type === 'swap_sell');
+  const transfers = rows.filter((e: any) => e.event_type === 'transfer');
+  const uniqueWallets = new Set(rows.map((e: any) => e.wallet_address)).size;
 
   const largestBuy = buys.sort((a: any, b: any) => (b.sol_value || 0) - (a.sol_value || 0))[0];
   const largestSell = sells.sort((a: any, b: any) => (b.sol_value || 0) - (a.sol_value || 0))[0];
@@ -57,14 +62,14 @@ function aggregateShiftData(): ShiftData {
     }
   }
 
-  // Count full exits (departures) vs new wallets
+  // Count full exits (departures)
   const departures = sells.filter((s: any) => {
-    const meta = s.metadata ? JSON.parse(s.metadata) : {};
+    const meta = typeof s.metadata === 'string' ? JSON.parse(s.metadata) : (s.metadata || {});
     return meta.remainingBalance === 0;
   }).length;
 
   return {
-    totalEvents: events.length,
+    totalEvents: rows.length,
     totalBuys: buys.length,
     totalSells: sells.length,
     totalTransfers: transfers.length,
@@ -80,7 +85,7 @@ function aggregateShiftData(): ShiftData {
       sol: largestSell.sol_value || 0,
     } : null,
     quickestFlip,
-    newHolders: buys.length, // Approximate
+    newHolders: buys.length,
     departures,
   };
 }
@@ -112,7 +117,7 @@ function formatShiftContext(data: ShiftData): string {
 }
 
 async function generateShiftReport(): Promise<void> {
-  const data = aggregateShiftData();
+  const data = await aggregateShiftData();
 
   if (data.totalEvents === 0) {
     log.info('No events in shift period, skipping report');
@@ -145,9 +150,11 @@ async function generateShiftReport(): Promise<void> {
   // Mark events as processed
   const db = getDb();
   const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-  db.prepare(
-    'UPDATE token_events SET processed = TRUE WHERE created_at >= ? AND processed = FALSE'
-  ).run(twelveHoursAgo);
+  await db
+    .from('token_events')
+    .update({ processed: true })
+    .gte('created_at', twelveHoursAgo)
+    .eq('processed', false);
 }
 
 let cronTask: cron.ScheduledTask | null = null;

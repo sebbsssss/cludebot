@@ -51,7 +51,6 @@ async function processTransaction(tx: HeliusWebhookPayload): Promise<void> {
 
   for (const transfer of cluudeTransfers) {
     const isSell = transfer.fromUserAccount && transfer.tokenAmount > 0;
-    const isBuy = transfer.toUserAccount && transfer.tokenAmount > 0;
 
     // Determine event type
     let eventType: string;
@@ -69,22 +68,18 @@ async function processTransaction(tx: HeliusWebhookPayload): Promise<void> {
       return sum;
     }, 0);
 
-    // Store event
-    try {
-      db.prepare(
-        'INSERT OR IGNORE INTO token_events (signature, event_type, wallet_address, amount, sol_value, timestamp, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(
-        tx.signature,
-        eventType,
-        transfer.fromUserAccount || transfer.toUserAccount,
-        transfer.tokenAmount,
-        solValue,
-        new Date(tx.timestamp * 1000).toISOString(),
-        JSON.stringify({ type: tx.type, description: tx.description })
-      );
-    } catch {
-      // Duplicate signature, skip
-    }
+    // Store event (upsert to handle duplicates)
+    await db
+      .from('token_events')
+      .upsert({
+        signature: tx.signature,
+        event_type: eventType,
+        wallet_address: transfer.fromUserAccount || transfer.toUserAccount,
+        amount: transfer.tokenAmount,
+        sol_value: solValue,
+        timestamp: new Date(tx.timestamp * 1000).toISOString(),
+        metadata: { type: tx.type, description: tx.description },
+      }, { onConflict: 'signature' });
 
     // Check for whale sell (arbitrary: > 10 SOL value)
     if (eventType === 'swap_sell' && solValue > 10) {

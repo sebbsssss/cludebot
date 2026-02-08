@@ -23,18 +23,18 @@ export async function handleOnchainOpinion(
   tier: HolderTier
 ): Promise<void> {
   // Rate limit: 3 opinions per hour (SOL costs money)
-  if (!checkRateLimit('global:opinion', 3, 60)) {
+  if (!(await checkRateLimit('global:opinion', 3, 60))) {
     log.info('Rate limited for on-chain opinion');
     const replyId = await postReply(tweetId, "I have already committed enough opinions to the blockchain this hour. Even immutable ledgers need a break from me.");
-    markProcessed(tweetId, 'opinion-ratelimit', replyId);
+    await markProcessed(tweetId, 'opinion-ratelimit', replyId);
     return;
   }
 
   // Per-user rate limit: 1 per hour
-  if (!checkRateLimit(`opinion:${authorId}`, 1, 60)) {
+  if (!(await checkRateLimit(`opinion:${authorId}`, 1, 60))) {
     log.info({ authorId }, 'User rate limited for on-chain opinion');
     const replyId = await postReply(tweetId, "One on-chain opinion per hour per person. I am trying to keep my carbon footprint manageable. Relatively speaking.");
-    markProcessed(tweetId, 'opinion-ratelimit-user', replyId);
+    await markProcessed(tweetId, 'opinion-ratelimit-user', replyId);
     return;
   }
 
@@ -69,14 +69,21 @@ export async function handleOnchainOpinion(
     replyText = `${answer}\n\nOn-chain forever: ${txUrl}`;
 
     // Store in database
-    getDb().prepare(
-      'INSERT INTO opinion_commits (tweet_id, question, answer, answer_hash, solana_signature) VALUES (?, ?, ?, ?, ?)'
-    ).run(tweetId, question, answer, answerHash, signature);
+    const db = getDb();
+    await db
+      .from('opinion_commits')
+      .insert({
+        tweet_id: tweetId,
+        question,
+        answer,
+        answer_hash: answerHash,
+        solana_signature: signature,
+      });
   } else {
     replyText = `${answer}\n\n(Tried to put this on-chain but even the blockchain rejected me today.)`;
   }
 
   const replyId = await postReply(tweetId, replyText);
-  markProcessed(tweetId, 'onchain-opinion', replyId);
+  await markProcessed(tweetId, 'onchain-opinion', replyId);
   log.info({ tweetId, signature }, 'On-chain opinion posted');
 }

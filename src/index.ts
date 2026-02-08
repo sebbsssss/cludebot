@@ -16,7 +16,7 @@ async function main(): Promise<void> {
   log.info('Starting up... reluctantly.');
 
   // Phase 1: Initialize core
-  initDatabase();
+  await initDatabase();
   log.info('Database initialized');
 
   // Load bot wallet if configured

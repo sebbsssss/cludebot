@@ -11,16 +11,18 @@ interface WalletLink {
   x_handle: string;
 }
 
-export function getLinkedWallet(xUserId: string): WalletLink | null {
+export async function getLinkedWallet(xUserId: string): Promise<WalletLink | null> {
   const db = getDb();
-  const row = db.prepare(
-    'SELECT wallet_address, x_handle FROM wallet_links WHERE x_user_id = ?'
-  ).get(xUserId) as WalletLink | undefined;
-  return row || null;
+  const { data } = await db
+    .from('wallet_links')
+    .select('wallet_address, x_handle')
+    .eq('x_user_id', xUserId)
+    .single();
+  return data || null;
 }
 
 export async function determineHolderTier(xUserId: string): Promise<HolderTier> {
-  const link = getLinkedWallet(xUserId);
+  const link = await getLinkedWallet(xUserId);
   if (!link) return 'UNKNOWN';
 
   const balance = await getCluudeBalance(link.wallet_address);
@@ -28,9 +30,13 @@ export async function determineHolderTier(xUserId: string): Promise<HolderTier> 
   if (balance === 0) {
     // Check if they previously held tokens (seller detection)
     const db = getDb();
-    const prevHeld = db.prepare(
-      "SELECT 1 FROM token_events WHERE wallet_address = ? AND event_type = 'swap_buy' LIMIT 1"
-    ).get(link.wallet_address);
+    const { data: prevHeld } = await db
+      .from('token_events')
+      .select('id')
+      .eq('wallet_address', link.wallet_address)
+      .eq('event_type', 'swap_buy')
+      .limit(1)
+      .single();
 
     if (prevHeld) {
       log.debug({ xUserId, wallet: link.wallet_address }, 'Detected seller');
@@ -44,10 +50,15 @@ export async function determineHolderTier(xUserId: string): Promise<HolderTier> 
   return 'ZERO';
 }
 
-export function linkWallet(xUserId: string, xHandle: string, walletAddress: string): void {
+export async function linkWallet(xUserId: string, xHandle: string, walletAddress: string): Promise<void> {
   const db = getDb();
-  db.prepare(
-    'INSERT OR REPLACE INTO wallet_links (x_user_id, x_handle, wallet_address, verified_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)'
-  ).run(xUserId, xHandle, walletAddress);
+  await db
+    .from('wallet_links')
+    .upsert({
+      x_user_id: xUserId,
+      x_handle: xHandle,
+      wallet_address: walletAddress,
+      verified_at: new Date().toISOString(),
+    });
   log.info({ xUserId, xHandle, walletAddress }, 'Wallet linked');
 }

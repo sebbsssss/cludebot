@@ -19,7 +19,7 @@ export async function handleExitInterview(
   solValue: number
 ): Promise<void> {
   // Rate limit: max 1 exit interview per hour
-  if (!checkRateLimit('global:exit-interview', 1, 60)) {
+  if (!(await checkRateLimit('global:exit-interview', 1, 60))) {
     log.info({ walletAddress }, 'Rate limited for exit interview');
     return;
   }

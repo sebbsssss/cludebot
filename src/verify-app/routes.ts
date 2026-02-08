@@ -16,7 +16,7 @@ interface VerifyRequest {
 export function verifyRoutes(): Router {
   const router = Router();
 
-  router.post('/verify', (req, res) => {
+  router.post('/verify', async (req, res) => {
     try {
       const { x_handle, wallet_address, signature, message } = req.body as VerifyRequest;
 
@@ -61,7 +61,7 @@ export function verifyRoutes(): Router {
 
       // Link wallet to X handle
       // Note: x_user_id is set to handle for now; will be resolved on first interaction
-      linkWallet(cleanHandle, cleanHandle, wallet_address);
+      await linkWallet(cleanHandle, cleanHandle, wallet_address);
 
       log.info({ x_handle: cleanHandle, wallet: wallet_address }, 'Wallet verified and linked');
       res.json({ success: true, message: `Wallet ${wallet_address} linked to @${cleanHandle}` });
