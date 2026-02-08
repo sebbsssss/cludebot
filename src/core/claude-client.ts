@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config';
 import { createChildLogger } from './logger';
-import { getBasePrompt } from '../character/base-prompt';
+import { getBasePrompt, getRandomCloser } from '../character/base-prompt';
 
 const log = createChildLogger('claude-client');
 
@@ -25,9 +25,13 @@ export async function generateResponse(options: GenerateOptions): Promise<string
 
   const systemPrompt = systemParts.join('');
 
-  let userContent = options.userMessage;
+  // Build user content — ensure it's never empty
+  let userContent = (options.userMessage || '').replace(/@\w+/g, '').trim();
   if (options.context) {
-    userContent = `## Data\n${options.context}\n\n## User Message\n${options.userMessage}`;
+    userContent = `## Data\n${options.context}\n\n## User Message\n${userContent || '(no message, just a mention)'}`;
+  }
+  if (!userContent) {
+    userContent = '(Someone mentioned you with no specific message. React to being summoned for nothing.)';
   }
 
   log.debug({ systemLength: systemPrompt.length, userLength: userContent.length }, 'Generating response');
@@ -35,14 +39,27 @@ export async function generateResponse(options: GenerateOptions): Promise<string
   const response = await anthropic.messages.create({
     model: config.anthropic.model,
     max_tokens: options.maxTokens || 300,
+    temperature: 0.9,
     system: systemPrompt,
     messages: [{ role: 'user', content: userContent }],
   });
 
-  const text = response.content
+  let text = response.content
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map(block => block.text)
-    .join('');
+    .join('')
+    .trim();
+
+  // Strip any quotes the model may wrap the response in
+  if (text.startsWith('"') && text.endsWith('"')) {
+    text = text.slice(1, -1).trim();
+  }
+
+  // Occasionally append a random closer if it fits
+  const closer = getRandomCloser();
+  if (closer && text.length + closer.length + 2 <= 270) {
+    text = `${text} ${closer}`;
+  }
 
   log.info({ responseLength: text.length }, 'Response generated');
   return text;
