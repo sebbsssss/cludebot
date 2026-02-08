@@ -35,7 +35,6 @@ export function getPriceState(): PriceState {
 
 export function flagWhaleSell(): void {
   recentWhaleSell = true;
-  // Reset after 30 minutes
   setTimeout(() => { recentWhaleSell = false; }, 30 * 60 * 1000);
 }
 
@@ -51,7 +50,7 @@ async function fetchPrice(): Promise<{ price: number; volume24h: number } | null
 
     return {
       price: parseFloat(tokenData.price),
-      volume24h: 0, // Jupiter price API v2 doesn't return volume directly
+      volume24h: 0,
     };
   } catch (err) {
     log.error({ err }, 'Failed to fetch price');
@@ -59,18 +58,21 @@ async function fetchPrice(): Promise<{ price: number; volume24h: number } | null
   }
 }
 
-function calculateMood(): Mood {
+async function calculateMood(): Promise<Mood> {
   if (recentWhaleSell) return 'WHALE_SELL';
   if (currentState.currentPrice > 0 && currentState.currentPrice >= allTimeHigh) return 'NEW_ATH';
   if (currentState.change1h >= 10) return 'PUMPING';
   if (currentState.change1h <= -10) return 'DUMPING';
 
-  // Check sideways: get 6h of snapshots
   const db = getDb();
   const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-  const oldSnapshot = db.prepare(
-    'SELECT price_usd FROM price_snapshots WHERE recorded_at <= ? ORDER BY recorded_at DESC LIMIT 1'
-  ).get(sixHoursAgo) as { price_usd: number } | undefined;
+  const { data: oldSnapshot } = await db
+    .from('price_snapshots')
+    .select('price_usd')
+    .lte('recorded_at', sixHoursAgo)
+    .order('recorded_at', { ascending: false })
+    .limit(1)
+    .single();
 
   if (oldSnapshot && currentState.currentPrice > 0) {
     const change6h = ((currentState.currentPrice - oldSnapshot.price_usd) / oldSnapshot.price_usd) * 100;
@@ -87,21 +89,29 @@ export async function pollPrice(): Promise<void> {
   const db = getDb();
 
   // Store snapshot
-  db.prepare(
-    'INSERT INTO price_snapshots (price_usd, volume_24h) VALUES (?, ?)'
-  ).run(priceData.price, priceData.volume24h);
+  await db
+    .from('price_snapshots')
+    .insert({ price_usd: priceData.price, volume_24h: priceData.volume24h });
 
   // Calculate 1h change
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const snapshot1h = db.prepare(
-    'SELECT price_usd FROM price_snapshots WHERE recorded_at <= ? ORDER BY recorded_at DESC LIMIT 1'
-  ).get(oneHourAgo) as { price_usd: number } | undefined;
+  const { data: snapshot1h } = await db
+    .from('price_snapshots')
+    .select('price_usd')
+    .lte('recorded_at', oneHourAgo)
+    .order('recorded_at', { ascending: false })
+    .limit(1)
+    .single();
 
   // Calculate 24h change
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const snapshot24h = db.prepare(
-    'SELECT price_usd FROM price_snapshots WHERE recorded_at <= ? ORDER BY recorded_at DESC LIMIT 1'
-  ).get(twentyFourHoursAgo) as { price_usd: number } | undefined;
+  const { data: snapshot24h } = await db
+    .from('price_snapshots')
+    .select('price_usd')
+    .lte('recorded_at', twentyFourHoursAgo)
+    .order('recorded_at', { ascending: false })
+    .limit(1)
+    .single();
 
   const change1h = snapshot1h
     ? ((priceData.price - snapshot1h.price_usd) / snapshot1h.price_usd) * 100
@@ -110,7 +120,6 @@ export async function pollPrice(): Promise<void> {
     ? ((priceData.price - snapshot24h.price_usd) / snapshot24h.price_usd) * 100
     : 0;
 
-  // Track ATH
   if (priceData.price > allTimeHigh) {
     allTimeHigh = priceData.price;
   }
@@ -123,7 +132,7 @@ export async function pollPrice(): Promise<void> {
     lastUpdate: new Date(),
   };
 
-  currentState.mood = calculateMood();
+  currentState.mood = await calculateMood();
 
   log.debug({
     price: priceData.price,
@@ -133,14 +142,17 @@ export async function pollPrice(): Promise<void> {
 
   // Clean up old snapshots (keep 48h)
   const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-  db.prepare('DELETE FROM price_snapshots WHERE recorded_at < ?').run(cutoff);
+  await db
+    .from('price_snapshots')
+    .delete()
+    .lt('recorded_at', cutoff);
 }
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 export function startPriceOracle(): void {
   log.info({ intervalMs: config.intervals.pricePollMs }, 'Starting price oracle');
-  pollPrice(); // Initial poll
+  pollPrice();
   pollTimer = setInterval(pollPrice, config.intervals.pricePollMs);
 }
 

@@ -19,7 +19,7 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   const authorId = tweet.author_id || '';
 
   // Skip already processed
-  if (isAlreadyProcessed(tweetId)) return;
+  if (await isAlreadyProcessed(tweetId)) return;
 
   log.info({ tweetId, text: text.slice(0, 100) }, 'Processing mention');
 
@@ -44,7 +44,7 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   } catch (err) {
     log.error({ tweetId, err }, 'Failed to dispatch mention');
     // Mark as processed to avoid retrying bad tweets forever
-    markProcessed(tweetId, 'error');
+    await markProcessed(tweetId, 'error');
   }
 }
 
@@ -66,6 +66,6 @@ async function handleGeneralReply(
   });
 
   const replyId = await postReply(tweetId, response);
-  markProcessed(tweetId, 'general', replyId);
+  await markProcessed(tweetId, 'general', replyId);
   log.info({ tweetId, replyId }, 'General reply posted');
 }

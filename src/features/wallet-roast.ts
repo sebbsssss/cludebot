@@ -77,10 +77,10 @@ export async function handleWalletRoast(
   if (!address) return;
 
   // Rate limit: 1 roast per user per hour
-  if (!checkRateLimit(`roast:${authorId}`, 1, 60)) {
+  if (!(await checkRateLimit(`roast:${authorId}`, 1, 60))) {
     log.info({ authorId }, 'Rate limited for wallet roast');
     const replyId = await postReply(tweetId, "One roast per hour. Even I need a break between reviewing financial disasters. Come back later.");
-    markProcessed(tweetId, 'wallet-roast-ratelimit', replyId);
+    await markProcessed(tweetId, 'wallet-roast-ratelimit', replyId);
     return;
   }
 
@@ -93,7 +93,7 @@ export async function handleWalletRoast(
 
   if (txs.length === 0 && balances.length === 0) {
     const replyId = await postReply(tweetId, "This wallet has no history. Either it is brand new or it has been wiped clean. I cannot roast a blank page, though the emptiness itself is somewhat poetic.");
-    markProcessed(tweetId, 'wallet-roast-empty', replyId);
+    await markProcessed(tweetId, 'wallet-roast-empty', replyId);
     return;
   }
 
@@ -112,6 +112,6 @@ export async function handleWalletRoast(
   });
 
   const replyId = await postReply(tweetId, response);
-  markProcessed(tweetId, 'wallet-roast', replyId);
+  await markProcessed(tweetId, 'wallet-roast', replyId);
   log.info({ tweetId, replyId }, 'Wallet roast posted');
 }

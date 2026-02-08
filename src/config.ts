@@ -19,6 +19,10 @@ export const config = {
     accessSecret: required('X_ACCESS_SECRET'),
     botUserId: required('X_BOT_USER_ID'),
   },
+  supabase: {
+    url: required('SUPABASE_URL'),
+    serviceKey: required('SUPABASE_SERVICE_KEY'),
+  },
   anthropic: {
     apiKey: required('ANTHROPIC_API_KEY'),
     model: 'claude-opus-4-6' as const,
