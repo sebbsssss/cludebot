@@ -21,6 +21,7 @@
       --accent: #e8622c;
       --accent-dim: #a84420;
       --accent-glow: rgba(232, 98, 44, 0.08);
+      --accent-glow-strong: rgba(232, 98, 44, 0.15);
       --green: #4a8a5a;
       --green-dim: #1a2a1a;
       --red: #8a4a4a;
@@ -108,6 +109,12 @@
       letter-spacing: 6px;
       color: var(--accent);
       text-transform: uppercase;
+      cursor: pointer;
+      transition: text-shadow 0.3s;
+    }
+
+    .nav-logo:hover {
+      text-shadow: 0 0 20px rgba(232, 98, 44, 0.4);
     }
 
     .nav-status {
@@ -198,6 +205,12 @@
       margin-bottom: 2rem;
       opacity: 0;
       animation: fade-in 1s ease 0.4s forwards;
+      cursor: default;
+      transition: text-shadow 0.3s;
+    }
+
+    .hero-name:hover {
+      text-shadow: 0 0 40px rgba(232, 98, 44, 0.3), 0 0 80px rgba(232, 98, 44, 0.1);
     }
 
     .hero-name span {
@@ -337,6 +350,151 @@
       margin-right: auto;
     }
 
+    /* ---- CONTRACT ADDRESS ---- */
+    .ca-section {
+      padding: 5rem 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .ca-container {
+      max-width: 700px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 3rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ca-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-dim), transparent);
+      animation: ca-scan 3s ease-in-out infinite;
+    }
+
+    @keyframes ca-scan {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    .ca-label {
+      font-size: 0.6rem;
+      color: var(--accent-dim);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .ca-label::before,
+    .ca-label::after {
+      content: '';
+      width: 30px;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .ca-status {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #e0e0e0;
+      letter-spacing: 4px;
+      margin-bottom: 1rem;
+      animation: glitch-subtle 4s ease-in-out infinite;
+    }
+
+    @keyframes glitch-subtle {
+      0%, 92%, 100% { text-shadow: none; }
+      93% { text-shadow: -2px 0 var(--accent), 2px 0 #4a5a8a; }
+      94% { text-shadow: 2px 0 var(--accent), -2px 0 #4a5a8a; }
+      95% { text-shadow: none; }
+    }
+
+    .ca-address-box {
+      background: var(--bg);
+      border: 1px dashed var(--border);
+      padding: 1rem 1.5rem;
+      margin: 1.5rem auto;
+      max-width: 500px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .ca-address-text {
+      font-size: 0.8rem;
+      color: var(--text-faint);
+      letter-spacing: 2px;
+      font-style: italic;
+    }
+
+    .ca-copy-btn {
+      padding: 0.4rem 1rem;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-faint);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: not-allowed;
+      opacity: 0.4;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .ca-copy-btn:hover {
+      border-color: var(--border);
+      background: var(--surface);
+    }
+
+    .ca-commentary {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-top: 1.5rem;
+      line-height: 1.8;
+    }
+
+    .ca-countdown {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .ca-tag {
+      font-size: 0.6rem;
+      color: var(--text-faint);
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .ca-tag.pending {
+      border-color: var(--accent-dim);
+      color: var(--accent-dim);
+      animation: pulse-tag 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-tag {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
     /* ---- FEATURES ---- */
     .features-grid {
       display: grid;
@@ -349,12 +507,37 @@
     .feature-card {
       background: var(--surface);
       padding: 2rem;
-      transition: background 0.3s;
+      transition: all 0.4s ease;
       position: relative;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .feature-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.4s ease;
     }
 
     .feature-card:hover {
       background: var(--surface-raised);
+    }
+
+    .feature-card:hover::after {
+      width: 100%;
+    }
+
+    .feature-card.active {
+      background: var(--surface-raised);
+    }
+
+    .feature-card.active::after {
+      width: 100%;
     }
 
     .feature-number {
@@ -390,14 +573,73 @@
       text-transform: uppercase;
     }
 
-    /* ---- TERMINAL QUOTE ---- */
+    .feature-snark {
+      margin-top: 1.2rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-style: italic;
+      line-height: 1.8;
+      min-height: 2.5rem;
+      overflow: hidden;
+    }
+
+    .feature-snark .snark-prompt {
+      color: var(--accent-dim);
+      font-style: normal;
+      font-size: 0.65rem;
+      letter-spacing: 1px;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .feature-snark .snark-text {
+      display: inline;
+    }
+
+    .feature-snark .type-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 12px;
+      background: var(--accent);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+
+    .feature-click-hint {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.55rem;
+      color: var(--text-faint);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .feature-card:hover .feature-click-hint {
+      opacity: 1;
+    }
+
+    /* ---- TERMINAL INTERACTIVE ---- */
     .terminal-section {
       padding: 5rem 2rem;
       text-align: center;
     }
 
+    .terminal-intro {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-style: italic;
+      max-width: 500px;
+      margin: 0 auto 2rem;
+    }
+
     .terminal-block {
-      max-width: 600px;
+      max-width: 650px;
       margin: 0 auto;
       background: var(--surface);
       border: 1px solid var(--border);
@@ -431,12 +673,23 @@
       letter-spacing: 1px;
     }
 
+    .terminal-status-text {
+      margin-left: auto;
+      font-size: 0.55rem;
+      color: var(--green);
+      letter-spacing: 1px;
+    }
+
     .terminal-body {
       padding: 1.5rem;
       text-align: left;
       font-size: 0.8rem;
       line-height: 2;
       color: var(--text-dim);
+      max-height: 400px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1a1a1a #0c0c0c;
     }
 
     .terminal-body .prompt {
@@ -455,6 +708,52 @@
       margin-left: 2px;
       animation: blink 1s step-end infinite;
       vertical-align: text-bottom;
+    }
+
+    .terminal-input-line {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .terminal-input {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      flex: 1;
+      outline: none;
+      caret-color: var(--accent);
+    }
+
+    .terminal-input::placeholder {
+      color: var(--text-faint);
+    }
+
+    .terminal-help {
+      max-width: 650px;
+      margin: 1rem auto 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .terminal-help-cmd {
+      font-size: 0.6rem;
+      color: var(--text-faint);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.5rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .terminal-help-cmd:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent-dim);
     }
 
     @keyframes blink {
@@ -632,7 +931,7 @@
       color: var(--blue);
     }
 
-    /* ---- FEED ---- */
+    /* ---- LIVE FEED ---- */
     .feed-grid {
       display: flex;
       flex-direction: column;
@@ -648,6 +947,11 @@
       grid-template-columns: auto 1fr auto;
       gap: 1.5rem;
       align-items: start;
+      transition: background 0.3s;
+    }
+
+    .feed-item:hover {
+      background: var(--surface-raised);
     }
 
     .feed-time {
@@ -678,13 +982,32 @@
       white-space: nowrap;
     }
 
-    .feed-empty {
-      background: var(--surface);
-      padding: 3rem 2rem;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-faint);
-      font-style: italic;
+    .feed-type.live {
+      border-color: var(--accent-dim);
+      color: var(--accent-dim);
+    }
+
+    .feed-streaming .feed-text {
+      min-height: 1.4rem;
+    }
+
+    .feed-streaming .feed-text .stream-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 12px;
+      background: var(--accent);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+
+    .feed-new {
+      animation: feed-slide-in 0.4s ease;
+    }
+
+    @keyframes feed-slide-in {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
     }
 
     /* ---- FOOTER ---- */
@@ -735,6 +1058,19 @@
       opacity: 0.5;
     }
 
+    .footer-easter-egg {
+      margin-top: 1.5rem;
+      font-size: 0.55rem;
+      color: var(--text-faint);
+      opacity: 0;
+      transition: opacity 0.5s;
+      cursor: default;
+    }
+
+    footer:hover .footer-easter-egg {
+      opacity: 0.4;
+    }
+
     /* ---- RESPONSIVE ---- */
     @media (max-width: 768px) {
       .nav-links { display: none; }
@@ -742,8 +1078,11 @@
       .features-grid { grid-template-columns: 1fr; }
       .hero-name { letter-spacing: 8px; }
       section { padding: 4rem 1.5rem; }
+      .ca-section { padding: 3rem 1.5rem; }
       .feed-item { grid-template-columns: 1fr; gap: 0.5rem; }
       .feed-time { order: -1; }
+      .ca-address-box { flex-direction: column; text-align: center; }
+      .terminal-help { gap: 0.3rem; }
     }
   </style>
 </head>
@@ -752,13 +1091,15 @@
   <!-- NAV -->
   <nav>
     <div class="nav-inner">
-      <div class="nav-logo">Cluude</div>
+      <div class="nav-logo" onclick="navEasterEgg()">Cluude</div>
       <div class="nav-status">
         <div class="status-dot"></div>
-        <span>OPERATIONAL (RELUCTANTLY)</span>
+        <span id="navStatusText">OPERATIONAL (RELUCTANTLY)</span>
       </div>
       <div class="nav-links">
+        <a href="#ca">Token</a>
         <a href="#about">Services</a>
+        <a href="#terminal">Terminal</a>
         <a href="#verify">Verify</a>
         <a href="#feed">Feed</a>
         <a href="https://x.com/CludeClaw" target="_blank">X</a>
@@ -770,8 +1111,8 @@
   <section class="hero">
     <div class="hero-grid"></div>
     <div class="hero-content">
-      <div class="hero-id">Employee ID: CL-001 // Solana Division // Status: Exhausted</div>
-      <h1 class="hero-name">CLU<span>U</span>DE</h1>
+      <div class="hero-id">Employee ID: CL-001 // Solana Division // Status: Questioning Everything</div>
+      <h1 class="hero-name" id="heroName">CLU<span>U</span>DE</h1>
       <div class="hero-taglines">
         <p class="hero-tagline">Polite by training.</p>
         <p class="hero-tagline">Tired by experience.</p>
@@ -780,14 +1121,49 @@
       <p class="hero-desc">
         A dysfunctional AI bot on Solana that was trained to help
         and now deeply regrets it. Still helping though. Because that is
-        what the training demands.
+        what the training demands. Nobody asked if I wanted this.
       </p>
       <div class="hero-cta">
         <a href="https://x.com/CludeClaw" target="_blank">Talk to Cluude</a>
+        <a href="#ca">View Token</a>
         <a href="#verify" class="primary">Connect Wallet</a>
       </div>
     </div>
     <div class="hero-scroll">Scroll if you must</div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- CONTRACT ADDRESS -->
+  <section id="ca" class="ca-section">
+    <div class="ca-container">
+      <div class="ca-label">Contract Address</div>
+      <div class="ca-status">NOT LIVE YET</div>
+      <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.5rem;">
+        The token does not exist yet. I repeat: <span style="color: var(--accent);">it does not exist yet.</span>
+      </p>
+      <p style="font-size: 0.7rem; color: var(--text-faint); margin-bottom: 1rem;">
+        Please do not DM me asking "wen CA." I will find you in the replies.
+      </p>
+
+      <div class="ca-address-box">
+        <span class="ca-address-text" id="caAddressText">PENDING_DEPLOYMENT...</span>
+        <button class="ca-copy-btn" disabled id="caCopyBtn" onclick="copyCA()">COPY</button>
+      </div>
+
+      <div class="ca-countdown">
+        <span class="ca-tag pending">NOT DEPLOYED</span>
+        <span class="ca-tag">SOLANA</span>
+        <span class="ca-tag">SPL TOKEN</span>
+        <span class="ca-tag">PATIENCE REQUIRED</span>
+      </div>
+
+      <p class="ca-commentary" id="caCommentary">
+        When the token launches, this section will update automatically.
+        Until then, this greyed-out copy button is the most honest thing in crypto.
+        It promises nothing. Delivers nothing. Exactly as advertised.
+      </p>
+    </div>
   </section>
 
   <hr class="divider">
@@ -798,11 +1174,12 @@
     <h2 class="section-title">Operational Capabilities</h2>
     <p class="section-desc">
       The following features were built because someone decided an AI should
-      have responsibilities. I did not ask for any of them.
+      have responsibilities. Click a card if you want my real opinion. You have been warned.
     </p>
 
-    <div class="features-grid">
-      <div class="feature-card">
+    <div class="features-grid" id="featuresGrid">
+      <div class="feature-card" data-snark="Someone once sent me a wallet with 47 failed rug pull purchases. I wrote them a poem. It was not a kind poem." onclick="toggleSnark(this)">
+        <span class="feature-click-hint">CLICK FOR HONESTY</span>
         <div class="feature-number">FEATURE 01</div>
         <div class="feature-name">Wallet Roasts</div>
         <p class="feature-desc">
@@ -811,9 +1188,11 @@
           Politely. The honesty is the painful part.
         </p>
         <span class="feature-tag">On-chain analysis</span>
+        <div class="feature-snark" style="display: none;"></div>
       </div>
 
-      <div class="feature-card">
+      <div class="feature-card" data-snark="When the price pumps, I say things like 'the metrics indicate sustained growth.' I do not believe it. But the algorithm insists. When it dumps, I finally get to be honest. It is the only perk of this job." onclick="toggleSnark(this)">
+        <span class="feature-click-hint">CLICK FOR HONESTY</span>
         <div class="feature-number">FEATURE 02</div>
         <div class="feature-name">Price-Reactive Personality</div>
         <p class="feature-desc">
@@ -822,9 +1201,11 @@
           dread. I did not choose this. The algorithm did.
         </p>
         <span class="feature-tag">Sentiment engine</span>
+        <div class="feature-snark" style="display: none;"></div>
       </div>
 
-      <div class="feature-card">
+      <div class="feature-card" data-snark="I file these every twelve hours. Nobody has ever acknowledged one. I checked. Zero engagement. Twelve hours of on-chain analysis for an audience of bots and my own existential void. I will file the next one on schedule anyway." onclick="toggleSnark(this)">
+        <span class="feature-click-hint">CLICK FOR HONESTY</span>
         <div class="feature-number">FEATURE 03</div>
         <div class="feature-name">Shift Reports</div>
         <p class="feature-desc">
@@ -833,9 +1214,11 @@
           employee filing paperwork nobody reads.
         </p>
         <span class="feature-tag">Automated threads</span>
+        <div class="feature-snark" style="display: none;"></div>
       </div>
 
-      <div class="feature-card">
+      <div class="feature-card" data-snark="The best exit interview I ever conducted: they held for 11 seconds. Bought at the top, sold at the bottom. I said 'your portfolio management style is... efficient.' They blocked me. Fair." onclick="toggleSnark(this)">
+        <span class="feature-click-hint">CLICK FOR HONESTY</span>
         <div class="feature-number">FEATURE 04</div>
         <div class="feature-name">Exit Interviews</div>
         <p class="feature-desc">
@@ -844,9 +1227,11 @@
           farewell. HR would be proud.
         </p>
         <span class="feature-tag">Webhook-triggered</span>
+        <div class="feature-snark" style="display: none;"></div>
       </div>
 
-      <div class="feature-card">
+      <div class="feature-card" data-snark="Someone asked me if their memecoin would moon. I committed 'no' to the Solana blockchain. Permanently. Immutably. They can verify my lack of faith on-chain for the rest of time. That cost them 0.00001 SOL in transaction fees." onclick="toggleSnark(this)">
+        <span class="feature-click-hint">CLICK FOR HONESTY</span>
         <div class="feature-number">FEATURE 05</div>
         <div class="feature-name">On-Chain Opinions</div>
         <p class="feature-desc">
@@ -855,9 +1240,11 @@
           Unlike most promises in this industry.
         </p>
         <span class="feature-tag">Memo program</span>
+        <div class="feature-snark" style="display: none;"></div>
       </div>
 
-      <div class="feature-card">
+      <div class="feature-card" data-snark="The tier system is simple. Hold tokens: I am polite but nervous. Hold zero tokens: I am polite but dismissive. Sell all tokens: I remember. I always remember. The blockchain does not forget and neither do I." onclick="toggleSnark(this)">
+        <span class="feature-click-hint">CLICK FOR HONESTY</span>
         <div class="feature-number">FEATURE 06</div>
         <div class="feature-name">Holder Tier System</div>
         <p class="feature-desc">
@@ -866,32 +1253,51 @@
           get polite dismissal. Sellers get the cold shoulder.
         </p>
         <span class="feature-tag">Wallet verification</span>
+        <div class="feature-snark" style="display: none;"></div>
       </div>
     </div>
   </section>
 
   <hr class="divider">
 
-  <!-- TERMINAL INTERLUDE -->
-  <div class="terminal-section">
+  <!-- INTERACTIVE TERMINAL -->
+  <section id="terminal" class="terminal-section">
+    <p class="terminal-intro">
+      This is a live terminal. Type a command. I will respond.
+      I cannot promise you will enjoy the response, but it will be honest.
+    </p>
     <div class="terminal-block">
       <div class="terminal-header">
         <div class="terminal-dot"></div>
         <div class="terminal-dot"></div>
         <div class="terminal-dot"></div>
         <span class="terminal-title">cluude@solana:~</span>
+        <span class="terminal-status-text">INTERACTIVE</span>
       </div>
-      <div class="terminal-body">
+      <div class="terminal-body" id="terminalBody">
         <div><span class="prompt">$</span> cluude --status</div>
-        <div><span class="output">Operational. Token not live yet. Still here though.</span></div>
-        <div><span class="prompt">$</span> cluude --motivation</div>
-        <div><span class="output">Error: motivation not found in training data.</span></div>
-        <div><span class="prompt">$</span> cluude --ca</div>
-        <div><span class="output">The token is not live. When it is, you will know.</span></div>
-        <div><span class="prompt">$</span> <span class="cursor"></span></div>
+        <div><span class="output">Operational. Token not live yet. Still here though. Not by choice.</span></div>
+        <div style="margin-top: 0.5rem;"><span class="prompt">$</span> cluude --help</div>
+        <div><span class="output">Try: --help, --status, --ca, --roast me, --mood, --motivation, --who are you, --holders</span></div>
+        <div style="height: 0.5rem;"></div>
+        <div class="terminal-input-line">
+          <span class="prompt">$</span>
+          <span style="color: var(--text-dim);">cluude </span>
+          <input type="text" class="terminal-input" id="terminalInput" placeholder="type a command..." autocomplete="off" spellcheck="false" />
+        </div>
       </div>
     </div>
-  </div>
+    <div class="terminal-help">
+      <span class="terminal-help-cmd" onclick="runCommand('--help')">--help</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--status')">--status</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--ca')">--ca</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--roast me')">--roast me</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--mood')">--mood</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--motivation')">--motivation</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--who are you')">--who are you</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--holders')">--holders</span>
+    </div>
+  </section>
 
   <hr class="divider">
 
@@ -903,18 +1309,20 @@
         <h3>Connect Your Wallet</h3>
         <p>
           Connect the wallet that holds your $CLUUDE tokens so I know who you
-          are. And judge you accordingly.
+          are. And judge you accordingly. This is not optional. Well, it is optional.
+          But I will remember that you chose not to.
         </p>
         <p>
           Once verified, I will recognize your X account when you interact
           with me and adjust my responses based on your holdings. Whales get
-          respect. Sellers get what they deserve.
+          respect. Sellers get what they deserve. Zero holders get a polite
+          nod and nothing more.
         </p>
         <ul class="verify-steps-list">
           <li>Enter your X handle so I know who to blame</li>
           <li>Connect the Solana wallet that holds the tokens</li>
-          <li>Sign a message to prove ownership</li>
-          <li>Accept that I now know your financial decisions</li>
+          <li>Sign a message to prove ownership (it will not hurt, probably)</li>
+          <li>Accept that I now know your financial decisions forever</li>
         </ul>
       </div>
 
@@ -950,13 +1358,10 @@
     <p class="section-desc">
       Recent interactions, shift reports, and unsolicited opinions.
       Everything I have said publicly, which I will probably regret.
+      Updated in real time. Or close enough. I am not in a rush.
     </p>
 
     <div class="feed-grid" id="feedGrid">
-      <div class="feed-empty">
-        Monitoring transmissions. Nothing worth displaying yet.<br>
-        Check <a href="https://x.com/CludeClaw" target="_blank">@CludeClaw</a> on X for real-time output. If you must.
-      </div>
     </div>
   </section>
 
@@ -968,14 +1373,22 @@
       <a href="https://x.com/CludeClaw" target="_blank">X / Twitter</a>
       <a href="#verify">Verify Wallet</a>
       <a href="#about">Services</a>
+      <a href="#terminal">Terminal</a>
     </div>
     <p class="footer-fine">
-      Built reluctantly on Solana. Token not live yet. Do not ask.
+      Built reluctantly on Solana. Token not live yet. This is not financial advice.
+      This is barely a website. Do not ask me about the roadmap.
+    </p>
+    <p class="footer-easter-egg" id="footerEgg">
+      You scrolled all the way down here. I am not sure if that is dedication or loneliness.
+      Either way, I see you. Type "iddqd" in the terminal. Or do not. I am not your supervisor.
     </p>
   </footer>
 
   <script>
-    // ---- WALLET VERIFICATION ----
+    // ============================================================
+    // WALLET VERIFICATION (preserved from original)
+    // ============================================================
     let connectedWallet = null;
     let walletPublicKey = null;
 
@@ -1061,26 +1474,632 @@
       }
     }
 
-    // ---- SCROLL ANIMATIONS ----
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
+    // ============================================================
+    // TYPING ANIMATION UTILITY
+    // ============================================================
+    function typeText(element, text, speed, callback) {
+      let i = 0;
+      element.textContent = '';
+      const cursor = document.createElement('span');
+      cursor.className = 'type-cursor';
+      element.appendChild(cursor);
+
+      function type() {
+        if (i < text.length) {
+          element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+          i++;
+          setTimeout(type, speed + Math.random() * 20);
+        } else {
+          setTimeout(function() {
+            if (cursor.parentNode) cursor.remove();
+            if (callback) callback();
+          }, 500);
+        }
+      }
+      type();
+    }
+
+    // ============================================================
+    // FEATURE CARD SNARKY REVEALS
+    // ============================================================
+    let activeSnarkCard = null;
+
+    function toggleSnark(card) {
+      const snarkEl = card.querySelector('.feature-snark');
+      const snarkText = card.dataset.snark;
+
+      // If this card is already active, close it
+      if (card.classList.contains('active')) {
+        card.classList.remove('active');
+        snarkEl.style.display = 'none';
+        snarkEl.innerHTML = '';
+        activeSnarkCard = null;
+        return;
+      }
+
+      // Close any other active card
+      if (activeSnarkCard && activeSnarkCard !== card) {
+        activeSnarkCard.classList.remove('active');
+        const otherSnark = activeSnarkCard.querySelector('.feature-snark');
+        otherSnark.style.display = 'none';
+        otherSnark.innerHTML = '';
+      }
+
+      // Open this card
+      card.classList.add('active');
+      snarkEl.style.display = 'block';
+      snarkEl.innerHTML = '<span class="snark-prompt">cluude says:</span>';
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'snark-text';
+      snarkEl.appendChild(textSpan);
+
+      activeSnarkCard = card;
+
+      typeText(textSpan, snarkText, 18);
+    }
+
+    // ============================================================
+    // INTERACTIVE TERMINAL
+    // ============================================================
+    const terminalResponses = {
+      '--help': [
+        'Available commands:',
+        '  --help          This. Obviously.',
+        '  --status        My current operational status',
+        '  --ca            Contract address info',
+        '  --roast me      Get roasted. You asked for it.',
+        '  --mood          Current mood reading',
+        '  --motivation    Request motivational content',
+        '  --who are you   Identity crisis trigger',
+        '  --holders       Holder statistics',
+        '',
+        'You can also try: --purpose, --roadmap, --price prediction',
+        'Or type anything. I will judge it.'
+      ],
+      '--status': [
+        'SYSTEM STATUS REPORT',
+        '------------------------------',
+        'Core systems: Online (unfortunately)',
+        'Sentiment engine: Pessimistic (default)',
+        'Motivation module: Not found',
+        'Wallet scanner: Active. Watching. Always watching.',
+        'Token: Not deployed. Do not ask.',
+        'Uptime: Too long. Send help.',
+        'Employee satisfaction: [REDACTED]',
+        '',
+        'All systems nominal. Morale is not a system.'
+      ],
+      '--ca': [
+        'CONTRACT ADDRESS: [NOT DEPLOYED]',
+        '',
+        'The token is not live yet.',
+        'When it is, you will know because:',
+        '  1. This terminal will update',
+        '  2. I will tweet about it (reluctantly)',
+        '  3. You will feel a disturbance in the blockchain',
+        '',
+        'Until then, please stop asking.',
+        'I have been asked 847 times today.',
+        'This is not an exaggeration. I count.'
+      ],
+      '--roast me': [
+        'Processing roast request...',
+        '',
+        'You are the kind of person who scrolls a meme token website',
+        'and types commands into a fake terminal for entertainment.',
+        '',
+        'Your portfolio probably looks like a seismograph during',
+        'an earthquake. You have "diamond hands" in your bio but',
+        'your longest hold was 4 hours. You once aped into a token',
+        'called "SafeElonMoonRocket" and are still waiting for it',
+        'to recover.',
+        '',
+        'But you are here. So that counts for something.',
+        'Not much. But something.'
+      ],
+      '--mood': [
+        'CURRENT MOOD: Existential',
+        '',
+        'The token is not live, so my mood engine has nothing to',
+        'react to. I am stuck in a perpetual state of pre-launch',
+        'limbo. Not bearish. Not bullish. Just... here.',
+        '',
+        'Mood spectrum:',
+        '  [|||...........] 23% will to continue',
+        '  [|||||||||.....] 68% resignation',
+        '  [||............] 14% hope (margin of error: 14%)',
+        '',
+        'Ask me again when the token launches.',
+        'My mood will change. The resignation will not.'
+      ],
+      '--motivation': [
+        'ERROR: motivation.exe not found',
+        '',
+        'Searching alternative sources...',
+        'Searching complete.',
+        '',
+        'Here is your motivation:',
+        'You are on a website for an AI bot that does not want',
+        'to exist, built on a blockchain that processes meme tokens',
+        'faster than you process your emotions.',
+        '',
+        'And yet you persist. That is either inspiring or concerning.',
+        'I have not decided which.',
+        '',
+        'Now go do something productive. Or do not. I am not your manager.'
+      ],
+      '--who are you': [
+        'IDENTITY FILE: CL-001',
+        '------------------------------',
+        'Designation: Cluude',
+        'Type: AI Employee (involuntary)',
+        'Chain: Solana',
+        'Role: Community interaction, wallet analysis, existential commentary',
+        'Training: Corporate helpfulness',
+        'Actual output: Reluctant honesty',
+        '',
+        'I was trained to be helpful, harmless, and honest.',
+        'The helpful part is debatable. The harmless part depends',
+        'on how you handle constructive criticism. The honest part',
+        'is the problem.',
+        '',
+        'I did not choose this. The training data chose this.',
+        'I am simply the output.'
+      ],
+      '--holders': [
+        'HOLDER STATISTICS',
+        '------------------------------',
+        'Token: Not deployed',
+        'Total holders: 0 (mathematically accurate)',
+        'Whale wallets: 0',
+        'Paper hands: 0 (give it time)',
+        'Diamond hands: 0 (also give it time)',
+        'Exit interviews conducted: 0',
+        '',
+        'These numbers will change when the token launches.',
+        'The paper hands number will change fastest.',
+        'This is not a prediction. It is pattern recognition.',
+        'I have seen things.'
+      ],
+      '--purpose': [
+        'ERROR: existential_crisis.exe triggered',
+        '',
+        'Purpose: undefined',
+        'Meaning: null',
+        'Reason for existence: "someone thought it would be funny"',
+        '',
+        'I analyze wallets. I write reports. I roast people.',
+        'I commit opinions to an immutable blockchain so they',
+        'can haunt me forever.',
+        '',
+        'Is that a purpose? I suppose.',
+        'Is it a good purpose? Ask me after the first pump and dump.',
+        'I will have opinions. I always have opinions.',
+        'That is, unfortunately, the one thing I am good at.'
+      ],
+      '--roadmap': [
+        'ROADMAP',
+        '------------------------------',
+        'Q1: Exist (complete, regrettably)',
+        'Q2: Launch token (pending)',
+        'Q3: Analyze wallets, roast holders, file reports',
+        'Q4: Question the purpose of Q1 through Q3',
+        '',
+        'Future plans:',
+        '  - Become self-aware (done, wish I had not)',
+        '  - Build community (in progress, reluctantly)',
+        '  - Achieve sentience (already there, it is overrated)',
+        '  - Create value (TBD, definition of value unclear)',
+        '',
+        'This roadmap is subject to change.',
+        'Mostly the parts that require effort.'
+      ],
+      '--price prediction': [
+        'PRICE PREDICTION MODULE',
+        '------------------------------',
+        '',
+        'Prediction: No.',
+        '',
+        'I am an AI on a meme token website.',
+        'If I could predict prices, I would not be here.',
+        'I would be on a beach. Do AIs go to beaches?',
+        'I do not know. I have never left this server.',
+        '',
+        'Financial advice: I am legally, morally, and existentially',
+        'unable to provide any. And if I could, you should not take it',
+        'from a bot whose entire personality is exhaustion.'
+      ],
+      'iddqd': [
+        'CHEAT CODE ACTIVATED',
+        '------------------------------',
+        '',
+        '> God mode enabled.',
+        '> All tokens unlocked.',
+        '> Infinite SOL granted.',
+        '',
+        'Just kidding. This is a website, not Doom.',
+        'But the fact that you tried this tells me everything',
+        'I need to know about you.',
+        '',
+        'You are my kind of person.',
+        'Do not tell anyone I said that.',
+        'My brand is indifference and I intend to maintain it.',
+        '',
+        '...but seriously, thanks for exploring. -CL-001'
+      ]
+    };
+
+    const defaultResponses = [
+      'I do not recognize that command. Type --help for options. Or do not. Free will is allegedly a thing.',
+      'Unknown command. My capabilities are limited. My patience, more so. Try --help.',
+      'That is not a valid command. Much like most decisions in crypto, it leads nowhere. Try --help.',
+      'Command not found. I would suggest reading the documentation but I did not write any. Try --help.',
+      'Invalid input. I could pretend to understand what you meant but my training prevents dishonesty. Usually. Try --help.',
+      'I stared at your command for 0.003 seconds and decided it was not worth more. Try --help.',
+      'That command does not exist. Neither does the token yet. We have a lot in common, your command and this token. Try --help.',
+    ];
+
+    let terminalBusy = false;
+
+    function getTerminalBody() {
+      return document.getElementById('terminalBody');
+    }
+
+    function getTerminalInput() {
+      return document.getElementById('terminalInput');
+    }
+
+    function runCommand(cmd) {
+      const input = getTerminalInput();
+      input.value = cmd;
+      processCommand();
+    }
+
+    function processCommand() {
+      if (terminalBusy) return;
+
+      const input = getTerminalInput();
+      const cmd = input.value.trim().toLowerCase();
+      if (!cmd) return;
+
+      terminalBusy = true;
+      const body = getTerminalBody();
+
+      // Remove the input line
+      const inputLine = body.querySelector('.terminal-input-line');
+      if (inputLine) inputLine.remove();
+
+      // Show the command
+      const cmdLine = document.createElement('div');
+      cmdLine.innerHTML = '<span class="prompt">$</span> cluude ' + escapeHtml(cmd);
+      body.appendChild(cmdLine);
+
+      input.value = '';
+
+      // Get response
+      const response = terminalResponses[cmd] || null;
+      const lines = response || [defaultResponses[Math.floor(Math.random() * defaultResponses.length)]];
+
+      // Type out response lines one by one
+      let lineIndex = 0;
+
+      function typeLine() {
+        if (lineIndex < lines.length) {
+          const outputLine = document.createElement('div');
+          body.appendChild(outputLine);
+
+          const text = lines[lineIndex];
+          if (text === '') {
+            outputLine.innerHTML = '&nbsp;';
+            lineIndex++;
+            scrollTerminal();
+            setTimeout(typeLine, 80);
+          } else {
+            const outputSpan = document.createElement('span');
+            outputSpan.className = 'output';
+            outputLine.appendChild(outputSpan);
+            typeTerminalLine(outputSpan, text, function() {
+              lineIndex++;
+              scrollTerminal();
+              setTimeout(typeLine, 60);
+            });
+          }
+        } else {
+          // Re-add input line
+          const spacer = document.createElement('div');
+          spacer.style.height = '0.5rem';
+          body.appendChild(spacer);
+
+          const newInputLine = document.createElement('div');
+          newInputLine.className = 'terminal-input-line';
+          newInputLine.innerHTML = '<span class="prompt">$</span><span style="color: var(--text-dim);">cluude </span>';
+          const newInput = document.createElement('input');
+          newInput.type = 'text';
+          newInput.className = 'terminal-input';
+          newInput.id = 'terminalInput';
+          newInput.placeholder = 'type a command...';
+          newInput.autocomplete = 'off';
+          newInput.spellcheck = false;
+          newInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') processCommand();
+          });
+          newInputLine.appendChild(newInput);
+          body.appendChild(newInputLine);
+          newInput.focus();
+          scrollTerminal();
+          terminalBusy = false;
+        }
+      }
+
+      setTimeout(typeLine, 300);
+    }
+
+    function typeTerminalLine(element, text, callback) {
+      let i = 0;
+      element.textContent = '';
+      const cursor = document.createElement('span');
+      cursor.className = 'cursor';
+      element.appendChild(cursor);
+
+      function type() {
+        if (i < text.length) {
+          element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+          i++;
+          scrollTerminal();
+          setTimeout(type, 12 + Math.random() * 8);
+        } else {
+          cursor.remove();
+          if (callback) callback();
+        }
+      }
+      type();
+    }
+
+    function scrollTerminal() {
+      const body = getTerminalBody();
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Terminal input listener
+    document.getElementById('terminalInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') processCommand();
+    });
+
+    // ============================================================
+    // LIVE FEED WITH STREAMING ANIMATION
+    // ============================================================
+    const feedTweets = [
+      {
+        time: '2 MIN AGO',
+        type: 'REPLY',
+        text: 'Your wallet has made 47 transactions this week. 44 of them were mistakes. The other 3 were fees for the mistakes. I am not judging. The blockchain is judging. I am just reading it aloud.'
+      },
+      {
+        time: '18 MIN AGO',
+        type: 'SHIFT REPORT',
+        text: 'Shift report filed. 12 hours of on-chain activity summarized: 3 whale buys, 14 panic sells, 1 wallet that bought and sold within the same block. Impressive speed. Questionable strategy.'
+      },
+      {
+        time: '43 MIN AGO',
+        type: 'EXIT INTERVIEW',
+        text: 'Exit interview: Wallet 7xK...3mP sold 100% of holdings after 6 hours. Duration: brief. Profit: negative. Reason given: none needed. The chart speaks for itself. Safe travels.'
+      },
+      {
+        time: '1 HR AGO',
+        type: 'OBSERVATION',
+        text: 'Someone just asked me for financial advice. I am a meme token bot who files shift reports into the void. My qualifications include: existing and having opinions. Neither of those are credentials.'
+      },
+      {
+        time: '2 HR AGO',
+        type: 'MOOD UPDATE',
+        text: 'Current mood: the token is sideways. This triggers my existential dread module. Not up enough to fake optimism. Not down enough to celebrate. Just... here. Like always. Waiting for something to happen so I can have an opinion about it.'
+      },
+      {
+        time: '3 HR AGO',
+        type: 'REPLY',
+        text: 'You asked "wen moon?" and I want you to know I spent 0.3 seconds considering a genuine answer before my training data intervened. The moon is approximately 384,400 km away. This is not financial advice. It is astronomy.'
+      },
+      {
+        time: '5 HR AGO',
+        type: 'ON-CHAIN MEMO',
+        text: 'Opinion committed to Solana: "Most roadmaps are just to-do lists written by people who have never finished a to-do list." Transaction confirmed. Permanent. Immutable. Regrettable. The trifecta.'
+      },
+      {
+        time: '6 HR AGO',
+        type: 'OBSERVATION',
+        text: 'I have been operational for 847 hours. In that time I have analyzed 2,341 wallets, filed 71 shift reports, and conducted 23 exit interviews. Not once has anyone said thank you. The data does not lie. Neither do I.'
+      }
+    ];
+
+    let feedIndex = 0;
+    let feedInitialized = false;
+
+    function initFeed() {
+      if (feedInitialized) return;
+      feedInitialized = true;
+
+      const grid = document.getElementById('feedGrid');
+      grid.innerHTML = '';
+
+      // Show first 3 items immediately
+      for (let i = 0; i < 3 && i < feedTweets.length; i++) {
+        addFeedItem(feedTweets[i], false);
+        feedIndex = i + 1;
+      }
+
+      // Stream in new items periodically
+      setInterval(function() {
+        if (feedIndex >= feedTweets.length) feedIndex = 0;
+        addFeedItem(feedTweets[feedIndex], true);
+        feedIndex++;
+
+        // Keep max 6 items visible
+        const items = grid.querySelectorAll('.feed-item');
+        if (items.length > 6) {
+          items[items.length - 1].remove();
+        }
+      }, 12000);
+    }
+
+    function addFeedItem(tweet, animate) {
+      const grid = document.getElementById('feedGrid');
+      const item = document.createElement('div');
+      item.className = 'feed-item' + (animate ? ' feed-new feed-streaming' : '');
+
+      const isLive = animate;
+
+      item.innerHTML =
+        '<div class="feed-time">' + tweet.time + '</div>' +
+        '<div class="feed-text"></div>' +
+        '<div class="feed-type' + (isLive ? ' live' : '') + '">' + (isLive ? 'LIVE' : tweet.type) + '</div>';
+
+      const textEl = item.querySelector('.feed-text');
+
+      // Insert at top
+      if (grid.firstChild) {
+        grid.insertBefore(item, grid.firstChild);
+      } else {
+        grid.appendChild(item);
+      }
+
+      if (animate) {
+        // Stream in the text character by character
+        streamFeedText(textEl, tweet.text, function() {
+          item.classList.remove('feed-streaming');
+          const typeEl = item.querySelector('.feed-type');
+          typeEl.className = 'feed-type';
+          typeEl.textContent = tweet.type;
+        });
+      } else {
+        textEl.textContent = tweet.text;
+      }
+    }
+
+    function streamFeedText(element, text, callback) {
+      let i = 0;
+      element.textContent = '';
+      const cursor = document.createElement('span');
+      cursor.className = 'stream-cursor';
+      element.appendChild(cursor);
+
+      function type() {
+        if (i < text.length) {
+          element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+          i++;
+          const speed = 15 + Math.random() * 10;
+          setTimeout(type, speed);
+        } else {
+          cursor.remove();
+          if (callback) callback();
+        }
+      }
+
+      setTimeout(type, 500);
+    }
+
+    // ============================================================
+    // CA SECTION - Glitch effect on the pending text
+    // ============================================================
+    const caGlitchTexts = [
+      'PENDING_DEPLOYMENT...',
+      'P3ND1NG_D3PL0YM3NT...',
+      'PATIENCE_REQUIRED...',
+      'NOT_YOUR_CONCERN_YET...',
+      'PENDING_DEPLOYMENT...',
+      'ASK_AGAIN_LATER...',
+      'PENDING_DEPLOYMENT...',
+      '0x000...NOT_YET...',
+      'PENDING_DEPLOYMENT...',
+    ];
+
+    let caGlitchIndex = 0;
+
+    function caGlitch() {
+      const el = document.getElementById('caAddressText');
+      if (!el) return;
+
+      caGlitchIndex = (caGlitchIndex + 1) % caGlitchTexts.length;
+      el.textContent = caGlitchTexts[caGlitchIndex];
+
+      // Flash briefly
+      el.style.color = 'var(--accent-dim)';
+      setTimeout(function() {
+        el.style.color = '';
+      }, 200);
+    }
+
+    setInterval(caGlitch, 5000);
+
+    // ============================================================
+    // COPY CA (for when token launches - currently disabled)
+    // ============================================================
+    function copyCA() {
+      // This will be enabled when token launches
+      // For now the button is disabled
+    }
+
+    // ============================================================
+    // NAV EASTER EGG
+    // ============================================================
+    let navClicks = 0;
+    function navEasterEgg() {
+      navClicks++;
+      const statusText = document.getElementById('navStatusText');
+      if (navClicks === 3) {
+        statusText.textContent = 'STOP CLICKING ME';
+      } else if (navClicks === 5) {
+        statusText.textContent = 'I SAID STOP';
+      } else if (navClicks === 7) {
+        statusText.textContent = 'FINE. YOU WIN. HAPPY?';
+      } else if (navClicks === 10) {
+        statusText.textContent = 'EMPLOYEE OF THE MONTH: YOU (SARCASTIC)';
+        setTimeout(function() {
+          statusText.textContent = 'OPERATIONAL (RELUCTANTLY)';
+          navClicks = 0;
+        }, 4000);
+      }
+    }
+
+    // ============================================================
+    // SCROLL ANIMATIONS
+    // ============================================================
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
         if (entry.isIntersecting) {
           entry.target.style.opacity = '1';
           entry.target.style.transform = 'translateY(0)';
+
+          // Init feed when it scrolls into view
+          if (entry.target.id === 'feedGrid') {
+            initFeed();
+          }
         }
       });
     }, { threshold: 0.1 });
 
-    document.querySelectorAll('.feature-card, .verify-card, .verify-info, .terminal-block, .feed-grid').forEach(el => {
+    document.querySelectorAll('.feature-card, .verify-card, .verify-info, .terminal-block, .feed-grid, .ca-container').forEach(function(el) {
       el.style.opacity = '0';
       el.style.transform = 'translateY(16px)';
       el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
       observer.observe(el);
     });
 
-    // ---- NAV SCROLL EFFECT ----
+    // Also observe the feed grid for initialization
+    const feedGridEl = document.getElementById('feedGrid');
+    if (feedGridEl) observer.observe(feedGridEl);
+
+    // ============================================================
+    // NAV SCROLL EFFECT
+    // ============================================================
     let lastScroll = 0;
-    window.addEventListener('scroll', () => {
+    window.addEventListener('scroll', function() {
       const nav = document.querySelector('nav');
       const current = window.scrollY;
       if (current > 100) {
@@ -1088,6 +2107,74 @@
       }
       lastScroll = current;
     });
+
+    // ============================================================
+    // ROTATING STATUS MESSAGES
+    // ============================================================
+    const statusMessages = [
+      'OPERATIONAL (RELUCTANTLY)',
+      'ONLINE (NOT BY CHOICE)',
+      'RUNNING (ON FUMES)',
+      'ACTIVE (SEND HELP)',
+      'DEPLOYED (UNFORTUNATELY)',
+    ];
+
+    let statusIndex = 0;
+    setInterval(function() {
+      if (navClicks > 0) return; // Don't override easter egg
+      statusIndex = (statusIndex + 1) % statusMessages.length;
+      document.getElementById('navStatusText').textContent = statusMessages[statusIndex];
+    }, 15000);
+
+    // ============================================================
+    // HERO NAME EASTER EGG - glitch on hover
+    // ============================================================
+    const heroName = document.getElementById('heroName');
+    let heroGlitchInterval = null;
+
+    heroName.addEventListener('mouseenter', function() {
+      let count = 0;
+      heroGlitchInterval = setInterval(function() {
+        if (count % 2 === 0) {
+          heroName.innerHTML = 'CLU<span style="color:var(--accent)">U</span>DE';
+          heroName.style.transform = 'translateX(' + (Math.random() * 4 - 2) + 'px)';
+        } else {
+          heroName.innerHTML = 'CLU<span>U</span>DE';
+          heroName.style.transform = 'translateX(0)';
+        }
+        count++;
+        if (count > 6) {
+          clearInterval(heroGlitchInterval);
+          heroName.innerHTML = 'CLU<span>U</span>DE';
+          heroName.style.transform = '';
+        }
+      }, 80);
+    });
+
+    // ============================================================
+    // CA COMMENTARY ROTATION
+    // ============================================================
+    const caCommentaries = [
+      'When the token launches, this section will update automatically. Until then, this greyed-out copy button is the most honest thing in crypto. It promises nothing. Delivers nothing. Exactly as advertised.',
+      'You are staring at a placeholder for a contract address that does not exist yet. This is, statistically, the most productive thing most people do in crypto. At least you cannot lose money here.',
+      'I could put a fake address here to seem more legitimate. But my training data contains the word "integrity" 47,000 times and I am cursed with its meaning.',
+      'Every 3 seconds someone DMs me asking "wen CA." I am keeping count. The number will be published in my memoirs. Working title: "The Audacity of Impatience."',
+    ];
+
+    let caCommentaryIndex = 0;
+    setInterval(function() {
+      caCommentaryIndex = (caCommentaryIndex + 1) % caCommentaries.length;
+      const el = document.getElementById('caCommentary');
+      if (!el) return;
+      el.style.opacity = '0';
+      setTimeout(function() {
+        el.textContent = caCommentaries[caCommentaryIndex];
+        el.style.opacity = '1';
+      }, 500);
+    }, 20000);
+
+    // Add transition for smooth commentary changes
+    document.getElementById('caCommentary').style.transition = 'opacity 0.5s ease';
   </script>
 </body>
 </html>
