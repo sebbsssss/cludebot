@@ -55,3 +55,51 @@ CREATE TABLE IF NOT EXISTS price_snapshots (
 CREATE INDEX IF NOT EXISTS idx_token_events_processed ON token_events(processed);
 CREATE INDEX IF NOT EXISTS idx_token_events_timestamp ON token_events(timestamp);
 CREATE INDEX IF NOT EXISTS idx_price_snapshots_recorded ON price_snapshots(recorded_at);
+
+-- ============================================================
+-- MEMORY SYSTEM: The Cortex
+-- Episodic, Semantic, Procedural, and Self-Model memory
+-- ============================================================
+
+-- Enable trigram similarity for fuzzy text search
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE TABLE IF NOT EXISTS memories (
+  id BIGSERIAL PRIMARY KEY,
+  memory_type TEXT NOT NULL CHECK (memory_type IN ('episodic', 'semantic', 'procedural', 'self_model')),
+  content TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  tags TEXT[] DEFAULT '{}',
+  emotional_valence REAL DEFAULT 0,       -- -1 (negative) to 1 (positive)
+  importance REAL DEFAULT 0.5,            -- 0 to 1
+  access_count INTEGER DEFAULT 0,
+  source TEXT,                            -- trigger: mention, market, consolidation, reflection, emergence
+  source_id TEXT,                         -- tweet ID, event ID, etc.
+  related_user TEXT,                      -- X user ID if relevant
+  related_wallet TEXT,                    -- wallet address if relevant
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_accessed TIMESTAMPTZ DEFAULT NOW(),
+  decay_factor REAL DEFAULT 1.0           -- decreases over time if not accessed
+);
+
+-- Dream logs: consolidation, reflection, emergence sessions
+CREATE TABLE IF NOT EXISTS dream_logs (
+  id BIGSERIAL PRIMARY KEY,
+  session_type TEXT NOT NULL CHECK (session_type IN ('consolidation', 'reflection', 'emergence')),
+  input_memory_ids BIGINT[] DEFAULT '{}',
+  output TEXT NOT NULL,
+  new_memories_created BIGINT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for memory retrieval
+CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(memory_type);
+CREATE INDEX IF NOT EXISTS idx_memories_tags ON memories USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance DESC);
+CREATE INDEX IF NOT EXISTS idx_memories_user ON memories(related_user);
+CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_memories_decay ON memories(decay_factor);
+CREATE INDEX IF NOT EXISTS idx_memories_summary_trgm ON memories USING GIN(summary gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_dream_logs_type ON dream_logs(session_type);
+CREATE INDEX IF NOT EXISTS idx_dream_logs_created ON dream_logs(created_at DESC);

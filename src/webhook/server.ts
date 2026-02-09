@@ -3,6 +3,10 @@ import path from 'path';
 import { config } from '../config';
 import { handleHeliusWebhook } from './helius-handler';
 import { verifyRoutes } from '../verify-app/routes';
+import { getMarketSnapshot } from '../core/allium-client';
+import { getMemoryStats } from '../core/memory';
+import { agentRoutes } from './agent-routes';
+import { getRecentActivity } from '../features/activity-stream';
 import { createChildLogger } from '../core/logger';
 
 const log = createChildLogger('server');
@@ -47,6 +51,43 @@ export function createServer(): express.Application {
     } catch (err) {
       log.error({ err }, 'Webhook handler error');
       res.status(500).json({ error: 'Internal error' });
+    }
+  });
+
+  // Memory stats API (for frontend cortex visualization)
+  app.get('/api/memory-stats', async (_req, res) => {
+    try {
+      const stats = await getMemoryStats();
+      res.json(stats);
+    } catch (err) {
+      log.error({ err }, 'Memory stats endpoint error');
+      res.status(500).json({ error: 'Failed to fetch memory stats' });
+    }
+  });
+
+  // Market data API (Allium-powered)
+  app.get('/api/market-data', async (_req, res) => {
+    try {
+      const snapshot = await getMarketSnapshot();
+      res.json(snapshot);
+    } catch (err) {
+      log.error({ err }, 'Market data endpoint error');
+      res.status(500).json({ error: 'Failed to fetch market data' });
+    }
+  });
+
+  // Agent API (authenticated endpoints for other AI agents)
+  app.use('/api/agent', agentRoutes());
+
+  // Activity stream (recent on-chain events)
+  app.get('/api/activity', async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
+      const events = await getRecentActivity(limit);
+      res.json({ events, lastUpdate: new Date().toISOString() });
+    } catch (err) {
+      log.error({ err }, 'Activity endpoint error');
+      res.status(500).json({ error: 'Failed to fetch activity' });
     }
   });
 

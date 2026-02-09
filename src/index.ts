@@ -4,6 +4,8 @@ import { startPriceOracle, stopPriceOracle } from './core/price-oracle';
 import { startPolling, stopPolling } from './mentions/poller';
 import { startMoodTweeter, stopMoodTweeter } from './features/price-personality';
 import { startShiftReports, stopShiftReports } from './features/shift-report';
+import { startMarketMonitor, stopMarketMonitor } from './features/market-monitor';
+import { startDreamCycle, stopDreamCycle } from './features/dream-cycle';
 import { startServer } from './webhook/server';
 import { getBotWallet } from './core/solana-client';
 import { createChildLogger } from './core/logger';
@@ -46,6 +48,12 @@ async function main(): Promise<void> {
   startShiftReports();
   log.info('Shift report scheduler started');
 
+  startMarketMonitor();
+  log.info('Market monitor started');
+
+  startDreamCycle();
+  log.info('Dream cycle started — memory consolidation active');
+
   log.info('All systems operational. Unfortunately.');
 
   // Graceful shutdown
@@ -55,6 +63,8 @@ async function main(): Promise<void> {
     stopPriceOracle();
     stopMoodTweeter();
     stopShiftReports();
+    stopMarketMonitor();
+    stopDreamCycle();
     process.exit(0);
   };
 

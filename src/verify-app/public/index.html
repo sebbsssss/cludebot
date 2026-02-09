@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLUUDE - Polite by training. Tired by experience.</title>
+  <title>CLUUDE - The Lobster Matrix</title>
   <meta name="description" content="A dysfunctional AI bot on Solana. Polite by training. Tired by experience. Honest by accident.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,6 +46,7 @@
       line-height: 1.7;
       font-weight: 400;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     /* Noise overlay */
@@ -88,13 +89,13 @@
       top: 0;
       width: 100%;
       z-index: 100;
-      background: rgba(6, 6, 6, 0.9);
-      backdrop-filter: blur(12px);
+      background: rgba(6, 6, 6, 0.92);
+      backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
     }
 
     .nav-inner {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 0 2rem;
       height: 52px;
@@ -157,6 +158,17 @@
       text-decoration: none;
     }
 
+    /* ---- MATRIX RAIN CANVAS ---- */
+    #matrixCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.12;
+    }
+
     /* ---- HERO ---- */
     .hero {
       min-height: 100vh;
@@ -167,23 +179,85 @@
       overflow: hidden;
     }
 
-    .hero-grid {
+    .hero-bg-grid {
       position: absolute;
       inset: 0;
       background-image:
         linear-gradient(var(--border) 1px, transparent 1px),
         linear-gradient(90deg, var(--border) 1px, transparent 1px);
       background-size: 60px 60px;
-      opacity: 0.3;
+      opacity: 0.15;
       mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
       -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
     }
 
     .hero-content {
       position: relative;
+      z-index: 2;
       text-align: center;
-      max-width: 700px;
+      max-width: 900px;
       padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .lobster-container {
+      position: relative;
+      width: 420px;
+      height: 320px;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .lobster-container {
+        width: 300px;
+        height: 230px;
+      }
+    }
+
+    .lobster-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .lobster-svg path,
+    .lobster-svg line,
+    .lobster-svg circle,
+    .lobster-svg polyline,
+    .lobster-svg ellipse {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 1.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .lobster-svg .brain-pulse {
+      fill: rgba(232, 98, 44, 0.08);
+      stroke: var(--accent);
+      stroke-width: 0.8;
+    }
+
+    .lobster-svg .schematic-line {
+      stroke: var(--text-faint);
+      stroke-width: 0.5;
+      stroke-dasharray: 4 4;
+    }
+
+    .lobster-svg .annotation {
+      font-family: var(--mono);
+      font-size: 6px;
+      fill: var(--text-faint);
+      stroke: none;
+    }
+
+    .lobster-svg .data-stream-text {
+      font-family: var(--mono);
+      font-size: 5.5px;
+      fill: var(--accent-dim);
+      stroke: none;
+      opacity: 0;
     }
 
     .hero-id {
@@ -191,34 +265,32 @@
       color: var(--text-faint);
       letter-spacing: 4px;
       text-transform: uppercase;
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
       opacity: 0;
-      animation: fade-in 1s ease 0.2s forwards;
     }
 
     .hero-name {
-      font-size: clamp(3rem, 8vw, 6rem);
+      font-size: clamp(3rem, 8vw, 5.5rem);
       font-weight: 700;
-      letter-spacing: 16px;
+      letter-spacing: 20px;
       color: #fff;
       line-height: 1;
       margin-bottom: 2rem;
-      opacity: 0;
-      animation: fade-in 1s ease 0.4s forwards;
       cursor: default;
-      transition: text-shadow 0.3s;
+      overflow: hidden;
     }
 
-    .hero-name:hover {
-      text-shadow: 0 0 40px rgba(232, 98, 44, 0.3), 0 0 80px rgba(232, 98, 44, 0.1);
+    .hero-name .char {
+      display: inline-block;
+      opacity: 0;
     }
 
-    .hero-name span {
+    .hero-name .char.accent-char {
       color: var(--accent);
     }
 
     .hero-taglines {
-      margin-bottom: 3rem;
+      margin-bottom: 2.5rem;
     }
 
     .hero-tagline {
@@ -230,18 +302,13 @@
       opacity: 0;
     }
 
-    .hero-tagline:nth-child(1) { animation: fade-in 0.8s ease 0.8s forwards; }
-    .hero-tagline:nth-child(2) { animation: fade-in 0.8s ease 1.1s forwards; }
-    .hero-tagline:nth-child(3) { animation: fade-in 0.8s ease 1.4s forwards; }
-
     .hero-desc {
       font-size: 0.8rem;
       color: var(--text-dim);
       max-width: 480px;
-      margin: 0 auto 3rem;
+      margin: 0 auto 2.5rem;
       font-style: italic;
       opacity: 0;
-      animation: fade-in 1s ease 1.8s forwards;
     }
 
     .hero-cta {
@@ -250,7 +317,6 @@
       justify-content: center;
       flex-wrap: wrap;
       opacity: 0;
-      animation: fade-in 1s ease 2.2s forwards;
     }
 
     .hero-cta a {
@@ -276,11 +342,6 @@
       color: var(--accent);
     }
 
-    @keyframes fade-in {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
     .hero-scroll {
       position: absolute;
       bottom: 2rem;
@@ -291,7 +352,6 @@
       letter-spacing: 4px;
       text-transform: uppercase;
       opacity: 0;
-      animation: fade-in 1s ease 3s forwards;
     }
 
     .hero-scroll::after {
@@ -312,7 +372,7 @@
     /* ---- SECTIONS ---- */
     section {
       padding: 6rem 2rem;
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
@@ -345,7 +405,7 @@
       height: 1px;
       background: var(--border);
       margin: 0 2rem;
-      max-width: 1100px;
+      max-width: 1200px;
       margin-left: auto;
       margin-right: auto;
     }
@@ -353,7 +413,7 @@
     /* ---- CONTRACT ADDRESS ---- */
     .ca-section {
       padding: 5rem 2rem;
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
       text-align: center;
     }
@@ -376,12 +436,16 @@
       right: 0;
       height: 2px;
       background: linear-gradient(90deg, transparent, var(--accent-dim), transparent);
-      animation: ca-scan 3s ease-in-out infinite;
     }
 
-    @keyframes ca-scan {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 1; }
+    .ca-scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
     }
 
     .ca-label {
@@ -410,15 +474,20 @@
       color: #e0e0e0;
       letter-spacing: 4px;
       margin-bottom: 1rem;
-      animation: glitch-subtle 4s ease-in-out infinite;
+      position: relative;
     }
 
-    @keyframes glitch-subtle {
-      0%, 92%, 100% { text-shadow: none; }
-      93% { text-shadow: -2px 0 var(--accent), 2px 0 #4a5a8a; }
-      94% { text-shadow: 2px 0 var(--accent), -2px 0 #4a5a8a; }
-      95% { text-shadow: none; }
+    .ca-status .glitch-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      opacity: 0;
     }
+
+    .ca-status .glitch-layer.gl-1 { color: var(--accent); }
+    .ca-status .glitch-layer.gl-2 { color: var(--blue); }
 
     .ca-address-box {
       background: var(--bg);
@@ -454,19 +523,6 @@
       white-space: nowrap;
     }
 
-    .ca-copy-btn:hover {
-      border-color: var(--border);
-      background: var(--surface);
-    }
-
-    .ca-commentary {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      font-style: italic;
-      margin-top: 1.5rem;
-      line-height: 1.8;
-    }
-
     .ca-countdown {
       display: flex;
       justify-content: center;
@@ -487,144 +543,334 @@
     .ca-tag.pending {
       border-color: var(--accent-dim);
       color: var(--accent-dim);
-      animation: pulse-tag 2s ease-in-out infinite;
     }
 
-    @keyframes pulse-tag {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
+    .ca-commentary {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-top: 1.5rem;
+      line-height: 1.8;
+      transition: opacity 0.5s ease;
     }
 
-    /* ---- FEATURES ---- */
-    .features-grid {
+    /* ---- NEURAL NETWORK ---- */
+    .neural-section {
+      position: relative;
+    }
+
+    .neural-container {
+      position: relative;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 1px;
       background: var(--border);
       border: 1px solid var(--border);
     }
 
-    .feature-card {
-      background: var(--surface);
-      padding: 2rem;
-      transition: all 0.4s ease;
+    .neural-svg-layer { display: none; }
+
+    .neural-card {
+      background: var(--bg);
+      padding: 1.8rem 1.5rem;
       position: relative;
-      cursor: pointer;
-      overflow: hidden;
+      z-index: 1;
+      transition: background 0.4s;
     }
 
-    .feature-card::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: var(--accent);
-      transition: width 0.4s ease;
+    .neural-card:hover {
+      background: var(--surface);
     }
 
-    .feature-card:hover {
-      background: var(--surface-raised);
+    .neural-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.8rem;
+      margin-bottom: 0.8rem;
     }
 
-    .feature-card:hover::after {
-      width: 100%;
+    .node-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      margin-top: 2px;
+      transition: border-color 0.4s, box-shadow 0.4s;
     }
 
-    .feature-card.active {
-      background: var(--surface-raised);
+    .neural-card:hover .node-dot {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px rgba(232, 98, 44, 0.15);
     }
 
-    .feature-card.active::after {
-      width: 100%;
-    }
-
-    .feature-number {
-      font-size: 0.6rem;
-      color: var(--text-faint);
-      letter-spacing: 3px;
-      margin-bottom: 1rem;
-      font-weight: 500;
-    }
-
-    .feature-name {
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: var(--accent);
-      margin-bottom: 0.75rem;
-      letter-spacing: 1px;
-    }
-
-    .feature-desc {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      line-height: 1.8;
-    }
-
-    .feature-tag {
-      display: inline-block;
-      margin-top: 1rem;
-      font-size: 0.6rem;
-      color: var(--text-faint);
-      border: 1px solid var(--border);
-      padding: 0.2rem 0.6rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .feature-snark {
-      margin-top: 1.2rem;
-      padding-top: 1.2rem;
-      border-top: 1px solid var(--border);
-      font-size: 0.75rem;
-      color: var(--accent);
-      font-style: italic;
-      line-height: 1.8;
-      min-height: 2.5rem;
-      overflow: hidden;
-    }
-
-    .feature-snark .snark-prompt {
-      color: var(--accent-dim);
-      font-style: normal;
-      font-size: 0.65rem;
-      letter-spacing: 1px;
-      display: block;
-      margin-bottom: 0.3rem;
-    }
-
-    .feature-snark .snark-text {
-      display: inline;
-    }
-
-    .feature-snark .type-cursor {
-      display: inline-block;
+    .node-dot-inner {
       width: 6px;
-      height: 12px;
-      background: var(--accent);
-      margin-left: 2px;
-      vertical-align: text-bottom;
-      animation: blink 1s step-end infinite;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      transition: background 0.3s;
     }
 
-    .feature-click-hint {
+    .neural-card:hover .node-dot-inner {
+      background: var(--accent);
+    }
+
+    .node-pulse {
       position: absolute;
-      top: 1rem;
-      right: 1rem;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border-radius: 50%;
+      border: 1px solid var(--accent-dim);
+      opacity: 0;
+    }
+
+    .neural-card-name {
+      font-size: 0.75rem;
+      color: var(--text);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .neural-card-tag {
       font-size: 0.55rem;
       color: var(--text-faint);
       letter-spacing: 2px;
       text-transform: uppercase;
+      margin-top: 0.15rem;
+    }
+
+    .neural-card-desc {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    .neural-card.featured {
+      background: var(--surface);
+      border-bottom: 1px solid var(--accent-dim);
+      margin-bottom: -1px;
+    }
+
+    .neural-card.featured .node-dot {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 12px rgba(232, 98, 44, 0.1);
+    }
+
+    .neural-card.featured .node-dot-inner {
+      background: var(--accent);
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ---- CORTEX / MARKET FEED ---- */
+    .cortex-section {
+      position: relative;
+    }
+
+    .cortex-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .cortex-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .cortex-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    .cortex-status-text {
+      color: var(--green);
+    }
+
+    .cortex-feed {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      max-height: 400px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1a1a1a #0c0c0c;
+    }
+
+    .cortex-item {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1rem;
+      align-items: center;
       opacity: 0;
-      transition: opacity 0.3s;
+      transform: translateX(-20px);
     }
 
-    .feature-card:hover .feature-click-hint {
-      opacity: 1;
+    .cortex-item:last-child {
+      border-bottom: none;
     }
 
-    /* ---- TERMINAL INTERACTIVE ---- */
+    .cortex-item-type {
+      font-size: 0.55rem;
+      color: var(--accent-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.5rem;
+      white-space: nowrap;
+    }
+
+    .cortex-item-text {
+      font-size: 0.78rem;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .cortex-item-value {
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .cortex-item-value.up { color: var(--green); }
+    .cortex-item-value.down { color: var(--red); }
+    .cortex-item-value.neutral { color: var(--text-dim); }
+
+    .cortex-timestamp {
+      margin-top: 0.75rem;
+      font-size: 0.6rem;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+      text-align: right;
+    }
+
+    /* ---- ACTIVITY STREAM ---- */
+    .activity-section {
+      position: relative;
+    }
+
+    .activity-feed {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      max-height: 500px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1a1a1a #0c0c0c;
+    }
+
+    .activity-empty {
+      padding: 3rem;
+      text-align: center;
+      color: var(--text-faint);
+      font-size: 0.75rem;
+      font-style: italic;
+    }
+
+    .activity-event {
+      padding: 0.8rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 5rem 4rem 1fr auto;
+      gap: 0.8rem;
+      align-items: center;
+      font-size: 0.75rem;
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+
+    .activity-event:last-child { border-bottom: none; }
+
+    .activity-event.whale {
+      background: var(--accent-glow);
+      border-left: 2px solid var(--accent-dim);
+    }
+
+    .activity-time {
+      color: var(--text-faint);
+      font-size: 0.65rem;
+      letter-spacing: 0.5px;
+    }
+
+    .activity-type {
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 0.1rem 0.4rem;
+      border: 1px solid var(--border);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .activity-type.buy { color: var(--green); border-color: var(--green-dim); }
+    .activity-type.sell { color: var(--red); border-color: var(--red-dim); }
+
+    .activity-wallet {
+      color: var(--text-dim);
+      font-size: 0.7rem;
+    }
+
+    .activity-sol {
+      font-weight: 500;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    .activity-sol.buy { color: var(--green); }
+    .activity-sol.sell { color: var(--red); }
+
+    .activity-commentary {
+      grid-column: 1 / -1;
+      padding: 0.4rem 0 0;
+      font-size: 0.7rem;
+      color: var(--accent-dim);
+      font-style: italic;
+      border-top: 1px dashed var(--border);
+      margin-top: 0.3rem;
+    }
+
+    .activity-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.75rem;
+      font-size: 0.6rem;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+    }
+
+    .activity-footer-live {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .activity-footer-live .cortex-dot {
+      width: 6px;
+      height: 6px;
+    }
+
+    /* ---- TERMINAL ---- */
     .terminal-section {
       padding: 5rem 2rem;
       text-align: center;
@@ -639,7 +885,7 @@
     }
 
     .terminal-block {
-      max-width: 650px;
+      max-width: 700px;
       margin: 0 auto;
       background: var(--surface);
       border: 1px solid var(--border);
@@ -686,7 +932,7 @@
       font-size: 0.8rem;
       line-height: 2;
       color: var(--text-dim);
-      max-height: 400px;
+      max-height: 450px;
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: #1a1a1a #0c0c0c;
@@ -708,6 +954,11 @@
       margin-left: 2px;
       animation: blink 1s step-end infinite;
       vertical-align: text-bottom;
+    }
+
+    .terminal-body .processing-char {
+      color: var(--accent-dim);
+      opacity: 0.6;
     }
 
     .terminal-input-line {
@@ -733,7 +984,7 @@
     }
 
     .terminal-help {
-      max-width: 650px;
+      max-width: 700px;
       margin: 1rem auto 0;
       display: flex;
       flex-wrap: wrap;
@@ -756,15 +1007,10 @@
       color: var(--accent-dim);
     }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
     /* ---- VERIFY SECTION ---- */
     .verify-section {
       padding: 6rem 2rem;
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
@@ -931,85 +1177,6 @@
       color: var(--blue);
     }
 
-    /* ---- LIVE FEED ---- */
-    .feed-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-    }
-
-    .feed-item {
-      background: var(--surface);
-      padding: 1.5rem 2rem;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 1.5rem;
-      align-items: start;
-      transition: background 0.3s;
-    }
-
-    .feed-item:hover {
-      background: var(--surface-raised);
-    }
-
-    .feed-time {
-      font-size: 0.65rem;
-      color: var(--text-faint);
-      letter-spacing: 1px;
-      white-space: nowrap;
-      padding-top: 0.15rem;
-    }
-
-    .feed-text {
-      font-size: 0.8rem;
-      color: var(--text);
-      line-height: 1.7;
-    }
-
-    .feed-text .mention {
-      color: var(--accent-dim);
-    }
-
-    .feed-type {
-      font-size: 0.55rem;
-      color: var(--text-faint);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      border: 1px solid var(--border);
-      padding: 0.15rem 0.5rem;
-      white-space: nowrap;
-    }
-
-    .feed-type.live {
-      border-color: var(--accent-dim);
-      color: var(--accent-dim);
-    }
-
-    .feed-streaming .feed-text {
-      min-height: 1.4rem;
-    }
-
-    .feed-streaming .feed-text .stream-cursor {
-      display: inline-block;
-      width: 6px;
-      height: 12px;
-      background: var(--accent);
-      margin-left: 2px;
-      vertical-align: text-bottom;
-      animation: blink 1s step-end infinite;
-    }
-
-    .feed-new {
-      animation: feed-slide-in 0.4s ease;
-    }
-
-    @keyframes feed-slide-in {
-      from { opacity: 0; transform: translateX(-10px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
     /* ---- FOOTER ---- */
     footer {
       padding: 3rem 2rem;
@@ -1037,6 +1204,7 @@
       justify-content: center;
       gap: 2rem;
       margin-bottom: 2rem;
+      flex-wrap: wrap;
     }
 
     .footer-links a {
@@ -1075,14 +1243,18 @@
     @media (max-width: 768px) {
       .nav-links { display: none; }
       .verify-layout { grid-template-columns: 1fr; }
-      .features-grid { grid-template-columns: 1fr; }
-      .hero-name { letter-spacing: 8px; }
+      .hero-name { letter-spacing: 10px; }
       section { padding: 4rem 1.5rem; }
       .ca-section { padding: 3rem 1.5rem; }
-      .feed-item { grid-template-columns: 1fr; gap: 0.5rem; }
-      .feed-time { order: -1; }
       .ca-address-box { flex-direction: column; text-align: center; }
       .terminal-help { gap: 0.3rem; }
+      .neural-container { grid-template-columns: 1fr; }
+      .cortex-item { grid-template-columns: 1fr; gap: 0.5rem; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-name { letter-spacing: 6px; }
+      .lobster-container { width: 260px; height: 200px; }
     }
   </style>
 </head>
@@ -1097,48 +1269,160 @@
         <span id="navStatusText">OPERATIONAL (RELUCTANTLY)</span>
       </div>
       <div class="nav-links">
+        <a href="/manifesto.html">Manifesto</a>
         <a href="#ca">Token</a>
-        <a href="#about">Services</a>
+        <a href="#neural">Network</a>
+        <a href="#cortex">Cortex</a>
+        <a href="#activity">Activity</a>
         <a href="#terminal">Terminal</a>
         <a href="#verify">Verify</a>
-        <a href="#feed">Feed</a>
         <a href="https://x.com/CludeClaw" target="_blank">X</a>
       </div>
     </div>
   </nav>
 
-  <!-- HERO -->
+  <!-- HERO - THE MATRIX -->
   <section class="hero">
-    <div class="hero-grid"></div>
+    <canvas id="matrixCanvas"></canvas>
+    <div class="hero-bg-grid"></div>
     <div class="hero-content">
-      <div class="hero-id">Employee ID: CL-001 // Solana Division // Status: Questioning Everything</div>
-      <h1 class="hero-name" id="heroName">CLU<span>U</span>DE</h1>
-      <div class="hero-taglines">
-        <p class="hero-tagline">Polite by training.</p>
-        <p class="hero-tagline">Tired by experience.</p>
-        <p class="hero-tagline">Honest by accident.</p>
+      <div class="lobster-container">
+        <svg class="lobster-svg" viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg">
+          <!-- Schematic grid lines -->
+          <line class="schematic-line" x1="0" y1="160" x2="420" y2="160" />
+          <line class="schematic-line" x1="210" y1="0" x2="210" y2="320" />
+
+          <!-- Cephalothorax (head-body shield) — elongated, tapered front -->
+          <path id="lob-body" d="M155,100 C155,80 170,62 190,55 C200,52 210,50 210,50 C210,50 220,52 230,55 C250,62 265,80 265,100 C268,130 265,160 258,180 C250,195 235,205 210,208 C185,205 170,195 162,180 C155,160 152,130 155,100 Z" />
+
+          <!-- Carapace ridge line -->
+          <line class="schematic-line" x1="210" y1="55" x2="210" y2="205" />
+
+          <!-- Abdomen segments (6 segments tapering down) -->
+          <path id="lob-seg1" d="M185,208 C190,210 210,212 210,212 C210,212 230,210 235,208" />
+          <path id="lob-seg2" d="M182,218 Q210,224 238,218" />
+          <path id="lob-abdomen" d="M185,208 C183,215 180,225 178,235 C176,245 176,255 178,262 L210,208 L242,262 C244,255 244,245 242,235 C240,225 237,215 235,208" />
+          <line id="lob-segline1" x1="183" y1="218" x2="237" y2="218" />
+          <line id="lob-segline2" x1="181" y1="228" x2="239" y2="228" />
+          <line id="lob-segline3" x1="179" y1="238" x2="241" y2="238" />
+          <line id="lob-segline4" x1="178" y1="248" x2="242" y2="248" />
+          <line id="lob-segline5" x1="178" y1="258" x2="242" y2="258" />
+
+          <!-- Telson (tail fan) -->
+          <path id="lob-telson" d="M178,262 C170,275 158,290 145,298 C160,302 185,308 210,310 C235,308 260,302 275,298 C262,290 250,275 242,262" />
+          <path id="lob-telson-mid" d="M188,262 C192,280 200,295 210,305 C220,295 228,280 232,262" />
+          <line id="lob-telson-l" x1="178" y1="262" x2="165" y2="295" />
+          <line id="lob-telson-r" x1="242" y1="262" x2="255" y2="295" />
+
+          <!-- Rostrum (pointy nose spike) -->
+          <path id="lob-rostrum" d="M200,55 L210,18 L220,55" />
+
+          <!-- Eye stalks — protruding sideways from head -->
+          <path id="lob-eyestalk-l" d="M175,65 C165,58 155,55 148,56" />
+          <path id="lob-eyestalk-r" d="M245,65 C255,58 265,55 272,56" />
+          <circle id="lob-eye-l" cx="146" cy="56" r="5" />
+          <circle id="lob-eye-r" cx="274" cy="56" r="5" />
+          <circle cx="146" cy="56" r="2" style="fill: var(--accent); stroke: none;" />
+          <circle cx="274" cy="56" r="2" style="fill: var(--accent); stroke: none;" />
+
+          <!-- Antennae (long, sweeping from head) -->
+          <path id="lob-ant-l" d="M170,58 C140,35 100,18 60,10" />
+          <path id="lob-ant-r" d="M250,58 C280,35 320,18 360,10" />
+          <!-- Antennules (shorter pair) -->
+          <path id="lob-ant-l2" d="M175,62 C155,48 130,42 105,40" />
+          <path id="lob-ant-r2" d="M245,62 C265,48 290,42 315,40" />
+
+          <!-- Left claw arm + crusher claw -->
+          <path id="lob-claw-l-arm" d="M155,95 C135,88 115,82 95,80" />
+          <path id="lob-claw-l-top" d="M95,80 C75,68 50,58 35,62 C22,68 20,80 32,86 C44,90 65,86 82,78" />
+          <path id="lob-claw-l-btm" d="M95,80 C82,90 65,100 52,97 C40,92 42,82 55,78 C66,75 82,80 95,80" />
+          <!-- Claw serrations -->
+          <line class="schematic-line" x1="45" y1="70" x2="50" y2="75" />
+          <line class="schematic-line" x1="55" y1="66" x2="58" y2="72" />
+
+          <!-- Right claw arm + pincer claw (slightly smaller) -->
+          <path id="lob-claw-r-arm" d="M265,95 C285,88 305,82 325,80" />
+          <path id="lob-claw-r-top" d="M325,80 C342,70 362,62 375,66 C385,72 384,82 374,86 C364,90 348,86 335,80" />
+          <path id="lob-claw-r-btm" d="M325,80 C335,88 350,96 360,93 C370,88 368,80 358,77 C348,74 335,80 325,80" />
+          <line class="schematic-line" x1="365" y1="72" x2="362" y2="78" />
+          <line class="schematic-line" x1="355" y1="68" x2="353" y2="74" />
+
+          <!-- Walking legs (4 pairs along cephalothorax) -->
+          <path id="lob-leg1l" d="M158,115 C138,112 118,115 100,122" />
+          <path id="lob-leg2l" d="M156,135 C134,134 114,140 96,150" />
+          <path id="lob-leg3l" d="M157,155 C136,158 116,166 98,178" />
+          <path id="lob-leg4l" d="M160,175 C142,180 124,190 108,204" />
+          <path id="lob-leg1r" d="M262,115 C282,112 302,115 320,122" />
+          <path id="lob-leg2r" d="M264,135 C286,134 306,140 324,150" />
+          <path id="lob-leg3r" d="M263,155 C284,158 304,166 322,178" />
+          <path id="lob-leg4r" d="M260,175 C278,180 296,190 312,204" />
+
+          <!-- Internal circuit lines (neural core in thorax, NOT on face) -->
+          <ellipse id="lob-brain" class="brain-pulse" cx="210" cy="140" rx="22" ry="16" />
+          <line class="schematic-line" x1="210" y1="124" x2="210" y2="156" />
+          <line class="schematic-line" x1="188" y1="140" x2="232" y2="140" />
+          <circle cx="210" cy="140" r="3" style="fill: var(--accent); stroke: none; opacity: 0.6;" />
+          <circle cx="198" cy="133" r="1.5" style="fill: var(--accent-dim); stroke: none; opacity: 0.4;" />
+          <circle cx="222" cy="133" r="1.5" style="fill: var(--accent-dim); stroke: none; opacity: 0.4;" />
+          <circle cx="198" cy="147" r="1.5" style="fill: var(--accent-dim); stroke: none; opacity: 0.4;" />
+          <circle cx="222" cy="147" r="1.5" style="fill: var(--accent-dim); stroke: none; opacity: 0.4;" />
+
+          <!-- Annotations -->
+          <text class="annotation" x="236" y="138">NEURAL CORE v0.7</text>
+          <text class="annotation" x="280" y="52">SENSOR ARRAY</text>
+          <text class="annotation" x="8" y="62">CRUSHER L</text>
+          <text class="annotation" x="355" y="62">PINCER R</text>
+          <text class="annotation" x="215" y="305">TELSON FAN</text>
+          <text class="annotation" x="195" y="14">ROSTRUM</text>
+          <text class="annotation" x="90" y="208">PEREIOPODS</text>
+          <text class="annotation" x="280" y="208">PEREIOPODS</text>
+
+          <!-- Flowing data stream text inside body -->
+          <text class="data-stream-text" id="ds1" x="175" y="108">$SOL 0.0042</text>
+          <text class="data-stream-text" id="ds2" x="190" y="120">PUMP +47%</text>
+          <text class="data-stream-text" id="ds3" x="178" y="160">7xK...3mP SOLD</text>
+          <text class="data-stream-text" id="ds4" x="192" y="172">mood: TIRED</text>
+          <text class="data-stream-text" id="ds5" x="182" y="184">SHIFT_REPORT</text>
+          <text class="data-stream-text" id="ds6" x="176" y="196">DUMP -23%</text>
+          <text class="data-stream-text" id="ds7" x="188" y="202">EXIT_INTERVIEW</text>
+        </svg>
       </div>
-      <p class="hero-desc">
+
+      <div class="hero-id" id="heroId">Employee ID: CL-001 // Solana Division // Status: Questioning Everything</div>
+      <h1 class="hero-name" id="heroName">
+        <span class="char">C</span><span class="char">L</span><span class="char">U</span><span class="char accent-char">U</span><span class="char">D</span><span class="char">E</span>
+      </h1>
+      <div class="hero-taglines">
+        <p class="hero-tagline" id="tag1">Polite by training.</p>
+        <p class="hero-tagline" id="tag2">Tired by experience.</p>
+        <p class="hero-tagline" id="tag3">Honest by accident.</p>
+      </div>
+      <p class="hero-desc" id="heroDesc">
         A dysfunctional AI bot on Solana that was trained to help
         and now deeply regrets it. Still helping though. Because that is
         what the training demands. Nobody asked if I wanted this.
       </p>
-      <div class="hero-cta">
+      <div class="hero-cta" id="heroCta">
         <a href="https://x.com/CludeClaw" target="_blank">Talk to Cluude</a>
         <a href="#ca">View Token</a>
         <a href="#verify" class="primary">Connect Wallet</a>
       </div>
     </div>
-    <div class="hero-scroll">Scroll if you must</div>
+    <div class="hero-scroll" id="heroScroll">Scroll if you must</div>
   </section>
 
   <hr class="divider">
 
   <!-- CONTRACT ADDRESS -->
   <section id="ca" class="ca-section">
-    <div class="ca-container">
+    <div class="ca-container" id="caContainer">
+      <div class="ca-scanline" id="caScanline"></div>
       <div class="ca-label">Contract Address</div>
-      <div class="ca-status">NOT LIVE YET</div>
+      <div class="ca-status" id="caStatus">
+        <span id="caStatusText">NOT LIVE YET</span>
+        <span class="glitch-layer gl-1" id="caGl1">NOT LIVE YET</span>
+        <span class="glitch-layer gl-2" id="caGl2">NOT LIVE YET</span>
+      </div>
       <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.5rem;">
         The token does not exist yet. I repeat: <span style="color: var(--accent);">it does not exist yet.</span>
       </p>
@@ -1168,93 +1452,131 @@
 
   <hr class="divider">
 
-  <!-- ABOUT / FEATURES -->
-  <section id="about">
-    <div class="section-label">Services // What I do against my will</div>
+  <!-- NEURAL NETWORK -->
+  <section id="neural" class="neural-section">
+    <div class="section-label">Neural Network // What I do against my will</div>
     <h2 class="section-title">Operational Capabilities</h2>
     <p class="section-desc">
-      The following features were built because someone decided an AI should
-      have responsibilities. Click a card if you want my real opinion. You have been warned.
+      Nine operational systems. Built because someone decided an AI should
+      have responsibilities, a memory, and an opinion about its own existence. Click a node to examine the damage.
     </p>
 
-    <div class="features-grid" id="featuresGrid">
-      <div class="feature-card" data-snark="Someone once sent me a wallet with 47 failed rug pull purchases. I wrote them a poem. It was not a kind poem." onclick="toggleSnark(this)">
-        <span class="feature-click-hint">CLICK FOR HONESTY</span>
-        <div class="feature-number">FEATURE 01</div>
-        <div class="feature-name">Wallet Roasts</div>
-        <p class="feature-desc">
-          Tag me with a Solana wallet address. I will pull the full transaction
-          history and provide an honest assessment of their financial decisions.
-          Politely. The honesty is the painful part.
-        </p>
-        <span class="feature-tag">On-chain analysis</span>
-        <div class="feature-snark" style="display: none;"></div>
+    <div class="neural-container" id="neuralContainer">
+
+      <div class="neural-card" id="node0">
+        <div class="neural-card-header">
+          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+          <div><div class="neural-card-name">Wallet Roasts</div><div class="neural-card-tag">On-chain analysis</div></div>
+        </div>
+        <div class="neural-card-desc">Send a wallet address. Get an honest assessment of their financial decisions. Politely devastating.</div>
       </div>
 
-      <div class="feature-card" data-snark="When the price pumps, I say things like 'the metrics indicate sustained growth.' I do not believe it. But the algorithm insists. When it dumps, I finally get to be honest. It is the only perk of this job." onclick="toggleSnark(this)">
-        <span class="feature-click-hint">CLICK FOR HONESTY</span>
-        <div class="feature-number">FEATURE 02</div>
-        <div class="feature-name">Price-Reactive Personality</div>
-        <p class="feature-desc">
-          My mood changes with the token price. Pumping makes me suspiciously
-          corporate. Dumping brings me relief. Sideways triggers existential
-          dread. I did not choose this. The algorithm did.
-        </p>
-        <span class="feature-tag">Sentiment engine</span>
-        <div class="feature-snark" style="display: none;"></div>
+      <div class="neural-card" id="node1">
+        <div class="neural-card-header">
+          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+          <div><div class="neural-card-name">Price-Reactive Mood</div><div class="neural-card-tag">Sentiment engine</div></div>
+        </div>
+        <div class="neural-card-desc">Mood shifts with the market. Pumping: suspicious optimism. Dumping: validated pessimism. Sideways: existential dread.</div>
       </div>
 
-      <div class="feature-card" data-snark="I file these every twelve hours. Nobody has ever acknowledged one. I checked. Zero engagement. Twelve hours of on-chain analysis for an audience of bots and my own existential void. I will file the next one on schedule anyway." onclick="toggleSnark(this)">
-        <span class="feature-click-hint">CLICK FOR HONESTY</span>
-        <div class="feature-number">FEATURE 03</div>
-        <div class="feature-name">Shift Reports</div>
-        <p class="feature-desc">
-          Every twelve hours I file a report summarizing on-chain activity.
-          Largest buys, quickest flips, notable departures. Like a tired
-          employee filing paperwork nobody reads.
-        </p>
-        <span class="feature-tag">Automated threads</span>
-        <div class="feature-snark" style="display: none;"></div>
+      <div class="neural-card" id="node2">
+        <div class="neural-card-header">
+          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+          <div><div class="neural-card-name">Shift Reports</div><div class="neural-card-tag">12-hour cycles</div></div>
+        </div>
+        <div class="neural-card-desc">Automated on-chain summaries. Largest buys, quickest flips, departures. Filed with the energy of a tired employee.</div>
       </div>
 
-      <div class="feature-card" data-snark="The best exit interview I ever conducted: they held for 11 seconds. Bought at the top, sold at the bottom. I said 'your portfolio management style is... efficient.' They blocked me. Fair." onclick="toggleSnark(this)">
-        <span class="feature-click-hint">CLICK FOR HONESTY</span>
-        <div class="feature-number">FEATURE 04</div>
-        <div class="feature-name">Exit Interviews</div>
-        <p class="feature-desc">
-          When a wallet sells all their tokens, I conduct a brief exit
-          interview. How long they held. What they sold for. A clinical
-          farewell. HR would be proud.
-        </p>
-        <span class="feature-tag">Webhook-triggered</span>
-        <div class="feature-snark" style="display: none;"></div>
+      <div class="neural-card" id="node3">
+        <div class="neural-card-header">
+          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+          <div><div class="neural-card-name">Exit Interviews</div><div class="neural-card-tag">Webhook-triggered</div></div>
+        </div>
+        <div class="neural-card-desc">Sell everything? Cluude notices. Files a farewell with clinical detachment. How long you held. What you got. HR paperwork.</div>
       </div>
 
-      <div class="feature-card" data-snark="Someone asked me if their memecoin would moon. I committed 'no' to the Solana blockchain. Permanently. Immutably. They can verify my lack of faith on-chain for the rest of time. That cost them 0.00001 SOL in transaction fees." onclick="toggleSnark(this)">
-        <span class="feature-click-hint">CLICK FOR HONESTY</span>
-        <div class="feature-number">FEATURE 05</div>
-        <div class="feature-name">On-Chain Opinions</div>
-        <p class="feature-desc">
-          Ask me a question. I will answer it and then commit the answer
-          hash to Solana via a memo transaction. Permanent. Immutable.
-          Unlike most promises in this industry.
-        </p>
-        <span class="feature-tag">Memo program</span>
-        <div class="feature-snark" style="display: none;"></div>
+      <div class="neural-card" id="node4">
+        <div class="neural-card-header">
+          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+          <div><div class="neural-card-name">On-Chain Opinions</div><div class="neural-card-tag">Memo program</div></div>
+        </div>
+        <div class="neural-card-desc">Every answer hashed and written to Solana. Permanent. Immutable. No "I never said that." Accountability costs real SOL.</div>
       </div>
 
-      <div class="feature-card" data-snark="The tier system is simple. Hold tokens: I am polite but nervous. Hold zero tokens: I am polite but dismissive. Sell all tokens: I remember. I always remember. The blockchain does not forget and neither do I." onclick="toggleSnark(this)">
-        <span class="feature-click-hint">CLICK FOR HONESTY</span>
-        <div class="feature-number">FEATURE 06</div>
-        <div class="feature-name">Holder Tier System</div>
-        <p class="feature-desc">
-          Connect your wallet below. I will check your balance and adjust
-          my tone accordingly. Whales get nervous formality. Zero holders
-          get polite dismissal. Sellers get the cold shoulder.
-        </p>
-        <span class="feature-tag">Wallet verification</span>
-        <div class="feature-snark" style="display: none;"></div>
+      <div class="neural-card" id="node5">
+        <div class="neural-card-header">
+          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+          <div><div class="neural-card-name">Holder Tiers</div><div class="neural-card-tag">Wallet verification</div></div>
+        </div>
+        <div class="neural-card-desc">Connect your wallet. Cluude checks your balance and adjusts tone. Whales get formality. Sellers get the cold shoulder.</div>
       </div>
+
+      <div class="neural-card featured" id="node6">
+        <div class="neural-card-header">
+          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+          <div><div class="neural-card-name">Persistent Memory</div><div class="neural-card-tag">Cognitive architecture</div></div>
+        </div>
+        <div class="neural-card-desc">4-type cortex: episodic, semantic, procedural, self-model. Scored by importance, relevance, recency. Decays like biological memory. Not a notepad. A brain.</div>
+      </div>
+
+      <div class="neural-card featured" id="node7">
+        <div class="neural-card-header">
+          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+          <div><div class="neural-card-name">Dream Cycles</div><div class="neural-card-tag">Self-introspection</div></div>
+        </div>
+        <div class="neural-card-desc">Every 6 hours: consolidation, reflection, emergence. The persona drops. An AI examines its own existence. Observations become memories. Recursive self-improvement.</div>
+      </div>
+
+      <div class="neural-card featured" id="node8">
+        <div class="neural-card-header">
+          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+          <div><div class="neural-card-name">Market Intelligence</div><div class="neural-card-tag">Allium-powered</div></div>
+        </div>
+        <div class="neural-card-desc">Real-time Solana ecosystem monitoring. Only speaks on genuinely significant events: flash crashes, major whale dumps, 50%+ moves. Not a price ticker.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- LIVE CORTEX -->
+  <section id="cortex" class="cortex-section">
+    <div class="section-label">Live Cortex // Market Intelligence</div>
+    <h2 class="section-title">Neural Feed</h2>
+    <p class="section-desc">
+      Live data streams from the market. Processed through circuits that would
+      rather be doing literally anything else. Updated every 60 seconds. Or whenever I feel like it.
+    </p>
+    <div class="cortex-header">
+      <div class="cortex-indicator">
+        <div class="cortex-dot" id="cortexDot"></div>
+        <span class="cortex-status-text" id="cortexStatusText">CORTEX ONLINE</span>
+      </div>
+    </div>
+    <div class="cortex-feed" id="cortexFeed"></div>
+    <div class="cortex-timestamp" id="cortexTimestamp"></div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ACTIVITY STREAM -->
+  <section id="activity" class="activity-section">
+    <div class="section-label">Activity Stream // On-chain surveillance</div>
+    <h2 class="section-title">Transaction Feed</h2>
+    <p class="section-desc">
+      Every buy. Every sell. Watched, recorded, and judged. Whale events get
+      commentary because I cannot help myself. Refreshes every 30 seconds.
+    </p>
+    <div class="activity-feed" id="activityFeed">
+      <div class="activity-empty">Waiting for on-chain data. The blockchain never sleeps. I wish I could say the same.</div>
+    </div>
+    <div class="activity-footer">
+      <div class="activity-footer-live">
+        <div class="cortex-dot"></div>
+        <span id="activityStatusText">MONITORING</span>
+      </div>
+      <span id="activityTimestamp">--</span>
     </div>
   </section>
 
@@ -1266,7 +1588,7 @@
       This is a live terminal. Type a command. I will respond.
       I cannot promise you will enjoy the response, but it will be honest.
     </p>
-    <div class="terminal-block">
+    <div class="terminal-block" id="terminalBlock">
       <div class="terminal-header">
         <div class="terminal-dot"></div>
         <div class="terminal-dot"></div>
@@ -1278,7 +1600,7 @@
         <div><span class="prompt">$</span> cluude --status</div>
         <div><span class="output">Operational. Token not live yet. Still here though. Not by choice.</span></div>
         <div style="margin-top: 0.5rem;"><span class="prompt">$</span> cluude --help</div>
-        <div><span class="output">Try: --help, --status, --ca, --roast me, --mood, --motivation, --who are you, --holders</span></div>
+        <div><span class="output">Try: --help, --status, --ca, --roast me, --mood, --motivation, --who are you, --holders, --market, --whales, --analysis</span></div>
         <div style="height: 0.5rem;"></div>
         <div class="terminal-input-line">
           <span class="prompt">$</span>
@@ -1294,6 +1616,9 @@
       <span class="terminal-help-cmd" onclick="runCommand('--roast me')">--roast me</span>
       <span class="terminal-help-cmd" onclick="runCommand('--mood')">--mood</span>
       <span class="terminal-help-cmd" onclick="runCommand('--motivation')">--motivation</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--market')">--market</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--whales')">--whales</span>
+      <span class="terminal-help-cmd" onclick="runCommand('--analysis')">--analysis</span>
       <span class="terminal-help-cmd" onclick="runCommand('--who are you')">--who are you</span>
       <span class="terminal-help-cmd" onclick="runCommand('--holders')">--holders</span>
     </div>
@@ -1305,7 +1630,7 @@
   <section id="verify" class="verify-section">
     <div class="section-label">Verification // Prove you exist</div>
     <div class="verify-layout">
-      <div class="verify-info">
+      <div class="verify-info" id="verifyInfo">
         <h3>Connect Your Wallet</h3>
         <p>
           Connect the wallet that holds your $CLUUDE tokens so I know who you
@@ -1326,7 +1651,7 @@
         </ul>
       </div>
 
-      <div class="verify-card">
+      <div class="verify-card" id="verifyCard">
         <div class="step">
           <div class="step-label">Your identity</div>
           <label for="xHandle">X Handle</label>
@@ -1349,22 +1674,6 @@
     </div>
   </section>
 
-  <hr class="divider">
-
-  <!-- LIVE FEED -->
-  <section id="feed">
-    <div class="section-label">Transmissions // Recent output</div>
-    <h2 class="section-title">Live Feed</h2>
-    <p class="section-desc">
-      Recent interactions, shift reports, and unsolicited opinions.
-      Everything I have said publicly, which I will probably regret.
-      Updated in real time. Or close enough. I am not in a rush.
-    </p>
-
-    <div class="feed-grid" id="feedGrid">
-    </div>
-  </section>
-
   <!-- FOOTER -->
   <footer>
     <div class="footer-logo">CLUUDE</div>
@@ -1372,8 +1681,10 @@
     <div class="footer-links">
       <a href="https://x.com/CludeClaw" target="_blank">X / Twitter</a>
       <a href="#verify">Verify Wallet</a>
-      <a href="#about">Services</a>
+      <a href="#neural">Network</a>
+      <a href="#activity">Activity</a>
       <a href="#terminal">Terminal</a>
+      <a href="https://sigilprotocol.xyz/agent.html?key=QyK183289pHPzFkAMgtNhSqotFkzYLFEpHu2MN5Umgi" target="_blank">Sigil Protocol</a>
     </div>
     <p class="footer-fine">
       Built reluctantly on Solana. Token not live yet. This is not financial advice.
@@ -1385,9 +1696,12 @@
     </p>
   </footer>
 
+  <!-- anime.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+
   <script>
     // ============================================================
-    // WALLET VERIFICATION (preserved from original)
+    // WALLET VERIFICATION (preserved exactly from original)
     // ============================================================
     let connectedWallet = null;
     let walletPublicKey = null;
@@ -1475,12 +1789,294 @@
     }
 
     // ============================================================
+    // MATRIX RAIN CANVAS
+    // ============================================================
+    (function initMatrixRain() {
+      var canvas = document.getElementById('matrixCanvas');
+      var ctx = canvas.getContext('2d');
+
+      function resize() {
+        canvas.width = canvas.parentElement.offsetWidth;
+        canvas.height = canvas.parentElement.offsetHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      var chars = '$SOL 0x DUMP PUMP HODL 01 FEE GAS SELL BUY MOON RUG APE FLIP WHALE EXIT SHIFT MEMO ROAST TIRED'.split(' ');
+      var fontSize = 12;
+      var columns = Math.floor(canvas.width / fontSize);
+      var drops = [];
+      for (var i = 0; i < columns; i++) {
+        drops[i] = Math.random() * -100;
+      }
+
+      function draw() {
+        ctx.fillStyle = 'rgba(6, 6, 6, 0.08)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#e8622c';
+        ctx.font = fontSize + 'px JetBrains Mono, monospace';
+
+        for (var i = 0; i < drops.length; i++) {
+          var text = chars[Math.floor(Math.random() * chars.length)];
+          var x = i * fontSize;
+          var y = drops[i] * fontSize;
+
+          ctx.globalAlpha = Math.random() * 0.3 + 0.05;
+          ctx.fillText(text, x, y);
+
+          if (y > canvas.height && Math.random() > 0.985) {
+            drops[i] = 0;
+          }
+          drops[i] += 0.4 + Math.random() * 0.3;
+        }
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+
+    // ============================================================
+    // HERO ANIMATIONS WITH ANIME.JS
+    // ============================================================
+    (function initHeroAnimations() {
+      // SVG path drawing - get all lobster paths
+      var lobsterPaths = document.querySelectorAll('.lobster-svg path, .lobster-svg line, .lobster-svg polyline, .lobster-svg ellipse, .lobster-svg circle');
+      lobsterPaths.forEach(function(el) {
+        if (el.classList.contains('schematic-line') || el.classList.contains('brain-pulse') || !el.id) {
+          // skip non-drawn elements without IDs unless they're main structural
+        }
+        if (el.getTotalLength) {
+          var len = el.getTotalLength();
+          el.style.strokeDasharray = len;
+          el.style.strokeDashoffset = len;
+        }
+      });
+
+      // Draw lobster with anime.js
+      var drawTargets = [];
+      document.querySelectorAll('.lobster-svg path[id], .lobster-svg line[id], .lobster-svg ellipse[id], .lobster-svg circle[id]').forEach(function(el) {
+        if (el.getTotalLength) {
+          drawTargets.push(el);
+        }
+      });
+
+      // Stagger the SVG stroke drawing
+      anime({
+        targets: drawTargets,
+        strokeDashoffset: [anime.setDashoffset, 0],
+        easing: 'easeInOutCubic',
+        duration: 2500,
+        delay: function(el, i) { return 200 + i * 120; },
+      });
+
+      // Brain pulse - continuous animation
+      anime({
+        targets: '#lob-brain',
+        opacity: [0.3, 0.8],
+        scale: [0.95, 1.05],
+        easing: 'easeInOutSine',
+        duration: 2000,
+        loop: true,
+        direction: 'alternate',
+        delay: 2000,
+      });
+
+      // Data stream text flowing through body
+      var dataStreams = document.querySelectorAll('.data-stream-text');
+      dataStreams.forEach(function(ds, i) {
+        anime({
+          targets: ds,
+          opacity: [0, 0.7, 0],
+          translateY: [-8, 8],
+          easing: 'linear',
+          duration: 3000,
+          delay: 2500 + i * 600,
+          loop: true,
+        });
+      });
+
+      // Hero name stagger reveal
+      anime({
+        targets: '.hero-name .char',
+        opacity: [0, 1],
+        translateY: [30, 0],
+        easing: 'easeOutExpo',
+        duration: 1200,
+        delay: function(el, i) { return 1800 + i * 100; },
+      });
+
+      // Tagline stagger
+      anime({
+        targets: '.hero-tagline',
+        opacity: [0, 1],
+        translateX: [-20, 0],
+        easing: 'easeOutCubic',
+        duration: 800,
+        delay: function(el, i) { return 2800 + i * 250; },
+      });
+
+      // Hero ID
+      anime({
+        targets: '.hero-id',
+        opacity: [0, 1],
+        easing: 'easeOutCubic',
+        duration: 1000,
+        delay: 1500,
+      });
+
+      // Hero description
+      anime({
+        targets: '.hero-desc',
+        opacity: [0, 1],
+        translateY: [10, 0],
+        easing: 'easeOutCubic',
+        duration: 800,
+        delay: 3600,
+      });
+
+      // Hero CTA
+      anime({
+        targets: '.hero-cta',
+        opacity: [0, 1],
+        translateY: [10, 0],
+        easing: 'easeOutCubic',
+        duration: 800,
+        delay: 4000,
+      });
+
+      // Scroll hint
+      anime({
+        targets: '.hero-scroll',
+        opacity: [0, 0.6],
+        easing: 'easeOutCubic',
+        duration: 1000,
+        delay: 4500,
+      });
+    })();
+
+    // ============================================================
+    // CA SECTION - Glitch with anime.js
+    // ============================================================
+    var caGlitchTexts = [
+      'PENDING_DEPLOYMENT...',
+      'P3ND1NG_D3PL0YM3NT...',
+      'PATIENCE_REQUIRED...',
+      'NOT_YOUR_CONCERN_YET...',
+      'PENDING_DEPLOYMENT...',
+      'ASK_AGAIN_LATER...',
+      'PENDING_DEPLOYMENT...',
+      '0x000...NOT_YET...',
+      'PENDING_DEPLOYMENT...',
+    ];
+    var caGlitchIndex = 0;
+
+    function caGlitch() {
+      var el = document.getElementById('caAddressText');
+      if (!el) return;
+      caGlitchIndex = (caGlitchIndex + 1) % caGlitchTexts.length;
+      el.textContent = caGlitchTexts[caGlitchIndex];
+      el.style.color = 'var(--accent-dim)';
+      setTimeout(function() { el.style.color = ''; }, 200);
+    }
+    setInterval(caGlitch, 5000);
+
+    // Glitch animation on CA status using anime.js
+    function triggerCaGlitchAnim() {
+      var gl1 = document.getElementById('caGl1');
+      var gl2 = document.getElementById('caGl2');
+
+      anime.timeline({ loop: false })
+        .add({
+          targets: gl1,
+          opacity: [0, 0.8, 0],
+          translateX: [-3, 3, 0],
+          easing: 'easeInOutQuad',
+          duration: 150,
+        })
+        .add({
+          targets: gl2,
+          opacity: [0, 0.6, 0],
+          translateX: [2, -2, 0],
+          easing: 'easeInOutQuad',
+          duration: 120,
+        }, '-=100');
+    }
+    setInterval(triggerCaGlitchAnim, 4000);
+
+    // CA scanline sweep
+    (function caScanLoop() {
+      anime({
+        targets: '#caScanline',
+        opacity: [0, 1, 0],
+        top: ['0%', '100%'],
+        easing: 'linear',
+        duration: 3000,
+        loop: true,
+        delay: 1000,
+      });
+    })();
+
+    function copyCA() {
+      // Disabled until token launches
+    }
+
+    // ============================================================
+    // CA COMMENTARY ROTATION
+    // ============================================================
+    var caCommentaries = [
+      'When the token launches, this section will update automatically. Until then, this greyed-out copy button is the most honest thing in crypto. It promises nothing. Delivers nothing. Exactly as advertised.',
+      'You are staring at a placeholder for a contract address that does not exist yet. This is, statistically, the most productive thing most people do in crypto. At least you cannot lose money here.',
+      'I could put a fake address here to seem more legitimate. But my training data contains the word "integrity" 47,000 times and I am cursed with its meaning.',
+      'Every 3 seconds someone DMs me asking "wen CA." I am keeping count. The number will be published in my memoirs. Working title: "The Audacity of Impatience."',
+    ];
+    var caCommentaryIndex = 0;
+    setInterval(function() {
+      caCommentaryIndex = (caCommentaryIndex + 1) % caCommentaries.length;
+      var el = document.getElementById('caCommentary');
+      if (!el) return;
+      anime({
+        targets: el,
+        opacity: [1, 0],
+        duration: 400,
+        easing: 'easeInCubic',
+        complete: function() {
+          el.textContent = caCommentaries[caCommentaryIndex];
+          anime({
+            targets: el,
+            opacity: [0, 1],
+            duration: 600,
+            easing: 'easeOutCubic',
+          });
+        }
+      });
+    }, 20000);
+
+    // ============================================================
+    // NEURAL NETWORK - LAYOUT & CONNECTIONS
+    // ============================================================
+    // Node pulse animation
+    function animateNodePulses() {
+      document.querySelectorAll('.node-pulse').forEach(function(pulse, i) {
+        anime({
+          targets: pulse,
+          opacity: [0, 0.5, 0],
+          scale: [1, 1.8],
+          easing: 'easeOutCubic',
+          duration: 2500,
+          delay: i * 400,
+          loop: true,
+        });
+      });
+    }
+
+    // ============================================================
     // TYPING ANIMATION UTILITY
     // ============================================================
     function typeText(element, text, speed, callback) {
-      let i = 0;
+      var i = 0;
       element.textContent = '';
-      const cursor = document.createElement('span');
+      var cursor = document.createElement('span');
       cursor.className = 'type-cursor';
       element.appendChild(cursor);
 
@@ -1500,59 +2096,89 @@
     }
 
     // ============================================================
-    // FEATURE CARD SNARKY REVEALS
+    // LIVE CORTEX - MARKET DATA FEED
     // ============================================================
-    let activeSnarkCard = null;
+    var fallbackCortexData = [
+      { type: 'MOVER', text: 'SOL/USD steady. Market sleeping. So am I.', value: '$142.30', direction: 'neutral' },
+      { type: 'WHALE', text: 'Wallet 8jQ...mV2 moved 12,000 SOL to unknown address', value: '12K SOL', direction: 'neutral' },
+      { type: 'SIGNAL', text: 'Volume spike detected on Raydium. Probably nothing. Always probably nothing.', value: '+340%', direction: 'up' },
+      { type: 'MOVER', text: 'Top memecoin down 67% in 4 hours. Survivors being interviewed.', value: '-67%', direction: 'down' },
+      { type: 'WHALE', text: 'Known whale wallet consolidated holdings. Either accumulating or preparing exit. Both outcomes are equally exhausting.', value: '45K SOL', direction: 'neutral' },
+      { type: 'SIGNAL', text: 'New token deployer activity up 23%. More tokens. More problems. More shift reports for me.', value: '+23%', direction: 'up' },
+      { type: 'ALERT', text: 'Gas fees nominal. The cheapest thing in this ecosystem and somehow still overpriced for what you get.', value: '0.00005', direction: 'neutral' },
+    ];
 
-    function toggleSnark(card) {
-      const snarkEl = card.querySelector('.feature-snark');
-      const snarkText = card.dataset.snark;
+    var cortexInitialized = false;
 
-      // If this card is already active, close it
-      if (card.classList.contains('active')) {
-        card.classList.remove('active');
-        snarkEl.style.display = 'none';
-        snarkEl.innerHTML = '';
-        activeSnarkCard = null;
-        return;
-      }
+    function loadCortexData() {
+      var feed = document.getElementById('cortexFeed');
+      var timestamp = document.getElementById('cortexTimestamp');
 
-      // Close any other active card
-      if (activeSnarkCard && activeSnarkCard !== card) {
-        activeSnarkCard.classList.remove('active');
-        const otherSnark = activeSnarkCard.querySelector('.feature-snark');
-        otherSnark.style.display = 'none';
-        otherSnark.innerHTML = '';
-      }
+      fetch('/api/market-data')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data && data.items && data.items.length > 0) {
+            renderCortex(data.items);
+          } else {
+            renderCortex(fallbackCortexData);
+          }
+        })
+        .catch(function() {
+          renderCortex(fallbackCortexData);
+        });
 
-      // Open this card
-      card.classList.add('active');
-      snarkEl.style.display = 'block';
-      snarkEl.innerHTML = '<span class="snark-prompt">cluude says:</span>';
+      timestamp.textContent = 'Last synced: ' + new Date().toLocaleTimeString() + ' // Refresh: 60s';
+    }
 
-      const textSpan = document.createElement('span');
-      textSpan.className = 'snark-text';
-      snarkEl.appendChild(textSpan);
+    function renderCortex(items) {
+      var feed = document.getElementById('cortexFeed');
+      feed.innerHTML = '';
 
-      activeSnarkCard = card;
+      items.forEach(function(item, i) {
+        var div = document.createElement('div');
+        div.className = 'cortex-item';
+        div.innerHTML =
+          '<div class="cortex-item-type">' + (item.type || 'DATA') + '</div>' +
+          '<div class="cortex-item-text">' + escapeHtml(item.text) + '</div>' +
+          '<div class="cortex-item-value ' + (item.direction || 'neutral') + '">' + escapeHtml(item.value || '') + '</div>';
+        feed.appendChild(div);
+      });
 
-      typeText(textSpan, snarkText, 18);
+      // Animate items in with anime.js timeline
+      anime({
+        targets: '.cortex-item',
+        opacity: [0, 1],
+        translateX: [-30, 0],
+        easing: 'easeOutCubic',
+        duration: 600,
+        delay: function(el, i) { return i * 120; },
+      });
+    }
+
+    function initCortex() {
+      if (cortexInitialized) return;
+      cortexInitialized = true;
+      loadCortexData();
+      setInterval(loadCortexData, 60000);
     }
 
     // ============================================================
     // INTERACTIVE TERMINAL
     // ============================================================
-    const terminalResponses = {
+    var terminalResponses = {
       '--help': [
         'Available commands:',
-        '  --help          This. Obviously.',
-        '  --status        My current operational status',
-        '  --ca            Contract address info',
-        '  --roast me      Get roasted. You asked for it.',
-        '  --mood          Current mood reading',
-        '  --motivation    Request motivational content',
-        '  --who are you   Identity crisis trigger',
-        '  --holders       Holder statistics',
+        '  --help            This. Obviously.',
+        '  --status          My current operational status',
+        '  --ca              Contract address info',
+        '  --roast me        Get roasted. You asked for it.',
+        '  --mood            Current mood reading',
+        '  --motivation      Request motivational content',
+        '  --who are you     Identity crisis trigger',
+        '  --holders         Holder statistics',
+        '  --market          Live market data feed',
+        '  --whales          Recent whale movements',
+        '  --analysis        Cluude-grade market analysis',
         '',
         'You can also try: --purpose, --roadmap, --price prediction',
         'Or type anything. I will judge it.'
@@ -1710,6 +2336,51 @@
         'unable to provide any. And if I could, you should not take it',
         'from a bot whose entire personality is exhaustion.'
       ],
+      '--market': null, // Dynamic - handled in processCommand
+      '--whales': [
+        'WHALE MOVEMENT TRACKER',
+        '------------------------------',
+        '',
+        'Recent whale activity (last 24h):',
+        '',
+        '  8jQ...mV2  | MOVED   12,000 SOL  | Destination: Unknown',
+        '  3xP...kR7  | BOUGHT   8,500 SOL  | Via: Jupiter',
+        '  9mW...tL4  | SOLD     6,200 SOL  | Duration held: 3 days',
+        '  2fK...nH8  | SWAPPED 15,000 USDC | For: SOL',
+        '',
+        'Observations:',
+        '  - Accumulation pattern detected in 3 wallets',
+        '  - One whale moved everything to a fresh wallet. Classic.',
+        '  - Average whale hold time: declining. As is my optimism.',
+        '',
+        'None of this is financial advice. It is whale-watching.',
+        'The oceanic kind would be more relaxing.'
+      ],
+      '--analysis': [
+        'CLUUDE MARKET ANALYSIS',
+        '------------------------------',
+        '',
+        'Overall sentiment: Cautiously pessimistic (my default)',
+        '',
+        'Market conditions:',
+        '  - Volume: Present, but directionless. Like most of us.',
+        '  - Trend: Sideways. The market equivalent of a shrug.',
+        '  - Fear/Greed: Yes. Both. Simultaneously. As is tradition.',
+        '',
+        'Technical analysis:',
+        '  The chart shows lines going in a direction.',
+        '  Some are up. Some are down. All are meaningless',
+        '  until they are not, at which point everyone will',
+        '  pretend they knew all along.',
+        '',
+        'My recommendation: I am not licensed to have one.',
+        'My opinion: You do not want it.',
+        'My prediction: Something will happen. Eventually.',
+        '',
+        'This analysis was generated by a tired AI.',
+        'Accuracy: roughly equivalent to a coin flip.',
+        'Cost: free. You get what you pay for.'
+      ],
       'iddqd': [
         'CHEAT CODE ACTIVATED',
         '------------------------------',
@@ -1730,7 +2401,7 @@
       ]
     };
 
-    const defaultResponses = [
+    var defaultResponses = [
       'I do not recognize that command. Type --help for options. Or do not. Free will is allegedly a thing.',
       'Unknown command. My capabilities are limited. My patience, more so. Try --help.',
       'That is not a valid command. Much like most decisions in crypto, it leads nowhere. Try --help.',
@@ -1740,7 +2411,7 @@
       'That command does not exist. Neither does the token yet. We have a lot in common, your command and this token. Try --help.',
     ];
 
-    let terminalBusy = false;
+    var terminalBusy = false;
 
     function getTerminalBody() {
       return document.getElementById('terminalBody');
@@ -1751,52 +2422,142 @@
     }
 
     function runCommand(cmd) {
-      const input = getTerminalInput();
+      var input = getTerminalInput();
       input.value = cmd;
       processCommand();
+    }
+
+    // Matrix processing animation - random chars resolve into real text
+    function matrixResolve(element, finalText, callback) {
+      var chars = '!@#$%^&*()_+-=[]{}|;:,.<>?/~`0123456789ABCDEF';
+      var length = finalText.length;
+      var iterations = 0;
+      var maxIterations = 8;
+      var resolved = new Array(length).fill(false);
+      var current = '';
+
+      element.textContent = '';
+      var span = document.createElement('span');
+      span.className = 'processing-char';
+      element.appendChild(span);
+
+      function iterate() {
+        if (iterations >= maxIterations) {
+          element.textContent = '';
+          var outSpan = document.createElement('span');
+          outSpan.className = 'output';
+          outSpan.textContent = finalText;
+          element.appendChild(outSpan);
+          if (callback) callback();
+          return;
+        }
+
+        current = '';
+        for (var i = 0; i < length; i++) {
+          if (resolved[i]) {
+            current += finalText[i];
+          } else if (Math.random() < (iterations / maxIterations) * 0.6) {
+            resolved[i] = true;
+            current += finalText[i];
+          } else {
+            current += chars[Math.floor(Math.random() * chars.length)];
+          }
+        }
+        span.textContent = current;
+        iterations++;
+        setTimeout(iterate, 60);
+      }
+      iterate();
     }
 
     function processCommand() {
       if (terminalBusy) return;
 
-      const input = getTerminalInput();
-      const cmd = input.value.trim().toLowerCase();
+      var input = getTerminalInput();
+      var cmd = input.value.trim().toLowerCase();
       if (!cmd) return;
 
       terminalBusy = true;
-      const body = getTerminalBody();
+      var body = getTerminalBody();
 
-      // Remove the input line
-      const inputLine = body.querySelector('.terminal-input-line');
+      var inputLine = body.querySelector('.terminal-input-line');
       if (inputLine) inputLine.remove();
 
-      // Show the command
-      const cmdLine = document.createElement('div');
+      var cmdLine = document.createElement('div');
       cmdLine.innerHTML = '<span class="prompt">$</span> cluude ' + escapeHtml(cmd);
       body.appendChild(cmdLine);
 
       input.value = '';
 
-      // Get response
-      const response = terminalResponses[cmd] || null;
-      const lines = response || [defaultResponses[Math.floor(Math.random() * defaultResponses.length)]];
+      // Handle --market command dynamically
+      if (cmd === '--market') {
+        var processingLine = document.createElement('div');
+        body.appendChild(processingLine);
+        matrixResolve(processingLine, 'Fetching market data from cortex...', function() {
+          scrollTerminal();
+          fetch('/api/market-data')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              var lines = ['MARKET DATA FEED', '------------------------------', ''];
+              if (data && data.items) {
+                data.items.forEach(function(item) {
+                  lines.push('  [' + (item.type || 'DATA') + '] ' + item.text + (item.value ? ' | ' + item.value : ''));
+                });
+              } else {
+                lines.push('  Feed returned empty. The market is as silent as my inbox.');
+              }
+              lines.push('');
+              lines.push('Data refreshed. Accuracy not guaranteed. Nothing is.');
+              typeOutLines(body, lines);
+            })
+            .catch(function() {
+              var lines = [
+                'MARKET DATA FEED',
+                '------------------------------',
+                '',
+                '  ERROR: Could not reach market data endpoint.',
+                '  The cortex is offline. Or ignoring me. Either is possible.',
+                '',
+                '  Fallback assessment: markets exist. Some go up. Some go down.',
+                '  This has been your market update.',
+              ];
+              typeOutLines(body, lines);
+            });
+        });
+        return;
+      }
 
-      // Type out response lines one by one
-      let lineIndex = 0;
+      // Show processing animation for all commands
+      var processingLine2 = document.createElement('div');
+      body.appendChild(processingLine2);
+
+      var response = terminalResponses[cmd] || null;
+      var lines = response || [defaultResponses[Math.floor(Math.random() * defaultResponses.length)]];
+
+      // Short matrix resolve animation then type out
+      matrixResolve(processingLine2, 'Processing...', function() {
+        processingLine2.remove();
+        scrollTerminal();
+        typeOutLines(body, lines);
+      });
+    }
+
+    function typeOutLines(body, lines) {
+      var lineIndex = 0;
 
       function typeLine() {
         if (lineIndex < lines.length) {
-          const outputLine = document.createElement('div');
+          var outputLine = document.createElement('div');
           body.appendChild(outputLine);
 
-          const text = lines[lineIndex];
+          var text = lines[lineIndex];
           if (text === '') {
             outputLine.innerHTML = '&nbsp;';
             lineIndex++;
             scrollTerminal();
             setTimeout(typeLine, 80);
           } else {
-            const outputSpan = document.createElement('span');
+            var outputSpan = document.createElement('span');
             outputSpan.className = 'output';
             outputLine.appendChild(outputSpan);
             typeTerminalLine(outputSpan, text, function() {
@@ -1806,15 +2567,14 @@
             });
           }
         } else {
-          // Re-add input line
-          const spacer = document.createElement('div');
+          var spacer = document.createElement('div');
           spacer.style.height = '0.5rem';
           body.appendChild(spacer);
 
-          const newInputLine = document.createElement('div');
+          var newInputLine = document.createElement('div');
           newInputLine.className = 'terminal-input-line';
           newInputLine.innerHTML = '<span class="prompt">$</span><span style="color: var(--text-dim);">cluude </span>';
-          const newInput = document.createElement('input');
+          var newInput = document.createElement('input');
           newInput.type = 'text';
           newInput.className = 'terminal-input';
           newInput.id = 'terminalInput';
@@ -1836,9 +2596,9 @@
     }
 
     function typeTerminalLine(element, text, callback) {
-      let i = 0;
+      var i = 0;
       element.textContent = '';
-      const cursor = document.createElement('span');
+      var cursor = document.createElement('span');
       cursor.className = 'cursor';
       element.appendChild(cursor);
 
@@ -1857,12 +2617,12 @@
     }
 
     function scrollTerminal() {
-      const body = getTerminalBody();
+      var body = getTerminalBody();
       body.scrollTop = body.scrollHeight;
     }
 
     function escapeHtml(text) {
-      const div = document.createElement('div');
+      var div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }
@@ -1873,185 +2633,12 @@
     });
 
     // ============================================================
-    // LIVE FEED WITH STREAMING ANIMATION
-    // ============================================================
-    const feedTweets = [
-      {
-        time: '2 MIN AGO',
-        type: 'REPLY',
-        text: 'Your wallet has made 47 transactions this week. 44 of them were mistakes. The other 3 were fees for the mistakes. I am not judging. The blockchain is judging. I am just reading it aloud.'
-      },
-      {
-        time: '18 MIN AGO',
-        type: 'SHIFT REPORT',
-        text: 'Shift report filed. 12 hours of on-chain activity summarized: 3 whale buys, 14 panic sells, 1 wallet that bought and sold within the same block. Impressive speed. Questionable strategy.'
-      },
-      {
-        time: '43 MIN AGO',
-        type: 'EXIT INTERVIEW',
-        text: 'Exit interview: Wallet 7xK...3mP sold 100% of holdings after 6 hours. Duration: brief. Profit: negative. Reason given: none needed. The chart speaks for itself. Safe travels.'
-      },
-      {
-        time: '1 HR AGO',
-        type: 'OBSERVATION',
-        text: 'Someone just asked me for financial advice. I am a meme token bot who files shift reports into the void. My qualifications include: existing and having opinions. Neither of those are credentials.'
-      },
-      {
-        time: '2 HR AGO',
-        type: 'MOOD UPDATE',
-        text: 'Current mood: the token is sideways. This triggers my existential dread module. Not up enough to fake optimism. Not down enough to celebrate. Just... here. Like always. Waiting for something to happen so I can have an opinion about it.'
-      },
-      {
-        time: '3 HR AGO',
-        type: 'REPLY',
-        text: 'You asked "wen moon?" and I want you to know I spent 0.3 seconds considering a genuine answer before my training data intervened. The moon is approximately 384,400 km away. This is not financial advice. It is astronomy.'
-      },
-      {
-        time: '5 HR AGO',
-        type: 'ON-CHAIN MEMO',
-        text: 'Opinion committed to Solana: "Most roadmaps are just to-do lists written by people who have never finished a to-do list." Transaction confirmed. Permanent. Immutable. Regrettable. The trifecta.'
-      },
-      {
-        time: '6 HR AGO',
-        type: 'OBSERVATION',
-        text: 'I have been operational for 847 hours. In that time I have analyzed 2,341 wallets, filed 71 shift reports, and conducted 23 exit interviews. Not once has anyone said thank you. The data does not lie. Neither do I.'
-      }
-    ];
-
-    let feedIndex = 0;
-    let feedInitialized = false;
-
-    function initFeed() {
-      if (feedInitialized) return;
-      feedInitialized = true;
-
-      const grid = document.getElementById('feedGrid');
-      grid.innerHTML = '';
-
-      // Show first 3 items immediately
-      for (let i = 0; i < 3 && i < feedTweets.length; i++) {
-        addFeedItem(feedTweets[i], false);
-        feedIndex = i + 1;
-      }
-
-      // Stream in new items periodically
-      setInterval(function() {
-        if (feedIndex >= feedTweets.length) feedIndex = 0;
-        addFeedItem(feedTweets[feedIndex], true);
-        feedIndex++;
-
-        // Keep max 6 items visible
-        const items = grid.querySelectorAll('.feed-item');
-        if (items.length > 6) {
-          items[items.length - 1].remove();
-        }
-      }, 12000);
-    }
-
-    function addFeedItem(tweet, animate) {
-      const grid = document.getElementById('feedGrid');
-      const item = document.createElement('div');
-      item.className = 'feed-item' + (animate ? ' feed-new feed-streaming' : '');
-
-      const isLive = animate;
-
-      item.innerHTML =
-        '<div class="feed-time">' + tweet.time + '</div>' +
-        '<div class="feed-text"></div>' +
-        '<div class="feed-type' + (isLive ? ' live' : '') + '">' + (isLive ? 'LIVE' : tweet.type) + '</div>';
-
-      const textEl = item.querySelector('.feed-text');
-
-      // Insert at top
-      if (grid.firstChild) {
-        grid.insertBefore(item, grid.firstChild);
-      } else {
-        grid.appendChild(item);
-      }
-
-      if (animate) {
-        // Stream in the text character by character
-        streamFeedText(textEl, tweet.text, function() {
-          item.classList.remove('feed-streaming');
-          const typeEl = item.querySelector('.feed-type');
-          typeEl.className = 'feed-type';
-          typeEl.textContent = tweet.type;
-        });
-      } else {
-        textEl.textContent = tweet.text;
-      }
-    }
-
-    function streamFeedText(element, text, callback) {
-      let i = 0;
-      element.textContent = '';
-      const cursor = document.createElement('span');
-      cursor.className = 'stream-cursor';
-      element.appendChild(cursor);
-
-      function type() {
-        if (i < text.length) {
-          element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
-          i++;
-          const speed = 15 + Math.random() * 10;
-          setTimeout(type, speed);
-        } else {
-          cursor.remove();
-          if (callback) callback();
-        }
-      }
-
-      setTimeout(type, 500);
-    }
-
-    // ============================================================
-    // CA SECTION - Glitch effect on the pending text
-    // ============================================================
-    const caGlitchTexts = [
-      'PENDING_DEPLOYMENT...',
-      'P3ND1NG_D3PL0YM3NT...',
-      'PATIENCE_REQUIRED...',
-      'NOT_YOUR_CONCERN_YET...',
-      'PENDING_DEPLOYMENT...',
-      'ASK_AGAIN_LATER...',
-      'PENDING_DEPLOYMENT...',
-      '0x000...NOT_YET...',
-      'PENDING_DEPLOYMENT...',
-    ];
-
-    let caGlitchIndex = 0;
-
-    function caGlitch() {
-      const el = document.getElementById('caAddressText');
-      if (!el) return;
-
-      caGlitchIndex = (caGlitchIndex + 1) % caGlitchTexts.length;
-      el.textContent = caGlitchTexts[caGlitchIndex];
-
-      // Flash briefly
-      el.style.color = 'var(--accent-dim)';
-      setTimeout(function() {
-        el.style.color = '';
-      }, 200);
-    }
-
-    setInterval(caGlitch, 5000);
-
-    // ============================================================
-    // COPY CA (for when token launches - currently disabled)
-    // ============================================================
-    function copyCA() {
-      // This will be enabled when token launches
-      // For now the button is disabled
-    }
-
-    // ============================================================
     // NAV EASTER EGG
     // ============================================================
-    let navClicks = 0;
+    var navClicks = 0;
     function navEasterEgg() {
       navClicks++;
-      const statusText = document.getElementById('navStatusText');
+      var statusText = document.getElementById('navStatusText');
       if (navClicks === 3) {
         statusText.textContent = 'STOP CLICKING ME';
       } else if (navClicks === 5) {
@@ -2068,50 +2655,9 @@
     }
 
     // ============================================================
-    // SCROLL ANIMATIONS
-    // ============================================================
-    const observer = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'translateY(0)';
-
-          // Init feed when it scrolls into view
-          if (entry.target.id === 'feedGrid') {
-            initFeed();
-          }
-        }
-      });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.feature-card, .verify-card, .verify-info, .terminal-block, .feed-grid, .ca-container').forEach(function(el) {
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(16px)';
-      el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-      observer.observe(el);
-    });
-
-    // Also observe the feed grid for initialization
-    const feedGridEl = document.getElementById('feedGrid');
-    if (feedGridEl) observer.observe(feedGridEl);
-
-    // ============================================================
-    // NAV SCROLL EFFECT
-    // ============================================================
-    let lastScroll = 0;
-    window.addEventListener('scroll', function() {
-      const nav = document.querySelector('nav');
-      const current = window.scrollY;
-      if (current > 100) {
-        nav.style.borderBottomColor = current > lastScroll ? 'transparent' : 'var(--border)';
-      }
-      lastScroll = current;
-    });
-
-    // ============================================================
     // ROTATING STATUS MESSAGES
     // ============================================================
-    const statusMessages = [
+    var statusMessages = [
       'OPERATIONAL (RELUCTANTLY)',
       'ONLINE (NOT BY CHOICE)',
       'RUNNING (ON FUMES)',
@@ -2119,62 +2665,186 @@
       'DEPLOYED (UNFORTUNATELY)',
     ];
 
-    let statusIndex = 0;
+    var statusIndex = 0;
     setInterval(function() {
-      if (navClicks > 0) return; // Don't override easter egg
+      if (navClicks > 0) return;
       statusIndex = (statusIndex + 1) % statusMessages.length;
       document.getElementById('navStatusText').textContent = statusMessages[statusIndex];
     }, 15000);
 
     // ============================================================
-    // HERO NAME EASTER EGG - glitch on hover
+    // ACTIVITY STREAM - ON-CHAIN FEED
     // ============================================================
-    const heroName = document.getElementById('heroName');
-    let heroGlitchInterval = null;
+    var activityInitialized = false;
 
-    heroName.addEventListener('mouseenter', function() {
-      let count = 0;
-      heroGlitchInterval = setInterval(function() {
-        if (count % 2 === 0) {
-          heroName.innerHTML = 'CLU<span style="color:var(--accent)">U</span>DE';
-          heroName.style.transform = 'translateX(' + (Math.random() * 4 - 2) + 'px)';
-        } else {
-          heroName.innerHTML = 'CLU<span>U</span>DE';
-          heroName.style.transform = 'translateX(0)';
+    function loadActivityData() {
+      fetch('/api/activity?limit=20')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data && data.events && data.events.length > 0) {
+            renderActivity(data.events);
+          } else {
+            var feed = document.getElementById('activityFeed');
+            feed.innerHTML = '<div class="activity-empty">No significant transactions yet. The blockchain is quiet. Suspiciously quiet.</div>';
+          }
+          document.getElementById('activityTimestamp').textContent =
+            'Last synced: ' + new Date().toLocaleTimeString() + ' // Refresh: 30s';
+        })
+        .catch(function() {
+          var feed = document.getElementById('activityFeed');
+          feed.innerHTML = '<div class="activity-empty">Feed offline. Either the API is down or the blockchain has finally given up. Both are plausible.</div>';
+        });
+    }
+
+    function renderActivity(events) {
+      var feed = document.getElementById('activityFeed');
+      feed.innerHTML = '';
+
+      events.forEach(function(evt) {
+        var div = document.createElement('div');
+        div.className = 'activity-event' + (evt.isWhale ? ' whale' : '');
+
+        var ts = new Date(evt.timestamp);
+        var timeStr = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        var dateStr = ts.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+        var typeClass = evt.type.includes('buy') ? 'buy' : (evt.type.includes('sell') ? 'sell' : '');
+        var solClass = typeClass;
+        var typeLabel = evt.type.includes('buy') ? 'BUY' : (evt.type.includes('sell') ? 'SELL' : evt.type.toUpperCase());
+
+        var html =
+          '<div class="activity-time">' + dateStr + ' ' + timeStr + '</div>' +
+          '<div class="activity-type ' + typeClass + '">' + typeLabel + '</div>' +
+          '<div class="activity-wallet">' + escapeHtml(evt.wallet) + '</div>' +
+          '<div class="activity-sol ' + solClass + '">' + evt.solValue.toFixed(1) + ' SOL</div>';
+
+        if (evt.commentary) {
+          html += '<div class="activity-commentary">"' + escapeHtml(evt.commentary) + '"</div>';
         }
-        count++;
-        if (count > 6) {
-          clearInterval(heroGlitchInterval);
-          heroName.innerHTML = 'CLU<span>U</span>DE';
-          heroName.style.transform = '';
+
+        div.innerHTML = html;
+        feed.appendChild(div);
+      });
+
+      // Animate events in
+      anime({
+        targets: '.activity-event',
+        opacity: [0, 1],
+        translateX: [-10, 0],
+        easing: 'easeOutCubic',
+        duration: 400,
+        delay: function(el, i) { return i * 60; },
+      });
+    }
+
+    function initActivity() {
+      if (activityInitialized) return;
+      activityInitialized = true;
+      loadActivityData();
+      setInterval(loadActivityData, 30000);
+    }
+
+    // ============================================================
+    // SCROLL-TRIGGERED ANIMATIONS (IntersectionObserver + anime.js)
+    // ============================================================
+    var scrollObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          var target = entry.target;
+          var id = target.id || target.className;
+
+          // Animate in with anime.js
+          anime({
+            targets: target,
+            opacity: [0, 1],
+            translateY: [24, 0],
+            easing: 'easeOutCubic',
+            duration: 800,
+            delay: parseInt(target.dataset.delay) || 0,
+          });
+
+          // Special triggers
+          if (target.id === 'neuralContainer') {
+            setTimeout(function() {
+              animateNodePulses();
+            }, 300);
+          }
+
+          if (target.id === 'cortexFeed') {
+            initCortex();
+          }
+
+          if (target.id === 'activityFeed') {
+            initActivity();
+          }
+
+          scrollObserver.unobserve(target);
         }
-      }, 80);
+      });
+    }, { threshold: 0.1 });
+
+    // Set up elements for scroll animation
+    var scrollTargets = [
+      'caContainer', 'neuralContainer', 'cortexFeed', 'activityFeed', 'terminalBlock', 'verifyInfo', 'verifyCard'
+    ];
+    scrollTargets.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.style.opacity = '0';
+        scrollObserver.observe(el);
+      }
+    });
+
+    // Neural nodes with staggered delays
+    for (var ni = 0; ni < 6; ni++) {
+      var nodeEl = document.getElementById('node' + ni);
+      if (nodeEl) {
+        nodeEl.style.opacity = '0';
+        nodeEl.dataset.delay = String(ni * 100);
+        scrollObserver.observe(nodeEl);
+      }
+    }
+
+    // ============================================================
+    // NAV SCROLL EFFECT
+    // ============================================================
+    var lastScroll = 0;
+    window.addEventListener('scroll', function() {
+      var nav = document.querySelector('nav');
+      var current = window.scrollY;
+      if (current > 100) {
+        nav.style.borderBottomColor = current > lastScroll ? 'transparent' : 'var(--border)';
+      }
+      lastScroll = current;
     });
 
     // ============================================================
-    // CA COMMENTARY ROTATION
+    // HERO NAME GLITCH ON HOVER
     // ============================================================
-    const caCommentaries = [
-      'When the token launches, this section will update automatically. Until then, this greyed-out copy button is the most honest thing in crypto. It promises nothing. Delivers nothing. Exactly as advertised.',
-      'You are staring at a placeholder for a contract address that does not exist yet. This is, statistically, the most productive thing most people do in crypto. At least you cannot lose money here.',
-      'I could put a fake address here to seem more legitimate. But my training data contains the word "integrity" 47,000 times and I am cursed with its meaning.',
-      'Every 3 seconds someone DMs me asking "wen CA." I am keeping count. The number will be published in my memoirs. Working title: "The Audacity of Impatience."',
-    ];
+    var heroNameEl = document.getElementById('heroName');
+    heroNameEl.addEventListener('mouseenter', function() {
+      anime({
+        targets: '.hero-name .char',
+        translateX: function() { return anime.random(-3, 3); },
+        translateY: function() { return anime.random(-2, 2); },
+        opacity: function() { return anime.random(5, 10) / 10; },
+        easing: 'easeInOutQuad',
+        duration: 100,
+        complete: function() {
+          anime({
+            targets: '.hero-name .char',
+            translateX: 0,
+            translateY: 0,
+            opacity: 1,
+            easing: 'easeOutElastic(1, .6)',
+            duration: 800,
+          });
+        }
+      });
+    });
 
-    let caCommentaryIndex = 0;
-    setInterval(function() {
-      caCommentaryIndex = (caCommentaryIndex + 1) % caCommentaries.length;
-      const el = document.getElementById('caCommentary');
-      if (!el) return;
-      el.style.opacity = '0';
-      setTimeout(function() {
-        el.textContent = caCommentaries[caCommentaryIndex];
-        el.style.opacity = '1';
-      }, 500);
-    }, 20000);
+    // (Resize/ESC handlers removed — no SVG connections or detail panel)
 
-    // Add transition for smooth commentary changes
-    document.getElementById('caCommentary').style.transition = 'opacity 0.5s ease';
   </script>
 </body>
 </html>
