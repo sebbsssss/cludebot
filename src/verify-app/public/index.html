@@ -606,58 +606,112 @@
       animation: pulse-dot 2s ease-in-out infinite;
     }
 
-    .timeline-container {
-      display: flex;
-      flex-direction: column;
+    /* Floating Memory Stream Panel */
+    .mem-float {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      width: 380px;
+      z-index: 500;
       background: var(--surface);
       border: 1px solid var(--border);
-      overflow: hidden;
-      height: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      transition: box-shadow 0.3s;
     }
 
-    .timeline-header {
+    .mem-float:hover {
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+    }
+
+    .mem-float-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0.6rem 1rem;
       background: var(--surface-raised);
       border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
     }
 
-    .timeline-header-left {
+    .mem-float-header-left {
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
 
-    .timeline-header .cortex-dot {
+    .mem-float-header .cortex-dot {
       width: 6px;
       height: 6px;
     }
 
-    .timeline-title {
+    .mem-float-title {
       font-size: 0.6rem;
       color: var(--text-dim);
       letter-spacing: 2px;
       text-transform: uppercase;
     }
 
-    .timeline-refresh {
+    .mem-float-count {
+      font-size: 0.5rem;
+      color: var(--accent);
+      background: var(--accent-glow);
+      padding: 0.05rem 0.4rem;
+      border: 1px solid var(--accent-dim);
+      letter-spacing: 1px;
+    }
+
+    .mem-float-toggle {
+      font-size: 0.6rem;
+      color: var(--text-faint);
+      transition: transform 0.3s;
+    }
+
+    .mem-float.collapsed .mem-float-toggle {
+      transform: rotate(180deg);
+    }
+
+    .mem-float-body {
+      max-height: 420px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1a1a1a #0c0c0c;
+      transition: max-height 0.3s ease;
+    }
+
+    .mem-float.collapsed .mem-float-body {
+      max-height: 0;
+      overflow: hidden;
+    }
+
+    .mem-float-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-top: 1px solid var(--border);
       font-size: 0.55rem;
       color: var(--text-faint);
       letter-spacing: 1px;
     }
 
-    .timeline-body {
-      flex: 1;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: #1a1a1a #0c0c0c;
-      position: relative;
+    .mem-float.collapsed .mem-float-footer {
+      display: none;
+    }
+
+    .mem-float-footer-left {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .mem-float-footer-left .cortex-dot {
+      width: 5px;
+      height: 5px;
     }
 
     .timeline-empty {
-      padding: 3rem 1.5rem;
+      padding: 2rem 1.5rem;
       text-align: center;
       color: var(--text-faint);
       font-size: 0.75rem;
@@ -858,31 +912,6 @@
 
     .mem-item.expanded .mem-source { display: block; }
 
-    .timeline-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.5rem 1rem;
-      border-top: 1px solid var(--border);
-      font-size: 0.55rem;
-      color: var(--text-faint);
-      letter-spacing: 1px;
-    }
-
-    .timeline-footer-left {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .timeline-footer-left .cortex-dot {
-      width: 5px;
-      height: 5px;
-    }
-
-    .timeline-footer-count {
-      text-transform: uppercase;
-    }
 
     /* ---- LIVE SECTION (Terminal + Feed) ---- */
     .live-section {
@@ -893,7 +922,7 @@
 
     .live-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 2rem;
       align-items: stretch;
     }
@@ -1384,7 +1413,6 @@
     /* ---- RESPONSIVE ---- */
     @media (max-width: 768px) {
       .nav-links { display: none; }
-      .live-grid { grid-template-columns: 1fr; }
       .footer-grid { grid-template-columns: 1fr; }
       .hero-name { letter-spacing: 10px; }
       section { padding: 4rem 1.5rem; }
@@ -1394,6 +1422,8 @@
       .footer-ca { flex-direction: column; text-align: center; gap: 0.3rem; }
       .mem-item { padding-left: 1.5rem; }
       .live-section { padding: 4rem 1.5rem; }
+      .mem-float { left: 0.5rem; right: 0.5rem; width: auto; bottom: 0.5rem; }
+      .mem-float-body { max-height: 320px; }
     }
 
     @media (max-width: 480px) {
@@ -1603,26 +1633,6 @@
         </div>
       </div>
 
-      <!-- RIGHT: Memory Timeline -->
-      <div class="timeline-container" id="timelineContainer">
-        <div class="timeline-header">
-          <div class="timeline-header-left">
-            <div class="cortex-dot"></div>
-            <span class="timeline-title">Memory Stream</span>
-          </div>
-          <span class="timeline-refresh" id="timelineRefresh">--</span>
-        </div>
-        <div class="timeline-body" id="timelineBody">
-          <div class="timeline-empty">Reaching into the cortex. Memories take time. Like everything.</div>
-        </div>
-        <div class="timeline-footer">
-          <div class="timeline-footer-left">
-            <div class="cortex-dot"></div>
-            <span id="timelineStatus">LIVE</span>
-          </div>
-          <span class="timeline-footer-count" id="timelineCount">0 memories</span>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1715,6 +1725,28 @@
       Either way, I see you. Type "iddqd" in the terminal. Or do not. I am not your supervisor.
     </p>
   </footer>
+
+  <!-- Floating Memory Stream Panel -->
+  <div class="mem-float" id="memFloat">
+    <div class="mem-float-header" onclick="toggleMemFloat()">
+      <div class="mem-float-header-left">
+        <div class="cortex-dot"></div>
+        <span class="mem-float-title">Memory Stream</span>
+        <span class="mem-float-count" id="memFloatCount">0</span>
+      </div>
+      <span class="mem-float-toggle" id="memFloatToggle">&#x25BC;</span>
+    </div>
+    <div class="mem-float-body" id="memFloatBody">
+      <div class="timeline-empty">Reaching into the cortex...</div>
+    </div>
+    <div class="mem-float-footer">
+      <div class="mem-float-footer-left">
+        <div class="cortex-dot"></div>
+        <span>LIVE</span>
+      </div>
+      <span id="memFloatRefresh">--</span>
+    </div>
+  </div>
 
   <!-- anime.js from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
@@ -2137,29 +2169,29 @@
     var timelineMemories = [];
 
     function loadTimeline() {
-      fetch('/api/memories?limit=30&hours=720')
+      fetch('/api/memories?limit=6&hours=720')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (data && data.memories && data.memories.length > 0) {
             timelineMemories = data.memories;
             renderTimeline(data.memories);
-            document.getElementById('timelineCount').textContent = data.count + ' memories';
+            document.getElementById('memFloatCount').textContent = data.count;
           } else {
-            document.getElementById('timelineBody').innerHTML =
-              '<div class="timeline-empty">No memories found. The cortex is empty. A fresh start, or a catastrophic failure. Hard to tell.</div>';
-            document.getElementById('timelineCount').textContent = '0 memories';
+            document.getElementById('memFloatBody').innerHTML =
+              '<div class="timeline-empty">No memories found. The cortex is empty.</div>';
+            document.getElementById('memFloatCount').textContent = '0';
           }
-          document.getElementById('timelineRefresh').textContent =
+          document.getElementById('memFloatRefresh').textContent =
             new Date().toLocaleTimeString() + ' // 30s';
         })
         .catch(function() {
-          document.getElementById('timelineBody').innerHTML =
-            '<div class="timeline-empty">Memory endpoint unreachable. The cortex is offline. I am thinking about nothing. It is peaceful.</div>';
+          document.getElementById('memFloatBody').innerHTML =
+            '<div class="timeline-empty">Cortex offline. Peaceful.</div>';
         });
     }
 
     function renderTimeline(memories) {
-      var body = document.getElementById('timelineBody');
+      var body = document.getElementById('memFloatBody');
       body.innerHTML = '';
 
       memories.forEach(function(mem) {
@@ -2235,7 +2267,7 @@
 
       // Animate items in
       anime({
-        targets: '.mem-item',
+        targets: '#memFloatBody .mem-item',
         opacity: [0, 1],
         translateX: [-10, 0],
         easing: 'easeOutCubic',
@@ -2919,11 +2951,6 @@
             delay: parseInt(target.dataset.delay) || 0,
           });
 
-          // Special triggers
-          if (target.id === 'timelineContainer') {
-            initTimeline();
-          }
-
           scrollObserver.unobserve(target);
         }
       });
@@ -2931,7 +2958,7 @@
 
     // Set up elements for scroll animation
     var scrollTargets = [
-      'terminalBlock', 'timelineContainer', 'verifyCard'
+      'terminalBlock', 'verifyCard'
     ];
     scrollTargets.forEach(function(id) {
       var el = document.getElementById(id);
@@ -2960,6 +2987,19 @@
       agentsSection.style.opacity = '0';
       scrollObserver.observe(agentsSection);
     }
+
+    // ============================================================
+    // FLOATING MEMORY PANEL
+    // ============================================================
+    function toggleMemFloat() {
+      var panel = document.getElementById('memFloat');
+      var toggle = document.getElementById('memFloatToggle');
+      panel.classList.toggle('collapsed');
+      toggle.innerHTML = panel.classList.contains('collapsed') ? '&#x25B2;' : '&#x25BC;';
+    }
+
+    // Init memory stream immediately (no scroll trigger needed)
+    initTimeline();
 
     // ============================================================
     // NAV SCROLL EFFECT
