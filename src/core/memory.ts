@@ -4,7 +4,7 @@ import { createChildLogger } from './logger';
 const log = createChildLogger('memory');
 
 // ============================================================
-// THE CORTEX — Cluude's Memory System
+// THE CORTEX — Clude's Memory System
 //
 // Inspired by:
 // - Stanford's Generative Agents (recency + importance + relevance scoring)
@@ -17,7 +17,7 @@ const log = createChildLogger('memory');
 //   episodic    — individual interaction records (conversations, events)
 //   semantic    — distilled knowledge and beliefs (learned patterns)
 //   procedural  — behavioral patterns (what works, what doesn't)
-//   self_model  — Cluude's evolving understanding of itself
+//   self_model  — Clude's evolving understanding of itself
 // ============================================================
 
 export type MemoryType = 'episodic' | 'semantic' | 'procedural' | 'self_model';

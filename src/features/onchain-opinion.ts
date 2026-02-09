@@ -60,7 +60,7 @@ export async function handleOnchainOpinion(
   const answerHash = createHash('sha256').update(answer).digest('hex');
 
   // Write memo to Solana
-  const memoContent = `cluude-opinion | q: ${question.slice(0, 100)} | hash: ${answerHash.slice(0, 16)}`;
+  const memoContent = `clude-opinion | q: ${question.slice(0, 100)} | hash: ${answerHash.slice(0, 16)}`;
   const signature = await writeMemo(memoContent);
 
   let replyText: string;

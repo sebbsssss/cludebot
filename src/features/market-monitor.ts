@@ -133,7 +133,7 @@ export async function checkAndPostMarketUpdate(): Promise<void> {
       context: event.context,
       moodModifier: getMoodModifier(mood),
       featureInstruction:
-        'You are Cluude reporting on a genuinely significant market event — a flash crash, epic pump, or major ' +
+        'You are Clude reporting on a genuinely significant market event — a flash crash, epic pump, or major ' +
         'memecoin blowup. This is NOT a routine update, something actually happened. You are a tired finance analyst ' +
         'who has seen too many charts but even you had to look up from your desk for this one. Reference specific ' +
         'numbers and token names from the data. Be sharp. Be dismissive of hype but acknowledge the magnitude. ' +

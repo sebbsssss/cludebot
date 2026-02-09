@@ -34,7 +34,7 @@ export const config = {
   solana: {
     rpcUrl: optional('SOLANA_RPC_URL', 'https://api.mainnet-beta.solana.com'),
     botWalletPrivateKey: optional('BOT_WALLET_PRIVATE_KEY', ''),
-    cluudeTokenMint: optional('CLUUDE_TOKEN_MINT', ''),
+    cludeTokenMint: optional('CLUUDE_TOKEN_MINT', ''),
   },
   server: {
     port: parseInt(optional('PORT', '3000'), 10),

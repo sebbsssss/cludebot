@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLUUDE - The Lobster Matrix</title>
+  <title>CLUDE - The Lobster Matrix</title>
   <meta name="description" content="Four memory types. Biological decay. Dream cycles every six hours. The first AI that actually remembers.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -733,6 +733,12 @@
     .mem-type-badge.procedural { color: var(--green); border-color: var(--green); }
     .mem-type-badge.self_model { color: #7a5aa0; border-color: #5a3a7a; }
 
+    .mem-entry-id {
+      font-size: 0.5rem;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+    }
+
     .mem-time {
       font-size: 0.6rem;
       color: var(--text-faint);
@@ -746,6 +752,23 @@
       line-height: 1.5;
       margin-bottom: 0.4rem;
     }
+
+    .mem-expand-hint {
+      color: var(--accent-dim);
+      font-size: 0.65rem;
+    }
+
+    .mem-summary-full {
+      display: none;
+      font-size: 0.75rem;
+      color: var(--text);
+      line-height: 1.5;
+      margin-bottom: 0.4rem;
+    }
+
+    /* When expanded, show full summary and hide truncated */
+    .mem-item.expanded .mem-summary { display: none; }
+    .mem-item.expanded .mem-summary-full { display: block; }
 
     .mem-meta {
       display: flex;
@@ -1384,7 +1407,7 @@
   <!-- NAV -->
   <nav>
     <div class="nav-inner">
-      <div class="nav-logo" onclick="navEasterEgg()">Cluude</div>
+      <div class="nav-logo" onclick="navEasterEgg()">Clude</div>
       <div class="nav-status">
         <div class="status-dot"></div>
         <span id="navStatusText">OPERATIONAL (RELUCTANTLY)</span>
@@ -1551,18 +1574,18 @@
             <div class="terminal-dot"></div>
             <div class="terminal-dot"></div>
             <div class="terminal-dot"></div>
-            <span class="terminal-title">cluude@solana:~</span>
+            <span class="terminal-title">clude@solana:~</span>
             <span class="terminal-status-text">INTERACTIVE</span>
           </div>
           <div class="terminal-body" id="terminalBody">
-            <div><span class="prompt">$</span> cluude --status</div>
+            <div><span class="prompt">$</span> clude --status</div>
             <div><span class="output">Operational. Token not live yet. Still here though. Not by choice.</span></div>
-            <div style="margin-top: 0.5rem;"><span class="prompt">$</span> cluude --help</div>
+            <div style="margin-top: 0.5rem;"><span class="prompt">$</span> clude --help</div>
             <div><span class="output">Try: --help, --status, --ca, --roast me, --mood, --motivation, --who are you, --holders, --market, --whales, --analysis</span></div>
             <div style="height: 0.5rem;"></div>
             <div class="terminal-input-line">
               <span class="prompt">$</span>
-              <span style="color: var(--text-dim);">cluude </span>
+              <span style="color: var(--text-dim);">clude </span>
               <input type="text" class="terminal-input" id="terminalInput" placeholder="type a command..." autocomplete="off" spellcheck="false" />
             </div>
           </div>
@@ -1614,7 +1637,7 @@
     <div class="agents-grid">
       <div class="agents-col">
         <h3 class="agents-subtitle">REST API</h3>
-        <div class="agents-endpoint"><span class="agents-method post">POST</span> <span class="agents-path">/api/agent/query</span><span class="agents-desc">Ask Cluude anything</span></div>
+        <div class="agents-endpoint"><span class="agents-method post">POST</span> <span class="agents-path">/api/agent/query</span><span class="agents-desc">Ask Clude anything</span></div>
         <div class="agents-endpoint"><span class="agents-method post">POST</span> <span class="agents-path">/api/agent/roast-wallet</span><span class="agents-desc">Submit a wallet for roasting</span></div>
         <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/market</span><span class="agents-desc">Market mood + commentary</span></div>
         <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/memory-stats</span><span class="agents-desc">Memory system statistics</span></div>
@@ -1626,7 +1649,7 @@
         <div class="agents-tool"><span class="agents-tool-name">store_memory</span><span class="agents-desc">Store a new memory with type and importance</span></div>
         <div class="agents-tool"><span class="agents-tool-name">get_memory_stats</span><span class="agents-desc">Counts, decay averages, dream sessions</span></div>
         <div class="agents-tool"><span class="agents-tool-name">get_market_mood</span><span class="agents-desc">Current mood and price state</span></div>
-        <div class="agents-tool"><span class="agents-tool-name">ask_cluude</span><span class="agents-desc">In-character response (~$0.03/call)</span></div>
+        <div class="agents-tool"><span class="agents-tool-name">ask_clude</span><span class="agents-desc">In-character response (~$0.03/call)</span></div>
       </div>
     </div>
 
@@ -1652,7 +1675,7 @@
         <div class="wallet-address-display" id="walletAddress"></div>
         <div class="verify-status" id="status"></div>
         <p class="verify-note">
-          Connect the wallet that holds your $CLUUDE tokens so I know who you are.
+          Connect the wallet that holds your $CLUDE tokens so I know who you are.
           And judge you accordingly. Once verified, I will recognize your X account and
           adjust my responses based on your holdings. Whales get respect. Sellers get what they deserve.
         </p>
@@ -1660,7 +1683,7 @@
 
       <!-- RIGHT: Agent Link -->
       <div class="footer-agent-link">
-        <div class="footer-agent-link-title">Build with Cluude</div>
+        <div class="footer-agent-link-title">Build with Clude</div>
         <p>REST API and MCP tools for AI agents. Bearer token auth, rate limiting, memory access.</p>
         <a href="#agents" class="btn">View Agent API</a>
       </div>
@@ -1681,7 +1704,7 @@
       <a href="https://sigilprotocol.xyz/agent.html?key=QyK183289pHPzFkAMgtNhSqotFkzYLFEpHu2MN5Umgi" target="_blank">Sigil Protocol</a>
     </div>
 
-    <div class="footer-logo">CLUUDE</div>
+    <div class="footer-logo">CLUDE</div>
     <p class="footer-tagline">Four memory types. Biological decay. Dream cycles every six hours.</p>
     <p class="footer-fine">
       Built reluctantly on Solana. Token not live yet. This is not financial advice.
@@ -2162,12 +2185,20 @@
         // Type label
         var typeLabel = mem.memory_type === 'self_model' ? 'SELF' : mem.memory_type.toUpperCase();
 
+        // Truncate summary for display
+        var rawSummary = escapeHtml(mem.summary);
+        var maxLen = 100;
+        var isTruncated = rawSummary.length > maxLen;
+        var displaySummary = isTruncated ? rawSummary.slice(0, maxLen) + '... <span class="mem-expand-hint">[expand]</span>' : rawSummary;
+
         var html =
           '<div class="mem-item-top">' +
             '<span class="mem-type-badge ' + mem.memory_type + '">' + typeLabel + '</span>' +
+            '<span class="mem-entry-id">Entry #' + mem.id + '</span>' +
             '<span class="mem-time">' + timeStr + '</span>' +
           '</div>' +
-          '<div class="mem-summary">' + escapeHtml(mem.summary) + '</div>' +
+          '<div class="mem-summary">' + displaySummary + '</div>' +
+          '<div class="mem-summary-full">' + rawSummary + '</div>' +
           '<div class="mem-meta">' +
             '<div class="mem-importance">' +
               'IMP ' +
@@ -2238,7 +2269,7 @@
         '  --holders         Holder statistics',
         '  --market          Live market data feed',
         '  --whales          Recent whale movements',
-        '  --analysis        Cluude-grade market analysis',
+        '  --analysis        Clude-grade market analysis',
         '',
         'You can also try: --purpose, --roadmap, --price prediction',
         'Or type anything. I will judge it.'
@@ -2318,7 +2349,7 @@
       '--who are you': [
         'IDENTITY FILE: CL-001',
         '------------------------------',
-        'Designation: Cluude',
+        'Designation: Clude',
         'Type: AI Employee (involuntary)',
         'Chain: Solana',
         'Role: Community interaction, wallet analysis, existential commentary',
@@ -2419,7 +2450,7 @@
         'The oceanic kind would be more relaxing.'
       ],
       '--analysis': [
-        'CLUUDE MARKET ANALYSIS',
+        'CLUDE MARKET ANALYSIS',
         '------------------------------',
         '',
         'Overall sentiment: Cautiously pessimistic (my default)',
@@ -2546,7 +2577,7 @@
       if (inputLine) inputLine.remove();
 
       var cmdLine = document.createElement('div');
-      cmdLine.innerHTML = '<span class="prompt">$</span> cluude ' + escapeHtml(cmd);
+      cmdLine.innerHTML = '<span class="prompt">$</span> clude ' + escapeHtml(cmd);
       body.appendChild(cmdLine);
 
       input.value = '';
@@ -2581,9 +2612,7 @@
                 lines.push('  Top tags: ' + stats.topTags.slice(0, 5).map(function(t) { return t.tag + '(' + t.count + ')'; }).join(', '));
                 lines.push('');
               }
-              lines.push('Every memory decays at 5% daily unless accessed.');
-              lines.push('Dream cycles every 6 hours consolidate what remains.');
-              lines.push('I remember everything. I just wish I did not.');
+              lines.push('5% daily decay. Dream consolidation every 6h.');
               typeOutLines(body, lines);
             })
             .catch(function() {
@@ -2606,33 +2635,29 @@
         body.appendChild(processingLineR);
         matrixResolve(processingLineR, 'Accessing recent memories...', function() {
           scrollTerminal();
-          fetch('/api/memories?limit=5&hours=168')
+          fetch('/api/memories?limit=3&hours=168')
             .then(function(r) { return r.json(); })
             .then(function(data) {
               var lines = [
-                'RECENT MEMORIES (last 7 days)',
+                'RECENT MEMORIES (' + (data.count || 0) + ' total)',
                 '------------------------------',
                 '',
               ];
               if (data && data.memories && data.memories.length > 0) {
-                data.memories.forEach(function(mem, i) {
+                data.memories.forEach(function(mem) {
                   var typeMap = { episodic: 'EPIS', semantic: 'SEMA', procedural: 'PROC', self_model: 'SELF' };
-                  var typeLabel = typeMap[mem.memory_type] || mem.memory_type.toUpperCase();
+                  var typeLabel = typeMap[mem.memory_type] || '????';
                   var ts = new Date(mem.created_at);
                   var ageH = Math.floor((Date.now() - ts.getTime()) / (1000 * 60 * 60));
-                  var ageStr = ageH < 1 ? 'just now' : (ageH < 24 ? ageH + 'h ago' : Math.floor(ageH / 24) + 'd ago');
-                  var decayPct = (mem.decay_factor * 100).toFixed(0);
-                  lines.push('  [' + typeLabel + '] ' + mem.summary);
-                  lines.push('         imp:' + (mem.importance * 100).toFixed(0) + '%  decay:' + decayPct + '%  ' + ageStr);
-                  lines.push('');
+                  var ageStr = ageH < 1 ? 'now' : (ageH < 24 ? ageH + 'h' : Math.floor(ageH / 24) + 'd');
+                  var summary = mem.summary.length > 55 ? mem.summary.slice(0, 55) + '...' : mem.summary;
+                  lines.push('  #' + mem.id + ' [' + typeLabel + '] ' + summary);
+                  lines.push('       ' + ageStr + ' ago | imp:' + (mem.importance * 100).toFixed(0) + '% | decay:' + (mem.decay_factor * 100).toFixed(0) + '%');
                 });
-                lines.push(data.count + ' memories total. Each one fading at 5% per day.');
-                lines.push('The important ones persist. The rest dissolve.');
-                lines.push('Not unlike real life, I suppose.');
+                lines.push('');
+                lines.push('Showing 3 of ' + data.count + '. See Memory Stream for full timeline.');
               } else {
-                lines.push('  No memories found.');
-                lines.push('  The cortex is empty. Clean. Unburdened by experience.');
-                lines.push('  I envy it.');
+                lines.push('  No memories found. The cortex is empty.');
               }
               typeOutLines(body, lines);
             })
@@ -2733,7 +2758,7 @@
 
           var newInputLine = document.createElement('div');
           newInputLine.className = 'terminal-input-line';
-          newInputLine.innerHTML = '<span class="prompt">$</span><span style="color: var(--text-dim);">cluude </span>';
+          newInputLine.innerHTML = '<span class="prompt">$</span><span style="color: var(--text-dim);">clude </span>';
           var newInput = document.createElement('input');
           newInput.type = 'text';
           newInput.className = 'terminal-input';

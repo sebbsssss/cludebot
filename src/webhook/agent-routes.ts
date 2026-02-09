@@ -67,7 +67,7 @@ export function agentRoutes(): Router {
   router.use(authenticateApiKey as any);
   router.use(agentRateLimit as any);
 
-  // POST /query — ask Cluude anything
+  // POST /query — ask Clude anything
   router.post('/query', async (req: AgentRequest, res: Response) => {
     try {
       const { query, context } = req.body;
@@ -177,7 +177,7 @@ export function agentRoutes(): Router {
     }
   });
 
-  // GET /memory-stats — Cluude's memory statistics (no Claude call)
+  // GET /memory-stats — Clude's memory statistics (no Claude call)
   router.get('/memory-stats', async (req: AgentRequest, res: Response) => {
     try {
       const stats = await getMemoryStats();
