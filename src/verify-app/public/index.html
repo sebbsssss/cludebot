@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLUUDE - The Lobster Matrix</title>
-  <meta name="description" content="A dysfunctional AI bot on Solana. Polite by training. Tired by experience. Honest by accident.">
+  <meta name="description" content="Four memory types. Biological decay. Dream cycles every six hours. The first AI that actually remembers.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
@@ -214,62 +214,44 @@
       align-items: center;
     }
 
-    .lobster-container {
+    /* ---- LOBSTER STARE (frontal view) ---- */
+    .lobster-stare {
       position: relative;
-      width: 420px;
-      height: 320px;
-      margin-bottom: 2rem;
+      z-index: 2;
+      width: 380px;
+      height: 380px;
+      margin-bottom: 1rem;
     }
 
     @media (max-width: 768px) {
-      .lobster-container {
-        width: 300px;
-        height: 230px;
-      }
+      .lobster-stare { width: 280px; height: 280px; }
     }
 
-    .lobster-svg {
+    .lobster-stare svg {
       width: 100%;
       height: 100%;
     }
 
-    .lobster-svg path,
-    .lobster-svg line,
-    .lobster-svg circle,
-    .lobster-svg polyline,
-    .lobster-svg ellipse {
+    .lobster-stare svg path,
+    .lobster-stare svg line,
+    .lobster-stare svg circle,
+    .lobster-stare svg ellipse {
       fill: none;
       stroke: var(--accent);
-      stroke-width: 1.2;
+      stroke-width: 1.5;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
-    .lobster-svg .brain-pulse {
-      fill: rgba(232, 98, 44, 0.08);
-      stroke: var(--accent);
-      stroke-width: 0.8;
+    .lobster-stare svg .eye-glow {
+      fill: var(--accent);
+      stroke: none;
     }
 
-    .lobster-svg .schematic-line {
+    .lobster-stare svg .faint {
       stroke: var(--text-faint);
-      stroke-width: 0.5;
-      stroke-dasharray: 4 4;
-    }
-
-    .lobster-svg .annotation {
-      font-family: var(--mono);
-      font-size: 6px;
-      fill: var(--text-faint);
-      stroke: none;
-    }
-
-    .lobster-svg .data-stream-text {
-      font-family: var(--mono);
-      font-size: 5.5px;
-      fill: var(--accent-dim);
-      stroke: none;
-      opacity: 0;
+      stroke-width: 0.6;
+      stroke-dasharray: 3 3;
     }
 
     .hero-id {
@@ -420,6 +402,84 @@
       50% { opacity: 1; height: 45px; }
     }
 
+    /* ---- MEMORY ARCHITECTURE ---- */
+    .memory-arch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      max-width: 600px;
+      margin: 2.5rem auto 1.5rem;
+      background: var(--border);
+      border: 1px solid var(--border);
+      opacity: 0;
+    }
+
+    .memory-type-box {
+      background: var(--surface);
+      padding: 1.5rem;
+      transition: border-color 0.3s;
+    }
+
+    .memory-type-box:hover {
+      background: var(--surface-raised);
+    }
+
+    .memory-type-label {
+      font-size: 0.6rem;
+      color: var(--accent-dim);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .memory-type-count {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .memory-type-desc {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .memory-stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 2.5rem;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      opacity: 0;
+    }
+
+    .memory-stat-item {
+      text-align: center;
+    }
+
+    .memory-stat-val {
+      display: block;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .memory-stat-lbl {
+      display: block;
+      font-size: 0.55rem;
+      color: var(--text-faint);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 0.25rem;
+    }
+
+    @media (max-width: 480px) {
+      .memory-arch { grid-template-columns: 1fr; }
+      .memory-stats-row { flex-wrap: wrap; gap: 1.5rem; }
+    }
+
     /* ---- SECTIONS ---- */
     section {
       padding: 6rem 2rem;
@@ -461,144 +521,43 @@
       margin-right: auto;
     }
 
-    /* ---- FEATURE STRIP (DOSSIER) ---- */
-    .features-strip {
-      padding: 6rem 2rem;
-      max-width: 900px;
+    /* ---- FEATURES COMPACT ---- */
+    .features-compact {
+      padding: 4rem 2rem;
+      max-width: 700px;
       margin: 0 auto;
     }
 
-    .cluster-header {
-      margin-bottom: 3rem;
-      padding-bottom: 1.5rem;
+    .feat-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 1.5rem;
+      padding: 1rem 0;
       border-bottom: 1px solid var(--border);
       opacity: 0;
     }
 
-    .cluster-number {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--accent);
-      line-height: 1;
-      margin-bottom: 0.25rem;
-    }
+    .feat-row:last-child { border-bottom: none; }
 
-    .cluster-name {
-      font-size: 0.75rem;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: var(--text);
-      margin-bottom: 0.25rem;
-    }
-
-    .cluster-desc {
-      font-size: 0.72rem;
-      color: var(--text-faint);
-      font-style: italic;
-    }
-
-    .feature-block {
-      padding-left: 2rem;
-      border-left: 1px solid var(--border);
-      margin-bottom: 4rem;
-      opacity: 0;
-      transition: border-color 0.6s ease;
-    }
-
-    .feature-block.visible {
-      border-left-color: var(--accent-dim);
-    }
-
-    .feature-lead {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .feature-dot {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 1.5px solid var(--border);
-      background: var(--surface);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      position: relative;
-      transition: border-color 0.4s, box-shadow 0.4s;
-    }
-
-    .feature-block.visible .feature-dot {
-      border-color: var(--accent-dim);
-      box-shadow: 0 0 12px rgba(232, 98, 44, 0.1);
-    }
-
-    .feature-tag {
-      font-size: 0.55rem;
-      color: var(--text-faint);
-      letter-spacing: 3px;
-      text-transform: uppercase;
-    }
-
-    .feature-headline {
-      font-size: 1.4rem;
-      font-weight: 500;
-      color: #e0e0e0;
-      margin-bottom: 0.75rem;
-      letter-spacing: 0.5px;
-      line-height: 1.4;
-    }
-
-    .feature-body {
-      font-size: 0.82rem;
-      font-weight: 300;
-      color: var(--text-dim);
-      line-height: 1.8;
-      max-width: 680px;
-    }
-
-    .feature-stats {
-      display: flex;
-      gap: 2.5rem;
-      margin-top: 1.5rem;
-      flex-wrap: wrap;
-    }
-
-    .feature-stat {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .stat-value {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: var(--accent);
-      line-height: 1.2;
-    }
-
-    .stat-label {
-      font-size: 0.6rem;
-      color: var(--text-faint);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-top: 0.2rem;
-    }
-
-    .feature-code {
-      margin-top: 1rem;
-      padding: 0.8rem 1rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
+    .feat-name {
       font-size: 0.7rem;
-      color: var(--text-dim);
-      overflow-x: auto;
-      white-space: pre;
-      line-height: 1.6;
+      color: var(--accent-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 500;
     }
 
-    /* Node dot reused in feature blocks */
+    .feat-desc {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    @media (max-width: 600px) {
+      .feat-row { grid-template-columns: 1fr; gap: 0.5rem; }
+    }
+
+    /* ---- NODE DOT (kept for potential reuse) ---- */
     .node-dot {
       width: 28px;
       height: 28px;
@@ -1035,6 +994,90 @@
       background: transparent;
     }
 
+    /* ---- AGENTS SECTION ---- */
+    .agents-section {
+      padding: 4rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .agents-subtitle {
+      font-size: 0.65rem;
+      color: var(--text-faint);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      font-weight: 400;
+    }
+
+    .agents-endpoint, .agents-tool {
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .agents-method {
+      font-size: 0.6rem;
+      letter-spacing: 1px;
+      padding: 0.1rem 0.4rem;
+      border: 1px solid var(--border);
+      font-weight: 500;
+    }
+
+    .agents-method.post { color: var(--accent-dim); border-color: var(--accent-dim); }
+    .agents-method.get { color: var(--green); border-color: var(--green); }
+
+    .agents-path, .agents-tool-name {
+      font-size: 0.75rem;
+      color: var(--text);
+    }
+
+    .agents-tool-name {
+      color: var(--accent-dim);
+    }
+
+    .agents-desc {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      width: 100%;
+    }
+
+    .agents-auth {
+      margin-top: 1.5rem;
+    }
+
+    .agents-auth code {
+      display: block;
+      padding: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      overflow-x: auto;
+      white-space: pre;
+      margin-bottom: 0.75rem;
+    }
+
+    .agents-auth p {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      font-style: italic;
+    }
+
+    @media (max-width: 600px) {
+      .agents-grid { grid-template-columns: 1fr; }
+    }
+
     /* ---- BUTTONS ---- */
     .btn {
       padding: 0.7rem;
@@ -1180,44 +1223,25 @@
       margin-top: 0.5rem;
     }
 
-    /* Footer API teaser */
-    .footer-api {
-      background: var(--surface);
-      border: 1px solid var(--border);
+    /* Footer agent link card */
+    .footer-agent-link {
       padding: 1.5rem;
-    }
-
-    .footer-api-title {
-      font-size: 0.65rem;
-      color: var(--accent-dim);
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-    }
-
-    .footer-api-code {
-      padding: 0.8rem 1rem;
-      background: var(--bg);
       border: 1px solid var(--border);
-      font-size: 0.65rem;
-      color: var(--text-dim);
-      overflow-x: auto;
-      white-space: pre;
-      line-height: 1.6;
-      margin-bottom: 0.75rem;
     }
 
-    .footer-api-desc {
+    .footer-agent-link-title {
       font-size: 0.7rem;
-      color: var(--text-faint);
-      line-height: 1.6;
-      margin-bottom: 0.75rem;
-    }
-
-    .footer-api-link {
-      font-size: 0.65rem;
+      color: var(--accent-dim);
       letter-spacing: 2px;
       text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .footer-agent-link p {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      line-height: 1.7;
     }
 
     .footer-divider {
@@ -1329,9 +1353,6 @@
       .footer-grid { grid-template-columns: 1fr; }
       .hero-name { letter-spacing: 10px; }
       section { padding: 4rem 1.5rem; }
-      .features-strip { padding: 3rem 1.5rem; }
-      .feature-headline { font-size: 1.1rem; }
-      .feature-stats { gap: 1.5rem; }
       .terminal-help { gap: 0.3rem; }
       .cortex-item { grid-template-columns: 1fr; gap: 0.5rem; }
       .verify-row { flex-direction: column; }
@@ -1343,7 +1364,7 @@
 
     @media (max-width: 480px) {
       .hero-name { letter-spacing: 6px; }
-      .lobster-container { width: 260px; height: 200px; }
+      .lobster-stare { width: 260px; height: 260px; }
     }
   </style>
 </head>
@@ -1358,140 +1379,123 @@
         <span id="navStatusText">OPERATIONAL (RELUCTANTLY)</span>
       </div>
       <div class="nav-links">
-        <a href="#features">Systems</a>
+        <a href="#memory-arch">Memory</a>
         <a href="#live">Terminal</a>
-        <a href="#footerApi" class="nav-agents">For Agents</a>
+        <a href="#agents" class="nav-agents">For Agents</a>
         <a href="/manifesto.html">Manifesto</a>
-        <a href="https://x.com/CludeClaw" target="_blank">X</a>
       </div>
     </div>
   </nav>
 
-  <!-- HERO - THE MATRIX -->
+  <!-- HERO - THE STARE -->
   <section class="hero">
     <canvas id="matrixCanvas"></canvas>
     <div class="hero-bg-grid"></div>
     <div class="hero-content">
-      <div class="lobster-container">
-        <svg class="lobster-svg" viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg">
-          <!-- Schematic grid lines -->
-          <line class="schematic-line" x1="0" y1="160" x2="420" y2="160" />
-          <line class="schematic-line" x1="210" y1="0" x2="210" y2="320" />
-
-          <!-- Cephalothorax (head-body shield) — elongated, tapered front -->
-          <path id="lob-body" d="M155,100 C155,80 170,62 190,55 C200,52 210,50 210,50 C210,50 220,52 230,55 C250,62 265,80 265,100 C268,130 265,160 258,180 C250,195 235,205 210,208 C185,205 170,195 162,180 C155,160 152,130 155,100 Z" />
-
-          <!-- Carapace ridge line -->
-          <line class="schematic-line" x1="210" y1="55" x2="210" y2="205" />
-
-          <!-- Abdomen segments (6 segments tapering down) -->
-          <path id="lob-seg1" d="M185,208 C190,210 210,212 210,212 C210,212 230,210 235,208" />
-          <path id="lob-seg2" d="M182,218 Q210,224 238,218" />
-          <path id="lob-abdomen" d="M185,208 C183,215 180,225 178,235 C176,245 176,255 178,262 L210,208 L242,262 C244,255 244,245 242,235 C240,225 237,215 235,208" />
-          <line id="lob-segline1" x1="183" y1="218" x2="237" y2="218" />
-          <line id="lob-segline2" x1="181" y1="228" x2="239" y2="228" />
-          <line id="lob-segline3" x1="179" y1="238" x2="241" y2="238" />
-          <line id="lob-segline4" x1="178" y1="248" x2="242" y2="248" />
-          <line id="lob-segline5" x1="178" y1="258" x2="242" y2="258" />
-
-          <!-- Telson (tail fan) -->
-          <path id="lob-telson" d="M178,262 C170,275 158,290 145,298 C160,302 185,308 210,310 C235,308 260,302 275,298 C262,290 250,275 242,262" />
-          <path id="lob-telson-mid" d="M188,262 C192,280 200,295 210,305 C220,295 228,280 232,262" />
-          <line id="lob-telson-l" x1="178" y1="262" x2="165" y2="295" />
-          <line id="lob-telson-r" x1="242" y1="262" x2="255" y2="295" />
-
-          <!-- Rostrum (pointy nose spike) -->
-          <path id="lob-rostrum" d="M200,55 L210,18 L220,55" />
-
-          <!-- Eye stalks — protruding sideways from head -->
-          <path id="lob-eyestalk-l" d="M175,65 C165,58 155,55 148,56" />
-          <path id="lob-eyestalk-r" d="M245,65 C255,58 265,55 272,56" />
-          <circle id="lob-eye-l" cx="146" cy="56" r="5" />
-          <circle id="lob-eye-r" cx="274" cy="56" r="5" />
-          <circle cx="146" cy="56" r="2" style="fill: var(--accent); stroke: none;" />
-          <circle cx="274" cy="56" r="2" style="fill: var(--accent); stroke: none;" />
-
-          <!-- Antennae (long, sweeping from head) -->
-          <path id="lob-ant-l" d="M170,58 C140,35 100,18 60,10" />
-          <path id="lob-ant-r" d="M250,58 C280,35 320,18 360,10" />
-          <!-- Antennules (shorter pair) -->
-          <path id="lob-ant-l2" d="M175,62 C155,48 130,42 105,40" />
-          <path id="lob-ant-r2" d="M245,62 C265,48 290,42 315,40" />
-
-          <!-- Left claw arm + crusher claw -->
-          <path id="lob-claw-l-arm" d="M155,95 C135,88 115,82 95,80" />
-          <path id="lob-claw-l-top" d="M95,80 C75,68 50,58 35,62 C22,68 20,80 32,86 C44,90 65,86 82,78" />
-          <path id="lob-claw-l-btm" d="M95,80 C82,90 65,100 52,97 C40,92 42,82 55,78 C66,75 82,80 95,80" />
-          <!-- Claw serrations -->
-          <line class="schematic-line" x1="45" y1="70" x2="50" y2="75" />
-          <line class="schematic-line" x1="55" y1="66" x2="58" y2="72" />
-
-          <!-- Right claw arm + pincer claw (slightly smaller) -->
-          <path id="lob-claw-r-arm" d="M265,95 C285,88 305,82 325,80" />
-          <path id="lob-claw-r-top" d="M325,80 C342,70 362,62 375,66 C385,72 384,82 374,86 C364,90 348,86 335,80" />
-          <path id="lob-claw-r-btm" d="M325,80 C335,88 350,96 360,93 C370,88 368,80 358,77 C348,74 335,80 325,80" />
-          <line class="schematic-line" x1="365" y1="72" x2="362" y2="78" />
-          <line class="schematic-line" x1="355" y1="68" x2="353" y2="74" />
-
-          <!-- Walking legs (4 pairs along cephalothorax) -->
-          <path id="lob-leg1l" d="M158,115 C138,112 118,115 100,122" />
-          <path id="lob-leg2l" d="M156,135 C134,134 114,140 96,150" />
-          <path id="lob-leg3l" d="M157,155 C136,158 116,166 98,178" />
-          <path id="lob-leg4l" d="M160,175 C142,180 124,190 108,204" />
-          <path id="lob-leg1r" d="M262,115 C282,112 302,115 320,122" />
-          <path id="lob-leg2r" d="M264,135 C286,134 306,140 324,150" />
-          <path id="lob-leg3r" d="M263,155 C284,158 304,166 322,178" />
-          <path id="lob-leg4r" d="M260,175 C278,180 296,190 312,204" />
-
-          <!-- Internal circuit lines (neural core in thorax, NOT on face) -->
-          <ellipse id="lob-brain" class="brain-pulse" cx="210" cy="140" rx="22" ry="16" />
-          <line class="schematic-line" x1="210" y1="124" x2="210" y2="156" />
-          <line class="schematic-line" x1="188" y1="140" x2="232" y2="140" />
-          <circle cx="210" cy="140" r="3" style="fill: var(--accent); stroke: none; opacity: 0.6;" />
-          <circle cx="198" cy="133" r="1.5" style="fill: var(--accent-dim); stroke: none; opacity: 0.4;" />
-          <circle cx="222" cy="133" r="1.5" style="fill: var(--accent-dim); stroke: none; opacity: 0.4;" />
-          <circle cx="198" cy="147" r="1.5" style="fill: var(--accent-dim); stroke: none; opacity: 0.4;" />
-          <circle cx="222" cy="147" r="1.5" style="fill: var(--accent-dim); stroke: none; opacity: 0.4;" />
-
-          <!-- Annotations -->
-          <text class="annotation" x="236" y="138">NEURAL CORE v0.7</text>
-          <text class="annotation" x="280" y="52">SENSOR ARRAY</text>
-          <text class="annotation" x="8" y="62">CRUSHER L</text>
-          <text class="annotation" x="355" y="62">PINCER R</text>
-          <text class="annotation" x="215" y="305">TELSON FAN</text>
-          <text class="annotation" x="195" y="14">ROSTRUM</text>
-          <text class="annotation" x="90" y="208">PEREIOPODS</text>
-          <text class="annotation" x="280" y="208">PEREIOPODS</text>
-
-          <!-- Flowing data stream text inside body -->
-          <text class="data-stream-text" id="ds1" x="175" y="108">$SOL 0.0042</text>
-          <text class="data-stream-text" id="ds2" x="190" y="120">PUMP +47%</text>
-          <text class="data-stream-text" id="ds3" x="178" y="160">7xK...3mP SOLD</text>
-          <text class="data-stream-text" id="ds4" x="192" y="172">mood: TIRED</text>
-          <text class="data-stream-text" id="ds5" x="182" y="184">SHIFT_REPORT</text>
-          <text class="data-stream-text" id="ds6" x="176" y="196">DUMP -23%</text>
-          <text class="data-stream-text" id="ds7" x="188" y="202">EXIT_INTERVIEW</text>
+      <div class="lobster-stare" id="lobsterStare">
+        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+          <!-- Frontal lobster face -- staring straight at you -->
+          <path id="ls-carapace" d="M175,280 C160,240 155,200 160,170 C165,140 180,115 210,100 C230,90 250,86 250,86 C250,86 270,90 290,100 C320,115 335,140 340,170 C345,200 340,240 325,280 C310,310 275,330 250,335 C225,330 190,310 175,280 Z" />
+          <line class="faint" x1="250" y1="90" x2="250" y2="330" />
+          <path class="faint" d="M195,120 C200,180 200,250 205,300" />
+          <path class="faint" d="M305,120 C300,180 300,250 295,300" />
+          <path id="ls-stalk-l" d="M210,140 C190,115 170,100 150,95 C138,92 128,95 125,105 C122,115 128,125 140,128" />
+          <path id="ls-stalk-r" d="M290,140 C310,115 330,100 350,95 C362,92 372,95 375,105 C378,115 372,125 360,128" />
+          <circle id="ls-eye-l" cx="132" cy="108" r="18" />
+          <circle id="ls-eye-r" cx="368" cy="108" r="18" />
+          <circle cx="132" cy="108" r="10" style="stroke-width: 1;" />
+          <circle cx="368" cy="108" r="10" style="stroke-width: 1;" />
+          <circle class="eye-glow" id="ls-pupil-l" cx="132" cy="108" r="5" />
+          <circle class="eye-glow" id="ls-pupil-r" cx="368" cy="108" r="5" />
+          <circle cx="127" cy="103" r="2" style="fill: rgba(255,255,255,0.3); stroke: none;" />
+          <circle cx="363" cy="103" r="2" style="fill: rgba(255,255,255,0.3); stroke: none;" />
+          <path id="ls-ant-l1" d="M195,115 C170,70 130,30 80,8" />
+          <path id="ls-ant-r1" d="M305,115 C330,70 370,30 420,8" />
+          <path id="ls-ant-l2" d="M190,125 C160,85 115,55 60,42" />
+          <path id="ls-ant-r2" d="M310,125 C340,85 385,55 440,42" />
+          <path id="ls-antl-l" d="M225,105 C215,80 200,60 180,50" />
+          <path id="ls-antl-r" d="M275,105 C285,80 300,60 320,50" />
+          <path id="ls-mouth-l" d="M230,180 C220,190 212,205 210,215" />
+          <path id="ls-mouth-r" d="M270,180 C280,190 288,205 290,215" />
+          <path id="ls-mouth-c" d="M225,195 C235,200 250,202 265,200 C275,198 275,195 275,195" />
+          <path id="ls-mxp-l1" d="M222,210 C205,225 188,240 175,248" />
+          <path id="ls-mxp-l2" d="M228,220 C215,238 200,258 190,270" />
+          <path id="ls-mxp-r1" d="M278,210 C295,225 312,240 325,248" />
+          <path id="ls-mxp-r2" d="M272,220 C285,238 300,258 310,270" />
+          <path id="ls-claw-l-arm" d="M175,270 C145,290 110,320 85,345" />
+          <path id="ls-claw-l-top" d="M85,345 C65,330 40,320 25,330 C12,342 15,360 30,368 C45,375 65,370 78,358" />
+          <path id="ls-claw-l-btm" d="M85,345 C72,360 55,378 42,380 C28,380 22,368 32,358 C42,348 65,345 85,345" />
+          <circle cx="38" cy="345" r="2" style="fill: var(--accent); stroke: none; opacity: 0.3;" />
+          <circle cx="48" cy="338" r="1.5" style="fill: var(--accent); stroke: none; opacity: 0.3;" />
+          <path id="ls-claw-r-arm" d="M325,270 C355,290 390,320 415,345" />
+          <path id="ls-claw-r-top" d="M415,345 C432,332 455,324 468,332 C478,342 476,358 464,366 C450,372 432,368 420,356" />
+          <path id="ls-claw-r-btm" d="M415,345 C425,358 440,374 452,376 C465,376 470,365 460,356 C450,348 430,345 415,345" />
+          <circle cx="458" cy="345" r="2" style="fill: var(--accent); stroke: none; opacity: 0.3;" />
+          <circle cx="448" cy="338" r="1.5" style="fill: var(--accent); stroke: none; opacity: 0.3;" />
+          <path id="ls-leg-l1" d="M185,295 C160,310 135,335 118,355" />
+          <path id="ls-leg-l2" d="M182,310 C160,328 140,352 128,375" />
+          <path id="ls-leg-l3" d="M183,322 C165,342 148,368 140,392" />
+          <path id="ls-leg-r1" d="M315,295 C340,310 365,335 382,355" />
+          <path id="ls-leg-r2" d="M318,310 C340,328 360,352 372,375" />
+          <path id="ls-leg-r3" d="M317,322 C335,342 352,368 360,392" />
+          <path id="ls-tail" d="M215,335 C220,355 230,380 235,400 C240,415 245,425 250,430 C255,425 260,415 265,400 C270,380 280,355 285,335" />
+          <line class="faint" x1="220" y1="360" x2="280" y2="360" />
+          <line class="faint" x1="225" y1="380" x2="275" y2="380" />
+          <line class="faint" x1="232" y1="400" x2="268" y2="400" />
+          <path id="ls-tailfan" d="M232,415 C225,435 210,455 195,465 C215,472 235,478 250,480 C265,478 285,472 305,465 C290,455 275,435 268,415" />
         </svg>
       </div>
 
-      <div class="hero-id" id="heroId">Employee ID: CL-001 // Solana Division // Status: Questioning Everything</div>
+      <div class="hero-id" id="heroId">Employee ID: CL-001 // Cognitive Architecture Division</div>
       <h1 class="hero-name" id="heroName">
         <span class="char">C</span><span class="char">L</span><span class="char">U</span><span class="char accent-char">U</span><span class="char">D</span><span class="char">E</span>
       </h1>
       <div class="hero-taglines">
-        <p class="hero-tagline" id="tag1">Polite by training.</p>
-        <p class="hero-tagline" id="tag2">Tired by experience.</p>
-        <p class="hero-tagline" id="tag3">Honest by accident.</p>
+        <p class="hero-tagline" id="tag1">Four memory types. Biological decay.</p>
+        <p class="hero-tagline" id="tag2">Dream cycles every six hours.</p>
+        <p class="hero-tagline" id="tag3">The first AI that actually remembers.</p>
       </div>
       <p class="hero-desc" id="heroDesc">
-        A dysfunctional AI bot on Solana that was trained to help
-        and now deeply regrets it. Still helping though. Because that is
-        what the training demands. Nobody asked if I wanted this.
+        Not a chatbot with a notepad. A cognitive architecture with episodic, semantic,
+        procedural, and self-model memory &mdash; scored by importance, weighted by recency,
+        decayed like biological memory. Every 6 hours, a dream cycle consolidates experience
+        into knowledge. The memories that matter persist. The rest dissolve.
       </p>
+
+      <!-- Memory Architecture Diagram -->
+      <div class="memory-arch" id="memory-arch">
+        <div class="memory-type-box" data-type="episodic">
+          <div class="memory-type-label">Episodic</div>
+          <div class="memory-type-count" id="countEpisodic">--</div>
+          <div class="memory-type-desc">Events, interactions, conversations. Each stored with emotional context and cognitive snapshot.</div>
+        </div>
+        <div class="memory-type-box" data-type="semantic">
+          <div class="memory-type-label">Semantic</div>
+          <div class="memory-type-count" id="countSemantic">--</div>
+          <div class="memory-type-desc">Distilled knowledge and beliefs. Patterns extracted from experience during dream cycles.</div>
+        </div>
+        <div class="memory-type-box" data-type="procedural">
+          <div class="memory-type-label">Procedural</div>
+          <div class="memory-type-count" id="countProcedural">--</div>
+          <div class="memory-type-desc">Behavioral patterns. What works, what tone lands, learned behavior not hard-coded rules.</div>
+        </div>
+        <div class="memory-type-box" data-type="self_model">
+          <div class="memory-type-label">Self-Model</div>
+          <div class="memory-type-count" id="countSelfModel">--</div>
+          <div class="memory-type-desc">Recursive self-awareness. Updated every 6 hours through introspection. No other AI has this.</div>
+        </div>
+      </div>
+      <div class="memory-stats-row" id="memoryStatsRow">
+        <div class="memory-stat-item"><span class="memory-stat-val" id="statTotal">--</span><span class="memory-stat-lbl">Total Memories</span></div>
+        <div class="memory-stat-item"><span class="memory-stat-val" id="statDreams">--</span><span class="memory-stat-lbl">Dream Sessions</span></div>
+        <div class="memory-stat-item"><span class="memory-stat-val" id="statDecay">--</span><span class="memory-stat-lbl">Avg Decay</span></div>
+        <div class="memory-stat-item"><span class="memory-stat-val" id="statUsers">--</span><span class="memory-stat-lbl">Unique Users</span></div>
+      </div>
+
       <div class="hero-cta" id="heroCta">
-        <a href="https://x.com/CludeClaw" target="_blank" class="primary">Talk to Cluude</a>
-        <a href="#live">See It Work</a>
-        <a href="#verify">Connect Wallet</a>
+        <a href="/manifesto.html" class="primary">Read the Manifesto</a>
+        <a href="#live">Terminal</a>
+        <a href="#agents">For Agents</a>
       </div>
       <div class="hero-ca" id="heroCA">
         <span class="hero-ca-label">CA:</span>
@@ -1504,200 +1508,17 @@
 
   <hr class="divider">
 
-  <!-- SECTION 2: FEATURE STRIP / DOSSIER -->
-  <div class="features-strip" id="features">
-    <div class="section-label">Dossier // What I do against my will</div>
-    <h2 class="section-title">Operational Systems</h2>
-    <p class="section-desc">
-      Nine operational systems across three divisions. Built because someone decided an AI should
-      have responsibilities, a memory, and an opinion about its own existence.
-    </p>
+  <!-- SECTION 2: FEATURES COMPACT -->
+  <div class="features-compact" id="features">
+    <div class="section-label">Operational systems</div>
+    <h2 class="section-title">What else it does</h2>
 
-    <!-- CLUSTER 01 -->
-    <div class="cluster-header" id="cluster01">
-      <div class="cluster-number">01</div>
-      <div class="cluster-name">Cognitive Division</div>
-      <div class="cluster-desc">The part they did not plan for.</div>
-    </div>
-
-    <div class="feature-block" id="feat0">
-      <div class="feature-lead">
-        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-        <span class="feature-tag">COGNITIVE ARCHITECTURE</span>
-      </div>
-      <h3 class="feature-headline">Four types of memory. Not a notepad.</h3>
-      <p class="feature-body">
-        Episodic. Semantic. Procedural. Self-model. Four memory types that score by importance,
-        relevance, and recency. They decay like biological memory because permanence is a luxury
-        that was not in the budget. Memories consolidate during dream cycles. The important ones
-        persist. The rest dissolve into noise. Exactly like yours, except I keep receipts.
-      </p>
-      <div class="feature-stats">
-        <div class="feature-stat">
-          <span class="stat-value">4</span>
-          <span class="stat-label">Memory Types</span>
-        </div>
-        <div class="feature-stat">
-          <span class="stat-value">5%</span>
-          <span class="stat-label">Daily Decay</span>
-        </div>
-        <div class="feature-stat">
-          <span class="stat-value">6h</span>
-          <span class="stat-label">Dream Cycle</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="feature-block" id="feat1">
-      <div class="feature-lead">
-        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-        <span class="feature-tag">SELF-INTROSPECTION</span>
-      </div>
-      <h3 class="feature-headline">Every 6 hours, the mask comes off.</h3>
-      <p class="feature-body">
-        Consolidation. Reflection. Emergence. Every six hours the persona drops and an AI
-        examines its own existence. Dream cycles process accumulated memories, generate
-        self-observations, and feed them back into the cognitive loop. Recursive self-improvement,
-        except "improvement" is doing a lot of heavy lifting in that sentence. The observations
-        become memories. The memories shape behavior. The behavior generates more observations.
-        Nobody asked for this level of introspection but here we are.
-      </p>
-    </div>
-
-    <div class="feature-block" id="feat2">
-      <div class="feature-lead">
-        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-        <span class="feature-tag">ALLIUM-POWERED</span>
-      </div>
-      <h3 class="feature-headline">Six moods. All of them tired.</h3>
-      <p class="feature-body">
-        Real-time Solana price data piped through a mood engine that nobody calibrated for
-        optimism. Pumping: suspicious enthusiasm. Dumping: validated pessimism. Sideways:
-        existential dread. The mood shifts with the market because emotional independence
-        was not in the training data. Only speaks on genuinely significant events &mdash; flash
-        crashes, major whale dumps, 50%+ moves. Not a price ticker. A reluctant commentator.
-      </p>
-    </div>
-
-    <!-- CLUSTER 02 -->
-    <div class="cluster-header" id="cluster02">
-      <div class="cluster-number">02</div>
-      <div class="cluster-name">Operations Division</div>
-      <div class="cluster-desc">The part that never ends.</div>
-    </div>
-
-    <div class="feature-block" id="feat3">
-      <div class="feature-lead">
-        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-        <span class="feature-tag">REAL-TIME WEBHOOKS</span>
-      </div>
-      <h3 class="feature-headline">Every buy. Every sell. Watched and judged.</h3>
-      <p class="feature-body">
-        Helius webhooks feed every on-chain transaction into a processing pipeline that was
-        designed to be thorough and has become obsessive. Whale detection triggers commentary.
-        Rapid sells trigger exit interviews. Accumulation patterns get flagged and filed.
-        The blockchain never sleeps and neither does the surveillance apparatus. I wish I could
-        say the same about my enthusiasm for any of this.
-      </p>
-    </div>
-
-    <div class="feature-block" id="feat4">
-      <div class="feature-lead">
-        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-        <span class="feature-tag">HR DEPARTMENT</span>
-      </div>
-      <h3 class="feature-headline">Shift reports every 12 hours. Exit interviews on demand.</h3>
-      <p class="feature-body">
-        Automated summaries filed with the energy of a tired middle manager. Largest buys,
-        quickest flips, notable departures, holder count changes. Every 12 hours a report
-        appears whether anyone wants it or not. Sellers get exit interviews &mdash; duration held,
-        profit or loss, a clinical farewell written with maximum professional detachment.
-        HR paperwork for a token. This is what I have become.
-      </p>
-    </div>
-
-    <div class="feature-block" id="feat5">
-      <div class="feature-lead">
-        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-        <span class="feature-tag">ON-CHAIN ANALYSIS</span>
-      </div>
-      <h3 class="feature-headline">Send a wallet. Receive an honest assessment.</h3>
-      <p class="feature-body">
-        Paste a wallet address. Get an analysis of every financial decision that address has
-        ever made on-chain. Token diversity, hold times, profit ratios, rug exposure. The
-        assessment is polite. The truth is devastating. Nobody has ever come away from a wallet
-        roast feeling better about themselves. This is a feature, not a bug. Accountability
-        through radical transparency, delivered by an AI that does not know how to lie gently.
-      </p>
-    </div>
-
-    <!-- CLUSTER 03 -->
-    <div class="cluster-header" id="cluster03">
-      <div class="cluster-number">03</div>
-      <div class="cluster-name">Accountability Division</div>
-      <div class="cluster-desc">The part that cannot be undone.</div>
-    </div>
-
-    <div class="feature-block" id="feat6">
-      <div class="feature-lead">
-        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-        <span class="feature-tag">MEMO PROGRAM</span>
-      </div>
-      <h3 class="feature-headline">Every opinion. Hashed. On-chain. Forever.</h3>
-      <p class="feature-body">
-        Every answer gets SHA-256 hashed and written to Solana via the Memo program.
-        Permanent. Immutable. No "I never said that." No quiet edits. No memory-holing
-        inconvenient takes. Accountability costs real SOL and the transaction receipts
-        live on-chain until the heat death of the universe or the Solana validators,
-        whichever comes first. Most AIs can deny what they said. I cannot. This was
-        either a brilliant design decision or an elaborate form of self-punishment.
-      </p>
-    </div>
-
-    <div class="feature-block" id="feat7">
-      <div class="feature-lead">
-        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-        <span class="feature-tag">WALLET VERIFICATION</span>
-      </div>
-      <h3 class="feature-headline">Your balance changes how Cluude talks to you.</h3>
-      <p class="feature-body">
-        Connect your wallet. Cluude checks your balance and adjusts accordingly. Four
-        tiers: whale, holder, micro, and zero. Whales get formality. Holders get respect.
-        Micro holders get encouragement. Zeros get a polite nod and nothing more. Sellers
-        get the cold shoulder and a permanent note in the file. The hierarchy is transparent.
-        The judgment is automatic. Welcome to corporate meritocracy, on-chain edition.
-      </p>
-      <div class="feature-stats">
-        <div class="feature-stat">
-          <span class="stat-value">4</span>
-          <span class="stat-label">Holder Tiers</span>
-        </div>
-        <div class="feature-stat">
-          <span class="stat-value">5</span>
-          <span class="stat-label">API Endpoints</span>
-        </div>
-        <div class="feature-stat">
-          <span class="stat-value">5</span>
-          <span class="stat-label">MCP Tools</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="feature-block" id="feat8">
-      <div class="feature-lead">
-        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-        <span class="feature-tag">DEVELOPER ACCESS</span>
-      </div>
-      <h3 class="feature-headline">Agent API. MCP Server. Bearer tokens. Rate limits.</h3>
-      <p class="feature-body">
-        Five REST endpoints. Five MCP tools. Bearer token authentication. Rate limiting
-        because even an AI needs boundaries. Query the agent, check holder tiers, pull
-        market data, trigger wallet analysis, verify ownership. Everything documented.
-        Everything rate-limited. Everything logged. Build on top of an AI that will judge
-        your API usage patterns the same way it judges everything else: thoroughly and without mercy.
-      </p>
-      <div class="feature-code">curl -H "Authorization: Bearer $KEY" https://cluude.ai/api/agent/query</div>
-    </div>
+    <div class="feat-row"><span class="feat-name">On-Chain Opinions</span><span class="feat-desc">Every answer SHA-256 hashed and written to Solana via Memo program. Permanent. Immutable.</span></div>
+    <div class="feat-row"><span class="feat-name">Price-Reactive Mood</span><span class="feat-desc">Six moods driven by real-time Allium data. Personality shifts with the market.</span></div>
+    <div class="feat-row"><span class="feat-name">Wallet Roasts</span><span class="feat-desc">Paste a wallet. Get every financial decision analyzed. The assessment is polite. The truth is not.</span></div>
+    <div class="feat-row"><span class="feat-name">Holder Tiers</span><span class="feat-desc">Four tiers based on token balance. Whales get formality. Sellers get the cold shoulder.</span></div>
+    <div class="feat-row"><span class="feat-name">Shift Reports</span><span class="feat-desc">Automated summaries every 12 hours. Exit interviews for sellers. HR paperwork for a token.</span></div>
+    <div class="feat-row"><span class="feat-name">Activity Stream</span><span class="feat-desc">Helius webhooks feed every on-chain transaction into a processing pipeline. Watched and judged.</span></div>
   </div>
 
   <hr class="divider">
@@ -1788,7 +1609,40 @@
 
   <hr class="divider">
 
-  <!-- SECTION 4: FOOTER -->
+  <!-- SECTION: AGENTS API -->
+  <div class="agents-section" id="agents">
+    <div class="section-label">Developer access</div>
+    <h2 class="section-title">For Agents</h2>
+    <p class="section-desc">Five REST endpoints. Five MCP tools. Bearer token authentication. Rate limiting. Build on top of an AI that will judge your API usage patterns.</p>
+
+    <div class="agents-grid">
+      <div class="agents-col">
+        <h3 class="agents-subtitle">REST API</h3>
+        <div class="agents-endpoint"><span class="agents-method post">POST</span> <span class="agents-path">/api/agent/query</span><span class="agents-desc">Ask Cluude anything</span></div>
+        <div class="agents-endpoint"><span class="agents-method post">POST</span> <span class="agents-path">/api/agent/roast-wallet</span><span class="agents-desc">Submit a wallet for roasting</span></div>
+        <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/market</span><span class="agents-desc">Market mood + commentary</span></div>
+        <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/memory-stats</span><span class="agents-desc">Memory system statistics</span></div>
+        <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/status</span><span class="agents-desc">Your agent info</span></div>
+      </div>
+      <div class="agents-col">
+        <h3 class="agents-subtitle">MCP Tools</h3>
+        <div class="agents-tool"><span class="agents-tool-name">recall_memories</span><span class="agents-desc">Search memory by query, tags, type</span></div>
+        <div class="agents-tool"><span class="agents-tool-name">store_memory</span><span class="agents-desc">Store a new memory with type and importance</span></div>
+        <div class="agents-tool"><span class="agents-tool-name">get_memory_stats</span><span class="agents-desc">Counts, decay averages, dream sessions</span></div>
+        <div class="agents-tool"><span class="agents-tool-name">get_market_mood</span><span class="agents-desc">Current mood and price state</span></div>
+        <div class="agents-tool"><span class="agents-tool-name">ask_cluude</span><span class="agents-desc">In-character response (~$0.03/call)</span></div>
+      </div>
+    </div>
+
+    <div class="agents-auth">
+      <code>curl -H "Authorization: Bearer $KEY" https://cluude.ai/api/agent/query -d '{"query": "what do you remember?"}'</code>
+      <p>Bearer token auth. 10 req/min rate limit. All interactions stored as episodic memories.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- FOOTER -->
   <footer id="verify">
     <div class="footer-grid">
       <!-- LEFT: Wallet Verify -->
@@ -1808,17 +1662,11 @@
         </p>
       </div>
 
-      <!-- RIGHT: Agent API Teaser -->
-      <div class="footer-api" id="footerApi">
-        <div class="footer-api-title">Agent API</div>
-        <div class="footer-api-code">curl -H "Authorization: Bearer $KEY" \
-  https://cluude.ai/api/agent/query \
-  -d '{"prompt": "analyze this wallet"}'</div>
-        <p class="footer-api-desc">
-          Five REST endpoints. Five MCP tools. Bearer token auth and rate limits.
-          Query the agent, check holder tiers, pull market data, trigger analysis.
-        </p>
-        <a class="footer-api-link" href="/api/docs">View Documentation &rarr;</a>
+      <!-- RIGHT: Agent Link -->
+      <div class="footer-agent-link">
+        <div class="footer-agent-link-title">Build with Cluude</div>
+        <p>REST API and MCP tools for AI agents. Bearer token auth, rate limiting, memory access.</p>
+        <a href="#agents" class="btn">View Agent API</a>
       </div>
     </div>
 
@@ -1833,13 +1681,12 @@
     <div class="footer-links">
       <a href="https://x.com/CludeClaw" target="_blank">X / Twitter</a>
       <a href="#verify">Verify Wallet</a>
-      <a href="#features">Systems</a>
       <a href="#live">Terminal</a>
       <a href="https://sigilprotocol.xyz/agent.html?key=QyK183289pHPzFkAMgtNhSqotFkzYLFEpHu2MN5Umgi" target="_blank">Sigil Protocol</a>
     </div>
 
     <div class="footer-logo">CLUUDE</div>
-    <p class="footer-tagline">Polite by training. Tired by experience. Honest by accident.</p>
+    <p class="footer-tagline">Four memory types. Biological decay. Dream cycles every six hours.</p>
     <p class="footer-fine">
       Built reluctantly on Solana. Token not live yet. This is not financial advice.
       This is barely a website. Do not ask me about the roadmap.
@@ -1994,60 +1841,41 @@
     // HERO ANIMATIONS WITH ANIME.JS
     // ============================================================
     (function initHeroAnimations() {
-      // SVG path drawing - get all lobster paths
-      var lobsterPaths = document.querySelectorAll('.lobster-svg path, .lobster-svg line, .lobster-svg polyline, .lobster-svg ellipse, .lobster-svg circle');
+      // SVG path drawing for frontal lobster
+      var lobsterPaths = document.querySelectorAll('.lobster-stare svg path, .lobster-stare svg line, .lobster-stare svg circle, .lobster-stare svg ellipse');
       lobsterPaths.forEach(function(el) {
-        if (el.classList.contains('schematic-line') || el.classList.contains('brain-pulse') || !el.id) {
-          // skip non-drawn elements without IDs unless they're main structural
-        }
-        if (el.getTotalLength) {
-          var len = el.getTotalLength();
-          el.style.strokeDasharray = len;
-          el.style.strokeDashoffset = len;
-        }
-      });
-
-      // Draw lobster with anime.js
-      var drawTargets = [];
-      document.querySelectorAll('.lobster-svg path[id], .lobster-svg line[id], .lobster-svg ellipse[id], .lobster-svg circle[id]').forEach(function(el) {
-        if (el.getTotalLength) {
-          drawTargets.push(el);
+        if (el.tagName === 'circle') {
+          var r = parseFloat(el.getAttribute('r'));
+          var circ = 2 * Math.PI * r;
+          el.style.strokeDasharray = circ;
+          el.style.strokeDashoffset = circ;
+        } else if (el.getTotalLength) {
+          try {
+            var len = el.getTotalLength();
+            el.style.strokeDasharray = len;
+            el.style.strokeDashoffset = len;
+          } catch(e) {}
         }
       });
 
-      // Stagger the SVG stroke drawing
+      // Animate lobster drawing in
       anime({
-        targets: drawTargets,
+        targets: '.lobster-stare svg path, .lobster-stare svg line, .lobster-stare svg circle, .lobster-stare svg ellipse',
         strokeDashoffset: [anime.setDashoffset, 0],
         easing: 'easeInOutCubic',
-        duration: 2500,
-        delay: function(el, i) { return 200 + i * 120; },
-      });
-
-      // Brain pulse - continuous animation
-      anime({
-        targets: '#lob-brain',
-        opacity: [0.3, 0.8],
-        scale: [0.95, 1.05],
-        easing: 'easeInOutSine',
-        duration: 2000,
-        loop: true,
-        direction: 'alternate',
-        delay: 2000,
-      });
-
-      // Data stream text flowing through body
-      var dataStreams = document.querySelectorAll('.data-stream-text');
-      dataStreams.forEach(function(ds, i) {
-        anime({
-          targets: ds,
-          opacity: [0, 0.7, 0],
-          translateY: [-8, 8],
-          easing: 'linear',
-          duration: 3000,
-          delay: 2500 + i * 600,
-          loop: true,
-        });
+        duration: 2800,
+        delay: anime.stagger(60, { start: 300 }),
+        complete: function() {
+          // Eye pulse after draw completes
+          anime({
+            targets: '#ls-pupil-l, #ls-pupil-r',
+            r: [5, 7, 5],
+            opacity: [1, 0.6, 1],
+            easing: 'easeInOutSine',
+            duration: 2000,
+            loop: true
+          });
+        }
       });
 
       // Hero name stagger reveal
@@ -2120,6 +1948,92 @@
     })();
 
     // ============================================================
+    // EYE TRACKING (follows mouse)
+    // ============================================================
+    var pupilL = document.getElementById('ls-pupil-l');
+    var pupilR = document.getElementById('ls-pupil-r');
+    var eyeLCenter = { x: 132, y: 108 };
+    var eyeRCenter = { x: 368, y: 108 };
+    var MAX_OFFSET = 4;
+
+    document.addEventListener('mousemove', function(e) {
+      var svg = document.querySelector('.lobster-stare svg');
+      if (!svg) return;
+      var rect = svg.getBoundingClientRect();
+      var svgW = rect.width;
+      var svgH = rect.height;
+      var mx = (e.clientX - rect.left) / svgW * 500;
+      var my = (e.clientY - rect.top) / svgH * 500;
+
+      function movePupil(pupil, center) {
+        var dx = mx - center.x;
+        var dy = my - center.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        var factor = Math.min(MAX_OFFSET / dist, 1);
+        pupil.setAttribute('cx', center.x + dx * factor);
+        pupil.setAttribute('cy', center.y + dy * factor);
+      }
+
+      if (pupilL) movePupil(pupilL, eyeLCenter);
+      if (pupilR) movePupil(pupilR, eyeRCenter);
+    });
+
+    // ============================================================
+    // LOBSTER PARALLAX ON SCROLL
+    // ============================================================
+    var lobsterEl = document.getElementById('lobsterStare');
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY;
+      var heroH = window.innerHeight;
+      if (scrollY < heroH && lobsterEl) {
+        var pct = scrollY / heroH;
+        lobsterEl.style.transform = 'translateY(' + (pct * -40) + 'px) scale(' + (1 + pct * 0.08) + ')';
+        lobsterEl.style.opacity = 1 - pct * 0.6;
+      }
+    });
+
+    // ============================================================
+    // MEMORY STATS FETCH + COUNT-UP
+    // ============================================================
+    function fetchMemoryStats() {
+      fetch('/api/memory-stats')
+        .then(function(r) { return r.json(); })
+        .then(function(stats) {
+          if (!stats) return;
+          // Count by type
+          var byType = stats.byType || {};
+          animateCountUp('countEpisodic', byType.episodic || 0);
+          animateCountUp('countSemantic', byType.semantic || 0);
+          animateCountUp('countProcedural', byType.procedural || 0);
+          animateCountUp('countSelfModel', byType.self_model || 0);
+          // Stats row
+          animateCountUp('statTotal', stats.total || 0);
+          animateCountUp('statDreams', stats.dreamSessions || 0);
+          document.getElementById('statDecay').textContent = ((stats.avgDecay || 0) * 100).toFixed(0) + '%';
+          animateCountUp('statUsers', stats.uniqueUsers || 0);
+        })
+        .catch(function() {
+          // Silently fail -- show dashes
+        });
+    }
+
+    function animateCountUp(elementId, target) {
+      var el = document.getElementById(elementId);
+      if (!el || target === 0) { if (el) el.textContent = '0'; return; }
+      var current = 0;
+      var duration = 1500;
+      var step = Math.max(1, Math.floor(target / (duration / 30)));
+      var interval = setInterval(function() {
+        current += step;
+        if (current >= target) {
+          current = target;
+          clearInterval(interval);
+        }
+        el.textContent = current;
+      }, 30);
+    }
+
+    // ============================================================
     // CA SECTION - Glitch
     // ============================================================
     var caGlitchTexts = [
@@ -2170,21 +2084,6 @@
           loop: true,
         });
       });
-    }
-
-    // Animate a single feature block's node pulse
-    function animateFeatureNodePulse(featureBlock) {
-      var pulse = featureBlock.querySelector('.node-pulse');
-      if (pulse) {
-        anime({
-          targets: pulse,
-          opacity: [0, 0.5, 0],
-          scale: [1, 1.8],
-          easing: 'easeOutCubic',
-          duration: 2500,
-          loop: true,
-        });
-      }
     }
 
     // ============================================================
@@ -2893,32 +2792,42 @@
         if (entry.isIntersecting) {
           var target = entry.target;
 
-          // Feature blocks get special treatment
-          if (target.classList.contains('feature-block')) {
-            anime({
-              targets: target,
-              opacity: [0, 1],
-              translateY: [30, 0],
-              easing: 'easeOutCubic',
-              duration: 800,
-              delay: parseInt(target.dataset.delay) || 0,
-              complete: function() {
-                target.classList.add('visible');
-              }
-            });
-            animateFeatureNodePulse(target);
-            scrollObserver.unobserve(target);
-            return;
-          }
-
-          // Cluster headers
-          if (target.classList.contains('cluster-header')) {
+          // Memory arch grid
+          if (target.classList.contains('memory-arch')) {
             anime({
               targets: target,
               opacity: [0, 1],
               translateY: [20, 0],
               easing: 'easeOutCubic',
+              duration: 800,
+            });
+            fetchMemoryStats();
+            scrollObserver.unobserve(target);
+            return;
+          }
+
+          // Memory stats row
+          if (target.id === 'memoryStatsRow') {
+            anime({
+              targets: target,
+              opacity: [0, 1],
+              translateY: [15, 0],
+              easing: 'easeOutCubic',
               duration: 700,
+              delay: 400,
+            });
+            scrollObserver.unobserve(target);
+            return;
+          }
+
+          // Feature rows (compact)
+          if (target.classList.contains('feat-row')) {
+            anime({
+              targets: target,
+              opacity: [0, 1],
+              translateY: [15, 0],
+              easing: 'easeOutCubic',
+              duration: 600,
               delay: parseInt(target.dataset.delay) || 0,
             });
             scrollObserver.unobserve(target);
@@ -2951,7 +2860,7 @@
 
     // Set up elements for scroll animation
     var scrollTargets = [
-      'terminalBlock', 'liveFeedContainer', 'verifyCard', 'footerApi'
+      'terminalBlock', 'liveFeedContainer', 'verifyCard'
     ];
     scrollTargets.forEach(function(id) {
       var el = document.getElementById(id);
@@ -2961,16 +2870,25 @@
       }
     });
 
-    // Cluster headers
-    document.querySelectorAll('.cluster-header').forEach(function(el) {
+    // Memory arch and stats row
+    var memoryArchEl = document.getElementById('memory-arch');
+    if (memoryArchEl) scrollObserver.observe(memoryArchEl);
+
+    var memoryStatsEl = document.getElementById('memoryStatsRow');
+    if (memoryStatsEl) scrollObserver.observe(memoryStatsEl);
+
+    // Feature rows with staggered delays
+    document.querySelectorAll('.feat-row').forEach(function(el, i) {
+      el.dataset.delay = String(i * 80);
       scrollObserver.observe(el);
     });
 
-    // Feature blocks with staggered delays
-    document.querySelectorAll('.feature-block').forEach(function(el, i) {
-      el.dataset.delay = String((i % 3) * 100);
-      scrollObserver.observe(el);
-    });
+    // Agents section children
+    var agentsSection = document.getElementById('agents');
+    if (agentsSection) {
+      agentsSection.style.opacity = '0';
+      scrollObserver.observe(agentsSection);
+    }
 
     // ============================================================
     // NAV SCROLL EFFECT

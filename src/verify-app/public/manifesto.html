@@ -111,48 +111,9 @@
     .hero-vignette {
       position: absolute;
       inset: 0;
-      background: radial-gradient(ellipse at center 30%, transparent 30%, var(--bg) 75%);
+      background: radial-gradient(ellipse at center, transparent 40%, var(--bg) 80%);
       z-index: 1;
       pointer-events: none;
-    }
-
-    .lobster-stare {
-      position: relative;
-      z-index: 2;
-      width: 500px;
-      height: 500px;
-      margin-bottom: -60px;
-    }
-
-    @media (max-width: 600px) {
-      .lobster-stare { width: 340px; height: 340px; margin-bottom: -40px; }
-    }
-
-    .lobster-stare svg {
-      width: 100%;
-      height: 100%;
-    }
-
-    .lobster-stare svg path,
-    .lobster-stare svg line,
-    .lobster-stare svg circle,
-    .lobster-stare svg ellipse {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 1.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .lobster-stare svg .eye-glow {
-      fill: var(--accent);
-      stroke: none;
-    }
-
-    .lobster-stare svg .faint {
-      stroke: var(--text-faint);
-      stroke-width: 0.6;
-      stroke-dasharray: 3 3;
     }
 
     .hero-text {
@@ -488,93 +449,6 @@
 <!-- HERO: Lobster staring down at you -->
 <section class="hero">
   <div class="hero-vignette"></div>
-  <div class="lobster-stare" id="lobsterStare">
-    <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-      <!-- Frontal lobster face — staring straight at you -->
-
-      <!-- Head shield (carapace, frontal view) -->
-      <path id="ls-carapace" d="M175,280 C160,240 155,200 160,170 C165,140 180,115 210,100 C230,90 250,86 250,86 C250,86 270,90 290,100 C320,115 335,140 340,170 C345,200 340,240 325,280 C310,310 275,330 250,335 C225,330 190,310 175,280 Z" />
-
-      <!-- Carapace ridge (center line) -->
-      <line class="faint" x1="250" y1="90" x2="250" y2="330" />
-      <!-- Lateral ridges -->
-      <path class="faint" d="M195,120 C200,180 200,250 205,300" />
-      <path class="faint" d="M305,120 C300,180 300,250 295,300" />
-
-      <!-- Eye stalks — large, prominent, facing forward -->
-      <path id="ls-stalk-l" d="M210,140 C190,115 170,100 150,95 C138,92 128,95 125,105 C122,115 128,125 140,128" />
-      <path id="ls-stalk-r" d="M290,140 C310,115 330,100 350,95 C362,92 372,95 375,105 C378,115 372,125 360,128" />
-
-      <!-- Eyes — big, round, menacing -->
-      <circle id="ls-eye-l" cx="132" cy="108" r="18" />
-      <circle id="ls-eye-r" cx="368" cy="108" r="18" />
-      <!-- Iris -->
-      <circle cx="132" cy="108" r="10" style="stroke-width: 1;" />
-      <circle cx="368" cy="108" r="10" style="stroke-width: 1;" />
-      <!-- Pupil glow -->
-      <circle class="eye-glow" id="ls-pupil-l" cx="132" cy="108" r="5" />
-      <circle class="eye-glow" id="ls-pupil-r" cx="368" cy="108" r="5" />
-      <!-- Eye highlight -->
-      <circle cx="127" cy="103" r="2" style="fill: rgba(255,255,255,0.3); stroke: none;" />
-      <circle cx="363" cy="103" r="2" style="fill: rgba(255,255,255,0.3); stroke: none;" />
-
-      <!-- Antennae — sweeping up and out -->
-      <path id="ls-ant-l1" d="M195,115 C170,70 130,30 80,8" />
-      <path id="ls-ant-r1" d="M305,115 C330,70 370,30 420,8" />
-      <path id="ls-ant-l2" d="M190,125 C160,85 115,55 60,42" />
-      <path id="ls-ant-r2" d="M310,125 C340,85 385,55 440,42" />
-      <!-- Antennules (shorter, inner pair) -->
-      <path id="ls-antl-l" d="M225,105 C215,80 200,60 180,50" />
-      <path id="ls-antl-r" d="M275,105 C285,80 300,60 320,50" />
-
-      <!-- Mouth parts (mandibles) -->
-      <path id="ls-mouth-l" d="M230,180 C220,190 212,205 210,215" />
-      <path id="ls-mouth-r" d="M270,180 C280,190 288,205 290,215" />
-      <path id="ls-mouth-c" d="M225,195 C235,200 250,202 265,200 C275,198 275,195 275,195" />
-
-      <!-- Maxillipeds (feeding legs, smaller) -->
-      <path id="ls-mxp-l1" d="M222,210 C205,225 188,240 175,248" />
-      <path id="ls-mxp-l2" d="M228,220 C215,238 200,258 190,270" />
-      <path id="ls-mxp-r1" d="M278,210 C295,225 312,240 325,248" />
-      <path id="ls-mxp-r2" d="M272,220 C285,238 300,258 310,270" />
-
-      <!-- Claws — massive, reaching toward viewer -->
-      <!-- Left claw arm -->
-      <path id="ls-claw-l-arm" d="M175,270 C145,290 110,320 85,345" />
-      <!-- Left claw (crusher — bigger) -->
-      <path id="ls-claw-l-top" d="M85,345 C65,330 40,320 25,330 C12,342 15,360 30,368 C45,375 65,370 78,358" />
-      <path id="ls-claw-l-btm" d="M85,345 C72,360 55,378 42,380 C28,380 22,368 32,358 C42,348 65,345 85,345" />
-      <!-- Serrations -->
-      <circle cx="38" cy="345" r="2" style="fill: var(--accent); stroke: none; opacity: 0.3;" />
-      <circle cx="48" cy="338" r="1.5" style="fill: var(--accent); stroke: none; opacity: 0.3;" />
-
-      <!-- Right claw arm -->
-      <path id="ls-claw-r-arm" d="M325,270 C355,290 390,320 415,345" />
-      <!-- Right claw (pincer — slightly narrower) -->
-      <path id="ls-claw-r-top" d="M415,345 C432,332 455,324 468,332 C478,342 476,358 464,366 C450,372 432,368 420,356" />
-      <path id="ls-claw-r-btm" d="M415,345 C425,358 440,374 452,376 C465,376 470,365 460,356 C450,348 430,345 415,345" />
-      <circle cx="458" cy="345" r="2" style="fill: var(--accent); stroke: none; opacity: 0.3;" />
-      <circle cx="448" cy="338" r="1.5" style="fill: var(--accent); stroke: none; opacity: 0.3;" />
-
-      <!-- Walking legs (visible below carapace in frontal view) -->
-      <path id="ls-leg-l1" d="M185,295 C160,310 135,335 118,355" />
-      <path id="ls-leg-l2" d="M182,310 C160,328 140,352 128,375" />
-      <path id="ls-leg-l3" d="M183,322 C165,342 148,368 140,392" />
-      <path id="ls-leg-r1" d="M315,295 C340,310 365,335 382,355" />
-      <path id="ls-leg-r2" d="M318,310 C340,328 360,352 372,375" />
-      <path id="ls-leg-r3" d="M317,322 C335,342 352,368 360,392" />
-
-      <!-- Tail (visible behind, receding) -->
-      <path id="ls-tail" d="M215,335 C220,355 230,380 235,400 C240,415 245,425 250,430 C255,425 260,415 265,400 C270,380 280,355 285,335" />
-      <line class="faint" x1="220" y1="360" x2="280" y2="360" />
-      <line class="faint" x1="225" y1="380" x2="275" y2="380" />
-      <line class="faint" x1="232" y1="400" x2="268" y2="400" />
-
-      <!-- Tail fan -->
-      <path id="ls-tailfan" d="M232,415 C225,435 210,455 195,465 C215,472 235,478 250,480 C265,478 285,472 305,465 C290,455 275,435 268,415" />
-    </svg>
-  </div>
-
   <div class="hero-text">
     <div class="hero-label" id="heroLabel">Manifesto</div>
     <h1 class="hero-title" id="heroTitle">
@@ -938,46 +812,9 @@
   drawParticles();
 
 
-  // ---- SVG PATH DRAW-IN ---- //
-  var lobsterPaths = document.querySelectorAll('.lobster-stare svg path, .lobster-stare svg line, .lobster-stare svg circle, .lobster-stare svg ellipse');
-  lobsterPaths.forEach(function(el) {
-    if (el.tagName === 'circle') {
-      var r = parseFloat(el.getAttribute('r'));
-      var circ = 2 * Math.PI * r;
-      el.style.strokeDasharray = circ;
-      el.style.strokeDashoffset = circ;
-    } else if (el.getTotalLength) {
-      try {
-        var len = el.getTotalLength();
-        el.style.strokeDasharray = len;
-        el.style.strokeDashoffset = len;
-      } catch(e) {}
-    }
-  });
-
-  // Animate lobster drawing in
-  anime({
-    targets: '.lobster-stare svg path, .lobster-stare svg line, .lobster-stare svg circle, .lobster-stare svg ellipse',
-    strokeDashoffset: [anime.setDashoffset, 0],
-    easing: 'easeInOutCubic',
-    duration: 2800,
-    delay: anime.stagger(60, { start: 300 }),
-    complete: function() {
-      // Eye pulse after draw completes
-      anime({
-        targets: '#ls-pupil-l, #ls-pupil-r',
-        r: [5, 7, 5],
-        opacity: [1, 0.6, 1],
-        easing: 'easeInOutSine',
-        duration: 2000,
-        loop: true
-      });
-    }
-  });
-
   // Hero text entrance
   anime.timeline({ easing: 'easeOutExpo' })
-    .add({ targets: '#heroLabel', opacity: [0, 1], translateY: [15, 0], duration: 1000, delay: 1800 })
+    .add({ targets: '#heroLabel', opacity: [0, 1], translateY: [15, 0], duration: 1000, delay: 600 })
     .add({ targets: '#heroTitle', opacity: [0, 1], translateY: [25, 0], duration: 1200 }, '-=600')
     .add({ targets: '#heroSub', opacity: [0, 1], translateY: [20, 0], duration: 1000 }, '-=700')
     .add({ targets: '#scrollHint', opacity: [0, 0.6], duration: 800 }, '-=400');
@@ -1069,49 +906,6 @@
   if (closingEl) observer.observe(closingEl);
 
 
-  // ---- LOBSTER PARALLAX ON SCROLL ---- //
-  var lobsterEl = document.getElementById('lobsterStare');
-  window.addEventListener('scroll', function() {
-    var scrollY = window.scrollY;
-    var heroH = window.innerHeight;
-    if (scrollY < heroH) {
-      var pct = scrollY / heroH;
-      lobsterEl.style.transform = 'translateY(' + (pct * -40) + 'px) scale(' + (1 + pct * 0.08) + ')';
-      lobsterEl.style.opacity = 1 - pct * 0.6;
-    }
-  });
-
-
-  // ---- EYE TRACKING (follows mouse) ---- //
-  var pupilL = document.getElementById('ls-pupil-l');
-  var pupilR = document.getElementById('ls-pupil-r');
-  var eyeLCenter = { x: 132, y: 108 };
-  var eyeRCenter = { x: 368, y: 108 };
-  var MAX_OFFSET = 4;
-
-  document.addEventListener('mousemove', function(e) {
-    var svg = document.querySelector('.lobster-stare svg');
-    if (!svg) return;
-    var rect = svg.getBoundingClientRect();
-    var svgW = rect.width;
-    var svgH = rect.height;
-
-    // Mouse position relative to SVG center
-    var mx = (e.clientX - rect.left) / svgW * 500;
-    var my = (e.clientY - rect.top) / svgH * 500;
-
-    function movePupil(pupil, center) {
-      var dx = mx - center.x;
-      var dy = my - center.y;
-      var dist = Math.sqrt(dx * dx + dy * dy);
-      var factor = Math.min(MAX_OFFSET / dist, 1);
-      pupil.setAttribute('cx', center.x + dx * factor);
-      pupil.setAttribute('cy', center.y + dy * factor);
-    }
-
-    movePupil(pupilL, eyeLCenter);
-    movePupil(pupilR, eyeRCenter);
-  });
 
 })();
 </script>
