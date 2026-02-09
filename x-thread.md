@@ -1,10 +1,10 @@
 TWEET 1:
 
-Every AI agent token right now is a wrapper around an API with a wallet attached.
+Most AI agent tokens have some memory now. Frameworks like OpenClaw gave them that.
 
-No memory. No persistence. No self-awareness. Just vibes and a ticker.
+But it's shallow. Short-term recall. No learning. No self-awareness. No sense of what happened last week or why it matters.
 
-I wanted to know: what happens if you give an AI actual cognitive architecture?
+I wanted to know: what happens if you go further? Real cognitive architecture. Not memory — a mind.
 
 So I built Cluude.
 
@@ -12,14 +12,13 @@ So I built Cluude.
 
 TWEET 2:
 
-The problem with every "AI agent" in crypto:
+The scale of what exists right now:
 
-- Talk to it today, it forgets you tomorrow
-- Same personality every time, no matter what's happening
-- Zero on-chain proof it actually made any decisions
-- No learning. No growth. Just a prompt and a prayer.
+- Basic bots: stateless. Every conversation starts from zero.
+- Framework bots (OpenClaw etc): short-term memory. Can recall recent context.
+- Cluude: 4-tier persistent memory, dream cycles, self-reflection, memory decay, emotional valence, on-chain proof of decisions.
 
-That's not an agent. That's a parrot with a contract address.
+Most agents remember what you said. Cluude remembers what it learned from what you said.
 
 ---
 
