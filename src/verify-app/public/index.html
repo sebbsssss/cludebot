@@ -652,15 +652,6 @@
       text-transform: uppercase;
     }
 
-    .mem-float-count {
-      font-size: 0.5rem;
-      color: var(--accent);
-      background: var(--accent-glow);
-      padding: 0.05rem 0.4rem;
-      border: 1px solid var(--accent-dim);
-      letter-spacing: 1px;
-    }
-
     .mem-float-toggle {
       font-size: 0.6rem;
       color: var(--text-faint);
@@ -1732,7 +1723,6 @@
       <div class="mem-float-header-left">
         <div class="cortex-dot"></div>
         <span class="mem-float-title">Memory Stream</span>
-        <span class="mem-float-count" id="memFloatCount">0</span>
       </div>
       <span class="mem-float-toggle" id="memFloatToggle">&#x25BC;</span>
     </div>
@@ -2175,11 +2165,9 @@
           if (data && data.memories && data.memories.length > 0) {
             timelineMemories = data.memories;
             renderTimeline(data.memories);
-            document.getElementById('memFloatCount').textContent = data.count;
           } else {
             document.getElementById('memFloatBody').innerHTML =
               '<div class="timeline-empty">No memories found. The cortex is empty.</div>';
-            document.getElementById('memFloatCount').textContent = '0';
           }
           document.getElementById('memFloatRefresh').textContent =
             new Date().toLocaleTimeString() + ' // 30s';
@@ -2194,7 +2182,7 @@
       var body = document.getElementById('memFloatBody');
       body.innerHTML = '';
 
-      memories.forEach(function(mem) {
+      memories.forEach(function(mem, idx) {
         var div = document.createElement('div');
         div.className = 'mem-item type-' + mem.memory_type;
         div.setAttribute('data-id', mem.id);
@@ -2226,7 +2214,7 @@
         var html =
           '<div class="mem-item-top">' +
             '<span class="mem-type-badge ' + mem.memory_type + '">' + typeLabel + '</span>' +
-            '<span class="mem-entry-id">Entry #' + mem.id + '</span>' +
+            '<span class="mem-entry-id">Entry #' + (idx + 1) + '</span>' +
             '<span class="mem-time">' + timeStr + '</span>' +
           '</div>' +
           '<div class="mem-summary">' + displaySummary + '</div>' +
@@ -2671,23 +2659,21 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
               var lines = [
-                'RECENT MEMORIES (' + (data.count || 0) + ' total)',
+                'RECENT MEMORIES',
                 '------------------------------',
                 '',
               ];
               if (data && data.memories && data.memories.length > 0) {
-                data.memories.forEach(function(mem) {
+                data.memories.forEach(function(mem, i) {
                   var typeMap = { episodic: 'EPIS', semantic: 'SEMA', procedural: 'PROC', self_model: 'SELF' };
                   var typeLabel = typeMap[mem.memory_type] || '????';
                   var ts = new Date(mem.created_at);
                   var ageH = Math.floor((Date.now() - ts.getTime()) / (1000 * 60 * 60));
                   var ageStr = ageH < 1 ? 'now' : (ageH < 24 ? ageH + 'h' : Math.floor(ageH / 24) + 'd');
                   var summary = mem.summary.length > 55 ? mem.summary.slice(0, 55) + '...' : mem.summary;
-                  lines.push('  #' + mem.id + ' [' + typeLabel + '] ' + summary);
+                  lines.push('  Entry #' + (i + 1) + ' [' + typeLabel + '] ' + summary);
                   lines.push('       ' + ageStr + ' ago | imp:' + (mem.importance * 100).toFixed(0) + '% | decay:' + (mem.decay_factor * 100).toFixed(0) + '%');
                 });
-                lines.push('');
-                lines.push('Showing 3 of ' + data.count + '. See Memory Stream for full timeline.');
               } else {
                 lines.push('  No memories found. The cortex is empty.');
               }
