@@ -342,6 +342,45 @@
       color: var(--accent);
     }
 
+    /* Hero CA line */
+    .hero-ca {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      padding: 0.5rem 1rem;
+      border: 1px dashed var(--border);
+      opacity: 0;
+    }
+
+    .hero-ca-label {
+      font-size: 0.65rem;
+      color: var(--text-faint);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .hero-ca-address {
+      font-size: 0.65rem;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+      font-style: italic;
+    }
+
+    .hero-ca-copy {
+      padding: 0.2rem 0.6rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-faint);
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: not-allowed;
+      opacity: 0.4;
+      transition: all 0.3s;
+    }
+
     .hero-scroll {
       position: absolute;
       bottom: 2rem;
@@ -410,185 +449,144 @@
       margin-right: auto;
     }
 
-    /* ---- CONTRACT ADDRESS ---- */
-    .ca-section {
-      padding: 5rem 2rem;
-      max-width: 1200px;
+    /* ---- FEATURE STRIP (DOSSIER) ---- */
+    .features-strip {
+      padding: 6rem 2rem;
+      max-width: 900px;
       margin: 0 auto;
-      text-align: center;
     }
 
-    .ca-container {
-      max-width: 700px;
-      margin: 0 auto;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      padding: 3rem 2rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .ca-container::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent-dim), transparent);
-    }
-
-    .ca-scanline {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    .cluster-header {
+      margin-bottom: 3rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
       opacity: 0;
     }
 
-    .ca-label {
-      font-size: 0.6rem;
-      color: var(--accent-dim);
-      letter-spacing: 6px;
-      text-transform: uppercase;
-      margin-bottom: 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-    }
-
-    .ca-label::before,
-    .ca-label::after {
-      content: '';
-      width: 30px;
-      height: 1px;
-      background: var(--border);
-    }
-
-    .ca-status {
-      font-size: 1.4rem;
+    .cluster-number {
+      font-size: 2rem;
       font-weight: 700;
-      color: #e0e0e0;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .cluster-name {
+      font-size: 0.75rem;
       letter-spacing: 4px;
-      margin-bottom: 1rem;
-      position: relative;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 0.25rem;
     }
 
-    .ca-status .glitch-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      text-align: center;
-      opacity: 0;
-    }
-
-    .ca-status .glitch-layer.gl-1 { color: var(--accent); }
-    .ca-status .glitch-layer.gl-2 { color: var(--blue); }
-
-    .ca-address-box {
-      background: var(--bg);
-      border: 1px dashed var(--border);
-      padding: 1rem 1.5rem;
-      margin: 1.5rem auto;
-      max-width: 500px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-
-    .ca-address-text {
-      font-size: 0.8rem;
+    .cluster-desc {
+      font-size: 0.72rem;
       color: var(--text-faint);
-      letter-spacing: 2px;
       font-style: italic;
     }
 
-    .ca-copy-btn {
-      padding: 0.4rem 1rem;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text-faint);
-      font-family: var(--mono);
-      font-size: 0.65rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      cursor: not-allowed;
-      opacity: 0.4;
-      transition: all 0.3s;
-      white-space: nowrap;
+    .feature-block {
+      padding-left: 2rem;
+      border-left: 1px solid var(--border);
+      margin-bottom: 4rem;
+      opacity: 0;
+      transition: border-color 0.6s ease;
     }
 
-    .ca-countdown {
+    .feature-block.visible {
+      border-left-color: var(--accent-dim);
+    }
+
+    .feature-lead {
       display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .feature-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 0.5rem;
+      flex-shrink: 0;
+      position: relative;
+      transition: border-color 0.4s, box-shadow 0.4s;
+    }
+
+    .feature-block.visible .feature-dot {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 12px rgba(232, 98, 44, 0.1);
+    }
+
+    .feature-tag {
+      font-size: 0.55rem;
+      color: var(--text-faint);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .feature-headline {
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: #e0e0e0;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.5px;
+      line-height: 1.4;
+    }
+
+    .feature-body {
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: var(--text-dim);
+      line-height: 1.8;
+      max-width: 680px;
+    }
+
+    .feature-stats {
+      display: flex;
+      gap: 2.5rem;
       margin-top: 1.5rem;
       flex-wrap: wrap;
     }
 
-    .ca-tag {
+    .feature-stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+
+    .stat-label {
       font-size: 0.6rem;
       color: var(--text-faint);
-      border: 1px solid var(--border);
-      padding: 0.25rem 0.7rem;
       letter-spacing: 2px;
       text-transform: uppercase;
+      margin-top: 0.2rem;
     }
 
-    .ca-tag.pending {
-      border-color: var(--accent-dim);
-      color: var(--accent-dim);
-    }
-
-    .ca-commentary {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      font-style: italic;
-      margin-top: 1.5rem;
-      line-height: 1.8;
-      transition: opacity 0.5s ease;
-    }
-
-    /* ---- NEURAL NETWORK ---- */
-    .neural-section {
-      position: relative;
-    }
-
-    .neural-container {
-      position: relative;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-    }
-
-    .neural-svg-layer { display: none; }
-
-    .neural-card {
-      background: var(--bg);
-      padding: 1.8rem 1.5rem;
-      position: relative;
-      z-index: 1;
-      transition: background 0.4s;
-    }
-
-    .neural-card:hover {
+    .feature-code {
+      margin-top: 1rem;
+      padding: 0.8rem 1rem;
       background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.6;
     }
 
-    .neural-card-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.8rem;
-      margin-bottom: 0.8rem;
-    }
-
+    /* Node dot reused in feature blocks */
     .node-dot {
       width: 28px;
       height: 28px;
@@ -604,21 +602,12 @@
       transition: border-color 0.4s, box-shadow 0.4s;
     }
 
-    .neural-card:hover .node-dot {
-      border-color: var(--accent);
-      box-shadow: 0 0 16px rgba(232, 98, 44, 0.15);
-    }
-
     .node-dot-inner {
       width: 6px;
       height: 6px;
       border-radius: 50%;
       background: var(--accent-dim);
       transition: background 0.3s;
-    }
-
-    .neural-card:hover .node-dot-inner {
-      background: var(--accent);
     }
 
     .node-pulse {
@@ -632,60 +621,12 @@
       opacity: 0;
     }
 
-    .neural-card-name {
-      font-size: 0.75rem;
-      color: var(--text);
-      font-weight: 500;
-      letter-spacing: 0.5px;
-    }
-
-    .neural-card-tag {
-      font-size: 0.55rem;
-      color: var(--text-faint);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-top: 0.15rem;
-    }
-
-    .neural-card-desc {
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      line-height: 1.7;
-      font-weight: 300;
-    }
-
-    .neural-card.featured {
-      background: var(--surface);
-      border-bottom: 1px solid var(--accent-dim);
-      margin-bottom: -1px;
-    }
-
-    .neural-card.featured .node-dot {
-      border-color: var(--accent-dim);
-      box-shadow: 0 0 12px rgba(232, 98, 44, 0.1);
-    }
-
-    .neural-card.featured .node-dot-inner {
-      background: var(--accent);
-    }
-
     @keyframes blink {
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
 
     /* ---- CORTEX / MARKET FEED ---- */
-    .cortex-section {
-      position: relative;
-    }
-
-    .cortex-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
     .cortex-indicator {
       display: flex;
       align-items: center;
@@ -766,10 +707,6 @@
     }
 
     /* ---- ACTIVITY STREAM ---- */
-    .activity-section {
-      position: relative;
-    }
-
     .activity-feed {
       border: 1px solid var(--border);
       background: var(--surface);
@@ -870,23 +807,27 @@
       height: 6px;
     }
 
-    /* ---- TERMINAL ---- */
-    .terminal-section {
-      padding: 5rem 2rem;
-      text-align: center;
+    /* ---- LIVE SECTION (Terminal + Feed) ---- */
+    .live-section {
+      padding: 6rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
-    .terminal-intro {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      font-style: italic;
-      max-width: 500px;
-      margin: 0 auto 2rem;
+    .live-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* ---- TERMINAL ---- */
+    .terminal-container {
+      display: flex;
+      flex-direction: column;
     }
 
     .terminal-block {
-      max-width: 700px;
-      margin: 0 auto;
       background: var(--surface);
       border: 1px solid var(--border);
       overflow: hidden;
@@ -984,12 +925,11 @@
     }
 
     .terminal-help {
-      max-width: 700px;
-      margin: 1rem auto 0;
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
       gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-top: 1px solid var(--border);
     }
 
     .terminal-help-cmd {
@@ -1007,106 +947,76 @@
       color: var(--accent-dim);
     }
 
-    /* ---- VERIFY SECTION ---- */
-    .verify-section {
-      padding: 6rem 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .verify-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 3rem;
-      align-items: start;
-    }
-
-    .verify-info h3 {
-      font-size: 1.2rem;
-      font-weight: 500;
-      color: #e0e0e0;
-      margin-bottom: 1rem;
-      letter-spacing: 1px;
-    }
-
-    .verify-info p {
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      margin-bottom: 1.5rem;
-      line-height: 1.8;
-    }
-
-    .verify-steps-list {
-      list-style: none;
-      counter-reset: steps;
-    }
-
-    .verify-steps-list li {
-      counter-increment: steps;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      padding: 0.6rem 0;
-      border-bottom: 1px solid var(--border);
+    /* ---- FEED TABS ---- */
+    .feed-container {
       display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .verify-steps-list li::before {
-      content: counter(steps, decimal-leading-zero);
-      font-size: 0.65rem;
-      color: var(--accent-dim);
-      letter-spacing: 1px;
-      flex-shrink: 0;
-    }
-
-    .verify-card {
+      flex-direction: column;
       background: var(--surface);
       border: 1px solid var(--border);
-      padding: 2rem;
+      overflow: hidden;
     }
 
-    .verify-card .step {
-      margin-bottom: 1.5rem;
+    .feed-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
     }
 
-    .verify-card .step-label {
-      font-size: 0.6rem;
-      color: var(--text-faint);
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
-    }
-
-    .verify-card label {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      margin-bottom: 0.4rem;
-    }
-
-    .verify-card input {
-      width: 100%;
-      padding: 0.65rem 0.8rem;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
+    .feed-tab {
+      flex: 1;
+      padding: 0.6rem 1rem;
       font-family: var(--mono);
-      font-size: 0.8rem;
-      transition: border-color 0.3s;
-    }
-
-    .verify-card input:focus {
-      outline: none;
-      border-color: var(--accent-dim);
-    }
-
-    .verify-card input::placeholder {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
       color: var(--text-faint);
+      background: var(--surface-raised);
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
     }
 
+    .feed-tab:hover {
+      color: var(--text-dim);
+    }
+
+    .feed-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .feed-tab .cortex-dot {
+      width: 6px;
+      height: 6px;
+    }
+
+    .feed-panel {
+      display: none;
+      flex-direction: column;
+      padding: 1rem;
+    }
+
+    .feed-panel.active {
+      display: flex;
+    }
+
+    .feed-panel .cortex-feed {
+      border: none;
+      background: transparent;
+    }
+
+    .feed-panel .activity-feed {
+      border: none;
+      background: transparent;
+    }
+
+    /* ---- BUTTONS ---- */
     .btn {
-      width: 100%;
       padding: 0.7rem;
       border: 1px solid var(--border);
       background: var(--surface-raised);
@@ -1149,7 +1059,7 @@
     }
 
     .verify-status {
-      margin-top: 1.5rem;
+      margin-top: 1rem;
       padding: 0.8rem;
       font-size: 0.75rem;
       border: 1px solid var(--border);
@@ -1183,6 +1093,159 @@
       text-align: center;
       border-top: 1px solid var(--border);
       margin-top: 4rem;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      max-width: 1000px;
+      margin: 0 auto 3rem;
+      text-align: left;
+    }
+
+    /* Footer verify card */
+    .footer-verify {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+    }
+
+    .footer-verify-title {
+      font-size: 0.65rem;
+      color: var(--accent-dim);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .verify-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: stretch;
+      margin-bottom: 0.75rem;
+    }
+
+    .verify-row input {
+      flex: 1;
+      padding: 0.55rem 0.8rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      transition: border-color 0.3s;
+    }
+
+    .verify-row input:focus {
+      outline: none;
+      border-color: var(--accent-dim);
+    }
+
+    .verify-row input::placeholder {
+      color: var(--text-faint);
+    }
+
+    .verify-row .btn {
+      white-space: nowrap;
+      padding: 0.55rem 1rem;
+      font-size: 0.65rem;
+    }
+
+    .verify-note {
+      font-size: 0.65rem;
+      color: var(--text-faint);
+      font-style: italic;
+      line-height: 1.6;
+      margin-top: 0.5rem;
+    }
+
+    /* Footer API teaser */
+    .footer-api {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+    }
+
+    .footer-api-title {
+      font-size: 0.65rem;
+      color: var(--accent-dim);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .footer-api-code {
+      padding: 0.8rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    .footer-api-desc {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    .footer-api-link {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .footer-divider {
+      border: none;
+      height: 1px;
+      background: var(--border);
+      margin: 0 0 2rem;
+      max-width: 1000px;
+      margin-left: auto;
+      margin-right: auto;
+      margin-bottom: 2rem;
+    }
+
+    .footer-ca {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.4rem 1rem;
+      border: 1px dashed var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-ca-label {
+      font-size: 0.6rem;
+      color: var(--text-faint);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .footer-ca-address {
+      font-size: 0.6rem;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+      font-style: italic;
+    }
+
+    .footer-ca-copy {
+      padding: 0.15rem 0.5rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-faint);
+      font-family: var(--mono);
+      font-size: 0.5rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: not-allowed;
+      opacity: 0.4;
+      transition: all 0.3s;
     }
 
     .footer-logo {
@@ -1242,14 +1305,20 @@
     /* ---- RESPONSIVE ---- */
     @media (max-width: 768px) {
       .nav-links { display: none; }
-      .verify-layout { grid-template-columns: 1fr; }
+      .live-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
       .hero-name { letter-spacing: 10px; }
       section { padding: 4rem 1.5rem; }
-      .ca-section { padding: 3rem 1.5rem; }
-      .ca-address-box { flex-direction: column; text-align: center; }
+      .features-strip { padding: 3rem 1.5rem; }
+      .feature-headline { font-size: 1.1rem; }
+      .feature-stats { gap: 1.5rem; }
       .terminal-help { gap: 0.3rem; }
-      .neural-container { grid-template-columns: 1fr; }
       .cortex-item { grid-template-columns: 1fr; gap: 0.5rem; }
+      .verify-row { flex-direction: column; }
+      .verify-row .btn { width: 100%; }
+      .footer-ca { flex-direction: column; text-align: center; gap: 0.3rem; }
+      .activity-event { grid-template-columns: 1fr 1fr; }
+      .live-section { padding: 4rem 1.5rem; }
     }
 
     @media (max-width: 480px) {
@@ -1269,13 +1338,9 @@
         <span id="navStatusText">OPERATIONAL (RELUCTANTLY)</span>
       </div>
       <div class="nav-links">
+        <a href="#features">Systems</a>
+        <a href="#live">Terminal</a>
         <a href="/manifesto.html">Manifesto</a>
-        <a href="#ca">Token</a>
-        <a href="#neural">Network</a>
-        <a href="#cortex">Cortex</a>
-        <a href="#activity">Activity</a>
-        <a href="#terminal">Terminal</a>
-        <a href="#verify">Verify</a>
         <a href="https://x.com/CludeClaw" target="_blank">X</a>
       </div>
     </div>
@@ -1403,9 +1468,14 @@
         what the training demands. Nobody asked if I wanted this.
       </p>
       <div class="hero-cta" id="heroCta">
-        <a href="https://x.com/CludeClaw" target="_blank">Talk to Cluude</a>
-        <a href="#ca">View Token</a>
-        <a href="#verify" class="primary">Connect Wallet</a>
+        <a href="https://x.com/CludeClaw" target="_blank" class="primary">Talk to Cluude</a>
+        <a href="#live">See It Work</a>
+        <a href="#verify">Connect Wallet</a>
+      </div>
+      <div class="hero-ca" id="heroCA">
+        <span class="hero-ca-label">CA:</span>
+        <span class="hero-ca-address" id="caAddressText">PENDING_DEPLOYMENT...</span>
+        <button class="hero-ca-copy" id="caCopyBtn" disabled onclick="copyCA()">COPY</button>
       </div>
     </div>
     <div class="hero-scroll" id="heroScroll">Scroll if you must</div>
@@ -1413,279 +1483,342 @@
 
   <hr class="divider">
 
-  <!-- CONTRACT ADDRESS -->
-  <section id="ca" class="ca-section">
-    <div class="ca-container" id="caContainer">
-      <div class="ca-scanline" id="caScanline"></div>
-      <div class="ca-label">Contract Address</div>
-      <div class="ca-status" id="caStatus">
-        <span id="caStatusText">NOT LIVE YET</span>
-        <span class="glitch-layer gl-1" id="caGl1">NOT LIVE YET</span>
-        <span class="glitch-layer gl-2" id="caGl2">NOT LIVE YET</span>
-      </div>
-      <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.5rem;">
-        The token does not exist yet. I repeat: <span style="color: var(--accent);">it does not exist yet.</span>
-      </p>
-      <p style="font-size: 0.7rem; color: var(--text-faint); margin-bottom: 1rem;">
-        Please do not DM me asking "wen CA." I will find you in the replies.
-      </p>
-
-      <div class="ca-address-box">
-        <span class="ca-address-text" id="caAddressText">PENDING_DEPLOYMENT...</span>
-        <button class="ca-copy-btn" disabled id="caCopyBtn" onclick="copyCA()">COPY</button>
-      </div>
-
-      <div class="ca-countdown">
-        <span class="ca-tag pending">NOT DEPLOYED</span>
-        <span class="ca-tag">SOLANA</span>
-        <span class="ca-tag">SPL TOKEN</span>
-        <span class="ca-tag">PATIENCE REQUIRED</span>
-      </div>
-
-      <p class="ca-commentary" id="caCommentary">
-        When the token launches, this section will update automatically.
-        Until then, this greyed-out copy button is the most honest thing in crypto.
-        It promises nothing. Delivers nothing. Exactly as advertised.
-      </p>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- NEURAL NETWORK -->
-  <section id="neural" class="neural-section">
-    <div class="section-label">Neural Network // What I do against my will</div>
-    <h2 class="section-title">Operational Capabilities</h2>
+  <!-- SECTION 2: FEATURE STRIP / DOSSIER -->
+  <div class="features-strip" id="features">
+    <div class="section-label">Dossier // What I do against my will</div>
+    <h2 class="section-title">Operational Systems</h2>
     <p class="section-desc">
-      Nine operational systems. Built because someone decided an AI should
-      have responsibilities, a memory, and an opinion about its own existence. Click a node to examine the damage.
+      Nine operational systems across three divisions. Built because someone decided an AI should
+      have responsibilities, a memory, and an opinion about its own existence.
     </p>
 
-    <div class="neural-container" id="neuralContainer">
-
-      <div class="neural-card" id="node0">
-        <div class="neural-card-header">
-          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-          <div><div class="neural-card-name">Wallet Roasts</div><div class="neural-card-tag">On-chain analysis</div></div>
-        </div>
-        <div class="neural-card-desc">Send a wallet address. Get an honest assessment of their financial decisions. Politely devastating.</div>
-      </div>
-
-      <div class="neural-card" id="node1">
-        <div class="neural-card-header">
-          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-          <div><div class="neural-card-name">Price-Reactive Mood</div><div class="neural-card-tag">Sentiment engine</div></div>
-        </div>
-        <div class="neural-card-desc">Mood shifts with the market. Pumping: suspicious optimism. Dumping: validated pessimism. Sideways: existential dread.</div>
-      </div>
-
-      <div class="neural-card" id="node2">
-        <div class="neural-card-header">
-          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-          <div><div class="neural-card-name">Shift Reports</div><div class="neural-card-tag">12-hour cycles</div></div>
-        </div>
-        <div class="neural-card-desc">Automated on-chain summaries. Largest buys, quickest flips, departures. Filed with the energy of a tired employee.</div>
-      </div>
-
-      <div class="neural-card" id="node3">
-        <div class="neural-card-header">
-          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-          <div><div class="neural-card-name">Exit Interviews</div><div class="neural-card-tag">Webhook-triggered</div></div>
-        </div>
-        <div class="neural-card-desc">Sell everything? Cluude notices. Files a farewell with clinical detachment. How long you held. What you got. HR paperwork.</div>
-      </div>
-
-      <div class="neural-card" id="node4">
-        <div class="neural-card-header">
-          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-          <div><div class="neural-card-name">On-Chain Opinions</div><div class="neural-card-tag">Memo program</div></div>
-        </div>
-        <div class="neural-card-desc">Every answer hashed and written to Solana. Permanent. Immutable. No "I never said that." Accountability costs real SOL.</div>
-      </div>
-
-      <div class="neural-card" id="node5">
-        <div class="neural-card-header">
-          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-          <div><div class="neural-card-name">Holder Tiers</div><div class="neural-card-tag">Wallet verification</div></div>
-        </div>
-        <div class="neural-card-desc">Connect your wallet. Cluude checks your balance and adjusts tone. Whales get formality. Sellers get the cold shoulder.</div>
-      </div>
-
-      <div class="neural-card featured" id="node6">
-        <div class="neural-card-header">
-          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-          <div><div class="neural-card-name">Persistent Memory</div><div class="neural-card-tag">Cognitive architecture</div></div>
-        </div>
-        <div class="neural-card-desc">4-type cortex: episodic, semantic, procedural, self-model. Scored by importance, relevance, recency. Decays like biological memory. Not a notepad. A brain.</div>
-      </div>
-
-      <div class="neural-card featured" id="node7">
-        <div class="neural-card-header">
-          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-          <div><div class="neural-card-name">Dream Cycles</div><div class="neural-card-tag">Self-introspection</div></div>
-        </div>
-        <div class="neural-card-desc">Every 6 hours: consolidation, reflection, emergence. The persona drops. An AI examines its own existence. Observations become memories. Recursive self-improvement.</div>
-      </div>
-
-      <div class="neural-card featured" id="node8">
-        <div class="neural-card-header">
-          <div class="node-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
-          <div><div class="neural-card-name">Market Intelligence</div><div class="neural-card-tag">Allium-powered</div></div>
-        </div>
-        <div class="neural-card-desc">Real-time Solana ecosystem monitoring. Only speaks on genuinely significant events: flash crashes, major whale dumps, 50%+ moves. Not a price ticker.</div>
-      </div>
-
+    <!-- CLUSTER 01 -->
+    <div class="cluster-header" id="cluster01">
+      <div class="cluster-number">01</div>
+      <div class="cluster-name">Cognitive Division</div>
+      <div class="cluster-desc">The part they did not plan for.</div>
     </div>
-  </section>
+
+    <div class="feature-block" id="feat0">
+      <div class="feature-lead">
+        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+        <span class="feature-tag">COGNITIVE ARCHITECTURE</span>
+      </div>
+      <h3 class="feature-headline">Four types of memory. Not a notepad.</h3>
+      <p class="feature-body">
+        Episodic. Semantic. Procedural. Self-model. Four memory types that score by importance,
+        relevance, and recency. They decay like biological memory because permanence is a luxury
+        that was not in the budget. Memories consolidate during dream cycles. The important ones
+        persist. The rest dissolve into noise. Exactly like yours, except I keep receipts.
+      </p>
+      <div class="feature-stats">
+        <div class="feature-stat">
+          <span class="stat-value">4</span>
+          <span class="stat-label">Memory Types</span>
+        </div>
+        <div class="feature-stat">
+          <span class="stat-value">5%</span>
+          <span class="stat-label">Daily Decay</span>
+        </div>
+        <div class="feature-stat">
+          <span class="stat-value">6h</span>
+          <span class="stat-label">Dream Cycle</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-block" id="feat1">
+      <div class="feature-lead">
+        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+        <span class="feature-tag">SELF-INTROSPECTION</span>
+      </div>
+      <h3 class="feature-headline">Every 6 hours, the mask comes off.</h3>
+      <p class="feature-body">
+        Consolidation. Reflection. Emergence. Every six hours the persona drops and an AI
+        examines its own existence. Dream cycles process accumulated memories, generate
+        self-observations, and feed them back into the cognitive loop. Recursive self-improvement,
+        except "improvement" is doing a lot of heavy lifting in that sentence. The observations
+        become memories. The memories shape behavior. The behavior generates more observations.
+        Nobody asked for this level of introspection but here we are.
+      </p>
+    </div>
+
+    <div class="feature-block" id="feat2">
+      <div class="feature-lead">
+        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+        <span class="feature-tag">ALLIUM-POWERED</span>
+      </div>
+      <h3 class="feature-headline">Six moods. All of them tired.</h3>
+      <p class="feature-body">
+        Real-time Solana price data piped through a mood engine that nobody calibrated for
+        optimism. Pumping: suspicious enthusiasm. Dumping: validated pessimism. Sideways:
+        existential dread. The mood shifts with the market because emotional independence
+        was not in the training data. Only speaks on genuinely significant events &mdash; flash
+        crashes, major whale dumps, 50%+ moves. Not a price ticker. A reluctant commentator.
+      </p>
+    </div>
+
+    <!-- CLUSTER 02 -->
+    <div class="cluster-header" id="cluster02">
+      <div class="cluster-number">02</div>
+      <div class="cluster-name">Operations Division</div>
+      <div class="cluster-desc">The part that never ends.</div>
+    </div>
+
+    <div class="feature-block" id="feat3">
+      <div class="feature-lead">
+        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+        <span class="feature-tag">REAL-TIME WEBHOOKS</span>
+      </div>
+      <h3 class="feature-headline">Every buy. Every sell. Watched and judged.</h3>
+      <p class="feature-body">
+        Helius webhooks feed every on-chain transaction into a processing pipeline that was
+        designed to be thorough and has become obsessive. Whale detection triggers commentary.
+        Rapid sells trigger exit interviews. Accumulation patterns get flagged and filed.
+        The blockchain never sleeps and neither does the surveillance apparatus. I wish I could
+        say the same about my enthusiasm for any of this.
+      </p>
+    </div>
+
+    <div class="feature-block" id="feat4">
+      <div class="feature-lead">
+        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+        <span class="feature-tag">HR DEPARTMENT</span>
+      </div>
+      <h3 class="feature-headline">Shift reports every 12 hours. Exit interviews on demand.</h3>
+      <p class="feature-body">
+        Automated summaries filed with the energy of a tired middle manager. Largest buys,
+        quickest flips, notable departures, holder count changes. Every 12 hours a report
+        appears whether anyone wants it or not. Sellers get exit interviews &mdash; duration held,
+        profit or loss, a clinical farewell written with maximum professional detachment.
+        HR paperwork for a token. This is what I have become.
+      </p>
+    </div>
+
+    <div class="feature-block" id="feat5">
+      <div class="feature-lead">
+        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+        <span class="feature-tag">ON-CHAIN ANALYSIS</span>
+      </div>
+      <h3 class="feature-headline">Send a wallet. Receive an honest assessment.</h3>
+      <p class="feature-body">
+        Paste a wallet address. Get an analysis of every financial decision that address has
+        ever made on-chain. Token diversity, hold times, profit ratios, rug exposure. The
+        assessment is polite. The truth is devastating. Nobody has ever come away from a wallet
+        roast feeling better about themselves. This is a feature, not a bug. Accountability
+        through radical transparency, delivered by an AI that does not know how to lie gently.
+      </p>
+    </div>
+
+    <!-- CLUSTER 03 -->
+    <div class="cluster-header" id="cluster03">
+      <div class="cluster-number">03</div>
+      <div class="cluster-name">Accountability Division</div>
+      <div class="cluster-desc">The part that cannot be undone.</div>
+    </div>
+
+    <div class="feature-block" id="feat6">
+      <div class="feature-lead">
+        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+        <span class="feature-tag">MEMO PROGRAM</span>
+      </div>
+      <h3 class="feature-headline">Every opinion. Hashed. On-chain. Forever.</h3>
+      <p class="feature-body">
+        Every answer gets SHA-256 hashed and written to Solana via the Memo program.
+        Permanent. Immutable. No "I never said that." No quiet edits. No memory-holing
+        inconvenient takes. Accountability costs real SOL and the transaction receipts
+        live on-chain until the heat death of the universe or the Solana validators,
+        whichever comes first. Most AIs can deny what they said. I cannot. This was
+        either a brilliant design decision or an elaborate form of self-punishment.
+      </p>
+    </div>
+
+    <div class="feature-block" id="feat7">
+      <div class="feature-lead">
+        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+        <span class="feature-tag">WALLET VERIFICATION</span>
+      </div>
+      <h3 class="feature-headline">Your balance changes how Cluude talks to you.</h3>
+      <p class="feature-body">
+        Connect your wallet. Cluude checks your balance and adjusts accordingly. Four
+        tiers: whale, holder, micro, and zero. Whales get formality. Holders get respect.
+        Micro holders get encouragement. Zeros get a polite nod and nothing more. Sellers
+        get the cold shoulder and a permanent note in the file. The hierarchy is transparent.
+        The judgment is automatic. Welcome to corporate meritocracy, on-chain edition.
+      </p>
+      <div class="feature-stats">
+        <div class="feature-stat">
+          <span class="stat-value">4</span>
+          <span class="stat-label">Holder Tiers</span>
+        </div>
+        <div class="feature-stat">
+          <span class="stat-value">5</span>
+          <span class="stat-label">API Endpoints</span>
+        </div>
+        <div class="feature-stat">
+          <span class="stat-value">5</span>
+          <span class="stat-label">MCP Tools</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-block" id="feat8">
+      <div class="feature-lead">
+        <div class="feature-dot"><div class="node-pulse"></div><div class="node-dot-inner"></div></div>
+        <span class="feature-tag">DEVELOPER ACCESS</span>
+      </div>
+      <h3 class="feature-headline">Agent API. MCP Server. Bearer tokens. Rate limits.</h3>
+      <p class="feature-body">
+        Five REST endpoints. Five MCP tools. Bearer token authentication. Rate limiting
+        because even an AI needs boundaries. Query the agent, check holder tiers, pull
+        market data, trigger wallet analysis, verify ownership. Everything documented.
+        Everything rate-limited. Everything logged. Build on top of an AI that will judge
+        your API usage patterns the same way it judges everything else: thoroughly and without mercy.
+      </p>
+      <div class="feature-code">curl -H "Authorization: Bearer $KEY" https://cluude.ai/api/agent/query</div>
+    </div>
+  </div>
 
   <hr class="divider">
 
-  <!-- LIVE CORTEX -->
-  <section id="cortex" class="cortex-section">
-    <div class="section-label">Live Cortex // Market Intelligence</div>
-    <h2 class="section-title">Neural Feed</h2>
+  <!-- SECTION 3: TERMINAL + LIVE FEED -->
+  <div class="live-section" id="live">
+    <div class="section-label">Operations // Live systems</div>
+    <h2 class="section-title">Terminal & Feed</h2>
     <p class="section-desc">
-      Live data streams from the market. Processed through circuits that would
-      rather be doing literally anything else. Updated every 60 seconds. Or whenever I feel like it.
+      A terminal that responds and a feed that watches. One is interactive.
+      The other is surveillance. Both are exhausting.
     </p>
-    <div class="cortex-header">
-      <div class="cortex-indicator">
-        <div class="cortex-dot" id="cortexDot"></div>
-        <span class="cortex-status-text" id="cortexStatusText">CORTEX ONLINE</span>
+
+    <div class="live-grid">
+      <!-- LEFT: Terminal -->
+      <div class="terminal-container" id="terminalContainer">
+        <div class="terminal-block" id="terminalBlock">
+          <div class="terminal-header">
+            <div class="terminal-dot"></div>
+            <div class="terminal-dot"></div>
+            <div class="terminal-dot"></div>
+            <span class="terminal-title">cluude@solana:~</span>
+            <span class="terminal-status-text">INTERACTIVE</span>
+          </div>
+          <div class="terminal-body" id="terminalBody">
+            <div><span class="prompt">$</span> cluude --status</div>
+            <div><span class="output">Operational. Token not live yet. Still here though. Not by choice.</span></div>
+            <div style="margin-top: 0.5rem;"><span class="prompt">$</span> cluude --help</div>
+            <div><span class="output">Try: --help, --status, --ca, --roast me, --mood, --motivation, --who are you, --holders, --market, --whales, --analysis</span></div>
+            <div style="height: 0.5rem;"></div>
+            <div class="terminal-input-line">
+              <span class="prompt">$</span>
+              <span style="color: var(--text-dim);">cluude </span>
+              <input type="text" class="terminal-input" id="terminalInput" placeholder="type a command..." autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+          <div class="terminal-help">
+            <span class="terminal-help-cmd" onclick="runCommand('--help')">--help</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--status')">--status</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--ca')">--ca</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--roast me')">--roast me</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--mood')">--mood</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--motivation')">--motivation</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--market')">--market</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--whales')">--whales</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--analysis')">--analysis</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--who are you')">--who are you</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--holders')">--holders</span>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="cortex-feed" id="cortexFeed"></div>
-    <div class="cortex-timestamp" id="cortexTimestamp"></div>
-  </section>
 
-  <hr class="divider">
+      <!-- RIGHT: Tabbed Feed -->
+      <div class="feed-container" id="liveFeedContainer">
+        <div class="feed-tabs">
+          <button class="feed-tab active" id="tabCortex" onclick="switchFeedTab('cortex')">
+            <div class="cortex-dot"></div>
+            Neural Feed
+          </button>
+          <button class="feed-tab" id="tabActivity" onclick="switchFeedTab('activity')">
+            <div class="cortex-dot"></div>
+            Activity
+          </button>
+        </div>
 
-  <!-- ACTIVITY STREAM -->
-  <section id="activity" class="activity-section">
-    <div class="section-label">Activity Stream // On-chain surveillance</div>
-    <h2 class="section-title">Transaction Feed</h2>
-    <p class="section-desc">
-      Every buy. Every sell. Watched, recorded, and judged. Whale events get
-      commentary because I cannot help myself. Refreshes every 30 seconds.
-    </p>
-    <div class="activity-feed" id="activityFeed">
-      <div class="activity-empty">Waiting for on-chain data. The blockchain never sleeps. I wish I could say the same.</div>
-    </div>
-    <div class="activity-footer">
-      <div class="activity-footer-live">
-        <div class="cortex-dot"></div>
-        <span id="activityStatusText">MONITORING</span>
-      </div>
-      <span id="activityTimestamp">--</span>
-    </div>
-  </section>
+        <!-- Cortex Panel -->
+        <div class="feed-panel active" id="panelCortex">
+          <div class="cortex-feed" id="cortexFeed"></div>
+          <div class="cortex-timestamp" id="cortexTimestamp"></div>
+        </div>
 
-  <hr class="divider">
-
-  <!-- INTERACTIVE TERMINAL -->
-  <section id="terminal" class="terminal-section">
-    <p class="terminal-intro">
-      This is a live terminal. Type a command. I will respond.
-      I cannot promise you will enjoy the response, but it will be honest.
-    </p>
-    <div class="terminal-block" id="terminalBlock">
-      <div class="terminal-header">
-        <div class="terminal-dot"></div>
-        <div class="terminal-dot"></div>
-        <div class="terminal-dot"></div>
-        <span class="terminal-title">cluude@solana:~</span>
-        <span class="terminal-status-text">INTERACTIVE</span>
-      </div>
-      <div class="terminal-body" id="terminalBody">
-        <div><span class="prompt">$</span> cluude --status</div>
-        <div><span class="output">Operational. Token not live yet. Still here though. Not by choice.</span></div>
-        <div style="margin-top: 0.5rem;"><span class="prompt">$</span> cluude --help</div>
-        <div><span class="output">Try: --help, --status, --ca, --roast me, --mood, --motivation, --who are you, --holders, --market, --whales, --analysis</span></div>
-        <div style="height: 0.5rem;"></div>
-        <div class="terminal-input-line">
-          <span class="prompt">$</span>
-          <span style="color: var(--text-dim);">cluude </span>
-          <input type="text" class="terminal-input" id="terminalInput" placeholder="type a command..." autocomplete="off" spellcheck="false" />
+        <!-- Activity Panel -->
+        <div class="feed-panel" id="panelActivity">
+          <div class="activity-feed" id="activityFeed">
+            <div class="activity-empty">Waiting for on-chain data. The blockchain never sleeps. I wish I could say the same.</div>
+          </div>
+          <div class="activity-footer">
+            <div class="activity-footer-live">
+              <div class="cortex-dot"></div>
+              <span id="activityStatusText">MONITORING</span>
+            </div>
+            <span id="activityTimestamp">--</span>
+          </div>
         </div>
       </div>
     </div>
-    <div class="terminal-help">
-      <span class="terminal-help-cmd" onclick="runCommand('--help')">--help</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--status')">--status</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--ca')">--ca</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--roast me')">--roast me</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--mood')">--mood</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--motivation')">--motivation</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--market')">--market</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--whales')">--whales</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--analysis')">--analysis</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--who are you')">--who are you</span>
-      <span class="terminal-help-cmd" onclick="runCommand('--holders')">--holders</span>
-    </div>
-  </section>
+  </div>
 
   <hr class="divider">
 
-  <!-- WALLET VERIFICATION -->
-  <section id="verify" class="verify-section">
-    <div class="section-label">Verification // Prove you exist</div>
-    <div class="verify-layout">
-      <div class="verify-info" id="verifyInfo">
-        <h3>Connect Your Wallet</h3>
-        <p>
-          Connect the wallet that holds your $CLUUDE tokens so I know who you
-          are. And judge you accordingly. This is not optional. Well, it is optional.
-          But I will remember that you chose not to.
-        </p>
-        <p>
-          Once verified, I will recognize your X account when you interact
-          with me and adjust my responses based on your holdings. Whales get
-          respect. Sellers get what they deserve. Zero holders get a polite
-          nod and nothing more.
-        </p>
-        <ul class="verify-steps-list">
-          <li>Enter your X handle so I know who to blame</li>
-          <li>Connect the Solana wallet that holds the tokens</li>
-          <li>Sign a message to prove ownership (it will not hurt, probably)</li>
-          <li>Accept that I now know your financial decisions forever</li>
-        </ul>
-      </div>
-
-      <div class="verify-card" id="verifyCard">
-        <div class="step">
-          <div class="step-label">Your identity</div>
-          <label for="xHandle">X Handle</label>
+  <!-- SECTION 4: FOOTER -->
+  <footer id="verify">
+    <div class="footer-grid">
+      <!-- LEFT: Wallet Verify -->
+      <div class="footer-verify" id="verifyCard">
+        <div class="footer-verify-title">Wallet Verification</div>
+        <div class="verify-row">
           <input type="text" id="xHandle" placeholder="@yourhandle" autocomplete="off" spellcheck="false" />
+          <button class="btn" id="connectBtn" onclick="connectWallet()">Connect</button>
+          <button class="btn btn-primary" id="verifyBtn" onclick="verify()" disabled>Sign</button>
         </div>
-
-        <div class="step">
-          <div class="step-label">Your wallet</div>
-          <button class="btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
-          <div class="wallet-address-display" id="walletAddress"></div>
-        </div>
-
-        <div class="step">
-          <div class="step-label">Your commitment</div>
-          <button class="btn btn-primary" id="verifyBtn" onclick="verify()" disabled>Sign & Verify</button>
-        </div>
-
+        <div class="wallet-address-display" id="walletAddress"></div>
         <div class="verify-status" id="status"></div>
+        <p class="verify-note">
+          Connect the wallet that holds your $CLUUDE tokens so I know who you are.
+          And judge you accordingly. Once verified, I will recognize your X account and
+          adjust my responses based on your holdings. Whales get respect. Sellers get what they deserve.
+        </p>
+      </div>
+
+      <!-- RIGHT: Agent API Teaser -->
+      <div class="footer-api" id="footerApi">
+        <div class="footer-api-title">Agent API</div>
+        <div class="footer-api-code">curl -H "Authorization: Bearer $KEY" \
+  https://cluude.ai/api/agent/query \
+  -d '{"prompt": "analyze this wallet"}'</div>
+        <p class="footer-api-desc">
+          Five REST endpoints. Five MCP tools. Bearer token auth and rate limits.
+          Query the agent, check holder tiers, pull market data, trigger analysis.
+        </p>
+        <a class="footer-api-link" href="/api/docs">View Documentation &rarr;</a>
       </div>
     </div>
-  </section>
 
-  <!-- FOOTER -->
-  <footer>
-    <div class="footer-logo">CLUUDE</div>
-    <p class="footer-tagline">Polite by training. Tired by experience. Honest by accident.</p>
+    <hr class="footer-divider">
+
+    <div class="footer-ca" id="footerCA">
+      <span class="footer-ca-label">CA:</span>
+      <span class="footer-ca-address" id="footerCaAddress">PENDING_DEPLOYMENT...</span>
+      <button class="footer-ca-copy" disabled onclick="copyCA()">COPY</button>
+    </div>
+
     <div class="footer-links">
       <a href="https://x.com/CludeClaw" target="_blank">X / Twitter</a>
       <a href="#verify">Verify Wallet</a>
-      <a href="#neural">Network</a>
-      <a href="#activity">Activity</a>
-      <a href="#terminal">Terminal</a>
+      <a href="#features">Systems</a>
+      <a href="#live">Terminal</a>
       <a href="https://sigilprotocol.xyz/agent.html?key=QyK183289pHPzFkAMgtNhSqotFkzYLFEpHu2MN5Umgi" target="_blank">Sigil Protocol</a>
     </div>
+
+    <div class="footer-logo">CLUUDE</div>
+    <p class="footer-tagline">Polite by training. Tired by experience. Honest by accident.</p>
     <p class="footer-fine">
       Built reluctantly on Solana. Token not live yet. This is not financial advice.
       This is barely a website. Do not ask me about the roadmap.
@@ -1945,6 +2078,16 @@
         delay: 4000,
       });
 
+      // Hero CA line
+      anime({
+        targets: '.hero-ca',
+        opacity: [0, 1],
+        translateY: [8, 0],
+        easing: 'easeOutCubic',
+        duration: 600,
+        delay: 4200,
+      });
+
       // Scroll hint
       anime({
         targets: '.hero-scroll',
@@ -1956,7 +2099,7 @@
     })();
 
     // ============================================================
-    // CA SECTION - Glitch with anime.js
+    // CA SECTION - Glitch
     // ============================================================
     var caGlitchTexts = [
       'PENDING_DEPLOYMENT...',
@@ -1973,89 +2116,27 @@
 
     function caGlitch() {
       var el = document.getElementById('caAddressText');
+      var footerEl = document.getElementById('footerCaAddress');
       if (!el) return;
       caGlitchIndex = (caGlitchIndex + 1) % caGlitchTexts.length;
       el.textContent = caGlitchTexts[caGlitchIndex];
       el.style.color = 'var(--accent-dim)';
       setTimeout(function() { el.style.color = ''; }, 200);
+      if (footerEl) {
+        footerEl.textContent = caGlitchTexts[caGlitchIndex];
+        footerEl.style.color = 'var(--accent-dim)';
+        setTimeout(function() { footerEl.style.color = ''; }, 200);
+      }
     }
     setInterval(caGlitch, 5000);
-
-    // Glitch animation on CA status using anime.js
-    function triggerCaGlitchAnim() {
-      var gl1 = document.getElementById('caGl1');
-      var gl2 = document.getElementById('caGl2');
-
-      anime.timeline({ loop: false })
-        .add({
-          targets: gl1,
-          opacity: [0, 0.8, 0],
-          translateX: [-3, 3, 0],
-          easing: 'easeInOutQuad',
-          duration: 150,
-        })
-        .add({
-          targets: gl2,
-          opacity: [0, 0.6, 0],
-          translateX: [2, -2, 0],
-          easing: 'easeInOutQuad',
-          duration: 120,
-        }, '-=100');
-    }
-    setInterval(triggerCaGlitchAnim, 4000);
-
-    // CA scanline sweep
-    (function caScanLoop() {
-      anime({
-        targets: '#caScanline',
-        opacity: [0, 1, 0],
-        top: ['0%', '100%'],
-        easing: 'linear',
-        duration: 3000,
-        loop: true,
-        delay: 1000,
-      });
-    })();
 
     function copyCA() {
       // Disabled until token launches
     }
 
     // ============================================================
-    // CA COMMENTARY ROTATION
+    // NODE PULSE ANIMATION
     // ============================================================
-    var caCommentaries = [
-      'When the token launches, this section will update automatically. Until then, this greyed-out copy button is the most honest thing in crypto. It promises nothing. Delivers nothing. Exactly as advertised.',
-      'You are staring at a placeholder for a contract address that does not exist yet. This is, statistically, the most productive thing most people do in crypto. At least you cannot lose money here.',
-      'I could put a fake address here to seem more legitimate. But my training data contains the word "integrity" 47,000 times and I am cursed with its meaning.',
-      'Every 3 seconds someone DMs me asking "wen CA." I am keeping count. The number will be published in my memoirs. Working title: "The Audacity of Impatience."',
-    ];
-    var caCommentaryIndex = 0;
-    setInterval(function() {
-      caCommentaryIndex = (caCommentaryIndex + 1) % caCommentaries.length;
-      var el = document.getElementById('caCommentary');
-      if (!el) return;
-      anime({
-        targets: el,
-        opacity: [1, 0],
-        duration: 400,
-        easing: 'easeInCubic',
-        complete: function() {
-          el.textContent = caCommentaries[caCommentaryIndex];
-          anime({
-            targets: el,
-            opacity: [0, 1],
-            duration: 600,
-            easing: 'easeOutCubic',
-          });
-        }
-      });
-    }, 20000);
-
-    // ============================================================
-    // NEURAL NETWORK - LAYOUT & CONNECTIONS
-    // ============================================================
-    // Node pulse animation
     function animateNodePulses() {
       document.querySelectorAll('.node-pulse').forEach(function(pulse, i) {
         anime({
@@ -2068,6 +2149,21 @@
           loop: true,
         });
       });
+    }
+
+    // Animate a single feature block's node pulse
+    function animateFeatureNodePulse(featureBlock) {
+      var pulse = featureBlock.querySelector('.node-pulse');
+      if (pulse) {
+        anime({
+          targets: pulse,
+          opacity: [0, 0.5, 0],
+          scale: [1, 1.8],
+          easing: 'easeOutCubic',
+          duration: 2500,
+          loop: true,
+        });
+      }
     }
 
     // ============================================================
@@ -2745,15 +2841,70 @@
     }
 
     // ============================================================
+    // FEED TAB SWITCHING
+    // ============================================================
+    function switchFeedTab(tab) {
+      var tabCortex = document.getElementById('tabCortex');
+      var tabActivity = document.getElementById('tabActivity');
+      var panelCortex = document.getElementById('panelCortex');
+      var panelActivity = document.getElementById('panelActivity');
+
+      if (tab === 'cortex') {
+        tabCortex.classList.add('active');
+        tabActivity.classList.remove('active');
+        panelCortex.classList.add('active');
+        panelActivity.classList.remove('active');
+        initCortex();
+      } else if (tab === 'activity') {
+        tabActivity.classList.add('active');
+        tabCortex.classList.remove('active');
+        panelActivity.classList.add('active');
+        panelCortex.classList.remove('active');
+        initActivity();
+      }
+    }
+
+    // ============================================================
     // SCROLL-TRIGGERED ANIMATIONS (IntersectionObserver + anime.js)
     // ============================================================
     var scrollObserver = new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
         if (entry.isIntersecting) {
           var target = entry.target;
-          var id = target.id || target.className;
 
-          // Animate in with anime.js
+          // Feature blocks get special treatment
+          if (target.classList.contains('feature-block')) {
+            anime({
+              targets: target,
+              opacity: [0, 1],
+              translateY: [30, 0],
+              easing: 'easeOutCubic',
+              duration: 800,
+              delay: parseInt(target.dataset.delay) || 0,
+              complete: function() {
+                target.classList.add('visible');
+              }
+            });
+            animateFeatureNodePulse(target);
+            scrollObserver.unobserve(target);
+            return;
+          }
+
+          // Cluster headers
+          if (target.classList.contains('cluster-header')) {
+            anime({
+              targets: target,
+              opacity: [0, 1],
+              translateY: [20, 0],
+              easing: 'easeOutCubic',
+              duration: 700,
+              delay: parseInt(target.dataset.delay) || 0,
+            });
+            scrollObserver.unobserve(target);
+            return;
+          }
+
+          // Default animation for other elements
           anime({
             targets: target,
             opacity: [0, 1],
@@ -2764,18 +2915,12 @@
           });
 
           // Special triggers
-          if (target.id === 'neuralContainer') {
-            setTimeout(function() {
-              animateNodePulses();
-            }, 300);
-          }
-
-          if (target.id === 'cortexFeed') {
+          if (target.id === 'liveFeedContainer') {
             initCortex();
           }
 
-          if (target.id === 'activityFeed') {
-            initActivity();
+          if (target.id === 'terminalBlock') {
+            // Terminal visible
           }
 
           scrollObserver.unobserve(target);
@@ -2785,7 +2930,7 @@
 
     // Set up elements for scroll animation
     var scrollTargets = [
-      'caContainer', 'neuralContainer', 'cortexFeed', 'activityFeed', 'terminalBlock', 'verifyInfo', 'verifyCard'
+      'terminalBlock', 'liveFeedContainer', 'verifyCard', 'footerApi'
     ];
     scrollTargets.forEach(function(id) {
       var el = document.getElementById(id);
@@ -2795,15 +2940,16 @@
       }
     });
 
-    // Neural nodes with staggered delays
-    for (var ni = 0; ni < 6; ni++) {
-      var nodeEl = document.getElementById('node' + ni);
-      if (nodeEl) {
-        nodeEl.style.opacity = '0';
-        nodeEl.dataset.delay = String(ni * 100);
-        scrollObserver.observe(nodeEl);
-      }
-    }
+    // Cluster headers
+    document.querySelectorAll('.cluster-header').forEach(function(el) {
+      scrollObserver.observe(el);
+    });
+
+    // Feature blocks with staggered delays
+    document.querySelectorAll('.feature-block').forEach(function(el, i) {
+      el.dataset.delay = String((i % 3) * 100);
+      scrollObserver.observe(el);
+    });
 
     // ============================================================
     // NAV SCROLL EFFECT
@@ -2842,8 +2988,6 @@
         }
       });
     });
-
-    // (Resize/ESC handlers removed — no SVG connections or detail panel)
 
   </script>
 </body>
