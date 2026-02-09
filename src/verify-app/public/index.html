@@ -158,6 +158,18 @@
       text-decoration: none;
     }
 
+    .nav-links a.nav-agents {
+      color: var(--accent-dim);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.6rem;
+      transition: all 0.3s;
+    }
+
+    .nav-links a.nav-agents:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
     /* ---- MATRIX RAIN CANVAS ---- */
     #matrixCanvas {
       position: absolute;
@@ -818,7 +830,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 2rem;
-      align-items: start;
+      align-items: stretch;
     }
 
     /* ---- TERMINAL ---- */
@@ -831,6 +843,9 @@
       background: var(--surface);
       border: 1px solid var(--border);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
 
     .terminal-header {
@@ -873,7 +888,7 @@
       font-size: 0.8rem;
       line-height: 2;
       color: var(--text-dim);
-      max-height: 450px;
+      flex: 1;
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: #1a1a1a #0c0c0c;
@@ -954,6 +969,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       overflow: hidden;
+      height: 100%;
     }
 
     .feed-tabs {
@@ -999,6 +1015,10 @@
       display: none;
       flex-direction: column;
       padding: 1rem;
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1a1a1a #0c0c0c;
     }
 
     .feed-panel.active {
@@ -1340,6 +1360,7 @@
       <div class="nav-links">
         <a href="#features">Systems</a>
         <a href="#live">Terminal</a>
+        <a href="#footerApi" class="nav-agents">For Agents</a>
         <a href="/manifesto.html">Manifesto</a>
         <a href="https://x.com/CludeClaw" target="_blank">X</a>
       </div>
