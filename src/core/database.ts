@@ -77,6 +77,62 @@ export async function initDatabase(): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_token_events_processed ON token_events(processed);
         CREATE INDEX IF NOT EXISTS idx_token_events_timestamp ON token_events(timestamp);
         CREATE INDEX IF NOT EXISTS idx_price_snapshots_recorded ON price_snapshots(recorded_at);
+
+        CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+        CREATE TABLE IF NOT EXISTS memories (
+          id BIGSERIAL PRIMARY KEY,
+          memory_type TEXT NOT NULL CHECK (memory_type IN ('episodic', 'semantic', 'procedural', 'self_model')),
+          content TEXT NOT NULL,
+          summary TEXT NOT NULL,
+          tags TEXT[] DEFAULT '{}',
+          emotional_valence REAL DEFAULT 0,
+          importance REAL DEFAULT 0.5,
+          access_count INTEGER DEFAULT 0,
+          source TEXT,
+          source_id TEXT,
+          related_user TEXT,
+          related_wallet TEXT,
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          last_accessed TIMESTAMPTZ DEFAULT NOW(),
+          decay_factor REAL DEFAULT 1.0
+        );
+
+        CREATE TABLE IF NOT EXISTS dream_logs (
+          id BIGSERIAL PRIMARY KEY,
+          session_type TEXT NOT NULL CHECK (session_type IN ('consolidation', 'reflection', 'emergence')),
+          input_memory_ids BIGINT[] DEFAULT '{}',
+          output TEXT NOT NULL,
+          new_memories_created BIGINT[] DEFAULT '{}',
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(memory_type);
+        CREATE INDEX IF NOT EXISTS idx_memories_tags ON memories USING GIN(tags);
+        CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance DESC);
+        CREATE INDEX IF NOT EXISTS idx_memories_user ON memories(related_user);
+        CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_memories_decay ON memories(decay_factor);
+        CREATE INDEX IF NOT EXISTS idx_dream_logs_type ON dream_logs(session_type);
+        CREATE INDEX IF NOT EXISTS idx_dream_logs_created ON dream_logs(created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS agent_keys (
+          id BIGSERIAL PRIMARY KEY,
+          api_key TEXT UNIQUE NOT NULL,
+          agent_id TEXT UNIQUE NOT NULL,
+          agent_name TEXT NOT NULL,
+          tier TEXT NOT NULL DEFAULT 'AGENT_UNKNOWN'
+            CHECK (tier IN ('AGENT_VERIFIED', 'AGENT_UNKNOWN', 'AGENT_ALLY', 'AGENT_RIVAL')),
+          total_interactions INTEGER DEFAULT 0,
+          registered_at TIMESTAMPTZ DEFAULT NOW(),
+          last_used TIMESTAMPTZ,
+          is_active BOOLEAN DEFAULT TRUE,
+          metadata JSONB DEFAULT '{}'
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_agent_keys_api_key ON agent_keys(api_key);
+        CREATE INDEX IF NOT EXISTS idx_token_events_activity ON token_events(sol_value DESC, timestamp DESC);
       `
     });
 

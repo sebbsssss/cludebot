@@ -46,8 +46,20 @@ export const config = {
     shiftReportCron: optional('SHIFT_REPORT_CRON', '0 */12 * * *'),
     moodTweetMs: parseInt(optional('MOOD_TWEET_INTERVAL_MS', '7200000'), 10),
   },
+  allium: {
+    apiKey: optional('ALLIUM_API_KEY', ''),
+    pollIntervalMs: parseInt(optional('MARKET_MONITOR_POLL_MS', '300000'), 10),
+  },
   tiers: {
     whaleThreshold: parseInt(optional('TIER_WHALE_THRESHOLD', '1000000'), 10),
     smallThreshold: parseInt(optional('TIER_SMALL_THRESHOLD', '1'), 10),
+  },
+  agent: {
+    rateLimitPerMin: parseInt(optional('AGENT_RATE_LIMIT', '10'), 10),
+  },
+  activity: {
+    minSolValue: parseFloat(optional('ACTIVITY_MIN_SOL', '5.0')),
+    whaleThreshold: parseFloat(optional('ACTIVITY_WHALE_SOL', '50.0')),
+    maxEvents: parseInt(optional('ACTIVITY_MAX_EVENTS', '20'), 10),
   },
 } as const;

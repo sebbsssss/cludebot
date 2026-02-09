@@ -12,15 +12,19 @@ export interface GenerateOptions {
   context?: string;
   moodModifier?: string;
   tierModifier?: string;
+  agentModifier?: string;
   featureInstruction?: string;
+  memoryContext?: string;
   maxTokens?: number;
 }
 
 export async function generateResponse(options: GenerateOptions): Promise<string> {
   const systemParts = [getBasePrompt()];
 
+  if (options.memoryContext) systemParts.push(`\n\n${options.memoryContext}`);
   if (options.moodModifier) systemParts.push(`\n\n## Current Mood\n${options.moodModifier}`);
   if (options.tierModifier) systemParts.push(`\n\n## User Context\n${options.tierModifier}`);
+  if (options.agentModifier) systemParts.push(`\n\n## Agent Context\n${options.agentModifier}`);
   if (options.featureInstruction) systemParts.push(`\n\n## Task\n${options.featureInstruction}`);
 
   const systemPrompt = systemParts.join('');
