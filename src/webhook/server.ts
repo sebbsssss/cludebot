@@ -4,7 +4,7 @@ import { config } from '../config';
 import { handleHeliusWebhook } from './helius-handler';
 import { verifyRoutes } from '../verify-app/routes';
 import { getMarketSnapshot } from '../core/allium-client';
-import { getMemoryStats } from '../core/memory';
+import { getMemoryStats, getRecentMemories } from '../core/memory';
 import { agentRoutes } from './agent-routes';
 import { getRecentActivity } from '../features/activity-stream';
 import { createChildLogger } from '../core/logger';
@@ -62,6 +62,35 @@ export function createServer(): express.Application {
     } catch (err) {
       log.error({ err }, 'Memory stats endpoint error');
       res.status(500).json({ error: 'Failed to fetch memory stats' });
+    }
+  });
+
+  // Recent memories API (for timeline visualization)
+  app.get('/api/memories', async (req, res) => {
+    try {
+      const hours = Math.min(parseInt(req.query.hours as string) || 168, 720); // Default 1 week, max 30 days
+      const limit = Math.min(parseInt(req.query.limit as string) || 30, 50);
+      const memories = await getRecentMemories(hours, undefined, limit);
+      res.json({
+        memories: memories.map(m => ({
+          id: m.id,
+          memory_type: m.memory_type,
+          summary: m.summary,
+          content: m.content,
+          tags: m.tags,
+          importance: m.importance,
+          decay_factor: m.decay_factor,
+          emotional_valence: m.emotional_valence,
+          access_count: m.access_count,
+          source: m.source,
+          created_at: m.created_at,
+        })),
+        count: memories.length,
+        lastUpdate: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Memories endpoint error');
+      res.status(500).json({ error: 'Failed to fetch memories' });
     }
   });
 

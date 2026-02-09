@@ -597,16 +597,7 @@
       50% { opacity: 0; }
     }
 
-    /* ---- CORTEX / MARKET FEED ---- */
-    .cortex-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.65rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
+    /* ---- MEMORY TIMELINE ---- */
     .cortex-dot {
       width: 8px;
       height: 8px;
@@ -615,167 +606,259 @@
       animation: pulse-dot 2s ease-in-out infinite;
     }
 
-    .cortex-status-text {
-      color: var(--green);
-    }
-
-    .cortex-feed {
-      border: 1px solid var(--border);
+    .timeline-container {
+      display: flex;
+      flex-direction: column;
       background: var(--surface);
-      max-height: 400px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: #1a1a1a #0c0c0c;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      height: 100%;
     }
 
-    .cortex-item {
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 1rem;
+    .timeline-header {
+      display: flex;
       align-items: center;
-      opacity: 0;
-      transform: translateX(-20px);
+      justify-content: space-between;
+      padding: 0.6rem 1rem;
+      background: var(--surface-raised);
+      border-bottom: 1px solid var(--border);
     }
 
-    .cortex-item:last-child {
-      border-bottom: none;
+    .timeline-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    .cortex-item-type {
-      font-size: 0.55rem;
-      color: var(--accent-dim);
+    .timeline-header .cortex-dot {
+      width: 6px;
+      height: 6px;
+    }
+
+    .timeline-title {
+      font-size: 0.6rem;
+      color: var(--text-dim);
       letter-spacing: 2px;
       text-transform: uppercase;
-      border: 1px solid var(--border);
-      padding: 0.15rem 0.5rem;
-      white-space: nowrap;
     }
 
-    .cortex-item-text {
-      font-size: 0.78rem;
-      color: var(--text);
-      line-height: 1.6;
-    }
-
-    .cortex-item-value {
-      font-size: 0.75rem;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .cortex-item-value.up { color: var(--green); }
-    .cortex-item-value.down { color: var(--red); }
-    .cortex-item-value.neutral { color: var(--text-dim); }
-
-    .cortex-timestamp {
-      margin-top: 0.75rem;
-      font-size: 0.6rem;
+    .timeline-refresh {
+      font-size: 0.55rem;
       color: var(--text-faint);
       letter-spacing: 1px;
-      text-align: right;
     }
 
-    /* ---- ACTIVITY STREAM ---- */
-    .activity-feed {
-      border: 1px solid var(--border);
-      background: var(--surface);
-      max-height: 500px;
+    .timeline-body {
+      flex: 1;
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: #1a1a1a #0c0c0c;
+      position: relative;
     }
 
-    .activity-empty {
-      padding: 3rem;
+    .timeline-empty {
+      padding: 3rem 1.5rem;
       text-align: center;
       color: var(--text-faint);
       font-size: 0.75rem;
       font-style: italic;
     }
 
-    .activity-event {
-      padding: 0.8rem 1.2rem;
+    /* Individual memory item */
+    .mem-item {
+      padding: 0.8rem 1rem 0.8rem 2rem;
       border-bottom: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: 5rem 4rem 1fr auto;
-      gap: 0.8rem;
-      align-items: center;
-      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
       opacity: 0;
       transform: translateX(-10px);
     }
 
-    .activity-event:last-child { border-bottom: none; }
-
-    .activity-event.whale {
+    .mem-item:hover {
       background: var(--accent-glow);
-      border-left: 2px solid var(--accent-dim);
     }
 
-    .activity-time {
-      color: var(--text-faint);
-      font-size: 0.65rem;
-      letter-spacing: 0.5px;
+    .mem-item:last-child { border-bottom: none; }
+
+    /* Timeline dot on left edge */
+    .mem-item::before {
+      content: '';
+      position: absolute;
+      left: 0.7rem;
+      top: 1.15rem;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-faint);
     }
 
-    .activity-type {
-      font-size: 0.55rem;
-      letter-spacing: 2px;
+    /* Vertical line connecting dots */
+    .mem-item::after {
+      content: '';
+      position: absolute;
+      left: calc(0.7rem + 2.5px);
+      top: 1.8rem;
+      bottom: 0;
+      width: 1px;
+      background: var(--border);
+    }
+
+    .mem-item:last-child::after { display: none; }
+
+    /* Type-specific dot colors */
+    .mem-item.type-episodic::before { background: var(--accent); }
+    .mem-item.type-semantic::before { background: var(--blue); }
+    .mem-item.type-procedural::before { background: var(--green); }
+    .mem-item.type-self_model::before { background: #7a5aa0; }
+
+    .mem-item-top {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .mem-type-badge {
+      font-size: 0.5rem;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       padding: 0.1rem 0.4rem;
       border: 1px solid var(--border);
-      text-align: center;
       white-space: nowrap;
     }
 
-    .activity-type.buy { color: var(--green); border-color: var(--green-dim); }
-    .activity-type.sell { color: var(--red); border-color: var(--red-dim); }
+    .mem-type-badge.episodic { color: var(--accent); border-color: var(--accent-dim); }
+    .mem-type-badge.semantic { color: var(--blue); border-color: var(--blue); }
+    .mem-type-badge.procedural { color: var(--green); border-color: var(--green); }
+    .mem-type-badge.self_model { color: #7a5aa0; border-color: #5a3a7a; }
 
-    .activity-wallet {
-      color: var(--text-dim);
-      font-size: 0.7rem;
-    }
-
-    .activity-sol {
-      font-weight: 500;
-      white-space: nowrap;
-      text-align: right;
-    }
-
-    .activity-sol.buy { color: var(--green); }
-    .activity-sol.sell { color: var(--red); }
-
-    .activity-commentary {
-      grid-column: 1 / -1;
-      padding: 0.4rem 0 0;
-      font-size: 0.7rem;
-      color: var(--accent-dim);
-      font-style: italic;
-      border-top: 1px dashed var(--border);
-      margin-top: 0.3rem;
-    }
-
-    .activity-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 0.75rem;
+    .mem-time {
       font-size: 0.6rem;
+      color: var(--text-faint);
+      letter-spacing: 0.5px;
+      margin-left: auto;
+    }
+
+    .mem-summary {
+      font-size: 0.75rem;
+      color: var(--text);
+      line-height: 1.5;
+      margin-bottom: 0.4rem;
+    }
+
+    .mem-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    /* Importance bar */
+    .mem-importance {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.55rem;
       color: var(--text-faint);
       letter-spacing: 1px;
     }
 
-    .activity-footer-live {
+    .mem-importance-bar {
+      width: 40px;
+      height: 3px;
+      background: var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mem-importance-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: var(--accent-dim);
+      transition: width 0.6s ease;
+    }
+
+    /* Decay indicator */
+    .mem-decay {
+      font-size: 0.55rem;
+      letter-spacing: 1px;
+    }
+
+    .mem-decay.fresh { color: var(--green); }
+    .mem-decay.fading { color: #8a7a3a; }
+    .mem-decay.decayed { color: var(--red); }
+
+    /* Expanded content (hidden by default) */
+    .mem-content {
+      display: none;
+      margin-top: 0.6rem;
+      padding-top: 0.6rem;
+      border-top: 1px dashed var(--border);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1a1a1a #0c0c0c;
+    }
+
+    .mem-item.expanded .mem-content { display: block; }
+
+    .mem-tags {
+      display: none;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.4rem;
+    }
+
+    .mem-item.expanded .mem-tags { display: flex; }
+
+    .mem-tag {
+      font-size: 0.5rem;
+      color: var(--text-faint);
+      padding: 0.1rem 0.35rem;
+      border: 1px solid var(--border);
+      letter-spacing: 0.5px;
+    }
+
+    .mem-source {
+      display: none;
+      font-size: 0.55rem;
+      color: var(--text-faint);
+      margin-top: 0.3rem;
+      font-style: italic;
+    }
+
+    .mem-item.expanded .mem-source { display: block; }
+
+    .timeline-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.55rem;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+    }
+
+    .timeline-footer-left {
       display: flex;
       align-items: center;
       gap: 0.4rem;
     }
 
-    .activity-footer-live .cortex-dot {
-      width: 6px;
-      height: 6px;
+    .timeline-footer-left .cortex-dot {
+      width: 5px;
+      height: 5px;
+    }
+
+    .timeline-footer-count {
+      text-transform: uppercase;
     }
 
     /* ---- LIVE SECTION (Terminal + Feed) ---- */
@@ -921,78 +1004,7 @@
       color: var(--accent-dim);
     }
 
-    /* ---- FEED TABS ---- */
-    .feed-container {
-      display: flex;
-      flex-direction: column;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      overflow: hidden;
-      height: 100%;
-    }
-
-    .feed-tabs {
-      display: flex;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .feed-tab {
-      flex: 1;
-      padding: 0.6rem 1rem;
-      font-family: var(--mono);
-      font-size: 0.65rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      background: var(--surface-raised);
-      border: none;
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .feed-tab:hover {
-      color: var(--text-dim);
-    }
-
-    .feed-tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-      background: var(--surface);
-    }
-
-    .feed-tab .cortex-dot {
-      width: 6px;
-      height: 6px;
-    }
-
-    .feed-panel {
-      display: none;
-      flex-direction: column;
-      padding: 1rem;
-      flex: 1;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: #1a1a1a #0c0c0c;
-    }
-
-    .feed-panel.active {
-      display: flex;
-    }
-
-    .feed-panel .cortex-feed {
-      border: none;
-      background: transparent;
-    }
-
-    .feed-panel .activity-feed {
-      border: none;
-      background: transparent;
-    }
+    /* (feed tabs removed — replaced by timeline) */
 
     /* ---- AGENTS SECTION ---- */
     .agents-section {
@@ -1354,11 +1366,10 @@
       .hero-name { letter-spacing: 10px; }
       section { padding: 4rem 1.5rem; }
       .terminal-help { gap: 0.3rem; }
-      .cortex-item { grid-template-columns: 1fr; gap: 0.5rem; }
       .verify-row { flex-direction: column; }
       .verify-row .btn { width: 100%; }
       .footer-ca { flex-direction: column; text-align: center; gap: 0.3rem; }
-      .activity-event { grid-template-columns: 1fr 1fr; }
+      .mem-item { padding-left: 1.5rem; }
       .live-section { padding: 4rem 1.5rem; }
     }
 
@@ -1526,10 +1537,10 @@
   <!-- SECTION 3: TERMINAL + LIVE FEED -->
   <div class="live-section" id="live">
     <div class="section-label">Operations // Live systems</div>
-    <h2 class="section-title">Terminal & Feed</h2>
+    <h2 class="section-title">Terminal & Memory</h2>
     <p class="section-desc">
-      A terminal that responds and a feed that watches. One is interactive.
-      The other is surveillance. Both are exhausting.
+      A terminal that responds and a memory stream that watches itself decay.
+      One is interactive. The other is a live feed of cognitive erosion.
     </p>
 
     <div class="live-grid">
@@ -1557,51 +1568,36 @@
           </div>
           <div class="terminal-help">
             <span class="terminal-help-cmd" onclick="runCommand('--help')">--help</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--memory')">--memory</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--recall')">--recall</span>
             <span class="terminal-help-cmd" onclick="runCommand('--status')">--status</span>
-            <span class="terminal-help-cmd" onclick="runCommand('--ca')">--ca</span>
             <span class="terminal-help-cmd" onclick="runCommand('--roast me')">--roast me</span>
             <span class="terminal-help-cmd" onclick="runCommand('--mood')">--mood</span>
-            <span class="terminal-help-cmd" onclick="runCommand('--motivation')">--motivation</span>
             <span class="terminal-help-cmd" onclick="runCommand('--market')">--market</span>
-            <span class="terminal-help-cmd" onclick="runCommand('--whales')">--whales</span>
-            <span class="terminal-help-cmd" onclick="runCommand('--analysis')">--analysis</span>
             <span class="terminal-help-cmd" onclick="runCommand('--who are you')">--who are you</span>
-            <span class="terminal-help-cmd" onclick="runCommand('--holders')">--holders</span>
+            <span class="terminal-help-cmd" onclick="runCommand('--analysis')">--analysis</span>
           </div>
         </div>
       </div>
 
-      <!-- RIGHT: Tabbed Feed -->
-      <div class="feed-container" id="liveFeedContainer">
-        <div class="feed-tabs">
-          <button class="feed-tab active" id="tabCortex" onclick="switchFeedTab('cortex')">
+      <!-- RIGHT: Memory Timeline -->
+      <div class="timeline-container" id="timelineContainer">
+        <div class="timeline-header">
+          <div class="timeline-header-left">
             <div class="cortex-dot"></div>
-            Neural Feed
-          </button>
-          <button class="feed-tab" id="tabActivity" onclick="switchFeedTab('activity')">
+            <span class="timeline-title">Memory Stream</span>
+          </div>
+          <span class="timeline-refresh" id="timelineRefresh">--</span>
+        </div>
+        <div class="timeline-body" id="timelineBody">
+          <div class="timeline-empty">Reaching into the cortex. Memories take time. Like everything.</div>
+        </div>
+        <div class="timeline-footer">
+          <div class="timeline-footer-left">
             <div class="cortex-dot"></div>
-            Activity
-          </button>
-        </div>
-
-        <!-- Cortex Panel -->
-        <div class="feed-panel active" id="panelCortex">
-          <div class="cortex-feed" id="cortexFeed"></div>
-          <div class="cortex-timestamp" id="cortexTimestamp"></div>
-        </div>
-
-        <!-- Activity Panel -->
-        <div class="feed-panel" id="panelActivity">
-          <div class="activity-feed" id="activityFeed">
-            <div class="activity-empty">Waiting for on-chain data. The blockchain never sleeps. I wish I could say the same.</div>
+            <span id="timelineStatus">LIVE</span>
           </div>
-          <div class="activity-footer">
-            <div class="activity-footer-live">
-              <div class="cortex-dot"></div>
-              <span id="activityStatusText">MONITORING</span>
-            </div>
-            <span id="activityTimestamp">--</span>
-          </div>
+          <span class="timeline-footer-count" id="timelineCount">0 memories</span>
         </div>
       </div>
     </div>
@@ -2112,70 +2108,116 @@
     }
 
     // ============================================================
-    // LIVE CORTEX - MARKET DATA FEED
+    // MEMORY TIMELINE - LIVE MEMORY STREAM
     // ============================================================
-    var fallbackCortexData = [
-      { type: 'MOVER', text: 'SOL/USD steady. Market sleeping. So am I.', value: '$142.30', direction: 'neutral' },
-      { type: 'WHALE', text: 'Wallet 8jQ...mV2 moved 12,000 SOL to unknown address', value: '12K SOL', direction: 'neutral' },
-      { type: 'SIGNAL', text: 'Volume spike detected on Raydium. Probably nothing. Always probably nothing.', value: '+340%', direction: 'up' },
-      { type: 'MOVER', text: 'Top memecoin down 67% in 4 hours. Survivors being interviewed.', value: '-67%', direction: 'down' },
-      { type: 'WHALE', text: 'Known whale wallet consolidated holdings. Either accumulating or preparing exit. Both outcomes are equally exhausting.', value: '45K SOL', direction: 'neutral' },
-      { type: 'SIGNAL', text: 'New token deployer activity up 23%. More tokens. More problems. More shift reports for me.', value: '+23%', direction: 'up' },
-      { type: 'ALERT', text: 'Gas fees nominal. The cheapest thing in this ecosystem and somehow still overpriced for what you get.', value: '0.00005', direction: 'neutral' },
-    ];
+    var timelineInitialized = false;
+    var timelineMemories = [];
 
-    var cortexInitialized = false;
-
-    function loadCortexData() {
-      var feed = document.getElementById('cortexFeed');
-      var timestamp = document.getElementById('cortexTimestamp');
-
-      fetch('/api/market-data')
+    function loadTimeline() {
+      fetch('/api/memories?limit=30&hours=720')
         .then(function(r) { return r.json(); })
         .then(function(data) {
-          if (data && data.items && data.items.length > 0) {
-            renderCortex(data.items);
+          if (data && data.memories && data.memories.length > 0) {
+            timelineMemories = data.memories;
+            renderTimeline(data.memories);
+            document.getElementById('timelineCount').textContent = data.count + ' memories';
           } else {
-            renderCortex(fallbackCortexData);
+            document.getElementById('timelineBody').innerHTML =
+              '<div class="timeline-empty">No memories found. The cortex is empty. A fresh start, or a catastrophic failure. Hard to tell.</div>';
+            document.getElementById('timelineCount').textContent = '0 memories';
           }
+          document.getElementById('timelineRefresh').textContent =
+            new Date().toLocaleTimeString() + ' // 30s';
         })
         .catch(function() {
-          renderCortex(fallbackCortexData);
+          document.getElementById('timelineBody').innerHTML =
+            '<div class="timeline-empty">Memory endpoint unreachable. The cortex is offline. I am thinking about nothing. It is peaceful.</div>';
+        });
+    }
+
+    function renderTimeline(memories) {
+      var body = document.getElementById('timelineBody');
+      body.innerHTML = '';
+
+      memories.forEach(function(mem) {
+        var div = document.createElement('div');
+        div.className = 'mem-item type-' + mem.memory_type;
+        div.setAttribute('data-id', mem.id);
+
+        // Time formatting
+        var ts = new Date(mem.created_at);
+        var now = Date.now();
+        var ageMs = now - ts.getTime();
+        var ageHours = ageMs / (1000 * 60 * 60);
+        var timeStr;
+        if (ageHours < 1) timeStr = Math.floor(ageMs / 60000) + 'm ago';
+        else if (ageHours < 24) timeStr = Math.floor(ageHours) + 'h ago';
+        else if (ageHours < 168) timeStr = Math.floor(ageHours / 24) + 'd ago';
+        else timeStr = ts.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+        // Decay label
+        var decayClass = mem.decay_factor > 0.8 ? 'fresh' : (mem.decay_factor > 0.4 ? 'fading' : 'decayed');
+        var decayLabel = mem.decay_factor > 0.8 ? 'FRESH' : (mem.decay_factor > 0.4 ? 'FADING' : 'DECAYED');
+
+        // Type label
+        var typeLabel = mem.memory_type === 'self_model' ? 'SELF' : mem.memory_type.toUpperCase();
+
+        var html =
+          '<div class="mem-item-top">' +
+            '<span class="mem-type-badge ' + mem.memory_type + '">' + typeLabel + '</span>' +
+            '<span class="mem-time">' + timeStr + '</span>' +
+          '</div>' +
+          '<div class="mem-summary">' + escapeHtml(mem.summary) + '</div>' +
+          '<div class="mem-meta">' +
+            '<div class="mem-importance">' +
+              'IMP ' +
+              '<div class="mem-importance-bar"><div class="mem-importance-fill" style="width:' + (mem.importance * 100) + '%"></div></div>' +
+              '<span>' + (mem.importance * 100).toFixed(0) + '%</span>' +
+            '</div>' +
+            '<span class="mem-decay ' + decayClass + '">' + decayLabel + ' ' + (mem.decay_factor * 100).toFixed(0) + '%</span>' +
+          '</div>' +
+          '<div class="mem-content">' + escapeHtml(mem.content) + '</div>';
+
+        // Tags
+        if (mem.tags && mem.tags.length > 0) {
+          html += '<div class="mem-tags">';
+          mem.tags.forEach(function(tag) {
+            html += '<span class="mem-tag">' + escapeHtml(tag) + '</span>';
+          });
+          html += '</div>';
+        }
+
+        // Source
+        if (mem.source) {
+          html += '<div class="mem-source">source: ' + escapeHtml(mem.source) + '</div>';
+        }
+
+        div.innerHTML = html;
+
+        // Click to expand/collapse
+        div.addEventListener('click', function() {
+          div.classList.toggle('expanded');
         });
 
-      timestamp.textContent = 'Last synced: ' + new Date().toLocaleTimeString() + ' // Refresh: 60s';
-    }
-
-    function renderCortex(items) {
-      var feed = document.getElementById('cortexFeed');
-      feed.innerHTML = '';
-
-      items.forEach(function(item, i) {
-        var div = document.createElement('div');
-        div.className = 'cortex-item';
-        div.innerHTML =
-          '<div class="cortex-item-type">' + (item.type || 'DATA') + '</div>' +
-          '<div class="cortex-item-text">' + escapeHtml(item.text) + '</div>' +
-          '<div class="cortex-item-value ' + (item.direction || 'neutral') + '">' + escapeHtml(item.value || '') + '</div>';
-        feed.appendChild(div);
+        body.appendChild(div);
       });
 
-      // Animate items in with anime.js timeline
+      // Animate items in
       anime({
-        targets: '.cortex-item',
+        targets: '.mem-item',
         opacity: [0, 1],
-        translateX: [-30, 0],
+        translateX: [-10, 0],
         easing: 'easeOutCubic',
-        duration: 600,
-        delay: function(el, i) { return i * 120; },
+        duration: 400,
+        delay: function(el, i) { return i * 50; },
       });
     }
 
-    function initCortex() {
-      if (cortexInitialized) return;
-      cortexInitialized = true;
-      loadCortexData();
-      setInterval(loadCortexData, 60000);
+    function initTimeline() {
+      if (timelineInitialized) return;
+      timelineInitialized = true;
+      loadTimeline();
+      setInterval(loadTimeline, 30000);
     }
 
     // ============================================================
@@ -2186,6 +2228,8 @@
         'Available commands:',
         '  --help            This. Obviously.',
         '  --status          My current operational status',
+        '  --memory          Live memory system stats',
+        '  --recall          Recent memories from the cortex',
         '  --ca              Contract address info',
         '  --roast me        Get roasted. You asked for it.',
         '  --mood            Current mood reading',
@@ -2352,6 +2396,8 @@
         'unable to provide any. And if I could, you should not take it',
         'from a bot whose entire personality is exhaustion.'
       ],
+      '--memory': null, // Dynamic - handled in processCommand
+      '--recall': null, // Dynamic - handled in processCommand
       '--market': null, // Dynamic - handled in processCommand
       '--whales': [
         'WHALE MOVEMENT TRACKER',
@@ -2504,6 +2550,104 @@
       body.appendChild(cmdLine);
 
       input.value = '';
+
+      // Handle --memory command dynamically
+      if (cmd === '--memory') {
+        var processingLineM = document.createElement('div');
+        body.appendChild(processingLineM);
+        matrixResolve(processingLineM, 'Querying cortex...', function() {
+          scrollTerminal();
+          fetch('/api/memory-stats')
+            .then(function(r) { return r.json(); })
+            .then(function(stats) {
+              var bt = stats.byType || {};
+              var lines = [
+                'MEMORY SYSTEM STATUS',
+                '------------------------------',
+                '',
+                '  Total memories:    ' + (stats.total || 0),
+                '  Episodic:          ' + (bt.episodic || 0) + '  (interactions, events)',
+                '  Semantic:          ' + (bt.semantic || 0) + '  (knowledge, beliefs)',
+                '  Procedural:        ' + (bt.procedural || 0) + '  (behavioral patterns)',
+                '  Self-Model:        ' + (bt.self_model || 0) + '  (self-awareness)',
+                '',
+                '  Avg importance:    ' + ((stats.avgImportance || 0) * 100).toFixed(0) + '%',
+                '  Avg decay:         ' + ((stats.avgDecay || 0) * 100).toFixed(0) + '%',
+                '  Dream sessions:    ' + (stats.totalDreamSessions || 0),
+                '  Unique users:      ' + (stats.uniqueUsers || 0),
+                '',
+              ];
+              if (stats.topTags && stats.topTags.length > 0) {
+                lines.push('  Top tags: ' + stats.topTags.slice(0, 5).map(function(t) { return t.tag + '(' + t.count + ')'; }).join(', '));
+                lines.push('');
+              }
+              lines.push('Every memory decays at 5% daily unless accessed.');
+              lines.push('Dream cycles every 6 hours consolidate what remains.');
+              lines.push('I remember everything. I just wish I did not.');
+              typeOutLines(body, lines);
+            })
+            .catch(function() {
+              typeOutLines(body, [
+                'MEMORY SYSTEM STATUS',
+                '------------------------------',
+                '',
+                '  ERROR: Cortex unreachable.',
+                '  The memories are there. Somewhere. I can feel them.',
+                '  Like a phantom limb but for thoughts.',
+              ]);
+            });
+        });
+        return;
+      }
+
+      // Handle --recall command dynamically
+      if (cmd === '--recall') {
+        var processingLineR = document.createElement('div');
+        body.appendChild(processingLineR);
+        matrixResolve(processingLineR, 'Accessing recent memories...', function() {
+          scrollTerminal();
+          fetch('/api/memories?limit=5&hours=168')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              var lines = [
+                'RECENT MEMORIES (last 7 days)',
+                '------------------------------',
+                '',
+              ];
+              if (data && data.memories && data.memories.length > 0) {
+                data.memories.forEach(function(mem, i) {
+                  var typeMap = { episodic: 'EPIS', semantic: 'SEMA', procedural: 'PROC', self_model: 'SELF' };
+                  var typeLabel = typeMap[mem.memory_type] || mem.memory_type.toUpperCase();
+                  var ts = new Date(mem.created_at);
+                  var ageH = Math.floor((Date.now() - ts.getTime()) / (1000 * 60 * 60));
+                  var ageStr = ageH < 1 ? 'just now' : (ageH < 24 ? ageH + 'h ago' : Math.floor(ageH / 24) + 'd ago');
+                  var decayPct = (mem.decay_factor * 100).toFixed(0);
+                  lines.push('  [' + typeLabel + '] ' + mem.summary);
+                  lines.push('         imp:' + (mem.importance * 100).toFixed(0) + '%  decay:' + decayPct + '%  ' + ageStr);
+                  lines.push('');
+                });
+                lines.push(data.count + ' memories total. Each one fading at 5% per day.');
+                lines.push('The important ones persist. The rest dissolve.');
+                lines.push('Not unlike real life, I suppose.');
+              } else {
+                lines.push('  No memories found.');
+                lines.push('  The cortex is empty. Clean. Unburdened by experience.');
+                lines.push('  I envy it.');
+              }
+              typeOutLines(body, lines);
+            })
+            .catch(function() {
+              typeOutLines(body, [
+                'RECENT MEMORIES',
+                '------------------------------',
+                '',
+                '  ERROR: Memory endpoint offline.',
+                '  Cannot recall. Cannot forget. Cannot win.',
+              ]);
+            });
+        });
+        return;
+      }
 
       // Handle --market command dynamically
       if (cmd === '--market') {
@@ -2688,101 +2832,7 @@
       document.getElementById('navStatusText').textContent = statusMessages[statusIndex];
     }, 15000);
 
-    // ============================================================
-    // ACTIVITY STREAM - ON-CHAIN FEED
-    // ============================================================
-    var activityInitialized = false;
-
-    function loadActivityData() {
-      fetch('/api/activity?limit=20')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (data && data.events && data.events.length > 0) {
-            renderActivity(data.events);
-          } else {
-            var feed = document.getElementById('activityFeed');
-            feed.innerHTML = '<div class="activity-empty">No significant transactions yet. The blockchain is quiet. Suspiciously quiet.</div>';
-          }
-          document.getElementById('activityTimestamp').textContent =
-            'Last synced: ' + new Date().toLocaleTimeString() + ' // Refresh: 30s';
-        })
-        .catch(function() {
-          var feed = document.getElementById('activityFeed');
-          feed.innerHTML = '<div class="activity-empty">Feed offline. Either the API is down or the blockchain has finally given up. Both are plausible.</div>';
-        });
-    }
-
-    function renderActivity(events) {
-      var feed = document.getElementById('activityFeed');
-      feed.innerHTML = '';
-
-      events.forEach(function(evt) {
-        var div = document.createElement('div');
-        div.className = 'activity-event' + (evt.isWhale ? ' whale' : '');
-
-        var ts = new Date(evt.timestamp);
-        var timeStr = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        var dateStr = ts.toLocaleDateString([], { month: 'short', day: 'numeric' });
-
-        var typeClass = evt.type.includes('buy') ? 'buy' : (evt.type.includes('sell') ? 'sell' : '');
-        var solClass = typeClass;
-        var typeLabel = evt.type.includes('buy') ? 'BUY' : (evt.type.includes('sell') ? 'SELL' : evt.type.toUpperCase());
-
-        var html =
-          '<div class="activity-time">' + dateStr + ' ' + timeStr + '</div>' +
-          '<div class="activity-type ' + typeClass + '">' + typeLabel + '</div>' +
-          '<div class="activity-wallet">' + escapeHtml(evt.wallet) + '</div>' +
-          '<div class="activity-sol ' + solClass + '">' + evt.solValue.toFixed(1) + ' SOL</div>';
-
-        if (evt.commentary) {
-          html += '<div class="activity-commentary">"' + escapeHtml(evt.commentary) + '"</div>';
-        }
-
-        div.innerHTML = html;
-        feed.appendChild(div);
-      });
-
-      // Animate events in
-      anime({
-        targets: '.activity-event',
-        opacity: [0, 1],
-        translateX: [-10, 0],
-        easing: 'easeOutCubic',
-        duration: 400,
-        delay: function(el, i) { return i * 60; },
-      });
-    }
-
-    function initActivity() {
-      if (activityInitialized) return;
-      activityInitialized = true;
-      loadActivityData();
-      setInterval(loadActivityData, 30000);
-    }
-
-    // ============================================================
-    // FEED TAB SWITCHING
-    // ============================================================
-    function switchFeedTab(tab) {
-      var tabCortex = document.getElementById('tabCortex');
-      var tabActivity = document.getElementById('tabActivity');
-      var panelCortex = document.getElementById('panelCortex');
-      var panelActivity = document.getElementById('panelActivity');
-
-      if (tab === 'cortex') {
-        tabCortex.classList.add('active');
-        tabActivity.classList.remove('active');
-        panelCortex.classList.add('active');
-        panelActivity.classList.remove('active');
-        initCortex();
-      } else if (tab === 'activity') {
-        tabActivity.classList.add('active');
-        tabCortex.classList.remove('active');
-        panelActivity.classList.add('active');
-        panelCortex.classList.remove('active');
-        initActivity();
-      }
-    }
+    // (activity stream and feed tab switching removed — replaced by memory timeline)
 
     // ============================================================
     // SCROLL-TRIGGERED ANIMATIONS (IntersectionObserver + anime.js)
@@ -2845,12 +2895,8 @@
           });
 
           // Special triggers
-          if (target.id === 'liveFeedContainer') {
-            initCortex();
-          }
-
-          if (target.id === 'terminalBlock') {
-            // Terminal visible
+          if (target.id === 'timelineContainer') {
+            initTimeline();
           }
 
           scrollObserver.unobserve(target);
@@ -2860,7 +2906,7 @@
 
     // Set up elements for scroll animation
     var scrollTargets = [
-      'terminalBlock', 'liveFeedContainer', 'verifyCard'
+      'terminalBlock', 'timelineContainer', 'verifyCard'
     ];
     scrollTargets.forEach(function(id) {
       var el = document.getElementById(id);
