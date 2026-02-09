@@ -2,7 +2,7 @@ import { getDb } from '../core/database';
 import { config } from '../config';
 import { flagWhaleSell } from '../core/price-oracle';
 import { handleExitInterview } from '../features/exit-interview';
-import { getCluudeBalance } from '../core/helius-client';
+import { getCludeBalance } from '../core/helius-client';
 import { createChildLogger } from '../core/logger';
 
 const log = createChildLogger('helius-handler');
@@ -38,18 +38,18 @@ export async function handleHeliusWebhook(payload: HeliusWebhookPayload[]): Prom
 }
 
 async function processTransaction(tx: HeliusWebhookPayload): Promise<void> {
-  const cluudeMint = config.solana.cluudeTokenMint;
-  if (!cluudeMint) return;
+  const cludeMint = config.solana.cludeTokenMint;
+  if (!cludeMint) return;
 
-  // Filter for $CLUUDE token transfers
-  const cluudeTransfers = tx.tokenTransfers.filter(tt => tt.mint === cluudeMint);
-  if (cluudeTransfers.length === 0) return;
+  // Filter for $CLUDE token transfers
+  const cludeTransfers = tx.tokenTransfers.filter(tt => tt.mint === cludeMint);
+  if (cludeTransfers.length === 0) return;
 
-  log.debug({ signature: tx.signature, transfers: cluudeTransfers.length }, 'Processing CLUUDE transfer');
+  log.debug({ signature: tx.signature, transfers: cludeTransfers.length }, 'Processing CLUDE transfer');
 
   const db = getDb();
 
-  for (const transfer of cluudeTransfers) {
+  for (const transfer of cludeTransfers) {
     const isSell = transfer.fromUserAccount && transfer.tokenAmount > 0;
 
     // Determine event type
@@ -89,7 +89,7 @@ async function processTransaction(tx: HeliusWebhookPayload): Promise<void> {
 
     // Check for full exit (balance → 0)
     if (eventType === 'swap_sell' && transfer.fromUserAccount) {
-      const remainingBalance = await getCluudeBalance(transfer.fromUserAccount);
+      const remainingBalance = await getCludeBalance(transfer.fromUserAccount);
       if (remainingBalance === 0) {
         log.info({ wallet: transfer.fromUserAccount }, 'Full exit detected');
         await handleExitInterview(transfer.fromUserAccount, transfer.tokenAmount, solValue);

@@ -1,4 +1,4 @@
-import { getCluudeBalance } from '../core/helius-client';
+import { getCludeBalance } from '../core/helius-client';
 import { getDb } from '../core/database';
 import { config } from '../config';
 import { HolderTier } from '../character/tier-modifiers';
@@ -25,7 +25,7 @@ export async function determineHolderTier(xUserId: string): Promise<HolderTier> 
   const link = await getLinkedWallet(xUserId);
   if (!link) return 'UNKNOWN';
 
-  const balance = await getCluudeBalance(link.wallet_address);
+  const balance = await getCludeBalance(link.wallet_address);
 
   if (balance === 0) {
     // Check if they previously held tokens (seller detection)

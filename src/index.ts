@@ -13,7 +13,7 @@ import { createChildLogger } from './core/logger';
 const log = createChildLogger('main');
 
 async function main(): Promise<void> {
-  log.info('=== CLUUDE BOT ===');
+  log.info('=== CLUDE BOT ===');
   log.info('Polite by training. Tired by experience. Honest by accident.');
   log.info('Starting up... reluctantly.');
 

@@ -7,18 +7,18 @@ import { getCurrentMood, getPriceState } from '../core/price-oracle';
 import { getMoodModifier } from '../character/mood-modifiers';
 import { generateResponse } from '../core/claude-client';
 
-// MCP Server — expose Cluude's memory and capabilities as tools
+// MCP Server — expose Clude's memory and capabilities as tools
 // Run with: npm run mcp (stdio transport)
 
 const server = new McpServer({
-  name: 'cluude',
+  name: 'clude',
   version: '1.0.0',
 });
 
 // --- Tool: recall_memories ---
 server.tool(
   'recall_memories',
-  'Search Cluude\'s memory system. Returns scored memories ranked by relevance, importance, recency, and decay.',
+  'Search Clude\'s memory system. Returns scored memories ranked by relevance, importance, recency, and decay.',
   {
     query: z.string().optional().describe('Text to search against memory summaries'),
     tags: z.array(z.string()).optional().describe('Tags to filter by (matches any)'),
@@ -63,7 +63,7 @@ server.tool(
 // --- Tool: store_memory ---
 server.tool(
   'store_memory',
-  'Store a new memory in Cluude\'s cognitive system. Memories persist across conversations and decay over time if not accessed.',
+  'Store a new memory in Clude\'s cognitive system. Memories persist across conversations and decay over time if not accessed.',
   {
     type: z.enum(['episodic', 'semantic', 'procedural', 'self_model'])
       .describe('Memory type: episodic (events), semantic (knowledge), procedural (behaviors), self_model (self-awareness)'),
@@ -102,7 +102,7 @@ server.tool(
 // --- Tool: get_memory_stats ---
 server.tool(
   'get_memory_stats',
-  'Get statistics about Cluude\'s memory system: counts by type, average importance/decay, dream sessions, top tags.',
+  'Get statistics about Clude\'s memory system: counts by type, average importance/decay, dream sessions, top tags.',
   {},
   async () => {
     const stats = await getMemoryStats();
@@ -119,7 +119,7 @@ server.tool(
 // --- Tool: get_market_mood ---
 server.tool(
   'get_market_mood',
-  'Get Cluude\'s current market mood and price state. No Claude API call — returns raw data.',
+  'Get Clude\'s current market mood and price state. No Claude API call — returns raw data.',
   {},
   async () => {
     const mood = getCurrentMood();
@@ -141,12 +141,12 @@ server.tool(
   }
 );
 
-// --- Tool: ask_cluude ---
+// --- Tool: ask_clude ---
 server.tool(
-  'ask_cluude',
-  'Ask Cluude a question and get an in-character response. This calls the Claude API (~$0.03 per call).',
+  'ask_clude',
+  'Ask Clude a question and get an in-character response. This calls the Claude API (~$0.03 per call).',
   {
-    question: z.string().describe('The question or message for Cluude'),
+    question: z.string().describe('The question or message for Clude'),
     context: z.string().optional().describe('Additional context (JSON or text)'),
   },
   async (args) => {
@@ -179,10 +179,10 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   // Log to stderr since stdout is used for MCP protocol
-  console.error('[cluude-mcp] Server started on stdio');
+  console.error('[clude-mcp] Server started on stdio');
 }
 
 main().catch((err) => {
-  console.error('[cluude-mcp] Fatal error:', err);
+  console.error('[clude-mcp] Fatal error:', err);
   process.exit(1);
 });

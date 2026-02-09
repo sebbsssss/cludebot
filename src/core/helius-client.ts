@@ -100,11 +100,11 @@ export async function getTokenBalances(address: string): Promise<TokenBalance[]>
   }
 }
 
-export async function getCluudeBalance(address: string): Promise<number> {
-  if (!config.solana.cluudeTokenMint) return 0;
+export async function getCludeBalance(address: string): Promise<number> {
+  if (!config.solana.cludeTokenMint) return 0;
   const balances = await getTokenBalances(address);
-  const cluude = balances.find(b => b.mint === config.solana.cluudeTokenMint);
-  return cluude?.amount || 0;
+  const clude = balances.find(b => b.mint === config.solana.cludeTokenMint);
+  return clude?.amount || 0;
 }
 
 export function getHeliusInstance(): Helius {

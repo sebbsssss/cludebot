@@ -30,22 +30,22 @@ export async function handleExitInterview(
   const txs = await getWalletHistory(walletAddress, 30);
 
   // Find when they first interacted with the token
-  const cluudeTxs = txs.filter(tx =>
-    tx.tokenTransfers.some(tt => tt.mint === config.solana.cluudeTokenMint)
+  const cludeTxs = txs.filter(tx =>
+    tx.tokenTransfers.some(tt => tt.mint === config.solana.cludeTokenMint)
   );
 
-  const firstBuy = cluudeTxs[cluudeTxs.length - 1]; // Oldest first
+  const firstBuy = cludeTxs[cludeTxs.length - 1]; // Oldest first
   const holdDuration = firstBuy
     ? Math.round((Date.now() / 1000 - firstBuy.timestamp) / 86400) // days
     : 0;
 
   const context = [
     `Wallet: ${truncateWallet(walletAddress)}`,
-    `Sold: ${tokenAmount.toLocaleString()} $CLUUDE`,
+    `Sold: ${tokenAmount.toLocaleString()} $CLUDE`,
     `SOL received: ${solValue.toFixed(4)} SOL`,
     `Hold duration: approximately ${holdDuration} days`,
-    `Total token transactions: ${cluudeTxs.length}`,
-    `Other recent activity: ${txs.length - cluudeTxs.length} non-$CLUUDE transactions`,
+    `Total token transactions: ${cludeTxs.length}`,
+    `Other recent activity: ${txs.length - cludeTxs.length} non-$CLUDE transactions`,
   ].join('\n');
 
   const mood = getCurrentMood();
@@ -55,7 +55,7 @@ export async function handleExitInterview(
     context,
     moodModifier: getMoodModifier(mood),
     featureInstruction:
-      'A wallet just sold ALL of their $CLUUDE tokens. This is an exit interview. ' +
+      'A wallet just sold ALL of their $CLUDE tokens. This is an exit interview. ' +
       'Reference the specific data: how long they held, what they sold for. ' +
       'Write it like HR processing a resignation. Professional. Clinical. ' +
       'With just a hint of "I saw this coming." ' +

@@ -39,13 +39,13 @@ export function flagWhaleSell(): void {
 }
 
 async function fetchPrice(): Promise<{ price: number; volume24h: number } | null> {
-  if (!config.solana.cluudeTokenMint) return null;
+  if (!config.solana.cludeTokenMint) return null;
 
   try {
-    const url = `https://api.jup.ag/price/v2?ids=${config.solana.cluudeTokenMint}`;
+    const url = `https://api.jup.ag/price/v2?ids=${config.solana.cludeTokenMint}`;
     const res = await fetch(url);
     const data = await res.json() as any;
-    const tokenData = data.data?.[config.solana.cluudeTokenMint];
+    const tokenData = data.data?.[config.solana.cludeTokenMint];
     if (!tokenData) return null;
 
     return {
