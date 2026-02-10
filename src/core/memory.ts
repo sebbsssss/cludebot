@@ -373,9 +373,12 @@ export async function getMemoryStats(): Promise<MemoryStats> {
       stats.newestMemory = sorted[sorted.length - 1] || null;
     }
 
-    const { count } = await db
+    const { count, error: dreamError } = await db
       .from('dream_logs')
       .select('id', { count: 'exact', head: true });
+    if (dreamError) {
+      log.warn({ error: dreamError.message }, 'Failed to count dream logs');
+    }
     stats.totalDreamSessions = count || 0;
 
   } catch (err) {
