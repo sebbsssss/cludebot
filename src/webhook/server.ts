@@ -5,6 +5,7 @@ import { handleHeliusWebhook } from './helius-handler';
 import { verifyRoutes } from '../verify-app/routes';
 import { getMarketSnapshot } from '../core/allium-client';
 import { getMemoryStats, getRecentMemories } from '../core/memory';
+import { getDb } from '../core/database';
 import { agentRoutes } from './agent-routes';
 import { getRecentActivity } from '../features/activity-stream';
 import { createChildLogger } from '../core/logger';
@@ -145,6 +146,46 @@ export function createServer(): express.Application {
     } catch (err) {
       log.error({ err }, 'Activity endpoint error');
       res.status(500).json({ error: 'Failed to fetch activity' });
+    }
+  });
+
+  // Docs view counter (tracks agents.md views)
+  app.get('/api/docs-views', async (_req, res) => {
+    try {
+      const db = getDb();
+      const { data } = await db
+        .from('rate_limits')
+        .select('count')
+        .eq('key', 'page_views:agents.md')
+        .single();
+      res.json({ views: data?.count || 0 });
+    } catch {
+      res.json({ views: 0 });
+    }
+  });
+
+  app.post('/api/docs-views', async (_req, res) => {
+    try {
+      const db = getDb();
+      const { data: existing } = await db
+        .from('rate_limits')
+        .select('count')
+        .eq('key', 'page_views:agents.md')
+        .single();
+
+      if (existing) {
+        await db
+          .from('rate_limits')
+          .update({ count: existing.count + 1 })
+          .eq('key', 'page_views:agents.md');
+      } else {
+        await db
+          .from('rate_limits')
+          .insert({ key: 'page_views:agents.md', count: 1 });
+      }
+      res.json({ ok: true });
+    } catch {
+      res.json({ ok: false });
     }
   });
 
