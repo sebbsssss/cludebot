@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #030308;
+      --bg: #020208;
       --text: #999;
       --text-dim: #555;
       --text-faint: #2a2a2a;
@@ -528,6 +528,258 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // ============================================
+// NOISE FUNCTIONS
+// ============================================
+function hash(x, y, z) {
+  const h = x * 127.1 + y * 311.7 + z * 74.7;
+  const s = Math.sin(h) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+function hash2(x, y, z) {
+  const h = x * 269.5 + y * 183.3 + z * 421.1;
+  const s = Math.sin(h) * 27613.7135;
+  return s - Math.floor(s);
+}
+
+function hash3(x, y, z) {
+  const h = x * 473.9 + y * 97.1 + z * 331.3;
+  const s = Math.sin(h) * 63517.9173;
+  return s - Math.floor(s);
+}
+
+function lerp(t, a, b) { return a + t * (b - a); }
+
+function noise3d(x, y, z) {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  const fx = x - ix, fy = y - iy, fz = z - iz;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const uz = fz * fz * (3 - 2 * fz);
+  return lerp(uz,
+    lerp(uy,
+      lerp(ux, hash(ix, iy, iz), hash(ix + 1, iy, iz)),
+      lerp(ux, hash(ix, iy + 1, iz), hash(ix + 1, iy + 1, iz))
+    ),
+    lerp(uy,
+      lerp(ux, hash(ix, iy, iz + 1), hash(ix + 1, iy, iz + 1)),
+      lerp(ux, hash(ix, iy + 1, iz + 1), hash(ix + 1, iy + 1, iz + 1))
+    )
+  );
+}
+
+function noise3d_b(x, y, z) {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  const fx = x - ix, fy = y - iy, fz = z - iz;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const uz = fz * fz * (3 - 2 * fz);
+  return lerp(uz,
+    lerp(uy,
+      lerp(ux, hash2(ix, iy, iz), hash2(ix + 1, iy, iz)),
+      lerp(ux, hash2(ix, iy + 1, iz), hash2(ix + 1, iy + 1, iz))
+    ),
+    lerp(uy,
+      lerp(ux, hash2(ix, iy, iz + 1), hash2(ix + 1, iy, iz + 1)),
+      lerp(ux, hash2(ix, iy + 1, iz + 1), hash2(ix + 1, iy + 1, iz + 1))
+    )
+  );
+}
+
+function noise3d_c(x, y, z) {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  const fx = x - ix, fy = y - iy, fz = z - iz;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const uz = fz * fz * (3 - 2 * fz);
+  return lerp(uz,
+    lerp(uy,
+      lerp(ux, hash3(ix, iy, iz), hash3(ix + 1, iy, iz)),
+      lerp(ux, hash3(ix, iy + 1, iz), hash3(ix + 1, iy + 1, iz))
+    ),
+    lerp(uy,
+      lerp(ux, hash3(ix, iy, iz + 1), hash3(ix + 1, iy, iz + 1)),
+      lerp(ux, hash3(ix, iy + 1, iz + 1), hash3(ix + 1, iy + 1, iz + 1))
+    )
+  );
+}
+
+// Fractal Brownian Motion for richer folds
+function fbm(x, y, z, octaves) {
+  let val = 0, amp = 1, freq = 1, total = 0;
+  for (let i = 0; i < octaves; i++) {
+    val += noise3d(x * freq, y * freq, z * freq) * amp;
+    total += amp;
+    amp *= 0.5;
+    freq *= 2.0;
+  }
+  return val / total;
+}
+
+// Curl noise: divergence-free flow field from 3 independent noise fields
+function curlNoise(x, y, z, time) {
+  const e = 0.1;
+  const t = time * 0.15;
+  const scale = 0.02;
+  const sx = x * scale, sy = y * scale, sz = z * scale;
+
+  // Use three independent noise fields for proper curl
+  // Field A
+  const dAdy = (noise3d(sx, sy + e, sz + t) - noise3d(sx, sy - e, sz + t)) / (2 * e);
+  const dAdz = (noise3d(sx, sy, sz + e + t) - noise3d(sx, sy, sz - e + t)) / (2 * e);
+  // Field B
+  const dBdx = (noise3d_b(sx + e, sy, sz + t) - noise3d_b(sx - e, sy, sz + t)) / (2 * e);
+  const dBdz = (noise3d_b(sx, sy, sz + e + t) - noise3d_b(sx, sy, sz - e + t)) / (2 * e);
+  // Field C
+  const dCdx = (noise3d_c(sx + e, sy, sz + t) - noise3d_c(sx - e, sy, sz + t)) / (2 * e);
+  const dCdy = (noise3d_c(sx, sy + e, sz + t) - noise3d_c(sx, sy - e, sz + t)) / (2 * e);
+
+  return {
+    x: dAdy - dBdz,
+    y: dBdz - dCdx,
+    z: dCdx - dAdy
+  };
+}
+
+// ============================================
+// BRAIN GEOMETRY HELPERS
+// ============================================
+
+// Signed distance to the brain surface (negative = inside)
+function brainSDF(px, py, pz) {
+  // Left hemisphere ellipsoid: center (-15, 0, 0), radii (70, 85, 65)
+  const lx = (px + 15) / 70, ly = py / 85, lz = pz / 65;
+  const leftDist = Math.sqrt(lx * lx + ly * ly + lz * lz) - 1;
+
+  // Right hemisphere ellipsoid: center (15, 0, 0), radii (70, 85, 65)
+  const rx = (px - 15) / 70, ry = py / 85, rz = pz / 65;
+  const rightDist = Math.sqrt(rx * rx + ry * ry + rz * rz) - 1;
+
+  // Brain stem: small ellipsoid at (0, -60, -10)
+  const bx = px / 20, by = (py + 60) / 30, bz = (pz + 10) / 18;
+  const stemDist = Math.sqrt(bx * bx + by * by + bz * bz) - 1;
+
+  // Smooth union of hemispheres and brain stem
+  let d = Math.min(leftDist, rightDist);
+  d = Math.min(d, stemDist);
+
+  // Cortical fold displacement via FBM noise
+  const noiseScale = 0.035;
+  const foldNoise = fbm(px * noiseScale, py * noiseScale, pz * noiseScale, 4);
+  const foldDisp = (foldNoise - 0.5) * 10;
+
+  return d * 60 + foldDisp; // Scale to world units
+}
+
+// Compute normal via central differences on the SDF
+function brainNormal(px, py, pz) {
+  const e = 0.5;
+  const nx = brainSDF(px + e, py, pz) - brainSDF(px - e, py, pz);
+  const ny = brainSDF(px, py + e, pz) - brainSDF(px, py - e, pz);
+  const nz = brainSDF(px, py, pz + e) - brainSDF(px, py, pz - e);
+  const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+  return { x: nx / len, y: ny / len, z: nz / len };
+}
+
+// Sample a random point on/near the brain surface
+function sampleBrainSurface() {
+  // Random point inside a bounding box, then push to surface
+  for (let attempt = 0; attempt < 40; attempt++) {
+    let x = (Math.random() - 0.5) * 200;
+    let y = (Math.random() - 0.5) * 220;
+    let z = (Math.random() - 0.5) * 180;
+
+    let d = brainSDF(x, y, z);
+
+    // Newton-step toward surface (a few iterations)
+    for (let i = 0; i < 8; i++) {
+      if (Math.abs(d) < 1.5) break;
+      const n = brainNormal(x, y, z);
+      x -= n.x * d * 0.5;
+      y -= n.y * d * 0.5;
+      z -= n.z * d * 0.5;
+      d = brainSDF(x, y, z);
+    }
+
+    // Accept if close enough to surface
+    if (Math.abs(d) < 5) {
+      // Add slight random depth (some particles inside, some outside)
+      const depthOffset = (Math.random() - 0.5) * 6;
+      const n = brainNormal(x, y, z);
+      return {
+        x: x - n.x * depthOffset,
+        y: y - n.y * depthOffset,
+        z: z - n.z * depthOffset
+      };
+    }
+  }
+  // Fallback: point on left hemisphere surface
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  return {
+    x: -15 + 65 * Math.sin(phi) * Math.cos(theta),
+    y: 80 * Math.sin(phi) * Math.sin(theta),
+    z: 60 * Math.cos(phi)
+  };
+}
+
+// Position for a memory node in a brain region by type
+function brainRegionPosition(type) {
+  let cx, cy, cz, spread;
+  switch (type) {
+    case 'episodic':
+      // Temporal lobes (sides, lower)
+      cx = (Math.random() < 0.5 ? -1 : 1) * (40 + Math.random() * 20);
+      cy = -15 + Math.random() * 20;
+      cz = -5 + Math.random() * 20;
+      spread = 15;
+      break;
+    case 'semantic':
+      // Frontal area (front, upper)
+      cx = (Math.random() - 0.5) * 40;
+      cy = 20 + Math.random() * 30;
+      cz = 30 + Math.random() * 25;
+      spread = 18;
+      break;
+    case 'procedural':
+      // Cerebellum area (back, lower)
+      cx = (Math.random() - 0.5) * 30;
+      cy = -40 + Math.random() * 20;
+      cz = -30 + Math.random() * 15;
+      spread = 12;
+      break;
+    case 'self_model':
+      // Prefrontal (front, center-upper)
+      cx = (Math.random() - 0.5) * 25;
+      cy = 30 + Math.random() * 25;
+      cz = 35 + Math.random() * 20;
+      spread = 14;
+      break;
+    default:
+      cx = (Math.random() - 0.5) * 60;
+      cy = (Math.random() - 0.5) * 60;
+      cz = (Math.random() - 0.5) * 60;
+      spread = 20;
+  }
+  // Add random jitter
+  cx += (Math.random() - 0.5) * spread;
+  cy += (Math.random() - 0.5) * spread;
+  cz += (Math.random() - 0.5) * spread;
+
+  // Push toward brain surface
+  let d = brainSDF(cx, cy, cz);
+  const n = brainNormal(cx, cy, cz);
+  // Move inside if outside, or slightly inside surface
+  if (d > 0) {
+    cx -= n.x * d;
+    cy -= n.y * d;
+    cz -= n.z * d;
+  }
+
+  return { x: cx, y: cy, z: cz };
+}
+
+// ============================================
 // CONFIG
 // ============================================
 const TYPE_COLORS = {
@@ -544,20 +796,13 @@ const TYPE_NAMES = {
   self_model: 'SELF-MODEL',
 };
 
-const PHYSICS = {
-  repulsion: 1200,
-  attraction: 0.005,
-  tagAttraction: 0.0006,
-  centering: 0.008,
-  damping: 0.9,
-};
+const PARTICLE_COUNT = 60000;
+const BASE_COLOR = new THREE.Color(0x0a1520);
 
 // ============================================
 // STATE
 // ============================================
-let nodes = [];
-let evidenceEdges = [];
-let tagEdges = [];
+let memoryNodes = [];  // API data nodes with meshes
 let nodeMap = {};
 let hiddenTypes = {};
 let impThreshold = 0;
@@ -565,6 +810,26 @@ let decayThreshold = 0;
 let hoveredNode = null;
 let selectedNode = null;
 let frameCount = 0;
+let clock = new THREE.Clock();
+
+// Particle physics arrays (flat for performance)
+let particlePositions;   // Float32Array(PARTICLE_COUNT * 3)
+let particleVelocities;  // Float32Array(PARTICLE_COUNT * 3) - for smoothing
+let particleColors;      // Float32Array(PARTICLE_COUNT * 3)
+let particleSizes;       // Float32Array(PARTICLE_COUNT)
+let particleAlphas;      // Float32Array(PARTICLE_COUNT)
+let particleBaseAlphas;  // Float32Array(PARTICLE_COUNT)
+let particleAges;        // Float32Array(PARTICLE_COUNT)
+
+// Pulse wave system
+let pulseWaves = [];
+
+// Camera animation
+let wasAutoRotating = false;
+let savedCamPos = null;
+let savedCamTarget = null;
+let targetFocus = null;
+let targetCamPos = null;
 
 // ============================================
 // THREE.JS SETUP
@@ -574,17 +839,17 @@ const H = window.innerHeight;
 const dpr = Math.min(window.devicePixelRatio, 2);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x030308);
-scene.fog = new THREE.FogExp2(0x030308, 0.0012);
+scene.background = new THREE.Color(0x020208);
+scene.fog = new THREE.FogExp2(0x020208, 0.001);
 
 const camera = new THREE.PerspectiveCamera(60, W / H, 1, 3000);
-camera.position.set(0, 80, 380);
+camera.position.set(0, 40, 300);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(W, H);
 renderer.setPixelRatio(dpr);
 renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMappingExposure = 1.5;
 document.body.prepend(renderer.domElement);
 
 // Controls
@@ -594,7 +859,7 @@ controls.dampingFactor = 0.05;
 controls.rotateSpeed = 0.4;
 controls.zoomSpeed = 0.7;
 controls.autoRotate = true;
-controls.autoRotateSpeed = 0.3;
+controls.autoRotateSpeed = 0.4;
 controls.maxDistance = 1200;
 controls.minDistance = 50;
 
@@ -604,16 +869,15 @@ composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(W, H),
-  2.0,  // strength (was 1.4)
-  0.8,  // radius (was 0.6)
-  0.1   // threshold (was 0.15)
+  2.5,  // strength
+  1.0,  // radius
+  0.08  // threshold
 );
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());
 
 // Raycaster
 const raycaster = new THREE.Raycaster();
-raycaster.params.Mesh = { threshold: 2 };
 const pointer = new THREE.Vector2();
 
 // Resize
@@ -627,144 +891,348 @@ window.addEventListener('resize', () => {
 });
 
 // ============================================
-// AMBIENT PARTICLES
+// PARTICLE SYSTEM
 // ============================================
-function createParticles() {
-  const count = 2000;
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  const cyberColors = [
-    [0, 0.83, 1],    // cyan
-    [1, 0.27, 0.4],  // pink
-    [0, 1, 0.53],    // green
-    [0.8, 0.27, 1],  // purple
-  ];
-  for (let i = 0; i < count; i++) {
-    const r = 300 + Math.random() * 800;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    positions[i * 3 + 2] = r * Math.cos(phi);
-    if (Math.random() < 0.15) {
-      // 15% colored particles
-      const c = cyberColors[Math.floor(Math.random() * cyberColors.length)];
-      const dim = 0.05 + Math.random() * 0.1;
-      colors[i * 3] = c[0] * dim;
-      colors[i * 3 + 1] = c[1] * dim;
-      colors[i * 3 + 2] = c[2] * dim;
-    } else {
-      const brightness = 0.03 + Math.random() * 0.05;
-      colors[i * 3] = brightness;
-      colors[i * 3 + 1] = brightness;
-      colors[i * 3 + 2] = brightness + 0.02;
+let particleGeometry;
+let particleMaterial;
+let particleMesh;
+
+function createParticleSystem() {
+  particlePositions = new Float32Array(PARTICLE_COUNT * 3);
+  particleVelocities = new Float32Array(PARTICLE_COUNT * 3);
+  particleColors = new Float32Array(PARTICLE_COUNT * 3);
+  particleSizes = new Float32Array(PARTICLE_COUNT);
+  particleAlphas = new Float32Array(PARTICLE_COUNT);
+  particleBaseAlphas = new Float32Array(PARTICLE_COUNT);
+  particleAges = new Float32Array(PARTICLE_COUNT);
+
+  // Sample initial positions on brain surface
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const p = sampleBrainSurface();
+    particlePositions[i * 3] = p.x;
+    particlePositions[i * 3 + 1] = p.y;
+    particlePositions[i * 3 + 2] = p.z;
+
+    particleVelocities[i * 3] = 0;
+    particleVelocities[i * 3 + 1] = 0;
+    particleVelocities[i * 3 + 2] = 0;
+
+    // Base color: very dim blue-cyan
+    const brightness = 0.15 + Math.random() * 0.25;
+    particleColors[i * 3] = BASE_COLOR.r * brightness;
+    particleColors[i * 3 + 1] = BASE_COLOR.g * brightness;
+    particleColors[i * 3 + 2] = BASE_COLOR.b * brightness;
+
+    // A few brighter stream particles
+    if (Math.random() < 0.08) {
+      const b = 0.4 + Math.random() * 0.6;
+      particleColors[i * 3] = 0.02 * b;
+      particleColors[i * 3 + 1] = 0.12 * b;
+      particleColors[i * 3 + 2] = 0.18 * b;
     }
+
+    particleSizes[i] = 0.5 + Math.random() * 1.5;
+    particleBaseAlphas[i] = 0.15 + Math.random() * 0.5;
+    particleAlphas[i] = particleBaseAlphas[i];
+    particleAges[i] = Math.random() * 100; // random initial age for variety
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const mat = new THREE.PointsMaterial({
-    size: 1.2,
-    vertexColors: true,
+
+  particleGeometry = new THREE.BufferGeometry();
+  particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+  particleGeometry.setAttribute('aColor', new THREE.BufferAttribute(particleColors, 3));
+  particleGeometry.setAttribute('aSize', new THREE.BufferAttribute(particleSizes, 1));
+  particleGeometry.setAttribute('aAlpha', new THREE.BufferAttribute(particleAlphas, 1));
+
+  particleMaterial = new THREE.ShaderMaterial({
+    vertexShader: `
+      attribute float aSize;
+      attribute float aAlpha;
+      attribute vec3 aColor;
+      varying float vAlpha;
+      varying vec3 vColor;
+      void main() {
+        vAlpha = aAlpha;
+        vColor = aColor;
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = aSize * (200.0 / -mvPosition.z);
+        gl_PointSize = clamp(gl_PointSize, 0.5, 20.0);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      varying float vAlpha;
+      varying vec3 vColor;
+      void main() {
+        float d = length(gl_PointCoord - vec2(0.5));
+        if (d > 0.5) discard;
+        float alpha = smoothstep(0.5, 0.05, d) * vAlpha;
+        gl_FragColor = vec4(vColor, alpha);
+      }
+    `,
     transparent: true,
-    opacity: 0.9,
-    sizeAttenuation: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   });
-  scene.add(new THREE.Points(geo, mat));
+
+  particleMesh = new THREE.Points(particleGeometry, particleMaterial);
+  scene.add(particleMesh);
 }
-createParticles();
 
 // ============================================
-// DATA FETCH & GRAPH BUILD
+// PARTICLE FLOW ANIMATION
+// ============================================
+function updateParticles(time, dt) {
+  const flowSpeed = 18.0;
+  const dampFactor = 0.85;
+  const surfacePullStrength = 0.3;
+  const maxDriftDist = 12;
+  const respawnDist = 150;
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const i3 = i * 3;
+    let px = particlePositions[i3];
+    let py = particlePositions[i3 + 1];
+    let pz = particlePositions[i3 + 2];
+
+    // 1. Curl noise velocity
+    const curl = curlNoise(px, py, pz, time);
+
+    // 2. Get brain surface normal at this position
+    const sdf = brainSDF(px, py, pz);
+    const n = brainNormal(px, py, pz);
+
+    // 3. Project curl velocity onto brain surface tangent plane
+    // Remove the normal component: v_tangent = v - (v.n)*n
+    const dot = curl.x * n.x + curl.y * n.y + curl.z * n.z;
+    let vx = curl.x - dot * n.x;
+    let vy = curl.y - dot * n.y;
+    let vz = curl.z - dot * n.z;
+
+    // Normalize and apply speed
+    const vLen = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1;
+    vx = (vx / vLen) * flowSpeed;
+    vy = (vy / vLen) * flowSpeed;
+    vz = (vz / vLen) * flowSpeed;
+
+    // Smooth velocity (damped blend with previous)
+    particleVelocities[i3] = particleVelocities[i3] * dampFactor + vx * (1 - dampFactor);
+    particleVelocities[i3 + 1] = particleVelocities[i3 + 1] * dampFactor + vy * (1 - dampFactor);
+    particleVelocities[i3 + 2] = particleVelocities[i3 + 2] * dampFactor + vz * (1 - dampFactor);
+
+    // Apply velocity
+    px += particleVelocities[i3] * dt;
+    py += particleVelocities[i3 + 1] * dt;
+    pz += particleVelocities[i3 + 2] * dt;
+
+    // 4. Pull back to brain surface if drifted too far
+    const newSdf = brainSDF(px, py, pz);
+    if (Math.abs(newSdf) > maxDriftDist) {
+      const nn = brainNormal(px, py, pz);
+      const pull = newSdf * surfacePullStrength;
+      px -= nn.x * pull;
+      py -= nn.y * pull;
+      pz -= nn.z * pull;
+    }
+
+    // 5. Respawn if too far from brain center
+    const dist = Math.sqrt(px * px + py * py + pz * pz);
+    if (dist > respawnDist) {
+      const sp = sampleBrainSurface();
+      px = sp.x;
+      py = sp.y;
+      pz = sp.z;
+      particleVelocities[i3] = 0;
+      particleVelocities[i3 + 1] = 0;
+      particleVelocities[i3 + 2] = 0;
+    }
+
+    particlePositions[i3] = px;
+    particlePositions[i3 + 1] = py;
+    particlePositions[i3 + 2] = pz;
+
+    // Reset alpha to base
+    particleAlphas[i] = particleBaseAlphas[i];
+    particleSizes[i] = 0.5 + Math.random() * 0.2 + (particleBaseAlphas[i] > 0.4 ? 0.8 : 0);
+
+    particleAges[i] += dt;
+  }
+}
+
+// ============================================
+// COLOR PARTICLES NEAR MEMORY HOTSPOTS
+// ============================================
+function colorParticlesNearMemories() {
+  if (memoryNodes.length === 0) return;
+
+  // Only recolor every few frames for performance
+  const influenceRadius = 25;
+  const influenceRadiusSq = influenceRadius * influenceRadius;
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const i3 = i * 3;
+    const px = particlePositions[i3];
+    const py = particlePositions[i3 + 1];
+    const pz = particlePositions[i3 + 2];
+
+    let closestDist = Infinity;
+    let closestNode = null;
+
+    for (let j = 0; j < memoryNodes.length; j++) {
+      const mn = memoryNodes[j];
+      if (!mn.visible) continue;
+      const dx = px - mn.x;
+      const dy = py - mn.y;
+      const dz = pz - mn.z;
+      const dSq = dx * dx + dy * dy + dz * dz;
+      if (dSq < closestDist) {
+        closestDist = dSq;
+        closestNode = mn;
+      }
+    }
+
+    if (closestNode && closestDist < influenceRadiusSq) {
+      const col = TYPE_COLORS[closestNode.type] || BASE_COLOR;
+      const influence = 1 - Math.sqrt(closestDist) / influenceRadius;
+      const strength = influence * influence * 0.7; // quadratic falloff
+      const importance = closestNode.importance || 0.5;
+
+      particleColors[i3] = lerp(strength * importance, particleColors[i3], col.r * 0.8);
+      particleColors[i3 + 1] = lerp(strength * importance, particleColors[i3 + 1], col.g * 0.8);
+      particleColors[i3 + 2] = lerp(strength * importance, particleColors[i3 + 2], col.b * 0.8);
+
+      particleAlphas[i] = Math.min(1.0, particleAlphas[i] + strength * 0.4);
+      particleSizes[i] = Math.min(3.5, particleSizes[i] + strength * 1.5);
+    } else {
+      // Gradually fade back to base color
+      const br = 0.15 + (i % 7) * 0.03;
+      particleColors[i3] = lerp(0.02, particleColors[i3], BASE_COLOR.r * br);
+      particleColors[i3 + 1] = lerp(0.02, particleColors[i3 + 1], BASE_COLOR.g * br);
+      particleColors[i3 + 2] = lerp(0.02, particleColors[i3 + 2], BASE_COLOR.b * br);
+    }
+  }
+}
+
+// ============================================
+// PULSE WAVE SYSTEM
+// ============================================
+function triggerPulseWave() {
+  if (memoryNodes.length === 0) return;
+  const visible = memoryNodes.filter(n => n.visible);
+  if (visible.length === 0) return;
+
+  const source = visible[Math.floor(Math.random() * visible.length)];
+  const col = TYPE_COLORS[source.type] || new THREE.Color(0x00d4ff);
+
+  pulseWaves.push({
+    originX: source.x,
+    originY: source.y,
+    originZ: source.z,
+    radius: 0,
+    speed: 60 + Math.random() * 40,
+    maxRadius: 120 + Math.random() * 60,
+    color: col,
+    width: 15 + Math.random() * 10,
+    intensity: 0.6 + Math.random() * 0.4,
+  });
+}
+
+function updatePulseWaves(dt) {
+  for (let w = pulseWaves.length - 1; w >= 0; w--) {
+    const wave = pulseWaves[w];
+    wave.radius += wave.speed * dt;
+
+    if (wave.radius > wave.maxRadius) {
+      pulseWaves.splice(w, 1);
+      continue;
+    }
+
+    // Fade out as it expands
+    const life = wave.radius / wave.maxRadius;
+    const fade = 1 - life * life;
+
+    // Affect nearby particles
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3;
+      const dx = particlePositions[i3] - wave.originX;
+      const dy = particlePositions[i3 + 1] - wave.originY;
+      const dz = particlePositions[i3 + 2] - wave.originZ;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+      // Is the particle in the wavefront band?
+      const distFromWave = Math.abs(dist - wave.radius);
+      if (distFromWave < wave.width) {
+        const waveFactor = (1 - distFromWave / wave.width) * fade * wave.intensity;
+
+        // Brighten particle
+        particleAlphas[i] = Math.min(1.0, particleAlphas[i] + waveFactor * 0.6);
+        particleSizes[i] = Math.min(4.0, particleSizes[i] + waveFactor * 2.0);
+
+        // Tint with wave color
+        particleColors[i3] = Math.min(1, particleColors[i3] + wave.color.r * waveFactor * 0.4);
+        particleColors[i3 + 1] = Math.min(1, particleColors[i3 + 1] + wave.color.g * waveFactor * 0.4);
+        particleColors[i3 + 2] = Math.min(1, particleColors[i3 + 2] + wave.color.b * waveFactor * 0.4);
+      }
+    }
+  }
+}
+
+// Schedule pulse waves at random intervals (1-3 seconds)
+let nextPulseTime = 1;
+function schedulePulses(time) {
+  if (time > nextPulseTime) {
+    triggerPulseWave();
+    nextPulseTime = time + 1 + Math.random() * 2;
+  }
+}
+
+// ============================================
+// MEMORY NODE MESHES
 // ============================================
 const nodeGroup = new THREE.Group();
 scene.add(nodeGroup);
 
-let evidenceLineMesh = null;
-let tagLineMesh = null;
-
-function fetchBrain() {
-  fetch('/api/brain?limit=200')
-    .then(r => r.json())
-    .then(data => {
-      if (!data.nodes || data.nodes.length === 0) {
-        document.querySelector('.loading-text').textContent = 'NO MEMORIES FOUND';
-        return;
-      }
-      buildGraph(data.nodes);
-      document.getElementById('loading').classList.add('gone');
-    })
-    .catch(() => {
-      document.querySelector('.loading-text').textContent = 'CORTEX OFFLINE';
-    });
-}
-
-function buildGraph(rawNodes) {
+function buildMemoryNodes(rawNodes) {
   // Clear previous
   while (nodeGroup.children.length) nodeGroup.remove(nodeGroup.children[0]);
-  if (evidenceLineMesh) { scene.remove(evidenceLineMesh); evidenceLineMesh = null; }
-  if (tagLineMesh) { scene.remove(tagLineMesh); tagLineMesh = null; }
 
-  nodes = [];
-  evidenceEdges = [];
-  tagEdges = [];
+  memoryNodes = [];
   nodeMap = {};
-
-  const spread = Math.sqrt(rawNodes.length) * 40;
-
-  // Type-based region offsets for brain-like initial layout
-  const typeOffsets = {
-    episodic:   { x: 0,   y: 0.3, z: 0.5 },
-    semantic:   { x: -0.5, y: 0,   z: 0 },
-    procedural: { x: 0.5, y: 0,   z: 0 },
-    self_model: { x: 0,   y: 0.5, z: -0.2 },
-  };
 
   for (let i = 0; i < rawNodes.length; i++) {
     const raw = rawNodes[i];
-    const off = typeOffsets[raw.type] || { x: 0, y: 0, z: 0 };
+    const pos = brainRegionPosition(raw.type);
 
-    // Spherical random + type offset
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    const r = (0.3 + Math.random() * 0.7) * spread;
-
-    const baseR = 2 + (raw.importance || 0.5) * 6;
+    const baseR = 1.5 + (raw.importance || 0.5) * 3;
     const color = TYPE_COLORS[raw.type] || new THREE.Color(0x888888);
+    const decay = raw.decay || 1;
 
-    // Core sphere
-    const geo = new THREE.SphereGeometry(baseR, 12, 8);
+    // Bright core sphere
+    const geo = new THREE.SphereGeometry(baseR, 14, 10);
     const mat = new THREE.MeshBasicMaterial({
-      color: color.clone(),
+      color: color.clone().lerp(new THREE.Color(1, 1, 1), 0.3),
       transparent: true,
-      opacity: 0.2 + 0.8 * (raw.decay || 1),
+      opacity: 0.4 + 0.6 * decay,
     });
     const mesh = new THREE.Mesh(geo, mat);
-
-    const px = r * Math.sin(phi) * Math.cos(theta) + off.x * spread;
-    const py = r * Math.sin(phi) * Math.sin(theta) + off.y * spread;
-    const pz = r * Math.cos(phi) + off.z * spread;
-    mesh.position.set(px, py, pz);
+    mesh.position.set(pos.x, pos.y, pos.z);
     nodeGroup.add(mesh);
 
-    // Inner bright core
-    const innerGeo = new THREE.SphereGeometry(baseR * 0.4, 8, 6);
+    // Inner hot core
+    const innerGeo = new THREE.SphereGeometry(baseR * 0.5, 8, 6);
     const innerMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color().copy(color).lerp(new THREE.Color(1, 1, 1), 0.4),
+      color: new THREE.Color(1, 1, 1),
       transparent: true,
-      opacity: 0.5 + 0.5 * (raw.decay || 1),
+      opacity: 0.5 + 0.5 * decay,
     });
     const innerMesh = new THREE.Mesh(innerGeo, innerMat);
     mesh.add(innerMesh);
 
-    // Glow halo (additive blended larger sphere) — cyberpunk neon
-    const glowGeo = new THREE.SphereGeometry(baseR * 3.5, 16, 10);
+    // Glow halo
+    const glowGeo = new THREE.SphereGeometry(baseR * 4, 16, 10);
     const glowMat = new THREE.MeshBasicMaterial({
       color: color.clone(),
       transparent: true,
-      opacity: 0.1 * (raw.decay || 1),
+      opacity: 0.08 * decay,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.BackSide,
@@ -787,195 +1255,34 @@ function buildGraph(rawNodes) {
       lastAccessed: raw.lastAccessed,
       mesh: mesh,
       baseRadius: baseR,
-      x: px, y: py, z: pz,
-      vx: 0, vy: 0, vz: 0,
+      x: pos.x, y: pos.y, z: pos.z,
       visible: true,
     };
 
-    nodes.push(node);
+    memoryNodes.push(node);
     nodeMap[node.id] = node;
   }
 
-  // Build evidence edges
-  for (const n of nodes) {
-    for (const tid of n.evidenceIds) {
-      if (nodeMap[tid]) {
-        evidenceEdges.push({ source: n, target: nodeMap[tid] });
-      }
-    }
-  }
-
-  // Build tag edges (shared tags = proximity)
-  const tagIndex = {};
-  for (const n of nodes) {
-    for (const t of n.tags) {
-      if (!tagIndex[t]) tagIndex[t] = [];
-      tagIndex[t].push(n);
-    }
-  }
-  const seen = new Set();
-  for (const tag of Object.keys(tagIndex)) {
-    const group = tagIndex[tag];
-    if (group.length < 2 || group.length > 25) continue;
-    const lim = Math.min(group.length, 6);
-    for (let a = 0; a < lim; a++) {
-      for (let b = a + 1; b < lim; b++) {
-        const key = Math.min(group[a].id, group[b].id) + ':' + Math.max(group[a].id, group[b].id);
-        if (!seen.has(key)) {
-          seen.add(key);
-          tagEdges.push({ source: group[a], target: group[b] });
-        }
-      }
-    }
-  }
-
-  // Create edge geometries
-  createEdgeGeometry();
   updateStats();
-  frameCount = 0; // restart active physics
 }
 
 // ============================================
-// EDGE GEOMETRY
+// DATA FETCH
 // ============================================
-function createEdgeGeometry() {
-  // Evidence edges (colored by source type)
-  if (evidenceLineMesh) scene.remove(evidenceLineMesh);
-  const ePositions = new Float32Array(evidenceEdges.length * 6);
-  const eColors = new Float32Array(evidenceEdges.length * 6);
-  const eGeo = new THREE.BufferGeometry();
-  eGeo.setAttribute('position', new THREE.BufferAttribute(ePositions, 3));
-  eGeo.setAttribute('color', new THREE.BufferAttribute(eColors, 3));
-  const eMat = new THREE.LineBasicMaterial({
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.5,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-  evidenceLineMesh = new THREE.LineSegments(eGeo, eMat);
-  scene.add(evidenceLineMesh);
-
-  // Tag edges (dim white)
-  if (tagLineMesh) scene.remove(tagLineMesh);
-  const tPositions = new Float32Array(tagEdges.length * 6);
-  const tGeo = new THREE.BufferGeometry();
-  tGeo.setAttribute('position', new THREE.BufferAttribute(tPositions, 3));
-  const tMat = new THREE.LineBasicMaterial({
-    color: 0x1a2a3a,
-    transparent: true,
-    opacity: 0.12,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-  tagLineMesh = new THREE.LineSegments(tGeo, tMat);
-  scene.add(tagLineMesh);
-}
-
-function updateEdgePositions() {
-  if (!evidenceLineMesh || !tagLineMesh) return;
-
-  // Evidence edges
-  const ePos = evidenceLineMesh.geometry.attributes.position.array;
-  const eCol = evidenceLineMesh.geometry.attributes.color.array;
-  let ei = 0, ci = 0;
-  for (const e of evidenceEdges) {
-    const vis = e.source.visible && e.target.visible;
-    const sx = vis ? e.source.x : 0, sy = vis ? e.source.y : 0, sz = vis ? e.source.z : 0;
-    const tx = vis ? e.target.x : 0, ty = vis ? e.target.y : 0, tz = vis ? e.target.z : 0;
-    ePos[ei++] = sx; ePos[ei++] = sy; ePos[ei++] = sz;
-    ePos[ei++] = tx; ePos[ei++] = ty; ePos[ei++] = tz;
-    const col = TYPE_COLORS[e.source.type] || new THREE.Color(0x444444);
-    const a = vis ? 1 : 0;
-    eCol[ci++] = col.r * a; eCol[ci++] = col.g * a; eCol[ci++] = col.b * a;
-    eCol[ci++] = col.r * a * 0.5; eCol[ci++] = col.g * a * 0.5; eCol[ci++] = col.b * a * 0.5;
-  }
-  evidenceLineMesh.geometry.attributes.position.needsUpdate = true;
-  evidenceLineMesh.geometry.attributes.color.needsUpdate = true;
-
-  // Tag edges
-  const tPos = tagLineMesh.geometry.attributes.position.array;
-  let ti = 0;
-  for (const e of tagEdges) {
-    const vis = e.source.visible && e.target.visible;
-    tPos[ti++] = vis ? e.source.x : 0; tPos[ti++] = vis ? e.source.y : 0; tPos[ti++] = vis ? e.source.z : 0;
-    tPos[ti++] = vis ? e.target.x : 0; tPos[ti++] = vis ? e.target.y : 0; tPos[ti++] = vis ? e.target.z : 0;
-  }
-  tagLineMesh.geometry.attributes.position.needsUpdate = true;
-}
-
-// ============================================
-// 3D FORCE SIMULATION
-// ============================================
-function simulate() {
-  const n = nodes.length;
-  if (n === 0) return;
-
-  // Repulsion (all visible pairs)
-  for (let i = 0; i < n; i++) {
-    if (!nodes[i].visible) continue;
-    for (let j = i + 1; j < n; j++) {
-      if (!nodes[j].visible) continue;
-      const dx = nodes[j].x - nodes[i].x;
-      const dy = nodes[j].y - nodes[i].y;
-      const dz = nodes[j].z - nodes[i].z;
-      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-      if (dist > 500) continue;
-      const force = PHYSICS.repulsion / (dist * dist);
-      const fx = (dx / dist) * force;
-      const fy = (dy / dist) * force;
-      const fz = (dz / dist) * force;
-      nodes[i].vx -= fx; nodes[i].vy -= fy; nodes[i].vz -= fz;
-      nodes[j].vx += fx; nodes[j].vy += fy; nodes[j].vz += fz;
-    }
-  }
-
-  // Evidence edge attraction
-  for (const e of evidenceEdges) {
-    if (!e.source.visible || !e.target.visible) continue;
-    const dx = e.target.x - e.source.x;
-    const dy = e.target.y - e.source.y;
-    const dz = e.target.z - e.source.z;
-    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-    const force = dist * PHYSICS.attraction;
-    const fx = (dx / dist) * force;
-    const fy = (dy / dist) * force;
-    const fz = (dz / dist) * force;
-    e.source.vx += fx; e.source.vy += fy; e.source.vz += fz;
-    e.target.vx -= fx; e.target.vy -= fy; e.target.vz -= fz;
-  }
-
-  // Tag edge attraction (weaker)
-  for (const e of tagEdges) {
-    if (!e.source.visible || !e.target.visible) continue;
-    const dx = e.target.x - e.source.x;
-    const dy = e.target.y - e.source.y;
-    const dz = e.target.z - e.source.z;
-    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-    if (dist < 30) continue;
-    const force = dist * PHYSICS.tagAttraction;
-    const fx = (dx / dist) * force;
-    const fy = (dy / dist) * force;
-    const fz = (dz / dist) * force;
-    e.source.vx += fx; e.source.vy += fy; e.source.vz += fz;
-    e.target.vx -= fx; e.target.vy -= fy; e.target.vz -= fz;
-  }
-
-  // Centering + integration
-  for (let i = 0; i < n; i++) {
-    const node = nodes[i];
-    if (!node.visible) continue;
-    node.vx -= node.x * PHYSICS.centering;
-    node.vy -= node.y * PHYSICS.centering;
-    node.vz -= node.z * PHYSICS.centering;
-    node.vx *= PHYSICS.damping;
-    node.vy *= PHYSICS.damping;
-    node.vz *= PHYSICS.damping;
-    node.x += node.vx;
-    node.y += node.vy;
-    node.z += node.vz;
-    node.mesh.position.set(node.x, node.y, node.z);
-  }
+function fetchBrain() {
+  fetch('/api/brain?limit=200')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.nodes || data.nodes.length === 0) {
+        document.querySelector('.loading-text').textContent = 'NO MEMORIES FOUND';
+        return;
+      }
+      buildMemoryNodes(data.nodes);
+      document.getElementById('loading').classList.add('gone');
+    })
+    .catch(() => {
+      document.querySelector('.loading-text').textContent = 'CORTEX OFFLINE';
+    });
 }
 
 // ============================================
@@ -983,7 +1290,7 @@ function simulate() {
 // ============================================
 function applyFilters() {
   let visCount = 0;
-  for (const node of nodes) {
+  for (const node of memoryNodes) {
     const typeHidden = !!hiddenTypes[node.type];
     const belowImp = node.importance * 100 < impThreshold;
     const belowDecay = node.decay * 100 < decayThreshold;
@@ -992,18 +1299,15 @@ function applyFilters() {
     if (node.visible) visCount++;
   }
   document.getElementById('sNodes').textContent = visCount;
-  updateVisibleEdgeCount();
-}
-
-function updateVisibleEdgeCount() {
-  let count = 0;
-  for (const e of evidenceEdges) {
-    if (e.source.visible && e.target.visible) count++;
+  // Update edge count (evidence links)
+  let edgeCount = 0;
+  for (const n of memoryNodes) {
+    if (!n.visible) continue;
+    for (const tid of n.evidenceIds) {
+      if (nodeMap[tid] && nodeMap[tid].visible) edgeCount++;
+    }
   }
-  for (const e of tagEdges) {
-    if (e.source.visible && e.target.visible) count++;
-  }
-  document.getElementById('sEdges').textContent = count;
+  document.getElementById('sEdges').textContent = edgeCount;
 }
 
 // Legend toggle
@@ -1039,10 +1343,13 @@ btnRotate.addEventListener('click', () => {
 });
 
 document.getElementById('btnReset').addEventListener('click', () => {
-  camera.position.set(0, 80, 380);
+  camera.position.set(0, 40, 300);
   controls.target.set(0, 0, 0);
+  targetFocus = null;
+  targetCamPos = null;
   selectedNode = null;
   document.getElementById('detail').classList.remove('vis');
+  restoreNodeOpacities();
 });
 
 // ============================================
@@ -1071,7 +1378,6 @@ window.addEventListener('pointermove', e => {
 });
 
 window.addEventListener('click', e => {
-  // Ignore clicks on HUD elements
   if (e.target.closest('.hud, .filter-bar, .detail, .ctrl-btn, .legend-item')) return;
 
   if (hoveredNode) {
@@ -1085,14 +1391,7 @@ document.getElementById('detailClose').addEventListener('click', () => {
   deselectNode();
 });
 
-let wasAutoRotating = false;
-let savedCamPos = null;
-let savedCamTarget = null;
-let targetFocus = null;
-let targetCamPos = null;
-
 function selectNode(node) {
-  // Save camera position only on first select (not when switching nodes)
   if (!selectedNode) {
     savedCamPos = camera.position.clone();
     savedCamTarget = controls.target.clone();
@@ -1108,14 +1407,14 @@ function selectNode(node) {
     .normalize();
   const pos = node.mesh.position.clone();
   targetFocus = pos.clone();
-  targetCamPos = pos.clone().add(dir.multiplyScalar(80));
+  targetCamPos = pos.clone().add(dir.multiplyScalar(60));
 
   // Dim all other nodes, brighten selected
-  for (const n of nodes) {
+  for (const n of memoryNodes) {
     if (n === node) {
       n.mesh.material.opacity = 1;
       if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 1;
-      if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.3;
+      if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.25;
     } else {
       n.mesh.material.opacity = 0.04;
       if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 0.02;
@@ -1123,17 +1422,12 @@ function selectNode(node) {
     }
   }
 
-  // Dim edges
-  if (evidenceLineMesh) evidenceLineMesh.material.opacity = 0.06;
-  if (tagLineMesh) tagLineMesh.material.opacity = 0.01;
-
   showDetail(node);
 }
 
 function deselectNode() {
   selectedNode = null;
 
-  // Zoom back out to saved position
   if (savedCamPos && savedCamTarget) {
     targetCamPos = savedCamPos.clone();
     targetFocus = savedCamTarget.clone();
@@ -1144,36 +1438,34 @@ function deselectNode() {
 
   if (wasAutoRotating) controls.autoRotate = true;
 
-  // Restore all node opacities
-  for (const n of nodes) {
-    if (!n.visible) continue;
-    const decay = n.decay || 1;
-    n.mesh.material.opacity = 0.2 + 0.8 * decay;
-    if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 0.5 + 0.5 * decay;
-    if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.1 * decay;
-  }
-
-  // Restore edges
-  if (evidenceLineMesh) evidenceLineMesh.material.opacity = 0.5;
-  if (tagLineMesh) tagLineMesh.material.opacity = 0.12;
+  restoreNodeOpacities();
 
   document.getElementById('detail').classList.remove('vis');
 
-  // Clear saved position after animation starts
   setTimeout(() => { savedCamPos = null; savedCamTarget = null; }, 2000);
+}
+
+function restoreNodeOpacities() {
+  for (const n of memoryNodes) {
+    if (!n.visible) continue;
+    const decay = n.decay || 1;
+    n.mesh.material.opacity = 0.4 + 0.6 * decay;
+    if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 0.5 + 0.5 * decay;
+    if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.08 * decay;
+  }
+  highlightRing.visible = false;
 }
 
 function doRaycast() {
   raycaster.setFromCamera(pointer, camera);
-  const meshes = nodes.filter(n => n.visible).map(n => n.mesh);
+  const meshes = memoryNodes.filter(n => n.visible).map(n => n.mesh);
   const hits = raycaster.intersectObjects(meshes, false);
 
-  let prev = hoveredNode;
   hoveredNode = null;
 
   if (hits.length > 0) {
     const hitMesh = hits[0].object;
-    for (const n of nodes) {
+    for (const n of memoryNodes) {
       if (n.mesh === hitMesh && n.visible) {
         hoveredNode = n;
         break;
@@ -1185,7 +1477,7 @@ function doRaycast() {
     document.body.style.cursor = 'pointer';
     const col = TYPE_COLORS[hoveredNode.type];
     ringMat.color.copy(col);
-    const scale = hoveredNode.baseRadius * 2;
+    const scale = hoveredNode.baseRadius * 2.5;
     highlightRing.scale.set(scale, scale, scale);
     highlightRing.position.copy(hoveredNode.mesh.position);
     highlightRing.lookAt(camera.position);
@@ -1193,7 +1485,7 @@ function doRaycast() {
   } else if (hoveredNode && selectedNode) {
     document.body.style.cursor = 'pointer';
   } else {
-    document.body.style.cursor = selectedNode ? 'default' : 'default';
+    document.body.style.cursor = 'default';
     if (!selectedNode) highlightRing.visible = false;
   }
 }
@@ -1206,7 +1498,7 @@ function showDetail(node) {
 
   // Show highlight ring on selected node
   ringMat.color.copy(col);
-  const scale = node.baseRadius * 2;
+  const scale = node.baseRadius * 2.5;
   highlightRing.scale.set(scale, scale, scale);
   highlightRing.position.copy(node.mesh.position);
   highlightRing.lookAt(camera.position);
@@ -1255,210 +1547,19 @@ function timeSince(dateStr) {
 // HUD STATS
 // ============================================
 function updateStats() {
-  document.getElementById('sNodes').textContent = nodes.length;
-  document.getElementById('sEdges').textContent = evidenceEdges.length + tagEdges.length;
+  document.getElementById('sNodes').textContent = memoryNodes.length;
+  // Count evidence edges
+  let edgeCount = 0;
+  for (const n of memoryNodes) {
+    for (const tid of n.evidenceIds) {
+      if (nodeMap[tid]) edgeCount++;
+    }
+  }
+  document.getElementById('sEdges').textContent = edgeCount;
   let td = 0, ti = 0;
-  for (const n of nodes) { td += n.decay; ti += n.importance; }
-  document.getElementById('sDecay').textContent = nodes.length ? ((td / nodes.length) * 100).toFixed(0) + '%' : '--';
-  document.getElementById('sImp').textContent = nodes.length ? ((ti / nodes.length) * 100).toFixed(0) + '%' : '--';
-}
-
-// ============================================
-// SYNAPSE PULSE SYSTEM — electrical signals traveling along edges
-// ============================================
-const MAX_PULSES = 80;
-const pulsePool = [];
-let pulseGroup = null;
-let pulsePositions = null;
-let pulseColors = null;
-let pulseSizes = null;
-
-function initPulseSystem() {
-  pulseGroup = new THREE.Points(
-    new THREE.BufferGeometry(),
-    new THREE.PointsMaterial({
-      size: 4,
-      vertexColors: true,
-      transparent: true,
-      opacity: 1,
-      sizeAttenuation: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    })
-  );
-  pulsePositions = new Float32Array(MAX_PULSES * 3);
-  pulseColors = new Float32Array(MAX_PULSES * 3);
-  pulseSizes = new Float32Array(MAX_PULSES);
-  pulseGroup.geometry.setAttribute('position', new THREE.BufferAttribute(pulsePositions, 3));
-  pulseGroup.geometry.setAttribute('color', new THREE.BufferAttribute(pulseColors, 3));
-  scene.add(pulseGroup);
-}
-
-function fireSynapse(sourceNode) {
-  // Find edges connected to this node
-  const allEdges = evidenceEdges.concat(tagEdges);
-  const connected = allEdges.filter(e =>
-    (e.source === sourceNode || e.target === sourceNode) &&
-    e.source.visible && e.target.visible
-  );
-  if (connected.length === 0) return;
-
-  // Fire pulse along 1-3 random connected edges
-  const count = Math.min(connected.length, 1 + Math.floor(Math.random() * 3));
-  for (let i = 0; i < count; i++) {
-    if (pulsePool.length >= MAX_PULSES) break;
-    const edge = connected[Math.floor(Math.random() * connected.length)];
-    const isSource = edge.source === sourceNode;
-    const col = TYPE_COLORS[sourceNode.type] || new THREE.Color(0x00d4ff);
-    pulsePool.push({
-      source: isSource ? edge.source : edge.target,
-      target: isSource ? edge.target : edge.source,
-      progress: 0,
-      speed: 0.8 + Math.random() * 1.5,
-      color: col,
-      startTime: performance.now(),
-    });
-  }
-}
-
-function updatePulses() {
-  const now = performance.now();
-  const dt = 1 / 60;
-
-  for (let i = pulsePool.length - 1; i >= 0; i--) {
-    const p = pulsePool[i];
-    p.progress += p.speed * dt;
-    if (p.progress >= 1) {
-      // Pulse arrived — sometimes trigger a cascade blink on target
-      if (Math.random() < 0.3 && !selectedNode) {
-        activeBlinks.push({
-          node: p.target,
-          startTime: now,
-          duration: 200 + Math.random() * 400,
-        });
-      }
-      pulsePool.splice(i, 1);
-    }
-  }
-
-  // Write pulse positions to buffer
-  for (let i = 0; i < MAX_PULSES; i++) {
-    if (i < pulsePool.length) {
-      const p = pulsePool[i];
-      const t = p.progress;
-      // Smooth ease
-      const st = t * t * (3 - 2 * t);
-      pulsePositions[i * 3]     = p.source.x + (p.target.x - p.source.x) * st;
-      pulsePositions[i * 3 + 1] = p.source.y + (p.target.y - p.source.y) * st;
-      pulsePositions[i * 3 + 2] = p.source.z + (p.target.z - p.source.z) * st;
-      // Brightness peaks in the middle of travel
-      const bright = 1 - Math.abs(t - 0.5) * 2;
-      pulseColors[i * 3]     = p.color.r * (0.5 + bright * 0.5);
-      pulseColors[i * 3 + 1] = p.color.g * (0.5 + bright * 0.5);
-      pulseColors[i * 3 + 2] = p.color.b * (0.5 + bright * 0.5);
-    } else {
-      // Hide unused slots
-      pulsePositions[i * 3] = 0;
-      pulsePositions[i * 3 + 1] = 0;
-      pulsePositions[i * 3 + 2] = 0;
-      pulseColors[i * 3] = 0;
-      pulseColors[i * 3 + 1] = 0;
-      pulseColors[i * 3 + 2] = 0;
-    }
-  }
-
-  if (pulseGroup) {
-    pulseGroup.geometry.attributes.position.needsUpdate = true;
-    pulseGroup.geometry.attributes.color.needsUpdate = true;
-  }
-}
-
-initPulseSystem();
-
-// ============================================
-// ACTIVITY BLINKS + SYNAPSE FIRING
-// ============================================
-const activeBlinks = []; // { node, startTime, duration }
-
-function triggerRandomBlink() {
-  if (nodes.length === 0) return;
-  const visible = nodes.filter(n => n.visible);
-  if (visible.length === 0) return;
-  const node = visible[Math.floor(Math.random() * visible.length)];
-  activeBlinks.push({
-    node,
-    startTime: performance.now(),
-    duration: 200 + Math.random() * 500,
-  });
-  // Fire synapse pulses from blinking node
-  if (Math.random() < 0.6) {
-    fireSynapse(node);
-  }
-}
-
-function blinkActivity() {
-  const now = performance.now();
-
-  // Higher firing rate — avg 8-15 per second for more electrical feel
-  if (Math.random() < 0.15) triggerRandomBlink();
-
-  // More frequent bursts (simulates neural cascade)
-  if (Math.random() < 0.01) {
-    const burstSize = 5 + Math.floor(Math.random() * 10);
-    for (let i = 0; i < burstSize; i++) {
-      setTimeout(() => triggerRandomBlink(), i * 30);
-    }
-  }
-
-  // Process active blinks
-  for (let i = activeBlinks.length - 1; i >= 0; i--) {
-    const b = activeBlinks[i];
-    const elapsed = now - b.startTime;
-    const progress = elapsed / b.duration;
-
-    if (progress >= 1) {
-      // Reset to normal
-      if (!selectedNode || b.node === selectedNode) {
-        const decay = b.node.decay || 1;
-        b.node.mesh.material.opacity = selectedNode === b.node ? 1 : 0.2 + 0.8 * decay;
-        const glowChild = b.node.mesh.children[1];
-        if (glowChild) glowChild.material.opacity = (selectedNode === b.node ? 0.3 : 0.06) * decay;
-      }
-      activeBlinks.splice(i, 1);
-      continue;
-    }
-
-    // Sharp flash in, slow fade out
-    const intensity = progress < 0.1
-      ? progress / 0.1
-      : 1 - ((progress - 0.1) / 0.9);
-
-    if (selectedNode && b.node !== selectedNode) continue;
-
-    const decay = b.node.decay || 1;
-    const baseOpacity = 0.2 + 0.8 * decay;
-    b.node.mesh.material.opacity = baseOpacity + intensity * (1 - baseOpacity);
-
-    // Amplify glow during blink — much brighter for cyberpunk feel
-    const glowChild = b.node.mesh.children[1];
-    if (glowChild) {
-      glowChild.material.opacity = (0.06 + intensity * 0.4) * decay;
-    }
-
-    // Scale pulse on blink
-    const scale = 1 + intensity * 0.3;
-    b.node.mesh.scale.setScalar(scale);
-  }
-
-  // Reset scale for non-blinking nodes
-  for (const n of nodes) {
-    if (!activeBlinks.find(b => b.node === n)) {
-      n.mesh.scale.setScalar(1);
-    }
-  }
-
-  // Update synapse pulses
-  updatePulses();
+  for (const n of memoryNodes) { td += n.decay; ti += n.importance; }
+  document.getElementById('sDecay').textContent = memoryNodes.length ? ((td / memoryNodes.length) * 100).toFixed(0) + '%' : '--';
+  document.getElementById('sImp').textContent = memoryNodes.length ? ((ti / memoryNodes.length) * 100).toFixed(0) + '%' : '--';
 }
 
 // ============================================
@@ -1467,18 +1568,29 @@ function blinkActivity() {
 function animate() {
   requestAnimationFrame(animate);
 
-  // Physics (throttle after settling)
-  if (frameCount < 500) {
-    simulate();
-  } else if (frameCount % 4 === 0) {
-    simulate();
+  const dt = Math.min(clock.getDelta(), 0.05); // cap dt
+  const time = clock.elapsedTime;
+
+  // Update particle positions via curl noise flow
+  updateParticles(time, dt);
+
+  // Color particles near memory hotspots (every 3rd frame for perf)
+  if (frameCount % 3 === 0) {
+    colorParticlesNearMemories();
   }
 
-  // Sync edge positions
-  updateEdgePositions();
+  // Pulse waves
+  schedulePulses(time);
+  updatePulseWaves(dt);
 
-  // Raycasting (every other frame for perf)
-  if (frameCount % 2 === 0) {
+  // Update GPU buffers
+  particleGeometry.attributes.position.needsUpdate = true;
+  particleGeometry.attributes.aColor.needsUpdate = true;
+  particleGeometry.attributes.aSize.needsUpdate = true;
+  particleGeometry.attributes.aAlpha.needsUpdate = true;
+
+  // Raycasting (every 3rd frame for perf)
+  if (frameCount % 3 === 0) {
     doRaycast();
   }
 
@@ -1492,19 +1604,16 @@ function animate() {
   if (selectedNode && highlightRing.visible) {
     const t = performance.now() * 0.002;
     ringMat.opacity = 0.3 + 0.2 * Math.sin(t);
-    // Keep ring tracking the selected node position
     highlightRing.position.copy(selectedNode.mesh.position);
     highlightRing.lookAt(camera.position);
   }
 
-  // Random activity blinks + synapse pulses
-  blinkActivity();
-
-  // Subtle edge breathing (cyberpunk pulse)
-  if (evidenceLineMesh && !selectedNode) {
-    const t = performance.now() * 0.001;
-    evidenceLineMesh.material.opacity = 0.35 + 0.15 * Math.sin(t * 0.8);
-    tagLineMesh.material.opacity = 0.08 + 0.04 * Math.sin(t * 0.5 + 1);
+  // Gentle node breathing
+  for (const n of memoryNodes) {
+    if (!n.visible) continue;
+    if (n === selectedNode) continue;
+    const breathe = 1 + 0.05 * Math.sin(time * 1.5 + n.x * 0.1 + n.y * 0.07);
+    n.mesh.scale.setScalar(breathe);
   }
 
   controls.update();
@@ -1515,6 +1624,7 @@ function animate() {
 // ============================================
 // INIT
 // ============================================
+createParticleSystem();
 fetchBrain();
 animate();
 
