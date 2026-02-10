@@ -796,7 +796,7 @@ const TYPE_NAMES = {
   self_model: 'SELF-MODEL',
 };
 
-const PARTICLE_COUNT = 60000;
+const PARTICLE_COUNT = 1000;
 const BASE_COLOR = new THREE.Color(0x0a1520);
 
 // ============================================
@@ -931,7 +931,7 @@ function createParticleSystem() {
       particleColors[i * 3 + 2] = 0.18 * b;
     }
 
-    particleSizes[i] = 0.5 + Math.random() * 1.5;
+    particleSizes[i] = 2.0 + Math.random() * 4.0;
     particleBaseAlphas[i] = 0.15 + Math.random() * 0.5;
     particleAlphas[i] = particleBaseAlphas[i];
     particleAges[i] = Math.random() * 100; // random initial age for variety
@@ -1052,7 +1052,7 @@ function updateParticles(time, dt) {
 
     // Reset alpha to base
     particleAlphas[i] = particleBaseAlphas[i];
-    particleSizes[i] = 0.5 + Math.random() * 0.2 + (particleBaseAlphas[i] > 0.4 ? 0.8 : 0);
+    particleSizes[i] = 2.0 + Math.random() * 1.0 + (particleBaseAlphas[i] > 0.4 ? 2.0 : 0);
 
     particleAges[i] += dt;
   }
