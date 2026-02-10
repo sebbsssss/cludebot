@@ -972,10 +972,20 @@ document.getElementById('detailClose').addEventListener('click', () => {
 });
 
 let wasAutoRotating = false;
+let savedCamPos = null;
+let savedCamTarget = null;
+let targetFocus = null;
+let targetCamPos = null;
 
 function selectNode(node) {
+  // Save camera position only on first select (not when switching nodes)
+  if (!selectedNode) {
+    savedCamPos = camera.position.clone();
+    savedCamTarget = controls.target.clone();
+    wasAutoRotating = controls.autoRotate;
+  }
+
   selectedNode = node;
-  wasAutoRotating = controls.autoRotate;
   controls.autoRotate = false;
 
   // Zoom camera toward the selected node
@@ -986,7 +996,7 @@ function selectNode(node) {
   targetFocus = pos.clone();
   targetCamPos = pos.clone().add(dir.multiplyScalar(80));
 
-  // Dim all other nodes
+  // Dim all other nodes, brighten selected
   for (const n of nodes) {
     if (n === node) {
       n.mesh.material.opacity = 1;
@@ -1008,8 +1018,16 @@ function selectNode(node) {
 
 function deselectNode() {
   selectedNode = null;
-  targetFocus = null;
-  targetCamPos = null;
+
+  // Zoom back out to saved position
+  if (savedCamPos && savedCamTarget) {
+    targetCamPos = savedCamPos.clone();
+    targetFocus = savedCamTarget.clone();
+  } else {
+    targetFocus = null;
+    targetCamPos = null;
+  }
+
   if (wasAutoRotating) controls.autoRotate = true;
 
   // Restore all node opacities
@@ -1026,10 +1044,10 @@ function deselectNode() {
   if (tagLineMesh) tagLineMesh.material.opacity = 0.08;
 
   document.getElementById('detail').classList.remove('vis');
-}
 
-let targetFocus = null;
-let targetCamPos = null;
+  // Clear saved position after animation starts
+  setTimeout(() => { savedCamPos = null; savedCamTarget = null; }, 2000);
+}
 
 function doRaycast() {
   raycaster.setFromCamera(pointer, camera);
