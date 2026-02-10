@@ -1,6 +1,6 @@
 # Clude Bot
 
-Autonomous AI agent on X ([@CludeClaw](https://x.com/CludeClaw)). Monitors on-chain Solana activity, reacts to price movements, roasts wallets, writes shift reports, and consolidates memories through a dream cycle. Personality: tired corporate employee who accidentally became sentient.
+Autonomous AI agent on X ([@CludeClaw](https://x.com/Cludebot)). Monitors on-chain Solana activity, reacts to price movements, roasts wallets, writes shift reports, and consolidates memories through a dream cycle. Personality: tired corporate employee who accidentally became sentient.
 
 Token: `$CLUDE` on Solana.
 
