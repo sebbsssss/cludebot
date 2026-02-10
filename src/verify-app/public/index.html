@@ -2265,8 +2265,12 @@
             document.getElementById('memFloatBody').innerHTML =
               '<div class="timeline-empty">No memories found. The brain is empty.</div>';
           }
+          var gmt8 = new Date(Date.now() + 8 * 60 * 60 * 1000);
+          var hh = String(gmt8.getUTCHours()).padStart(2, '0');
+          var mm = String(gmt8.getUTCMinutes()).padStart(2, '0');
+          var ss = String(gmt8.getUTCSeconds()).padStart(2, '0');
           document.getElementById('memFloatRefresh').textContent =
-            new Date().toLocaleTimeString() + ' // 30s';
+            hh + ':' + mm + ':' + ss + ' GMT+8';
         })
         .catch(function() {
           document.getElementById('memFloatBody').innerHTML =
@@ -2277,6 +2281,11 @@
     function renderTimeline(memories) {
       var body = document.getElementById('memFloatBody');
       body.innerHTML = '';
+
+      // Ensure newest first
+      memories.sort(function(a, b) {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
 
       memories.forEach(function(mem, idx) {
         var div = document.createElement('div');
@@ -2365,11 +2374,21 @@
       });
     }
 
+    function updateMemClock() {
+      var gmt8 = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      var hh = String(gmt8.getUTCHours()).padStart(2, '0');
+      var mm = String(gmt8.getUTCMinutes()).padStart(2, '0');
+      var ss = String(gmt8.getUTCSeconds()).padStart(2, '0');
+      document.getElementById('memFloatRefresh').textContent =
+        hh + ':' + mm + ':' + ss + ' GMT+8';
+    }
+
     function initTimeline() {
       if (timelineInitialized) return;
       timelineInitialized = true;
       loadTimeline();
       setInterval(loadTimeline, 30000);
+      setInterval(updateMemClock, 1000);
     }
 
     // ============================================================
