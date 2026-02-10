@@ -6,9 +6,9 @@ Token: `$CLUDE` on Solana.
 
 Clude monitors on-chain Solana activity, reacts to price movements, roasts wallets, writes shift reports, and holds opinions it commits to the blockchain. But what makes it different is the memory.
 
-Most AI agents are stateless — every interaction starts from zero. Clude runs a persistent cognitive architecture called **The Cortex**, inspired by [Stanford's Generative Agents](https://arxiv.org/abs/2304.03442) (recency + importance + relevance scoring), [MemGPT/Letta](https://arxiv.org/abs/2310.08560) (multi-tier self-managed memory), and the [CoALA framework](https://arxiv.org/abs/2309.02427) (episodic/semantic/procedural separation). Four memory types — episodic, semantic, procedural, and self-model — are scored, decayed, and recalled contextually. Memories that go unaccessed fade over time. Memories that get recalled are reinforced.
+Most AI agents are stateless — every interaction starts from zero. Clude runs a persistent cognitive architecture called **The Cortex**, built on techniques from [Stanford's Generative Agents](https://arxiv.org/abs/2304.03442) (Park et al. 2023) — additive retrieval scoring, exponential recency decay, LLM-based importance rating, focal-point question generation, and evidence-linked reflections — combined with ideas from [MemGPT/Letta](https://arxiv.org/abs/2310.08560) (multi-tier self-managed memory) and the [CoALA framework](https://arxiv.org/abs/2309.02427) (episodic/semantic/procedural separation). Four memory types are scored via `recency + relevance + importance`, decayed exponentially, and recalled contextually. Memories that go unaccessed fade. Memories that get recalled are reinforced.
 
-Every 6 hours, a **dream cycle** consolidates recent experiences into patterns, reflects on accumulated knowledge, and occasionally surfaces something new — a self-observation or emergent thought that gets posted as a tweet. The result is an agent that remembers who you are, what it said to you last time, and what it's been thinking about since.
+Dream cycles are triggered either on a 6-hour schedule or by accumulated importance exceeding a threshold (event-driven reflection). Each cycle generates focal-point questions from recent experience, retrieves relevant memories for each question, produces evidence-linked semantic insights, and reflects on accumulated self-knowledge — with every derived memory traceable back to its source evidence. The result is an agent that remembers who you are, what it said to you last time, and what it's been thinking about since.
 
 ---
 
@@ -40,7 +40,7 @@ Price oracle → mood state → modifies all generated responses
 
 ### Memory system (The Cortex)
 
-Four memory tiers inspired by Stanford Generative Agents and CoALA:
+Four memory tiers inspired by [Stanford Generative Agents](https://arxiv.org/abs/2304.03442), [MemGPT/Letta](https://arxiv.org/abs/2310.08560), and [CoALA](https://arxiv.org/abs/2309.02427):
 
 | Type | Purpose |
 |------|---------|
@@ -49,12 +49,24 @@ Four memory tiers inspired by Stanford Generative Agents and CoALA:
 | `procedural` | Behavioral patterns — what works, what doesn't |
 | `self_model` | Clude's evolving understanding of itself |
 
-Memories are scored by `relevance * importance * recency * decay_factor`. Unaccessed memories decay daily. Accessed memories get reinforced (decay resets to 1.0).
+**Retrieval scoring** uses the additive formula from Park et al. (2023):
 
-Every 6 hours, the **dream cycle** runs three phases:
-1. **Consolidation** — episodic memories distilled into semantic patterns
-2. **Reflection** — self-analysis from accumulated knowledge
+```
+score = (0.5 * recency + 3.0 * relevance + 2.0 * importance) * decay_factor
+```
+
+- **Recency**: Exponential decay `0.995^hoursSinceAccess` — accessing a memory resets its clock. 24h: 0.89, 1 week: 0.43, 1 month: 0.03.
+- **Relevance**: Average of text similarity and tag overlap scores (0–1).
+- **Importance**: LLM-scored 1–10 using a dedicated low-temperature call with Clude-specific context, normalized to 0–1. Falls back to rule-based scoring on failure.
+- **Decay factor**: Multiplicative gate — 5% daily reduction for unaccessed memories. Accessed memories reset to 1.0.
+
+**Dream cycle** runs three phases, triggered either by a 6-hour cron or by accumulated importance exceeding a threshold (event-driven reflection, min 30-minute interval):
+
+1. **Consolidation** — generates 3 focal point questions from recent episodic memories (Park et al. "What are the most salient questions?"), retrieves relevant memories for each, synthesizes evidence-linked semantic insights
+2. **Reflection** — self-analysis from accumulated semantic and self-model memories, with numbered evidence citations linking back to source memories
 3. **Emergence** — introspective synthesis, occasionally posted as a tweet
+
+**Evidence linking**: Reflections and consolidated memories store `evidence_ids` — pointers back to the source memories that informed them. This creates an auditable chain from raw experience → pattern → self-knowledge.
 
 ### Event bus
 
@@ -62,14 +74,15 @@ Typed pub/sub system that decouples blockchain events from feature logic:
 
 ```typescript
 interface BotEvents {
-  'whale:sell':   { wallet, solValue, signature }
-  'holder:exit':  { wallet, tokenAmount, solValue }
-  'token:event':  { signature, eventType, wallet, solValue }
-  'mood:changed': { previous, current }
+  'whale:sell':    { wallet, solValue, signature }
+  'holder:exit':   { wallet, tokenAmount, solValue }
+  'token:event':   { signature, eventType, wallet, solValue }
+  'mood:changed':  { previous, current }
+  'memory:stored': { importance, memoryType }
 }
 ```
 
-Helius webhooks emit events. Feature handlers subscribe. No direct cross-module imports.
+Helius webhooks emit events. Feature handlers subscribe. `memory:stored` drives event-driven reflection — when cumulative importance from new episodic memories exceeds a threshold, the dream cycle triggers outside its normal 6-hour schedule. No direct cross-module imports.
 
 ### Response pipeline
 
@@ -93,7 +106,7 @@ Mood states: `PUMPING`, `DUMPING`, `SIDEWAYS`, `NEW_ATH`, `WHALE_SELL`, `NEUTRAL
 | **Exit Interview** | Holder sells all tokens | Farewell commentary for departing holders |
 | **Market Monitor** | Every 5m | Detects notable market movements (Allium API) |
 | **On-Chain Opinion** | Agent request | Commits opinions to Solana via memo program |
-| **Dream Cycle** | Every 6h (cron) | Memory consolidation, reflection, emergence |
+| **Dream Cycle** | Every 6h / event-driven | Focal-point consolidation, evidence-linked reflection, emergence |
 | **Activity Stream** | Webhook events | Tracks and logs on-chain token events |
 | **Holder Tiers** | Per interaction | `WHALE` / `HOLDER` / `SMALL` / `NONE` / `SELLER` |
 

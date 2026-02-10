@@ -1,6 +1,7 @@
 import { eventBus } from './event-bus';
 import { flagWhaleSell } from '../core/price-oracle';
 import { handleExitInterview } from '../features/exit-interview';
+import { accumulateImportance } from '../features/dream-cycle';
 import { createChildLogger } from '../core/logger';
 
 const log = createChildLogger('events');
@@ -20,6 +21,13 @@ export function registerEventHandlers(): void {
     handleExitInterview(wallet, tokenAmount, solValue).catch(err =>
       log.error({ err, wallet }, 'Exit interview handler failed')
     );
+  });
+
+  // Accumulate importance for event-driven reflection triggers (Park et al. 2023)
+  eventBus.on('memory:stored', ({ importance, memoryType }) => {
+    if (memoryType === 'episodic') {
+      accumulateImportance(importance);
+    }
   });
 
   log.info('Event handlers registered');

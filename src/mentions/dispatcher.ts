@@ -10,7 +10,7 @@ import {
   storeMemory,
   recallMemories,
   formatMemoryContext,
-  calculateImportance,
+  scoreImportanceWithLLM,
   moodToValence,
 } from '../core/memory';
 import { createChildLogger } from '../core/logger';
@@ -120,7 +120,10 @@ async function storeInteractionMemory(
   });
   const isFirst = existingMemories.length === 0;
 
-  const importance = calculateImportance({
+  const description = `User (tier: ${tier}) asked via ${feature}: "${cleanText.slice(0, 200)}"` +
+    (isFirst ? ' (first interaction with this user)' : '') +
+    ` during ${mood} market mood`;
+  const importance = await scoreImportanceWithLLM(description, {
     tier,
     feature,
     mood,

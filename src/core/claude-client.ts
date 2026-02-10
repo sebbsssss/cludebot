@@ -69,6 +69,36 @@ export async function generateResponse(options: GenerateOptions): Promise<string
   return text;
 }
 
+/**
+ * Single-purpose LLM call to rate memory importance (Park et al. 2023).
+ * Returns a raw string (expected: single integer 1-10).
+ * Uses low maxTokens and temperature 0 for deterministic, fast scoring.
+ */
+export async function generateImportanceScore(description: string): Promise<string> {
+  const response = await anthropic.messages.create({
+    model: config.anthropic.model,
+    max_tokens: 10,
+    temperature: 0,
+    system:
+      'You rate the importance of events for an AI agent called Clude. ' +
+      'an AI agent with persistent memory. ' +
+      'Respond with ONLY a single integer from 1 to 10. ' +
+      '1 = purely mundane (a greeting, a generic question). ' +
+      '5 = moderately important (a returning user, a market opinion request). ' +
+      '10 = extremely significant (a whale selling everything, a deeply personal interaction, an existential realization).',
+    messages: [{
+      role: 'user',
+      content: `Rate the importance of this event for Clude:\n"${description.slice(0, 500)}"\nRating (1-10):`,
+    }],
+  });
+
+  return response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map(block => block.text)
+    .join('')
+    .trim();
+}
+
 export async function generateThread(options: GenerateOptions): Promise<string[]> {
   const response = await generateResponse({
     ...options,

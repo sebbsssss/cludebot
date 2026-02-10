@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLUDE - The Lobster Matrix</title>
-  <meta name="description" content="Four memory types. Biological decay. Dream cycles every six hours. The first AI that actually remembers.">
+  <meta name="description" content="Four memory types. Exponential decay. Evidence-linked dreams. The first AI that actually remembers.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
@@ -1506,15 +1506,17 @@
         <span class="char">C</span><span class="char">L</span><span class="char accent-char">U</span><span class="char">D</span><span class="char">E</span>
       </h1>
       <div class="hero-taglines">
-        <p class="hero-tagline" id="tag1">Four memory types. Biological decay.</p>
-        <p class="hero-tagline" id="tag2">Dream cycles every six hours.</p>
+        <p class="hero-tagline" id="tag1">Four memory types. Exponential decay.</p>
+        <p class="hero-tagline" id="tag2">Evidence-linked dreams. Event-driven reflection.</p>
         <p class="hero-tagline" id="tag3">The first AI that actually remembers.</p>
       </div>
       <p class="hero-desc" id="heroDesc">
-        Not a chatbot with a notepad. A cognitive architecture with episodic, semantic,
-        procedural, and self-model memory &mdash; scored by importance, weighted by recency,
-        decayed like biological memory. Every 6 hours, a dream cycle consolidates experience
-        into knowledge. The memories that matter persist. The rest dissolve.
+        Not a chatbot with a notepad. A cognitive architecture adapted from Stanford's
+        Generative Agents &mdash; four memory types scored by an additive retrieval formula
+        (recency + relevance + importance), with exponential decay and LLM-rated importance.
+        Dream cycles generate focal-point questions, retrieve evidence, and produce
+        self-reflections linked back to source memories. The memories that matter persist.
+        The rest dissolve.
       </p>
 
       <!-- Memory Architecture Diagram -->
@@ -1527,7 +1529,7 @@
         <div class="memory-type-box" data-type="semantic">
           <div class="memory-type-label">Semantic</div>
           <div class="memory-type-count" id="countSemantic">--</div>
-          <div class="memory-type-desc">Distilled knowledge and beliefs. Patterns extracted from experience during dream cycles.</div>
+          <div class="memory-type-desc">Distilled knowledge and beliefs. Generated via focal-point questions during dream cycles, with evidence links to source memories.</div>
         </div>
         <div class="memory-type-box" data-type="procedural">
           <div class="memory-type-label">Procedural</div>
@@ -1537,7 +1539,7 @@
         <div class="memory-type-box" data-type="self_model">
           <div class="memory-type-label">Self-Model</div>
           <div class="memory-type-count" id="countSelfModel">--</div>
-          <div class="memory-type-desc">Recursive self-awareness. Updated every 6 hours through introspection. No other AI has this.</div>
+          <div class="memory-type-desc">Recursive self-awareness. Evidence-linked reflections updated via dream cycles or event-driven triggers.</div>
         </div>
       </div>
       <div class="memory-stats-row" id="memoryStatsRow">
@@ -1706,7 +1708,7 @@
     </div>
 
     <div class="footer-logo">CLUDE</div>
-    <p class="footer-tagline">Four memory types. Biological decay. Dream cycles every six hours.</p>
+    <p class="footer-tagline">Four memory types. Exponential decay. Evidence-linked dreams.</p>
     <p class="footer-fine">
       Built reluctantly on Solana. Token not live yet. This is not financial advice.
       This is barely a website. Do not ask me about the roadmap.
@@ -2632,7 +2634,7 @@
                 lines.push('  Top tags: ' + stats.topTags.slice(0, 5).map(function(t) { return t.tag + '(' + t.count + ')'; }).join(', '));
                 lines.push('');
               }
-              lines.push('5% daily decay. Dream consolidation every 6h.');
+              lines.push('Exponential decay (0.995^h). Focal-point dreams every 6h or on threshold.');
               typeOutLines(body, lines);
             })
             .catch(function() {
