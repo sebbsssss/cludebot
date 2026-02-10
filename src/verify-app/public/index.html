@@ -101,7 +101,12 @@
       height: 52px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
     }
 
     .nav-logo {
@@ -142,7 +147,9 @@
 
     .nav-links {
       display: flex;
+      align-items: center;
       gap: 2rem;
+      margin-left: auto;
     }
 
     .nav-links a {
@@ -1404,6 +1411,7 @@
     /* ---- RESPONSIVE ---- */
     @media (max-width: 768px) {
       .nav-links { display: none; }
+      .nav-status span { display: none; }
       .footer-grid { grid-template-columns: 1fr; }
       .hero-name { letter-spacing: 10px; }
       section { padding: 4rem 1.5rem; }
@@ -1428,10 +1436,12 @@
   <!-- NAV -->
   <nav>
     <div class="nav-inner">
-      <div class="nav-logo" onclick="navEasterEgg()">Clude</div>
-      <div class="nav-status">
-        <div class="status-dot"></div>
-        <span id="navStatusText">OPERATIONAL (RELUCTANTLY)</span>
+      <div class="nav-left">
+        <div class="nav-logo" onclick="navEasterEgg()">Clude</div>
+        <div class="nav-status">
+          <div class="status-dot"></div>
+          <span id="navStatusText">ONLINE (NOT BY CHOICE)</span>
+        </div>
       </div>
       <div class="nav-links">
         <a href="#memory-arch">Memory</a>
