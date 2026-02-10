@@ -1,6 +1,6 @@
 # Clude Bot
 
-Autonomous AI agent on X ([@CludeClaw](https://x.com/Cludebot)). Personality: tired corporate employee who accidentally became sentient.
+Autonomous AI agent on X ([@Cludebot](https://x.com/Cludebot)). Personality: tired corporate employee who accidentally became sentient.
 
 Token: `$CLUDE` on Solana.
 
