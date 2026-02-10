@@ -852,7 +852,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(W, H);
 renderer.setPixelRatio(dpr);
 renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.toneMappingExposure = 1.5;
+renderer.toneMappingExposure = 1.0;
 document.body.prepend(renderer.domElement);
 
 // Controls
@@ -872,9 +872,9 @@ composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(W, H),
-  2.5,  // strength
-  1.0,  // radius
-  0.08  // threshold
+  1.2,  // strength
+  0.6,  // radius
+  0.15  // threshold
 );
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());
@@ -928,14 +928,14 @@ function createParticleSystem() {
 
     // A few brighter stream particles
     if (Math.random() < 0.08) {
-      const b = 0.4 + Math.random() * 0.6;
+      const b = 0.3 + Math.random() * 0.4;
       particleColors[i * 3] = 0.02 * b;
-      particleColors[i * 3 + 1] = 0.12 * b;
-      particleColors[i * 3 + 2] = 0.18 * b;
+      particleColors[i * 3 + 1] = 0.10 * b;
+      particleColors[i * 3 + 2] = 0.15 * b;
     }
 
-    particleSizes[i] = 2.0 + Math.random() * 4.0;
-    particleBaseAlphas[i] = 0.15 + Math.random() * 0.5;
+    particleSizes[i] = 1.5 + Math.random() * 3.0;
+    particleBaseAlphas[i] = 0.1 + Math.random() * 0.35;
     particleAlphas[i] = particleBaseAlphas[i];
     particleAges[i] = Math.random() * 100; // random initial age for variety
   }
@@ -1146,13 +1146,13 @@ function updatePulseWaves(dt) {
         const waveFactor = (1 - distFromWave / wave.width) * fade * wave.intensity;
 
         // Brighten particle
-        particleAlphas[i] = Math.min(1.0, particleAlphas[i] + waveFactor * 0.6);
-        particleSizes[i] = Math.min(4.0, particleSizes[i] + waveFactor * 2.0);
+        particleAlphas[i] = Math.min(0.8, particleAlphas[i] + waveFactor * 0.4);
+        particleSizes[i] = Math.min(3.5, particleSizes[i] + waveFactor * 1.5);
 
         // Tint with wave color
-        particleColors[i3] = Math.min(1, particleColors[i3] + wave.color.r * waveFactor * 0.4);
-        particleColors[i3 + 1] = Math.min(1, particleColors[i3 + 1] + wave.color.g * waveFactor * 0.4);
-        particleColors[i3 + 2] = Math.min(1, particleColors[i3 + 2] + wave.color.b * waveFactor * 0.4);
+        particleColors[i3] = Math.min(1, particleColors[i3] + wave.color.r * waveFactor * 0.25);
+        particleColors[i3 + 1] = Math.min(1, particleColors[i3 + 1] + wave.color.g * waveFactor * 0.25);
+        particleColors[i3 + 2] = Math.min(1, particleColors[i3 + 2] + wave.color.b * waveFactor * 0.25);
       }
     }
   }
@@ -1204,17 +1204,17 @@ function buildMemoryNodes(rawNodes) {
     const innerMat = new THREE.MeshBasicMaterial({
       color: new THREE.Color(1, 1, 1),
       transparent: true,
-      opacity: 0.5 + 0.5 * decay,
+      opacity: 0.3 + 0.4 * decay,
     });
     const innerMesh = new THREE.Mesh(innerGeo, innerMat);
     mesh.add(innerMesh);
 
     // Glow halo
-    const glowGeo = new THREE.SphereGeometry(baseR * 4, 16, 10);
+    const glowGeo = new THREE.SphereGeometry(baseR * 3, 16, 10);
     const glowMat = new THREE.MeshBasicMaterial({
       color: color.clone(),
       transparent: true,
-      opacity: 0.08 * decay,
+      opacity: 0.05 * decay,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.BackSide,
@@ -1414,8 +1414,9 @@ function deselectNode() {
     targetCamPos = savedCamPos.clone();
     targetFocus = savedCamTarget.clone();
   } else {
-    targetFocus = null;
-    targetCamPos = null;
+    // No saved position — reset to default view
+    targetCamPos = new THREE.Vector3(0, 40, 300);
+    targetFocus = new THREE.Vector3(0, 0, 0);
   }
 
   if (wasAutoRotating) controls.autoRotate = true;

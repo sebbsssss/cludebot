@@ -75,16 +75,51 @@
       justify-content: space-between;
     }
 
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
     .nav-logo {
       font-size: 0.75rem;
       font-weight: 700;
       letter-spacing: 6px;
       color: var(--accent);
       text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    .nav-logo:hover { text-decoration: none; }
+
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3a5a3a;
+      animation: dotPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .nav-status span {
+      font-size: 0.55rem;
+      color: var(--text-dim);
+      letter-spacing: 2px;
     }
 
     .nav-links {
       display: flex;
+      align-items: center;
       gap: 2rem;
     }
 
@@ -94,9 +129,23 @@
       letter-spacing: 2px;
       text-transform: uppercase;
       transition: color 0.3s;
+      text-decoration: none;
     }
 
     .nav-links a:hover { color: var(--white); text-decoration: none; }
+    .nav-links a.nav-active { color: var(--white); }
+
+    .nav-links a.nav-agents {
+      color: #8a7a50;
+      border: 1px solid #161616;
+      padding: 0.2rem 0.6rem;
+      transition: all 0.3s;
+    }
+
+    .nav-links a.nav-agents:hover {
+      border-color: #8a7a50;
+      color: #c8b464;
+    }
 
     /* ---- HERO: LOBSTER STARE ---- */
     .hero {
@@ -426,6 +475,11 @@
     }
 
     /* ---- RESPONSIVE ---- */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-status span { display: none; }
+    }
+
     @media (max-width: 480px) {
       .m-section { padding: 5rem 0; }
       .closing { padding: 6rem 2rem; }
@@ -438,13 +492,20 @@
 
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo">Clude</a>
+    <div class="nav-left">
+      <a href="/" class="nav-logo">Clude</a>
+      <div class="nav-status">
+        <div class="status-dot"></div>
+        <span>ONLINE (NOT BY CHOICE)</span>
+      </div>
+    </div>
     <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/manifesto.html" style="color: var(--accent);">Manifesto</a>
+      <a href="/#memory-arch">Memory</a>
+      <a href="/brain.html">Brain</a>
+      <a href="/#live">Terminal</a>
+      <a href="/manifesto.html" class="nav-active">Manifesto</a>
       <a href="/demo.html">Demo</a>
-      <a href="/agents.md">For Agents</a>
-      <a href="https://x.com/Cludebot" target="_blank">X</a>
+      <a href="/agents.md" class="nav-agents">For Agents</a>
     </div>
   </div>
 </nav>
