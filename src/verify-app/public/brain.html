@@ -427,11 +427,12 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+      "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.min.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
     }
   }
   </script>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.min.js">
 </head>
 <body>
 
@@ -681,45 +682,47 @@ function brainNormal(px, py, pz) {
   return { x: nx / len, y: ny / len, z: nz / len };
 }
 
-// Sample a random point on/near the brain surface
+// Sample a random point on/near the brain surface (fast: direct ellipsoid sampling + noise)
 function sampleBrainSurface() {
-  // Random point inside a bounding box, then push to surface
-  for (let attempt = 0; attempt < 40; attempt++) {
-    let x = (Math.random() - 0.5) * 200;
-    let y = (Math.random() - 0.5) * 220;
-    let z = (Math.random() - 0.5) * 180;
-
-    let d = brainSDF(x, y, z);
-
-    // Newton-step toward surface (a few iterations)
-    for (let i = 0; i < 8; i++) {
-      if (Math.abs(d) < 1.5) break;
-      const n = brainNormal(x, y, z);
-      x -= n.x * d * 0.5;
-      y -= n.y * d * 0.5;
-      z -= n.z * d * 0.5;
-      d = brainSDF(x, y, z);
-    }
-
-    // Accept if close enough to surface
-    if (Math.abs(d) < 5) {
-      // Add slight random depth (some particles inside, some outside)
-      const depthOffset = (Math.random() - 0.5) * 6;
-      const n = brainNormal(x, y, z);
-      return {
-        x: x - n.x * depthOffset,
-        y: y - n.y * depthOffset,
-        z: z - n.z * depthOffset
-      };
-    }
-  }
-  // Fallback: point on left hemisphere surface
   const theta = Math.random() * Math.PI * 2;
   const phi = Math.acos(2 * Math.random() - 1);
+
+  // Pick hemisphere (or brainstem)
+  const r = Math.random();
+  let cx, rx, ry, rz;
+  if (r < 0.45) {
+    // Left hemisphere
+    cx = -15; rx = 65; ry = 80; rz = 60;
+  } else if (r < 0.9) {
+    // Right hemisphere
+    cx = 15; rx = 65; ry = 80; rz = 60;
+  } else {
+    // Brain stem
+    cx = 0; rx = 18; ry = 25; rz = 15;
+    const x = cx + rx * Math.sin(phi) * Math.cos(theta);
+    const y = -60 + ry * Math.sin(phi) * Math.sin(theta);
+    const z = -10 + rz * Math.cos(phi);
+    return { x, y, z };
+  }
+
+  const x = cx + rx * Math.sin(phi) * Math.cos(theta);
+  const y = ry * Math.sin(phi) * Math.sin(theta);
+  const z = rz * Math.cos(phi);
+
+  // Add noise displacement for cortical folds
+  const ns = 0.025;
+  const fold = noise3d(x * ns, y * ns, z * ns) * 10;
+  const nx = Math.sin(phi) * Math.cos(theta);
+  const ny = Math.sin(phi) * Math.sin(theta);
+  const nz = Math.cos(phi);
+
+  // Slight random depth offset
+  const depth = (Math.random() - 0.5) * 8;
+
   return {
-    x: -15 + 65 * Math.sin(phi) * Math.cos(theta),
-    y: 80 * Math.sin(phi) * Math.sin(theta),
-    z: 60 * Math.cos(phi)
+    x: x + nx * (fold + depth),
+    y: y + ny * (fold + depth),
+    z: z + nz * (fold + depth),
   };
 }
 
@@ -982,10 +985,8 @@ function createParticleSystem() {
 // PARTICLE FLOW ANIMATION
 // ============================================
 function updateParticles(time, dt) {
-  const flowSpeed = 18.0;
-  const dampFactor = 0.85;
-  const surfacePullStrength = 0.3;
-  const maxDriftDist = 12;
+  const flowSpeed = 15.0;
+  const dampFactor = 0.9;
   const respawnDist = 150;
 
   for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -994,27 +995,13 @@ function updateParticles(time, dt) {
     let py = particlePositions[i3 + 1];
     let pz = particlePositions[i3 + 2];
 
-    // 1. Curl noise velocity
+    // Curl noise velocity (no SDF projection — just flow freely)
     const curl = curlNoise(px, py, pz, time);
+    let vx = curl.x * flowSpeed;
+    let vy = curl.y * flowSpeed;
+    let vz = curl.z * flowSpeed;
 
-    // 2. Get brain surface normal at this position
-    const sdf = brainSDF(px, py, pz);
-    const n = brainNormal(px, py, pz);
-
-    // 3. Project curl velocity onto brain surface tangent plane
-    // Remove the normal component: v_tangent = v - (v.n)*n
-    const dot = curl.x * n.x + curl.y * n.y + curl.z * n.z;
-    let vx = curl.x - dot * n.x;
-    let vy = curl.y - dot * n.y;
-    let vz = curl.z - dot * n.z;
-
-    // Normalize and apply speed
-    const vLen = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1;
-    vx = (vx / vLen) * flowSpeed;
-    vy = (vy / vLen) * flowSpeed;
-    vz = (vz / vLen) * flowSpeed;
-
-    // Smooth velocity (damped blend with previous)
+    // Smooth velocity
     particleVelocities[i3] = particleVelocities[i3] * dampFactor + vx * (1 - dampFactor);
     particleVelocities[i3 + 1] = particleVelocities[i3 + 1] * dampFactor + vy * (1 - dampFactor);
     particleVelocities[i3 + 2] = particleVelocities[i3 + 2] * dampFactor + vz * (1 - dampFactor);
@@ -1024,17 +1011,12 @@ function updateParticles(time, dt) {
     py += particleVelocities[i3 + 1] * dt;
     pz += particleVelocities[i3 + 2] * dt;
 
-    // 4. Pull back to brain surface if drifted too far
-    const newSdf = brainSDF(px, py, pz);
-    if (Math.abs(newSdf) > maxDriftDist) {
-      const nn = brainNormal(px, py, pz);
-      const pull = newSdf * surfacePullStrength;
-      px -= nn.x * pull;
-      py -= nn.y * pull;
-      pz -= nn.z * pull;
-    }
+    // Gentle pull toward brain center to keep particles contained
+    px -= px * 0.001;
+    py -= py * 0.001;
+    pz -= pz * 0.001;
 
-    // 5. Respawn if too far from brain center
+    // Respawn if too far
     const dist = Math.sqrt(px * px + py * py + pz * pz);
     if (dist > respawnDist) {
       const sp = sampleBrainSurface();
