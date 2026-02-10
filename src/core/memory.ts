@@ -5,10 +5,15 @@ import {
   timeAgo,
   MEMORY_DECAY_RATE,
   MEMORY_MIN_DECAY,
-  MEMORY_RECENCY_HALF_LIFE_HOURS,
   MEMORY_MAX_CONTENT_LENGTH,
   MEMORY_MAX_SUMMARY_LENGTH,
+  RECENCY_DECAY_BASE,
+  RETRIEVAL_WEIGHT_RECENCY,
+  RETRIEVAL_WEIGHT_RELEVANCE,
+  RETRIEVAL_WEIGHT_IMPORTANCE,
 } from '../utils';
+import { generateImportanceScore } from './claude-client';
+import { eventBus } from '../events/event-bus';
 
 const log = createChildLogger('memory');
 
@@ -48,6 +53,7 @@ export interface Memory {
   created_at: string;
   last_accessed: string;
   decay_factor: number;
+  evidence_ids: number[];
 }
 
 export interface StoreMemoryOptions {
@@ -62,6 +68,7 @@ export interface StoreMemoryOptions {
   relatedUser?: string;
   relatedWallet?: string;
   metadata?: Record<string, unknown>;
+  evidenceIds?: number[];
 }
 
 export interface RecallOptions {
@@ -94,6 +101,7 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
         related_user: opts.relatedUser || null,
         related_wallet: opts.relatedWallet || null,
         metadata: opts.metadata || {},
+        evidence_ids: opts.evidenceIds || [],
       })
       .select('id')
       .single();
@@ -110,6 +118,12 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
       importance: opts.importance,
     }, 'Memory stored');
 
+    // Notify reflection trigger system (Park et al. 2023 — event-driven reflection)
+    eventBus.emit('memory:stored', {
+      importance: clamp(opts.importance ?? 0.5, 0, 1),
+      memoryType: opts.type,
+    });
+
     return data.id;
   } catch (err) {
     log.error({ err }, 'Memory store failed');
@@ -119,8 +133,8 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
 
 // ---- RECALL ---- //
 
-// Retrieves memories ranked by a composite score:
-//   score = text_relevance * tag_relevance * importance * recency_weight * decay_factor
+// Retrieves memories ranked by additive composite score (Park et al. 2023):
+//   score = (w_recency * recency + w_relevance * relevance + w_importance * importance) * decay_factor
 export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
   const db = getDb();
   const limit = opts.limit || 5;
@@ -184,20 +198,21 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
 }
 
 /**
- * Pure scoring function — takes a memory and recall options, returns a composite relevance score.
- * Extracted for testability.
+ * Additive scoring function (Park et al. 2023, Generative Agents).
+ *
+ * score = (w_recency * recency + w_relevance * relevance + w_importance * importance) * decay_factor
+ *
+ * Recency: exponential decay from last access time (0.995^hours). Access resets the clock.
+ * Relevance: average of keyword overlap and tag overlap (both 0-1).
+ * Importance: direct use of memory.importance (0-1).
+ * Decay: multiplicative gate — decayed memories are suppressed regardless of other factors.
  */
 export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   const now = Date.now();
-  const ageHours = (now - new Date(mem.created_at).getTime()) / (1000 * 60 * 60);
-  const recencyWeight = 1 / (1 + ageHours / MEMORY_RECENCY_HALF_LIFE_HOURS);
 
-  // Tag overlap score
-  let tagScore = 0.5;
-  if (opts.tags && opts.tags.length > 0 && mem.tags) {
-    const overlap = mem.tags.filter(t => opts.tags!.includes(t)).length;
-    tagScore = 0.5 + 0.5 * (overlap / opts.tags.length);
-  }
+  // Recency: exponential decay from last access (paper: 0.995^hours)
+  const hoursSinceAccess = (now - new Date(mem.last_accessed).getTime()) / (1000 * 60 * 60);
+  const recency = Math.pow(RECENCY_DECAY_BASE, hoursSinceAccess);
 
   // Text similarity (keyword overlap)
   let textScore = 0.5;
@@ -208,7 +223,23 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
     textScore = 0.3 + 0.7 * Math.min(matches / Math.max(queryWords.length, 1), 1);
   }
 
-  return textScore * tagScore * mem.importance * recencyWeight * mem.decay_factor;
+  // Tag overlap score
+  let tagScore = 0.5;
+  if (opts.tags && opts.tags.length > 0 && mem.tags) {
+    const overlap = mem.tags.filter(t => opts.tags!.includes(t)).length;
+    tagScore = 0.5 + 0.5 * (overlap / opts.tags.length);
+  }
+
+  // Relevance: average of text and tag similarity
+  const relevance = (textScore + tagScore) / 2;
+
+  // Additive formula with paper weights, gated by decay
+  const rawScore =
+    RETRIEVAL_WEIGHT_RECENCY * recency +
+    RETRIEVAL_WEIGHT_RELEVANCE * relevance +
+    RETRIEVAL_WEIGHT_IMPORTANCE * mem.importance;
+
+  return rawScore * mem.decay_factor;
 }
 
 // ---- ACCESS TRACKING ---- //
@@ -498,6 +529,28 @@ export function calculateImportance(opts: {
   if (opts.isFirstInteraction) score += 0.1;
 
   return clamp(score, 0, 1);
+}
+
+/**
+ * Score importance using LLM (Park et al. 2023).
+ * Falls back to rule-based calculateImportance() on failure.
+ */
+export async function scoreImportanceWithLLM(
+  description: string,
+  fallbackOpts?: Parameters<typeof calculateImportance>[0]
+): Promise<number> {
+  try {
+    const response = await generateImportanceScore(description);
+    const parsed = parseInt(response.trim(), 10);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 10) {
+      return parsed / 10;
+    }
+    log.warn({ response }, 'LLM importance score unparseable, using fallback');
+    return calculateImportance(fallbackOpts || {});
+  } catch (err) {
+    log.warn({ err }, 'LLM importance scoring failed, using fallback');
+    return calculateImportance(fallbackOpts || {});
+  }
 }
 
 export function moodToValence(mood: string): number {

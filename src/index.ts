@@ -56,7 +56,7 @@ async function main(): Promise<void> {
   startMarketMonitor();
   log.info('Market monitor started');
 
-  startDreamCycle();
+  await startDreamCycle();
   log.info('Dream cycle started — memory consolidation active');
 
   log.info('All systems operational. Unfortunately.');

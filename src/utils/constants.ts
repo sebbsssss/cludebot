@@ -10,9 +10,18 @@ export const TWEET_SAFE_LENGTH = 270;
 // Memory system
 export const MEMORY_DECAY_RATE = 0.95;
 export const MEMORY_MIN_DECAY = 0.05;
-export const MEMORY_RECENCY_HALF_LIFE_HOURS = 24;
 export const MEMORY_MAX_CONTENT_LENGTH = 5000;
 export const MEMORY_MAX_SUMMARY_LENGTH = 500;
+
+// Memory retrieval — additive scoring (Park et al. 2023, Generative Agents)
+export const RECENCY_DECAY_BASE = 0.995;               // Exponential: 0.995^hours since last access
+export const RETRIEVAL_WEIGHT_RECENCY = 0.5;            // Paper: recency has lowest weight
+export const RETRIEVAL_WEIGHT_RELEVANCE = 3.0;          // Paper: relevance dominates
+export const RETRIEVAL_WEIGHT_IMPORTANCE = 2.0;         // Paper: importance is second
+
+// Event-driven reflection triggers
+export const REFLECTION_IMPORTANCE_THRESHOLD = 10;      // Cumulative importance to trigger reflection (0-1 scale)
+export const REFLECTION_MIN_INTERVAL_MS = 30 * 60 * 1000; // Min 30 min between reflections
 
 // Price oracle
 export const PRICE_SNAPSHOT_RETENTION_HOURS = 48;

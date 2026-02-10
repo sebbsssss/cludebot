@@ -12,6 +12,7 @@ export interface BotEvents {
   'holder:exit': { wallet: string; tokenAmount: number; solValue: number };
   'token:event': { signature: string; eventType: string; wallet: string; solValue: number };
   'mood:changed': { previous: Mood; current: Mood };
+  'memory:stored': { importance: number; memoryType: string };
 }
 
 class TypedEventBus {

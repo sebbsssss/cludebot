@@ -3,7 +3,7 @@ import { authenticateAgent, recordAgentInteraction, AgentRegistration } from '..
 import { getAgentTierModifier } from '../character/agent-tier-modifiers';
 import { getMoodModifier } from '../character/mood-modifiers';
 import { getCurrentMood } from '../core/price-oracle';
-import { recallMemories, formatMemoryContext, storeMemory, getMemoryStats, calculateImportance } from '../core/memory';
+import { recallMemories, formatMemoryContext, storeMemory, getMemoryStats, scoreImportanceWithLLM } from '../core/memory';
 import { checkRateLimit } from '../core/database';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
@@ -221,7 +221,8 @@ async function storeAgentMemory(
   request: string,
   response: string
 ): Promise<void> {
-  const importance = calculateImportance({ tier: agent.tier, feature });
+  const description = `Agent "${agent.agent_name}" (${agent.tier}) via ${feature}: "${request.slice(0, 200)}"`;
+  const importance = await scoreImportanceWithLLM(description, { tier: agent.tier, feature });
 
   await storeMemory({
     type: 'episodic',

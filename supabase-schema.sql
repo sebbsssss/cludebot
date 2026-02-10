@@ -80,7 +80,8 @@ CREATE TABLE IF NOT EXISTS memories (
   metadata JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_accessed TIMESTAMPTZ DEFAULT NOW(),
-  decay_factor REAL DEFAULT 1.0           -- decreases over time if not accessed
+  decay_factor REAL DEFAULT 1.0,          -- decreases over time if not accessed
+  evidence_ids BIGINT[] DEFAULT '{}'     -- IDs of memories that support this one (Park et al. 2023)
 );
 
 -- Dream logs: consolidation, reflection, emergence sessions
@@ -101,5 +102,6 @@ CREATE INDEX IF NOT EXISTS idx_memories_user ON memories(related_user);
 CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_memories_decay ON memories(decay_factor);
 CREATE INDEX IF NOT EXISTS idx_memories_summary_trgm ON memories USING GIN(summary gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_memories_evidence ON memories USING GIN(evidence_ids);
 CREATE INDEX IF NOT EXISTS idx_dream_logs_type ON dream_logs(session_type);
 CREATE INDEX IF NOT EXISTS idx_dream_logs_created ON dream_logs(created_at DESC);
