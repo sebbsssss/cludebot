@@ -60,19 +60,18 @@
       top: 0;
       width: 100%;
       z-index: 100;
-      background: rgba(5, 5, 5, 0.9);
-      backdrop-filter: blur(20px);
+      background: rgba(6, 6, 6, 0.92);
+      backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
     }
 
     .nav-inner {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 0 2rem;
-      height: 48px;
+      height: 52px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
     }
 
     .nav-left {
@@ -82,7 +81,7 @@
     }
 
     .nav-logo {
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 6px;
       color: var(--accent);
@@ -90,12 +89,15 @@
       text-decoration: none;
     }
 
-    .nav-logo:hover { text-decoration: none; }
+    .nav-logo:hover { text-shadow: 0 0 20px rgba(232, 98, 44, 0.4); text-decoration: none; }
 
     .nav-status {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      letter-spacing: 1px;
     }
 
     .status-dot {
@@ -107,25 +109,20 @@
     }
 
     @keyframes dotPulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 1; }
-    }
-
-    .nav-status span {
-      font-size: 0.55rem;
-      color: var(--text-dim);
-      letter-spacing: 2px;
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
     }
 
     .nav-links {
       display: flex;
       align-items: center;
       gap: 2rem;
+      margin-left: auto;
     }
 
     .nav-links a {
       color: var(--text-dim);
-      font-size: 0.65rem;
+      font-size: 0.7rem;
       letter-spacing: 2px;
       text-transform: uppercase;
       transition: color 0.3s;
@@ -139,6 +136,7 @@
       color: #8a7a50;
       border: 1px solid #161616;
       padding: 0.2rem 0.6rem;
+      margin-left: auto;
       transition: all 0.3s;
     }
 
