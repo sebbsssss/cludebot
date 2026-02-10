@@ -162,17 +162,17 @@
     }
 
     /* ---- TOP NAV (matches homepage) ---- */
-    .site-nav {
+    nav {
       position: fixed;
       top: 0;
       width: 100%;
       z-index: 100;
-      background: rgba(3, 3, 8, 0.92);
+      background: rgba(6, 6, 6, 0.92);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid #161616;
     }
 
-    .site-nav-inner {
+    .nav-inner {
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 2rem;
@@ -181,13 +181,13 @@
       align-items: center;
     }
 
-    .site-nav-left {
+    .nav-left {
       display: flex;
       align-items: center;
       gap: 1rem;
     }
 
-    .site-nav-logo {
+    .nav-logo {
       font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 6px;
@@ -196,12 +196,12 @@
       text-decoration: none;
     }
 
-    .site-nav-logo:hover {
+    .nav-logo:hover {
       text-shadow: 0 0 20px rgba(232, 98, 44, 0.4);
       text-decoration: none;
     }
 
-    .site-nav-status {
+    .nav-status {
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -210,7 +210,7 @@
       letter-spacing: 1px;
     }
 
-    .site-nav-dot {
+    .status-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
@@ -223,14 +223,14 @@
       50% { opacity: 0.3; }
     }
 
-    .site-nav-links {
+    .nav-links {
       display: flex;
       align-items: center;
       gap: 2rem;
       margin-left: auto;
     }
 
-    .site-nav-links a {
+    .nav-links a {
       color: #555;
       font-size: 0.7rem;
       letter-spacing: 2px;
@@ -239,16 +239,16 @@
       transition: color 0.3s;
     }
 
-    .site-nav-links a:hover {
+    .nav-links a:hover {
       color: #999;
       text-decoration: none;
     }
 
-    .site-nav-links a.nav-active {
+    .nav-links a.nav-active {
       color: #999;
     }
 
-    .site-nav-links a.nav-agents {
+    .nav-links a.nav-agents {
       color: #8a7a50;
       border: 1px solid #161616;
       padding: 0.2rem 0.6rem;
@@ -256,7 +256,7 @@
       transition: all 0.3s;
     }
 
-    .site-nav-links a.nav-agents:hover {
+    .nav-links a.nav-agents:hover {
       border-color: #8a7a50;
       color: #c8b464;
     }
@@ -471,16 +471,16 @@
   </div>
 
   <!-- Top nav (matches homepage) -->
-  <nav class="site-nav">
-    <div class="site-nav-inner">
-      <div class="site-nav-left">
-        <a href="/" class="site-nav-logo">Clude</a>
-        <div class="site-nav-status">
-          <div class="site-nav-dot"></div>
+  <nav>
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="/" class="nav-logo">Clude</a>
+        <div class="nav-status">
+          <div class="status-dot"></div>
           <span>ONLINE (NOT BY CHOICE)</span>
         </div>
       </div>
-      <div class="site-nav-links">
+      <div class="nav-links">
         <a href="/#memory-arch">Memory</a>
         <a href="/brain.html" class="nav-active">Brain</a>
         <a href="/#live">Terminal</a>
@@ -872,9 +872,9 @@ composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(W, H),
-  1.2,  // strength
-  0.6,  // radius
-  0.15  // threshold
+  0.5,   // strength (subtle glow only)
+  0.4,   // radius
+  0.35   // threshold (only bright things bloom)
 );
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());
@@ -920,22 +920,22 @@ function createParticleSystem() {
     particleVelocities[i * 3 + 1] = 0;
     particleVelocities[i * 3 + 2] = 0;
 
-    // Base color: very dim blue-cyan
-    const brightness = 0.15 + Math.random() * 0.25;
+    // Base color: visible blue-cyan
+    const brightness = 0.3 + Math.random() * 0.4;
     particleColors[i * 3] = BASE_COLOR.r * brightness;
     particleColors[i * 3 + 1] = BASE_COLOR.g * brightness;
     particleColors[i * 3 + 2] = BASE_COLOR.b * brightness;
 
     // A few brighter stream particles
-    if (Math.random() < 0.08) {
-      const b = 0.3 + Math.random() * 0.4;
-      particleColors[i * 3] = 0.02 * b;
-      particleColors[i * 3 + 1] = 0.10 * b;
-      particleColors[i * 3 + 2] = 0.15 * b;
+    if (Math.random() < 0.12) {
+      const b = 0.5 + Math.random() * 0.5;
+      particleColors[i * 3] = 0.03 * b;
+      particleColors[i * 3 + 1] = 0.15 * b;
+      particleColors[i * 3 + 2] = 0.22 * b;
     }
 
-    particleSizes[i] = 1.5 + Math.random() * 3.0;
-    particleBaseAlphas[i] = 0.1 + Math.random() * 0.35;
+    particleSizes[i] = 2.0 + Math.random() * 3.5;
+    particleBaseAlphas[i] = 0.25 + Math.random() * 0.45;
     particleAlphas[i] = particleBaseAlphas[i];
     particleAges[i] = Math.random() * 100; // random initial age for variety
   }
@@ -1191,9 +1191,9 @@ function buildMemoryNodes(rawNodes) {
     // Bright core sphere
     const geo = new THREE.SphereGeometry(baseR, 14, 10);
     const mat = new THREE.MeshBasicMaterial({
-      color: color.clone().lerp(new THREE.Color(1, 1, 1), 0.3),
+      color: color.clone().lerp(new THREE.Color(1, 1, 1), 0.15),
       transparent: true,
-      opacity: 0.4 + 0.6 * decay,
+      opacity: 0.3 + 0.4 * decay,
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(pos.x, pos.y, pos.z);
@@ -1202,19 +1202,19 @@ function buildMemoryNodes(rawNodes) {
     // Inner hot core
     const innerGeo = new THREE.SphereGeometry(baseR * 0.5, 8, 6);
     const innerMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(1, 1, 1),
+      color: new THREE.Color(0.9, 0.9, 1.0),
       transparent: true,
-      opacity: 0.3 + 0.4 * decay,
+      opacity: 0.2 + 0.3 * decay,
     });
     const innerMesh = new THREE.Mesh(innerGeo, innerMat);
     mesh.add(innerMesh);
 
     // Glow halo
-    const glowGeo = new THREE.SphereGeometry(baseR * 3, 16, 10);
+    const glowGeo = new THREE.SphereGeometry(baseR * 2.5, 16, 10);
     const glowMat = new THREE.MeshBasicMaterial({
       color: color.clone(),
       transparent: true,
-      opacity: 0.05 * decay,
+      opacity: 0.03 * decay,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.BackSide,
@@ -1432,9 +1432,9 @@ function restoreNodeOpacities() {
   for (const n of memoryNodes) {
     if (!n.visible) continue;
     const decay = n.decay || 1;
-    n.mesh.material.opacity = 0.4 + 0.6 * decay;
-    if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 0.5 + 0.5 * decay;
-    if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.08 * decay;
+    n.mesh.material.opacity = 0.3 + 0.4 * decay;
+    if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 0.2 + 0.3 * decay;
+    if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.03 * decay;
   }
   highlightRing.visible = false;
 }
