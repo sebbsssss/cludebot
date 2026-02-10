@@ -911,6 +911,22 @@
 
     .mem-item.expanded .mem-source { display: block; }
 
+    .mem-chain-link {
+      display: none;
+      font-size: 0.55rem;
+      color: var(--green);
+      border: 1px solid var(--green);
+      padding: 0.1rem 0.35rem;
+      letter-spacing: 1px;
+      text-decoration: none;
+      margin-top: 0.4rem;
+      transition: all 0.2s;
+    }
+    .mem-chain-link:hover {
+      background: rgba(58, 90, 58, 0.15);
+      text-decoration: none;
+    }
+    .mem-item.expanded .mem-chain-link { display: inline-block; }
 
     /* ---- LIVE SECTION (Terminal + Feed) ---- */
     .live-section {
@@ -2320,6 +2336,11 @@
         // Source
         if (mem.source) {
           html += '<div class="mem-source">source: ' + escapeHtml(mem.source) + '</div>';
+        }
+
+        // On-chain link
+        if (mem.solana_signature) {
+          html += '<a href="https://solscan.io/tx/' + mem.solana_signature + '" class="mem-chain-link" target="_blank" onclick="event.stopPropagation()">ON-CHAIN ↗</a>';
         }
 
         div.innerHTML = html;

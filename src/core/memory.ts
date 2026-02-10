@@ -13,7 +13,9 @@ import {
   RETRIEVAL_WEIGHT_IMPORTANCE,
 } from '../utils';
 import { generateImportanceScore } from './claude-client';
+import { writeMemo } from './solana-client';
 import { eventBus } from '../events/event-bus';
+import { createHash } from 'crypto';
 
 const log = createChildLogger('memory');
 
@@ -54,6 +56,7 @@ export interface Memory {
   last_accessed: string;
   decay_factor: number;
   evidence_ids: number[];
+  solana_signature: string | null;
 }
 
 export interface StoreMemoryOptions {
@@ -124,11 +127,32 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
       memoryType: opts.type,
     });
 
+    // Commit memory to Solana (fire-and-forget)
+    commitMemoryToChain(data.id, opts).catch(() => {});
+
     return data.id;
   } catch (err) {
     log.error({ err }, 'Memory store failed');
     return null;
   }
+}
+
+// ---- ON-CHAIN COMMIT ---- //
+
+async function commitMemoryToChain(memoryId: number, opts: StoreMemoryOptions): Promise<void> {
+  const contentHash = createHash('sha256').update(opts.content).digest('hex');
+  const memo = `clude-memory | id: ${memoryId} | type: ${opts.type} | hash: ${contentHash.slice(0, 16)} | ${opts.summary.slice(0, 400)}`;
+
+  const signature = await writeMemo(memo);
+  if (!signature) return;
+
+  const db = getDb();
+  await db
+    .from('memories')
+    .update({ solana_signature: signature })
+    .eq('id', memoryId);
+
+  log.debug({ memoryId, signature: signature.slice(0, 16) }, 'Memory committed on-chain');
 }
 
 // ---- RECALL ---- //

@@ -137,6 +137,9 @@ export async function initDatabase(): Promise<void> {
         -- Migration: evidence-linked reflections (Park et al. 2023)
         ALTER TABLE memories ADD COLUMN IF NOT EXISTS evidence_ids BIGINT[] DEFAULT '{}';
         CREATE INDEX IF NOT EXISTS idx_memories_evidence ON memories USING GIN(evidence_ids);
+
+        -- Migration: on-chain memory commits
+        ALTER TABLE memories ADD COLUMN IF NOT EXISTS solana_signature TEXT;
       `
     });
 

@@ -81,7 +81,8 @@ CREATE TABLE IF NOT EXISTS memories (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_accessed TIMESTAMPTZ DEFAULT NOW(),
   decay_factor REAL DEFAULT 1.0,          -- decreases over time if not accessed
-  evidence_ids BIGINT[] DEFAULT '{}'     -- IDs of memories that support this one (Park et al. 2023)
+  evidence_ids BIGINT[] DEFAULT '{}',    -- IDs of memories that support this one (Park et al. 2023)
+  solana_signature TEXT                   -- Solana tx signature if committed on-chain
 );
 
 -- Dream logs: consolidation, reflection, emergence sessions
