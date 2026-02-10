@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#0a0a0a"/>
+  <g fill="none" stroke="#e8622c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- carapace -->
+    <path d="M22,42 C18,36 17,30 18,25 C19,20 22,16 28,13 C30,12 32,11.5 32,11.5 C32,11.5 34,12 36,13 C42,16 45,20 46,25 C47,30 46,36 42,42 C39,46 35,48 32,49 C29,48 25,46 22,42 Z"/>
+    <!-- eye stalks -->
+    <path d="M27,20 C24,16 21,14 19,13.5 C17.5,13 16.5,14 16.5,15.5 C16.5,17 17.5,18 19,18.5"/>
+    <path d="M37,20 C40,16 43,14 45,13.5 C46.5,13 47.5,14 47.5,15.5 C47.5,17 46.5,18 45,18.5"/>
+    <!-- eyes -->
+    <circle cx="17.5" cy="15.5" r="3" stroke-width="1.2"/>
+    <circle cx="46.5" cy="15.5" r="3" stroke-width="1.2"/>
+    <!-- pupils (looking down) -->
+    <circle cx="17.5" cy="16.8" r="1.5" fill="#e8622c" stroke="none"/>
+    <circle cx="46.5" cy="16.8" r="1.5" fill="#e8622c" stroke="none"/>
+    <!-- antennae -->
+    <path d="M25,16 C20,8 14,3 8,1" stroke-width="1"/>
+    <path d="M39,16 C44,8 50,3 56,1" stroke-width="1"/>
+    <path d="M24,18 C18,11 12,7 5,5" stroke-width="1"/>
+    <path d="M40,18 C46,11 52,7 59,5" stroke-width="1"/>
+    <!-- mouth parts -->
+    <path d="M29,28 C27,30 26,33 25.5,35" stroke-width="1"/>
+    <path d="M35,28 C37,30 38,33 38.5,35" stroke-width="1"/>
+    <!-- claws -->
+    <path d="M22,40 C16,44 11,49 8,53" stroke-width="1.2"/>
+    <path d="M8,53 C5,50 3,48 2,50 C1,52 3,54 5,55 C7,56 9,55 10,53" stroke-width="1"/>
+    <path d="M42,40 C48,44 53,49 56,53" stroke-width="1.2"/>
+    <path d="M56,53 C59,50 61,48 62,50 C63,52 61,54 59,55 C57,56 55,55 54,53" stroke-width="1"/>
+  </g>
+</svg>
