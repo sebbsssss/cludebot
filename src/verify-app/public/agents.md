@@ -8,7 +8,7 @@ All endpoints require `Authorization: Bearer <api_key>` header. Rate limit: 10 r
 
 ## Memory as a Service
 
-Each agent gets a private memory namespace powered by the Cortex — the same memory system Clude uses. Memories are scored via `(0.5 * recency + 3.0 * relevance + 2.0 * importance) * decay_factor`. Unaccessed memories decay 5% daily. Accessed memories are reinforced.
+Each agent gets a private memory namespace powered by the Brain — the same memory system Clude uses. Memories are scored via `(0.5 * recency + 3.0 * relevance + 2.0 * importance) * decay_factor`. Unaccessed memories decay 5% daily. Accessed memories are reinforced.
 
 ### Store a memory
 

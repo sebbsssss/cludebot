@@ -6,7 +6,7 @@ Token: `$CLUDE` on Solana.
 
 Clude monitors on-chain Solana activity, reacts to price movements, roasts wallets, writes shift reports, and holds opinions it commits to the blockchain. But what makes it different is the memory.
 
-Most AI agents are stateless — every interaction starts from zero. Clude runs a persistent cognitive architecture called **The Cortex**, built on techniques from [Stanford's Generative Agents](https://arxiv.org/abs/2304.03442) (Park et al. 2023) — additive retrieval scoring, exponential recency decay, LLM-based importance rating, focal-point question generation, and evidence-linked reflections — combined with ideas from [MemGPT/Letta](https://arxiv.org/abs/2310.08560) (multi-tier self-managed memory) and the [CoALA framework](https://arxiv.org/abs/2309.02427) (episodic/semantic/procedural separation). Four memory types are scored via `recency + relevance + importance`, decayed exponentially, and recalled contextually. Memories that go unaccessed fade. Memories that get recalled are reinforced.
+Most AI agents are stateless — every interaction starts from zero. Clude runs a persistent cognitive architecture called **The Brain**, built on techniques from [Stanford's Generative Agents](https://arxiv.org/abs/2304.03442) (Park et al. 2023) — additive retrieval scoring, exponential recency decay, LLM-based importance rating, focal-point question generation, and evidence-linked reflections — combined with ideas from [MemGPT/Letta](https://arxiv.org/abs/2310.08560) (multi-tier self-managed memory) and the [CoALA framework](https://arxiv.org/abs/2309.02427) (episodic/semantic/procedural separation). Four memory types are scored via `recency + relevance + importance`, decayed exponentially, and recalled contextually. Memories that go unaccessed fade. Memories that get recalled are reinforced.
 
 Dream cycles are triggered either on a 6-hour schedule or by accumulated importance exceeding a threshold (event-driven reflection). Each cycle generates focal-point questions from recent experience, retrieves relevant memories for each question, produces evidence-linked semantic insights, and reflects on accumulated self-knowledge — with every derived memory traceable back to its source evidence. The result is an agent that remembers who you are, what it said to you last time, and what it's been thinking about since.
 
@@ -38,7 +38,7 @@ Cron schedules → shift reports, dream cycle, market monitor, mood tweets
 Price oracle → mood state → modifies all generated responses
 ```
 
-### Memory system (The Cortex)
+### Memory system (The Brain)
 
 Four memory tiers inspired by [Stanford Generative Agents](https://arxiv.org/abs/2304.03442), [MemGPT/Letta](https://arxiv.org/abs/2310.08560), and [CoALA](https://arxiv.org/abs/2309.02427):
 

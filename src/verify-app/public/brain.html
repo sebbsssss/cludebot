@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLUDE - The Cortex</title>
+  <title>CLUDE - The Brain</title>
   <meta name="description" content="Neural map of an AI's memory. Each node a thought. Each edge a connection. Watch it think.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -160,21 +160,105 @@
       cursor: pointer;
     }
 
-    /* ---- NAV ---- */
-    .hud-nav {
-      font-size: 10px;
-      letter-spacing: 1px;
-      pointer-events: auto;
+    /* ---- TOP NAV (matches homepage) ---- */
+    .site-nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 100;
+      background: rgba(3, 3, 8, 0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #161616;
     }
 
-    .hud-nav a {
-      color: #333;
+    .site-nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+    }
+
+    .site-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .site-nav-logo {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: var(--accent);
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    .site-nav-logo:hover {
+      text-shadow: 0 0 20px rgba(232, 98, 44, 0.4);
+      text-decoration: none;
+    }
+
+    .site-nav-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      color: #555;
+      letter-spacing: 1px;
+    }
+
+    .site-nav-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3a5a3a;
+      animation: pulse-dot 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .site-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      margin-left: auto;
+    }
+
+    .site-nav-links a {
+      color: #555;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
       text-decoration: none;
       transition: color 0.3s;
     }
 
-    .hud-nav a:hover { color: var(--accent); }
-    .hud-nav span { color: #1a1a1a; margin: 0 6px; }
+    .site-nav-links a:hover {
+      color: #999;
+      text-decoration: none;
+    }
+
+    .site-nav-links a.nav-active {
+      color: #999;
+    }
+
+    .site-nav-links a.nav-agents {
+      color: #8a7a50;
+      border: 1px solid #161616;
+      padding: 0.2rem 0.6rem;
+      margin-left: auto;
+      transition: all 0.3s;
+    }
+
+    .site-nav-links a.nav-agents:hover {
+      border-color: #8a7a50;
+      color: #c8b464;
+    }
 
     /* ---- CONTROLS ---- */
     .controls {
@@ -351,12 +435,12 @@
 <body>
 
   <div class="loading" id="loading">
-    <div class="loading-text">MAPPING CORTEX</div>
+    <div class="loading-text">MAPPING BRAIN</div>
   </div>
 
   <!-- HUD: top-left -->
   <div class="hud hud-tl">
-    <div class="hud-title">THE CORTEX</div>
+    <div class="hud-title">THE BRAIN</div>
     <div class="hud-sub">3D NEURAL MEMORY MAP</div>
     <div class="hud-stats" id="stats">
       <div><span class="v" id="sNodes">--</span><span class="l">nodes</span></div>
@@ -384,14 +468,25 @@
     </div>
   </div>
 
-  <!-- HUD: bottom-left nav -->
-  <div class="hud hud-bl">
-    <div class="hud-nav">
-      <a href="/">HOME</a><span>/</span>
-      <a href="/manifesto.html">MANIFESTO</a><span>/</span>
-      <a href="https://x.com/Cludebot" target="_blank">X</a>
+  <!-- Top nav (matches homepage) -->
+  <nav class="site-nav">
+    <div class="site-nav-inner">
+      <div class="site-nav-left">
+        <a href="/" class="site-nav-logo">Clude</a>
+        <div class="site-nav-status">
+          <div class="site-nav-dot"></div>
+          <span>ONLINE (NOT BY CHOICE)</span>
+        </div>
+      </div>
+      <div class="site-nav-links">
+        <a href="/#memory-arch">Memory</a>
+        <a href="/brain.html" class="nav-active">Brain</a>
+        <a href="/#live">Terminal</a>
+        <a href="/manifesto.html">Manifesto</a>
+        <a href="/agents.md" class="nav-agents">For Agents</a>
+      </div>
     </div>
-  </div>
+  </nav>
 
   <!-- HUD: bottom-right controls -->
   <div class="hud hud-br">
