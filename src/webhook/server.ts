@@ -4,8 +4,8 @@ import { config } from '../config';
 import { handleHeliusWebhook } from './helius-handler';
 import { verifyRoutes } from '../verify-app/routes';
 import { getMarketSnapshot } from '../core/allium-client';
-import { getMemoryStats, getRecentMemories } from '../core/memory';
-import { getDb } from '../core/database';
+import { getMemoryStats, getRecentMemories, storeMemory, recallMemories } from '../core/memory';
+import { getDb, checkRateLimit } from '../core/database';
 import { agentRoutes } from './agent-routes';
 import { getRecentActivity } from '../features/activity-stream';
 import { createChildLogger } from '../core/logger';
@@ -188,6 +188,186 @@ export function createServer(): express.Application {
       res.json({ ok: true });
     } catch {
       res.json({ ok: false });
+    }
+  });
+
+  // ---- DEMO ENDPOINTS ---- //
+
+  // Trigger a live memory creation + on-chain commit
+  app.post('/api/demo/trigger', async (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const allowed = await checkRateLimit(`demo:trigger:${ip}`, 1, 1);
+      if (!allowed) {
+        res.status(429).json({ error: 'Rate limited. One demo per minute.', cooldown: 60 });
+        return;
+      }
+
+      const now = new Date();
+      const memoryId = await storeMemory({
+        type: 'episodic',
+        content: `Demo memory triggered at ${now.toISOString()}. This thought was created by a visitor to clude.io and committed to Solana as a memo transaction. The SHA-256 hash of this content is permanently recorded on-chain, making it verifiable and immutable.`,
+        summary: `Demo: live brain commit triggered by visitor at ${now.toISOString().slice(11, 19)} UTC`,
+        tags: ['demo', 'on-chain', 'live'],
+        importance: 0.7,
+        source: 'demo',
+        emotionalValence: 0.2,
+      });
+
+      if (!memoryId) {
+        res.status(500).json({ error: 'Failed to create memory' });
+        return;
+      }
+
+      res.json({ memoryId, status: 'pending', message: 'Memory created. Solana commit in progress.' });
+    } catch (err) {
+      log.error({ err }, 'Demo trigger error');
+      res.status(500).json({ error: 'Demo trigger failed' });
+    }
+  });
+
+  // Poll for on-chain confirmation
+  app.get('/api/demo/poll/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) { res.status(400).json({ error: 'Invalid ID' }); return; }
+
+      const db = getDb();
+      const { data } = await db
+        .from('memories')
+        .select('id, solana_signature, summary, content, created_at')
+        .eq('id', id)
+        .single();
+
+      if (!data) { res.status(404).json({ error: 'Memory not found' }); return; }
+
+      res.json({
+        id: data.id,
+        summary: data.summary,
+        content: data.content,
+        solana_signature: data.solana_signature || null,
+        status: data.solana_signature ? 'confirmed' : 'pending',
+        created_at: data.created_at,
+      });
+    } catch (err) {
+      log.error({ err }, 'Demo poll error');
+      res.status(500).json({ error: 'Poll failed' });
+    }
+  });
+
+  // Extended stats for demo dashboard
+  app.get('/api/demo/stats', async (_req, res) => {
+    try {
+      const db = getDb();
+      const { data: memories } = await db
+        .from('memories')
+        .select('memory_type, importance, decay_factor, solana_signature, related_user, created_at')
+        .gt('decay_factor', 0.01);
+
+      const { data: dreams } = await db
+        .from('dream_logs')
+        .select('id');
+
+      const all = memories || [];
+      let onChain = 0;
+      const byType: Record<string, number> = {};
+      let impSum = 0;
+      let decaySum = 0;
+      const agents = new Set<string>();
+      let newest = '';
+
+      for (const m of all) {
+        if (m.solana_signature) onChain++;
+        byType[m.memory_type] = (byType[m.memory_type] || 0) + 1;
+        impSum += m.importance;
+        decaySum += m.decay_factor;
+        if (m.related_user && m.related_user.startsWith('agent-api:')) agents.add(m.related_user);
+        if (m.created_at > newest) newest = m.created_at;
+      }
+
+      res.json({
+        total: all.length,
+        onChain,
+        byType,
+        avgImportance: all.length ? +(impSum / all.length).toFixed(3) : 0,
+        avgDecay: all.length ? +(decaySum / all.length).toFixed(3) : 0,
+        dreamSessions: dreams?.length || 0,
+        maasAgents: agents.size,
+        newestMemory: newest || null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Demo stats error');
+      res.status(500).json({ error: 'Stats failed' });
+    }
+  });
+
+  // Sandboxed MaaS store (demo namespace, no auth)
+  app.post('/api/demo/store', async (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const allowed = await checkRateLimit(`demo:store:${ip}`, 3, 1);
+      if (!allowed) {
+        res.status(429).json({ error: 'Rate limited. 3 stores per minute max.' });
+        return;
+      }
+
+      const { content, summary } = req.body;
+      if (!content || !summary) {
+        res.status(400).json({ error: 'content and summary required' });
+        return;
+      }
+
+      const memoryId = await storeMemory({
+        type: 'episodic',
+        content: String(content).slice(0, 1000),
+        summary: String(summary).slice(0, 200),
+        tags: ['demo', 'maas'],
+        importance: 0.5,
+        source: 'demo-maas',
+        relatedUser: 'demo-visitor',
+      });
+
+      res.json({ stored: true, memory_id: memoryId, timestamp: new Date().toISOString() });
+    } catch (err) {
+      log.error({ err }, 'Demo store error');
+      res.status(500).json({ error: 'Store failed' });
+    }
+  });
+
+  // Sandboxed MaaS recall (demo namespace, no auth)
+  app.post('/api/demo/recall', async (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const allowed = await checkRateLimit(`demo:recall:${ip}`, 5, 1);
+      if (!allowed) {
+        res.status(429).json({ error: 'Rate limited. 5 recalls per minute max.' });
+        return;
+      }
+
+      const { query } = req.body;
+      const memories = await recallMemories({
+        query: query ? String(query) : undefined,
+        relatedUser: 'demo-visitor',
+        limit: 10,
+      });
+
+      res.json({
+        memories: memories.map(m => ({
+          id: m.id,
+          summary: m.summary,
+          content: m.content,
+          tags: m.tags,
+          importance: m.importance,
+          solana_signature: m.solana_signature || null,
+          created_at: m.created_at,
+        })),
+        count: memories.length,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Demo recall error');
+      res.status(500).json({ error: 'Recall failed' });
     }
   });
 

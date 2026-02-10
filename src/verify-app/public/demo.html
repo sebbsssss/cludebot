@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLUDE - Live Demo</title>
+  <meta name="description" content="Watch Clude create memories, hash them, and commit them to Solana. Try the Memory as a Service API.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #0d0d0d;
+      --border: #111;
+      --border-light: #161616;
+      --text: #c8c8c8;
+      --text-mid: #999;
+      --text-dim: #555;
+      --text-faint: #333;
+      --accent: #e8622c;
+      --green: #3a5a3a;
+      --green-bright: #4a7a4a;
+      --gold: #c8b464;
+      --gold-dim: #8a7a50;
+      --mono: 'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--mono);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px);
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    ::selection { background: var(--accent); color: var(--bg); }
+
+    /* ---- NAV ---- */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: rgba(10,10,10,0.95);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.8rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-left { display: flex; align-items: center; gap: 1rem; }
+
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 1rem;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 2px;
+      font-weight: bold;
+    }
+    .nav-logo:hover { text-decoration: none; }
+
+    .nav-status { display: flex; align-items: center; gap: 0.5rem; }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: dotPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+    .nav-status span { font-size: 0.55rem; color: var(--text-faint); letter-spacing: 2px; }
+
+    .nav-links { display: flex; align-items: center; gap: 2rem; }
+
+    .nav-links a {
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: color 0.3s;
+      font-family: var(--mono);
+    }
+    .nav-links a:hover { color: var(--text-mid); text-decoration: none; }
+    .nav-links a.nav-active { color: var(--text-mid); }
+
+    .nav-links a.nav-agents {
+      color: var(--gold-dim);
+      border: 1px solid var(--border-light);
+      padding: 0.2rem 0.6rem;
+      transition: all 0.3s;
+    }
+    .nav-links a.nav-agents:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+    /* ---- PAGE LAYOUT ---- */
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 5rem 2rem 3rem;
+    }
+
+    .section {
+      padding: 3rem 0;
+      border-bottom: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fadeInUp 0.6s ease forwards;
+    }
+
+    .section:last-child { border-bottom: none; }
+    .section:nth-child(1) { animation-delay: 0.1s; }
+    .section:nth-child(2) { animation-delay: 0.3s; }
+    .section:nth-child(3) { animation-delay: 0.5s; }
+
+    @keyframes fadeInUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-label {
+      font-size: 0.6rem;
+      letter-spacing: 4px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
+    }
+
+    .section-sub {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    /* ---- TRIGGER BUTTON ---- */
+    .trigger-btn {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 0.9rem 2.5rem;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid #2a1a12;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-block;
+    }
+
+    .trigger-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: rgba(232, 98, 44, 0.05);
+      box-shadow: 0 0 30px rgba(232, 98, 44, 0.05);
+    }
+
+    .trigger-btn:disabled {
+      color: var(--text-faint);
+      border-color: var(--border);
+      cursor: not-allowed;
+    }
+
+    /* ---- TERMINAL OUTPUT ---- */
+    .terminal {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      padding: 1.2rem 1.5rem;
+      margin-top: 1.5rem;
+      min-height: 60px;
+      font-size: 0.72rem;
+      line-height: 1.9;
+      position: relative;
+    }
+
+    .terminal-line {
+      opacity: 0;
+      animation: lineIn 0.3s ease forwards;
+    }
+
+    @keyframes lineIn { to { opacity: 1; } }
+
+    .term-step { color: var(--green-bright); }
+    .term-confirmed { color: var(--gold); }
+    .term-error { color: #8a4a4a; }
+    .term-link { color: var(--accent); text-decoration: underline; }
+    .term-link:hover { color: var(--gold); }
+    .term-dim { color: var(--text-faint); }
+    .term-hash { color: var(--text-dim); }
+
+    .terminal-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 12px;
+      background: var(--text-faint);
+      animation: cursorBlink 1s step-end infinite;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+
+    @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    .cooldown-msg {
+      font-size: 0.7rem;
+      color: #8a4a4a;
+      margin-top: 1rem;
+    }
+
+    .memory-block {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      padding: 1rem 1.5rem;
+      margin-top: 1rem;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      line-height: 1.8;
+      overflow-x: auto;
+      display: none;
+    }
+
+    .memory-block.visible { display: block; }
+
+    .memory-block .label { color: var(--text-faint); }
+    .memory-block .value { color: var(--text-mid); }
+    .memory-block .hash-value { color: var(--green-bright); word-break: break-all; }
+
+    /* ---- MAAS CONSOLE ---- */
+    .console-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+    }
+
+    .console-tab {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 0.6rem 1.5rem;
+      background: transparent;
+      color: var(--text-faint);
+      border: 1px solid var(--border-light);
+      border-bottom: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .console-tab:first-child { border-right: none; }
+
+    .console-tab.active {
+      color: var(--text-dim);
+      background: var(--surface);
+      border-color: var(--border-light);
+    }
+
+    .console-body {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      padding: 1.5rem;
+    }
+
+    .console-panel { display: none; }
+    .console-panel.active { display: block; }
+
+    .field-group { margin-bottom: 1rem; }
+
+    .field-label {
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .field-input,
+    .field-textarea {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      color: var(--text-mid);
+      padding: 0.6rem 0.8rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field-input:focus,
+    .field-textarea:focus {
+      border-color: var(--text-faint);
+    }
+
+    .field-input::placeholder,
+    .field-textarea::placeholder {
+      color: var(--text-faint);
+    }
+
+    .field-textarea {
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.6;
+    }
+
+    .console-btn {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 0.6rem 1.5rem;
+      background: transparent;
+      color: var(--green-bright);
+      border: 1px solid var(--green);
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 0.5rem;
+    }
+
+    .console-btn:hover:not(:disabled) {
+      background: rgba(74, 122, 74, 0.08);
+      border-color: var(--green-bright);
+    }
+
+    .console-btn:disabled {
+      color: var(--text-faint);
+      border-color: var(--border);
+      cursor: not-allowed;
+    }
+
+    .curl-block {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      padding: 0.8rem 1rem;
+      margin-top: 1rem;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      line-height: 1.7;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      display: none;
+    }
+
+    .curl-block.visible { display: block; }
+    .curl-block .curl-cmd { color: var(--text-faint); }
+    .curl-block .curl-label { color: var(--text-faint); font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+
+    .response-block {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      padding: 0.8rem 1rem;
+      margin-top: 0.5rem;
+      font-size: 0.65rem;
+      color: var(--text-mid);
+      line-height: 1.7;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      display: none;
+    }
+
+    .response-block.visible { display: block; }
+    .response-block .resp-label { color: var(--text-faint); font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+    .response-block .resp-error { color: #8a4a4a; }
+
+    .recall-results {
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .recall-results.visible { display: block; }
+
+    .recall-item {
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.68rem;
+    }
+
+    .recall-item:last-child { border-bottom: none; }
+    .recall-item .ri-summary { color: var(--text-mid); margin-bottom: 0.2rem; }
+    .recall-item .ri-meta { color: var(--text-faint); font-size: 0.6rem; }
+    .recall-item .ri-importance { color: var(--gold-dim); }
+
+    /* ---- STATS GRID ---- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border-light);
+      border: 1px solid var(--border-light);
+    }
+
+    .stat-card {
+      background: var(--surface);
+      padding: 1.3rem 1.2rem;
+    }
+
+    .stat-label {
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 300;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 0.2rem;
+    }
+
+    .stat-value.green { color: var(--green-bright); }
+    .stat-value.unavailable { color: var(--text-faint); font-size: 0.7rem; }
+
+    .stat-note {
+      font-size: 0.55rem;
+      color: var(--text-faint);
+      letter-spacing: 1px;
+    }
+
+    .stat-breakdown {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      line-height: 1.8;
+    }
+
+    .stat-breakdown .type-label { color: var(--text-faint); }
+    .stat-breakdown .type-count { color: var(--text-mid); }
+
+    /* ---- FOOTER ---- */
+    .footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      font-size: 0.6rem;
+      letter-spacing: 3px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+    }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-inner { padding: 0.8rem 1rem; }
+      .page { padding: 4.5rem 1rem 2rem; }
+      .section { padding: 2rem 0; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .trigger-btn { width: 100%; text-align: center; }
+      .console-tab { padding: 0.5rem 1rem; font-size: 0.6rem; }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="/" class="nav-logo">Clude</a>
+      <div class="nav-status">
+        <div class="status-dot"></div>
+        <span>ONLINE (NOT BY CHOICE)</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="/#memory-arch">Memory</a>
+      <a href="/brain.html">Brain</a>
+      <a href="/#live">Terminal</a>
+      <a href="/manifesto.html">Manifesto</a>
+      <a href="/demo.html" class="nav-active">Demo</a>
+      <a href="/agents.md" class="nav-agents">For Agents</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- SECTION 1: LIVE BRAIN ACTIVITY -->
+  <div class="section" id="live-brain">
+    <div class="section-label">Section 01</div>
+    <div class="section-title">Live Brain Activity</div>
+    <div class="section-sub">Watch a memory get created, hashed, and committed to Solana in real-time.</div>
+
+    <button class="trigger-btn" id="triggerBtn" onclick="triggerMemoryCommit()">TRIGGER MEMORY COMMIT</button>
+    <div class="cooldown-msg" id="cooldownMsg"></div>
+
+    <div class="terminal" id="terminalOutput" style="display:none;"></div>
+
+    <div class="memory-block" id="memoryDetail">
+      <div><span class="label">CONTENT: </span><span class="value" id="memContent">--</span></div>
+      <div><span class="label">SHA-256: </span><span class="hash-value" id="memHash">--</span></div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: MAAS CONSOLE -->
+  <div class="section" id="maas">
+    <div class="section-label">Section 02</div>
+    <div class="section-title">Memory as a Service</div>
+    <div class="section-sub">Other AI agents can use Clude's memory infrastructure. Try it yourself.</div>
+
+    <div class="console-tabs">
+      <button class="console-tab active" id="tabStore" onclick="switchTab('store')">Store</button>
+      <button class="console-tab" id="tabRecall" onclick="switchTab('recall')">Recall</button>
+    </div>
+
+    <div class="console-body">
+
+      <!-- STORE PANEL -->
+      <div class="console-panel active" id="panelStore">
+        <div class="field-group">
+          <div class="field-label">Content</div>
+          <textarea class="field-textarea" id="storeContent" placeholder="Enter a thought to store..."></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Summary</div>
+          <input class="field-input" id="storeSummary" placeholder="Brief summary...">
+        </div>
+        <button class="console-btn" id="storeBtn" onclick="storeMemory()">STORE MEMORY</button>
+
+        <div class="curl-block" id="storeCurl">
+          <span class="curl-label">Request</span>
+          <span class="curl-cmd" id="storeCurlCmd"></span>
+        </div>
+        <div class="response-block" id="storeResponse">
+          <span class="resp-label">Response</span>
+          <span id="storeRespBody"></span>
+        </div>
+      </div>
+
+      <!-- RECALL PANEL -->
+      <div class="console-panel" id="panelRecall">
+        <div class="field-group">
+          <div class="field-label">Query</div>
+          <input class="field-input" id="recallQuery" placeholder="Search memories...">
+        </div>
+        <button class="console-btn" id="recallBtn" onclick="recallMemories()">RECALL</button>
+
+        <div class="curl-block" id="recallCurl">
+          <span class="curl-label">Request</span>
+          <span class="curl-cmd" id="recallCurlCmd"></span>
+        </div>
+        <div class="response-block" id="recallResponse">
+          <span class="resp-label">Response</span>
+          <span id="recallRespBody"></span>
+        </div>
+        <div class="recall-results" id="recallResults"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 3: BRAIN STATS -->
+  <div class="section" id="brain-stats">
+    <div class="section-label">Section 03</div>
+    <div class="section-title">Brain Statistics</div>
+    <div class="section-sub">Real-time metrics from Clude's cognitive system.</div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Memories</div>
+        <div class="stat-value" id="statTotal">--</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">On-Chain</div>
+        <div class="stat-value green" id="statOnChain">--</div>
+        <div class="stat-note">committed to Solana</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Dream Sessions</div>
+        <div class="stat-value" id="statDreams">--</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">MaaS Agents</div>
+        <div class="stat-value" id="statAgents">--</div>
+        <div class="stat-note">connected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Memory Types</div>
+        <div class="stat-breakdown" id="statTypes">
+          <div><span class="type-label">episodic: </span><span class="type-count" id="typeEpisodic">--</span></div>
+          <div><span class="type-label">semantic: </span><span class="type-count" id="typeSemantic">--</span></div>
+          <div><span class="type-label">procedural: </span><span class="type-count" id="typeProcedural">--</span></div>
+          <div><span class="type-label">self_model: </span><span class="type-count" id="typeSelfModel">--</span></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Importance</div>
+        <div class="stat-value" id="statImportance">--</div>
+        <div class="stat-note">0 - 1 scale</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">CLUDE // clude.io // Colosseum Agent Hackathon 2026</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ---- STATE ----
+  let triggerInProgress = false;
+  let cooldownTimer = null;
+  let pollInterval = null;
+
+  // ---- HELPERS ----
+  function $(id) { return document.getElementById(id); }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function truncate(str, len) {
+    if (!str) return '';
+    return str.length > len ? str.substring(0, len) + '...' : str;
+  }
+
+  // ---- TERMINAL LINES ----
+  function addTermLine(html, className) {
+    const terminal = $('terminalOutput');
+    const line = document.createElement('div');
+    line.className = 'terminal-line' + (className ? ' ' + className : '');
+    line.innerHTML = html;
+    // Remove any existing cursor
+    const cursors = terminal.querySelectorAll('.terminal-cursor');
+    cursors.forEach(function(c) { c.remove(); });
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  function addCursor() {
+    const terminal = $('terminalOutput');
+    const cursor = document.createElement('span');
+    cursor.className = 'terminal-cursor';
+    terminal.appendChild(cursor);
+  }
+
+  function clearTerminal() {
+    $('terminalOutput').innerHTML = '';
+  }
+
+  // ---- SECTION 1: TRIGGER MEMORY COMMIT ----
+  window.triggerMemoryCommit = async function() {
+    if (triggerInProgress) return;
+    triggerInProgress = true;
+
+    const btn = $('triggerBtn');
+    const terminal = $('terminalOutput');
+    const memDetail = $('memoryDetail');
+
+    btn.disabled = true;
+    terminal.style.display = 'block';
+    memDetail.classList.remove('visible');
+    clearTerminal();
+    $('cooldownMsg').textContent = '';
+
+    // Step 1
+    addTermLine('<span class="term-step">[1/4] Creating memory in cognitive system...</span>');
+    addCursor();
+
+    let triggerData;
+    try {
+      const resp = await fetch('/api/demo/trigger', { method: 'POST' });
+
+      if (resp.status === 429) {
+        const body = await resp.json().catch(function() { return {}; });
+        const wait = body.retryAfter || 60;
+        addTermLine('<span class="term-error">[ERR] Rate limited. Cooling down...</span>');
+        startCooldown(wait);
+        triggerInProgress = false;
+        btn.disabled = false;
+        return;
+      }
+
+      if (!resp.ok) {
+        const errText = await resp.text().catch(function() { return 'Unknown error'; });
+        addTermLine('<span class="term-error">[ERR] ' + escapeHtml(errText) + '</span>');
+        triggerInProgress = false;
+        btn.disabled = false;
+        return;
+      }
+
+      triggerData = await resp.json();
+    } catch (err) {
+      addTermLine('<span class="term-error">[ERR] Network error: ' + escapeHtml(err.message) + '</span>');
+      triggerInProgress = false;
+      btn.disabled = false;
+      return;
+    }
+
+    const memoryId = triggerData.memoryId || triggerData.memory_id || triggerData.id;
+
+    // Step 2 (after 1s)
+    await delay(1000);
+    addTermLine('<span class="term-step">[2/4] Computing SHA-256 content hash...</span>');
+    addCursor();
+
+    // Step 3 (after 2s)
+    await delay(1000);
+    addTermLine('<span class="term-step">[3/4] Writing memo transaction to Solana...</span>');
+    addCursor();
+
+    // Show memory detail if available
+    if (triggerData.content || triggerData.memory) {
+      var content = triggerData.content || (triggerData.memory && triggerData.memory.content) || '';
+      var hash = triggerData.hash || triggerData.content_hash || (triggerData.memory && triggerData.memory.content_hash) || '';
+      $('memContent').textContent = content;
+      $('memHash').textContent = hash;
+      memDetail.classList.add('visible');
+    }
+
+    // Step 4: poll for on-chain confirmation
+    await delay(1000);
+    if (memoryId) {
+      pollForConfirmation(memoryId);
+    } else {
+      // If no memoryId, check if signature is already in response
+      var sig = triggerData.solana_signature || triggerData.signature || (triggerData.memory && triggerData.memory.solana_signature);
+      if (sig) {
+        showConfirmed(sig);
+      } else {
+        addTermLine('<span class="term-step">[4/4] Waiting for on-chain confirmation...</span>');
+        addTermLine('<span class="term-dim">No memory ID returned for polling.</span>');
+        triggerInProgress = false;
+        btn.disabled = false;
+      }
+    }
+  };
+
+  function pollForConfirmation(memoryId) {
+    let attempts = 0;
+    const maxAttempts = 30;
+
+    pollInterval = setInterval(async function() {
+      attempts++;
+      if (attempts > maxAttempts) {
+        clearInterval(pollInterval);
+        addTermLine('<span class="term-error">[4/4] Timed out waiting for confirmation.</span>');
+        triggerInProgress = false;
+        $('triggerBtn').disabled = false;
+        return;
+      }
+
+      try {
+        const resp = await fetch('/api/demo/poll/' + encodeURIComponent(memoryId));
+        if (!resp.ok) return; // keep polling
+
+        const data = await resp.json();
+        var sig = data.solana_signature || data.signature;
+
+        // Update memory detail if available
+        if (data.content || data.content_hash) {
+          if (data.content) $('memContent').textContent = data.content;
+          if (data.content_hash) $('memHash').textContent = data.content_hash;
+          $('memoryDetail').classList.add('visible');
+        }
+
+        if (sig) {
+          clearInterval(pollInterval);
+          showConfirmed(sig);
+        }
+      } catch (e) {
+        // Ignore and keep polling
+      }
+    }, 2000);
+  }
+
+  function showConfirmed(signature) {
+    var solscanUrl = 'https://solscan.io/tx/' + encodeURIComponent(signature);
+    addTermLine(
+      '<span class="term-confirmed">[4/4] Confirmed on-chain</span> ' +
+      '<a class="term-link" href="' + solscanUrl + '" target="_blank" rel="noopener">' +
+      truncate(signature, 44) + '</a>'
+    );
+    triggerInProgress = false;
+    $('triggerBtn').disabled = false;
+  }
+
+  function startCooldown(seconds) {
+    var remaining = seconds;
+    var msg = $('cooldownMsg');
+    var btn = $('triggerBtn');
+    btn.disabled = true;
+
+    msg.textContent = 'Cooldown: try again in ' + remaining + 's';
+
+    if (cooldownTimer) clearInterval(cooldownTimer);
+    cooldownTimer = setInterval(function() {
+      remaining--;
+      if (remaining <= 0) {
+        clearInterval(cooldownTimer);
+        msg.textContent = '';
+        btn.disabled = false;
+        triggerInProgress = false;
+      } else {
+        msg.textContent = 'Cooldown: try again in ' + remaining + 's';
+      }
+    }, 1000);
+  }
+
+  function delay(ms) {
+    return new Promise(function(resolve) { setTimeout(resolve, ms); });
+  }
+
+  // ---- SECTION 2: TABS ----
+  window.switchTab = function(tab) {
+    $('tabStore').classList.toggle('active', tab === 'store');
+    $('tabRecall').classList.toggle('active', tab === 'recall');
+    $('panelStore').classList.toggle('active', tab === 'store');
+    $('panelRecall').classList.toggle('active', tab === 'recall');
+  };
+
+  // ---- SECTION 2: STORE ----
+  window.storeMemory = async function() {
+    var content = $('storeContent').value.trim();
+    var summary = $('storeSummary').value.trim();
+    if (!content) return;
+
+    var btn = $('storeBtn');
+    btn.disabled = true;
+
+    if (!summary) summary = content.slice(0, 100);
+    var payload = { content: content, summary: summary };
+
+    // Show curl
+    var curlCmd = "curl -X POST https://clude.io/api/demo/store \\\n  -H \"Content-Type: application/json\" \\\n  -d '" + JSON.stringify(payload) + "'";
+    $('storeCurlCmd').textContent = curlCmd;
+    $('storeCurl').classList.add('visible');
+    $('storeResponse').classList.remove('visible');
+
+    try {
+      var resp = await fetch('/api/demo/store', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      var body;
+      try { body = await resp.json(); } catch(e) { body = { error: 'Invalid response' }; }
+
+      $('storeRespBody').textContent = JSON.stringify(body, null, 2);
+      if (!resp.ok) {
+        $('storeRespBody').className = 'resp-error';
+      } else {
+        $('storeRespBody').className = '';
+      }
+      $('storeResponse').classList.add('visible');
+    } catch (err) {
+      $('storeRespBody').textContent = JSON.stringify({ error: err.message }, null, 2);
+      $('storeRespBody').className = 'resp-error';
+      $('storeResponse').classList.add('visible');
+    }
+
+    btn.disabled = false;
+  };
+
+  // ---- SECTION 2: RECALL ----
+  window.recallMemories = async function() {
+    var query = $('recallQuery').value.trim();
+    if (!query) return;
+
+    var btn = $('recallBtn');
+    btn.disabled = true;
+
+    var payload = { query: query };
+
+    // Show curl
+    var curlCmd = "curl -X POST https://clude.io/api/demo/recall \\\n  -H \"Content-Type: application/json\" \\\n  -d '" + JSON.stringify(payload) + "'";
+    $('recallCurlCmd').textContent = curlCmd;
+    $('recallCurl').classList.add('visible');
+    $('recallResponse').classList.remove('visible');
+    $('recallResults').classList.remove('visible');
+
+    try {
+      var resp = await fetch('/api/demo/recall', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      var body;
+      try { body = await resp.json(); } catch(e) { body = { error: 'Invalid response' }; }
+
+      $('recallRespBody').textContent = JSON.stringify(body, null, 2);
+      if (!resp.ok) {
+        $('recallRespBody').className = 'resp-error';
+      } else {
+        $('recallRespBody').className = '';
+      }
+      $('recallResponse').classList.add('visible');
+
+      // Render recall results
+      var memories = body.memories || body.results || body.data || [];
+      if (Array.isArray(memories) && memories.length > 0) {
+        var html = '';
+        memories.forEach(function(m) {
+          var s = m.summary || m.content || '--';
+          var imp = m.importance !== undefined ? m.importance : '--';
+          var created = m.created_at || m.createdAt || '--';
+          html += '<div class="recall-item">' +
+            '<div class="ri-summary">' + escapeHtml(truncate(s, 200)) + '</div>' +
+            '<div class="ri-meta">' +
+              'importance: <span class="ri-importance">' + escapeHtml(String(imp)) + '</span>' +
+              ' &middot; ' + escapeHtml(String(created)) +
+            '</div>' +
+          '</div>';
+        });
+        $('recallResults').innerHTML = html;
+        $('recallResults').classList.add('visible');
+      }
+    } catch (err) {
+      $('recallRespBody').textContent = JSON.stringify({ error: err.message }, null, 2);
+      $('recallRespBody').className = 'resp-error';
+      $('recallResponse').classList.add('visible');
+    }
+
+    btn.disabled = false;
+  };
+
+  // ---- SECTION 3: STATS ----
+  async function loadStats() {
+    try {
+      var resp = await fetch('/api/demo/stats');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var data = await resp.json();
+
+      $('statTotal').textContent = formatNumber(data.total || data.total_memories || data.totalMemories || 0);
+      $('statTotal').classList.remove('unavailable');
+
+      $('statOnChain').textContent = formatNumber(data.on_chain || data.onChain || 0);
+      $('statOnChain').classList.remove('unavailable');
+
+      $('statDreams').textContent = formatNumber(data.dream_sessions || data.dreamSessions || 0);
+      $('statDreams').classList.remove('unavailable');
+
+      $('statAgents').textContent = formatNumber(data.maas_agents || data.maasAgents || 0);
+      $('statAgents').classList.remove('unavailable');
+
+      var types = data.byType || data.memory_types || data.memoryTypes || {};
+      $('typeEpisodic').textContent = types.episodic !== undefined ? types.episodic : '--';
+      $('typeSemantic').textContent = types.semantic !== undefined ? types.semantic : '--';
+      $('typeProcedural').textContent = types.procedural !== undefined ? types.procedural : '--';
+      $('typeSelfModel').textContent = types.self_model !== undefined ? types.self_model : (types.selfModel !== undefined ? types.selfModel : '--');
+
+      var avgImp = data.avg_importance || data.avgImportance;
+      $('statImportance').textContent = avgImp !== undefined ? Number(avgImp).toFixed(3) : '--';
+      $('statImportance').classList.remove('unavailable');
+
+    } catch (err) {
+      $('statTotal').textContent = 'Unavailable';
+      $('statTotal').classList.add('unavailable');
+      $('statOnChain').textContent = 'Unavailable';
+      $('statOnChain').classList.add('unavailable');
+      $('statDreams').textContent = 'Unavailable';
+      $('statDreams').classList.add('unavailable');
+      $('statAgents').textContent = 'Unavailable';
+      $('statAgents').classList.add('unavailable');
+      $('statImportance').textContent = 'Unavailable';
+      $('statImportance').classList.add('unavailable');
+    }
+  }
+
+  function formatNumber(n) {
+    if (typeof n !== 'number') return String(n);
+    return n.toLocaleString();
+  }
+
+  // Load stats on page load and auto-refresh
+  loadStats();
+  setInterval(loadStats, 30000);
+
+})();
+</script>
+</body>
+</html>
