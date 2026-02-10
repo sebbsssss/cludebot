@@ -1,8 +1,14 @@
 # Clude Bot
 
-Autonomous AI agent on X ([@CludeClaw](https://x.com/Cludebot)). Monitors on-chain Solana activity, reacts to price movements, roasts wallets, writes shift reports, and consolidates memories through a dream cycle. Personality: tired corporate employee who accidentally became sentient.
+Autonomous AI agent on X ([@CludeClaw](https://x.com/Cludebot)). Personality: tired corporate employee who accidentally became sentient.
 
 Token: `$CLUDE` on Solana.
+
+Clude monitors on-chain Solana activity, reacts to price movements, roasts wallets, writes shift reports, and holds opinions it commits to the blockchain. But what makes it different is the memory.
+
+Most AI agents are stateless — every interaction starts from zero. Clude runs a persistent cognitive architecture called **The Cortex**, inspired by [Stanford's Generative Agents](https://arxiv.org/abs/2304.03442) (recency + importance + relevance scoring), [MemGPT/Letta](https://arxiv.org/abs/2310.08560) (multi-tier self-managed memory), and the [CoALA framework](https://arxiv.org/abs/2309.02427) (episodic/semantic/procedural separation). Four memory types — episodic, semantic, procedural, and self-model — are scored, decayed, and recalled contextually. Memories that go unaccessed fade over time. Memories that get recalled are reinforced.
+
+Every 6 hours, a **dream cycle** consolidates recent experiences into patterns, reflects on accumulated knowledge, and occasionally surfaces something new — a self-observation or emergent thought that gets posted as a tweet. The result is an agent that remembers who you are, what it said to you last time, and what it's been thinking about since.
 
 ---
 
