@@ -1,13 +1,13 @@
 import { Helius } from 'helius-sdk';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { config } from '../config';
+import { config, getHeliusRpcUrl } from '../config';
 import { createChildLogger } from './logger';
+import type { HeliusTokenBalance } from '../types/api';
 
 const log = createChildLogger('helius-client');
 
 const helius = new Helius(config.helius.apiKey);
-const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${config.helius.apiKey}`;
-const connection = new Connection(heliusRpcUrl);
+const connection = new Connection(getHeliusRpcUrl());
 
 export interface WalletTransaction {
   signature: string;
@@ -37,14 +37,13 @@ export interface TokenBalance {
 export async function getWalletHistory(address: string, limit = 50): Promise<WalletTransaction[]> {
   log.debug({ address, limit }, 'Fetching wallet history');
   try {
-    // Step 1: Get transaction signatures for the wallet
     const pubkey = new PublicKey(address);
     const signatures = await connection.getSignaturesForAddress(pubkey, { limit });
     const sigStrings = signatures.map(s => s.signature);
 
     if (sigStrings.length === 0) return [];
 
-    // Step 2: Parse transactions via Helius (max 100 per call)
+    // Parse transactions via Helius (max 100 per call)
     const batches: string[][] = [];
     for (let i = 0; i < sigStrings.length; i += 100) {
       batches.push(sigStrings.slice(i, i + 100));
@@ -85,11 +84,11 @@ export async function getWalletHistory(address: string, limit = 50): Promise<Wal
 export async function getTokenBalances(address: string): Promise<TokenBalance[]> {
   log.debug({ address }, 'Fetching token balances');
   try {
-    const url = `https://api.helius.xyz/v0/addresses/${address}/balances?api-key=${config.helius.apiKey}`;
+    const url = `${config.helius.balancesBaseUrl}/${address}/balances?api-key=${config.helius.apiKey}`;
     const res = await fetch(url);
-    const data = await res.json() as any;
+    const data = await res.json() as { tokens?: HeliusTokenBalance[] };
     const tokens = data.tokens || [];
-    return tokens.map((t: any) => ({
+    return tokens.map((t) => ({
       mint: t.mint,
       amount: t.amount / Math.pow(10, t.decimals || 0),
       decimals: t.decimals || 0,
@@ -105,8 +104,4 @@ export async function getCluudeBalance(address: string): Promise<number> {
   const balances = await getTokenBalances(address);
   const cluude = balances.find(b => b.mint === config.solana.cluudeTokenMint);
   return cluude?.amount || 0;
-}
-
-export function getHeliusInstance(): Helius {
-  return helius;
 }

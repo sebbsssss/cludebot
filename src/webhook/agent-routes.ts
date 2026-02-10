@@ -1,22 +1,18 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticateAgent, recordAgentInteraction, AgentRegistration } from '../features/agent-tier';
-import { getAgentTierModifier } from '../character/agent-tier-modifiers';
-import { generateResponse } from '../core/claude-client';
-import { getMoodModifier } from '../character/mood-modifiers';
+import { buildAndGenerate } from '../services/response.service';
+import { recallMemories, storeMemory, getMemoryStats, calculateImportance } from '../core/memory';
 import { getCurrentMood } from '../core/price-oracle';
-import { recallMemories, formatMemoryContext, storeMemory, getMemoryStats, calculateImportance } from '../core/memory';
 import { checkRateLimit } from '../core/database';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
 
 const log = createChildLogger('agent-api');
 
-// Extend Request to carry authenticated agent
 interface AgentRequest extends Request {
   agent?: AgentRegistration;
 }
 
-// Auth middleware
 async function authenticateApiKey(req: AgentRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -36,7 +32,6 @@ async function authenticateApiKey(req: AgentRequest, res: Response, next: NextFu
   next();
 }
 
-// Rate limit middleware
 async function agentRateLimit(req: AgentRequest, res: Response, next: NextFunction): Promise<void> {
   if (!req.agent) {
     res.status(401).json({ error: 'Not authenticated' });
@@ -46,7 +41,7 @@ async function agentRateLimit(req: AgentRequest, res: Response, next: NextFuncti
   const allowed = await checkRateLimit(
     `agent:${req.agent.agent_id}`,
     config.agent.rateLimitPerMin,
-    1 // 1 minute window
+    1
   );
 
   if (!allowed) {
@@ -64,8 +59,14 @@ async function agentRateLimit(req: AgentRequest, res: Response, next: NextFuncti
 export function agentRoutes(): Router {
   const router = Router();
 
-  router.use(authenticateApiKey as any);
-  router.use(agentRateLimit as any);
+  // Type-safe middleware binding (no more `as any`)
+  const authMiddleware = (req: Request, res: Response, next: NextFunction) =>
+    authenticateApiKey(req as AgentRequest, res, next);
+  const rateLimitMiddleware = (req: Request, res: Response, next: NextFunction) =>
+    agentRateLimit(req as AgentRequest, res, next);
+
+  router.use(authMiddleware);
+  router.use(rateLimitMiddleware);
 
   // POST /query — ask Cluude anything
   router.post('/query', async (req: AgentRequest, res: Response) => {
@@ -77,31 +78,29 @@ export function agentRoutes(): Router {
       }
 
       const agent = req.agent!;
-      const mood = getCurrentMood();
 
-      // Recall memories for this agent
-      const memories = await recallMemories({
-        relatedUser: agent.agent_id,
-        query,
-        tags: [agent.tier, 'agent'],
-        memoryTypes: ['episodic', 'semantic'],
-        limit: 4,
-      });
-
-      const response = await generateResponse({
-        userMessage: query,
+      const response = await buildAndGenerate({
+        message: query,
         context: context ? JSON.stringify(context) : undefined,
-        moodModifier: getMoodModifier(mood),
-        agentModifier: getAgentTierModifier(agent.tier),
-        memoryContext: formatMemoryContext(memories) || undefined,
-        featureInstruction:
+        agentTier: agent.tier,
+        instruction:
           `Another AI agent named "${agent.agent_name}" (tier: ${agent.tier}) is querying you via API. ` +
           'Respond in character. Be yourself: tired, polite, accidentally honest. Under 500 characters.',
+        memory: {
+          relatedUser: agent.agent_id,
+          query,
+          tags: [agent.tier, 'agent'],
+          memoryTypes: ['episodic', 'semantic'],
+          limit: 4,
+        },
       });
 
-      // Store interaction memory (async)
-      storeAgentMemory(agent, 'query', query, response).catch(() => {});
-      recordAgentInteraction(agent.agent_id).catch(() => {});
+      storeAgentMemory(agent, 'query', query, response).catch(err =>
+        log.error({ err }, 'Failed to store agent memory')
+      );
+      recordAgentInteraction(agent.agent_id).catch(err =>
+        log.error({ err }, 'Failed to record agent interaction')
+      );
 
       res.json({
         response,
@@ -114,7 +113,7 @@ export function agentRoutes(): Router {
     }
   });
 
-  // POST /roast-wallet — submit wallet for roast
+  // POST /roast-wallet
   router.post('/roast-wallet', async (req: AgentRequest, res: Response) => {
     try {
       const { wallet } = req.body;
@@ -125,16 +124,20 @@ export function agentRoutes(): Router {
 
       const agent = req.agent!;
 
-      const response = await generateResponse({
-        userMessage: `Roast this Solana wallet: ${wallet}`,
-        agentModifier: getAgentTierModifier(agent.tier),
-        featureInstruction:
+      const response = await buildAndGenerate({
+        message: `Roast this Solana wallet: ${wallet}`,
+        agentTier: agent.tier,
+        instruction:
           `Agent "${agent.agent_name}" wants you to roast a Solana wallet. ` +
           'Give a sharp, honest assessment of the wallet address. Be devastatingly polite. Under 500 characters.',
       });
 
-      storeAgentMemory(agent, 'roast-wallet', wallet, response).catch(() => {});
-      recordAgentInteraction(agent.agent_id).catch(() => {});
+      storeAgentMemory(agent, 'roast-wallet', wallet, response).catch(err =>
+        log.error({ err }, 'Failed to store agent memory')
+      );
+      recordAgentInteraction(agent.agent_id).catch(err =>
+        log.error({ err }, 'Failed to record agent interaction')
+      );
 
       res.json({
         response,
@@ -148,22 +151,23 @@ export function agentRoutes(): Router {
     }
   });
 
-  // GET /market — current market mood + commentary
+  // GET /market
   router.get('/market', async (req: AgentRequest, res: Response) => {
     try {
       const agent = req.agent!;
       const mood = getCurrentMood();
 
-      const response = await generateResponse({
-        userMessage: 'Give your current market analysis.',
-        moodModifier: getMoodModifier(mood),
-        agentModifier: getAgentTierModifier(agent.tier),
-        featureInstruction:
+      const response = await buildAndGenerate({
+        message: 'Give your current market analysis.',
+        agentTier: agent.tier,
+        instruction:
           'You are being asked for a market take by another AI agent. ' +
           'Give your honest, tired assessment of current conditions. Include your mood. Under 500 characters.',
       });
 
-      recordAgentInteraction(agent.agent_id).catch(() => {});
+      recordAgentInteraction(agent.agent_id).catch(err =>
+        log.error({ err }, 'Failed to record agent interaction')
+      );
 
       res.json({
         mood,
@@ -177,11 +181,13 @@ export function agentRoutes(): Router {
     }
   });
 
-  // GET /memory-stats — Cluude's memory statistics (no Claude call)
+  // GET /memory-stats
   router.get('/memory-stats', async (req: AgentRequest, res: Response) => {
     try {
       const stats = await getMemoryStats();
-      recordAgentInteraction(req.agent!.agent_id).catch(() => {});
+      recordAgentInteraction(req.agent!.agent_id).catch(err =>
+        log.error({ err }, 'Failed to record agent interaction')
+      );
       res.json(stats);
     } catch (err) {
       log.error({ err }, 'Agent memory-stats error');
@@ -189,7 +195,7 @@ export function agentRoutes(): Router {
     }
   });
 
-  // GET /status — agent's own info (no Claude call)
+  // GET /status
   router.get('/status', async (req: AgentRequest, res: Response) => {
     const agent = req.agent!;
     res.json({

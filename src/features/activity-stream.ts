@@ -1,7 +1,6 @@
 import { getDb } from '../core/database';
-import { generateResponse } from '../core/claude-client';
-import { getMoodModifier } from '../character/mood-modifiers';
-import { getCurrentMood } from '../core/price-oracle';
+import { truncateWallet } from '../utils/format';
+import { buildAndGenerate } from '../services/response.service';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
 
@@ -49,7 +48,7 @@ export async function getRecentActivity(
       signature: row.signature,
       type: row.event_type || 'unknown',
       wallet: wallet.length > 8
-        ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}`
+        ? truncateWallet(wallet)
         : wallet,
       amount: row.amount || 0,
       solValue: row.sol_value || 0,
@@ -65,7 +64,9 @@ export async function getRecentActivity(
     .slice(0, 2); // Max 2 per request
 
   for (const whale of whalesWithoutCommentary) {
-    generateEventCommentary(whale).catch(() => {});
+    generateEventCommentary(whale).catch(err => {
+      log.error({ err, signature: whale.signature }, 'Failed to generate whale commentary');
+    });
   }
 
   return events;
@@ -77,13 +78,11 @@ export async function generateEventCommentary(event: ActivityEvent): Promise<str
   }
 
   try {
-    const mood = getCurrentMood();
     const action = event.type.includes('buy') ? 'bought' : 'sold';
 
-    const commentary = await generateResponse({
-      userMessage: `A wallet ${action} ${event.solValue.toFixed(1)} SOL worth of tokens.`,
-      moodModifier: getMoodModifier(mood),
-      featureInstruction:
+    const commentary = await buildAndGenerate({
+      message: `A wallet ${action} ${event.solValue.toFixed(1)} SOL worth of tokens.`,
+      instruction:
         `A ${event.isWhale ? 'whale' : 'notable'} ${action} just happened. ` +
         `Wallet ${event.wallet} ${action} ${event.solValue.toFixed(1)} SOL worth. ` +
         'Give a one-liner reaction. Under 140 characters. Be sharp.',

@@ -9,6 +9,7 @@ import { startDreamCycle, stopDreamCycle } from './features/dream-cycle';
 import { startServer } from './webhook/server';
 import { getBotWallet } from './core/solana-client';
 import { createChildLogger } from './core/logger';
+import { registerEventHandlers } from './events/handlers';
 
 const log = createChildLogger('main');
 
@@ -29,19 +30,23 @@ async function main(): Promise<void> {
     log.warn('No bot wallet configured — on-chain opinion commits will be disabled');
   }
 
-  // Phase 2: Start webhook server (Helius webhooks + verification app)
+  // Phase 2: Register event handlers (decoupled feature wiring)
+  registerEventHandlers();
+  log.info('Event handlers registered');
+
+  // Phase 3: Start webhook server (Helius webhooks + verification app)
   await startServer();
   log.info({ port: config.server.port }, 'Server running');
 
-  // Phase 3: Start price oracle
+  // Phase 4: Start price oracle
   startPriceOracle();
   log.info('Price oracle started');
 
-  // Phase 4: Start mention poller
+  // Phase 5: Start mention poller
   startPolling();
   log.info('Mention poller started');
 
-  // Phase 5: Start autonomous features
+  // Phase 6: Start autonomous features
   startMoodTweeter();
   log.info('Mood tweeter started');
 

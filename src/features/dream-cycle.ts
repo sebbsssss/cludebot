@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { generateResponse } from '../core/claude-client';
-import { postTweet } from '../core/x-client';
 import { checkRateLimit } from '../core/database';
+import { tweet } from '../services/social.service';
 import {
   getRecentMemories,
   getSelfModel,
@@ -12,6 +12,7 @@ import {
   type Memory,
   type MemoryStats,
 } from '../core/memory';
+import { config } from '../config';
 import { createChildLogger } from '../core/logger';
 
 const log = createChildLogger('dream-cycle');
@@ -207,7 +208,7 @@ async function runEmergence(): Promise<void> {
   const canPost = await checkRateLimit('global:emergence-tweet', 1, 720);
   if (canPost && response.length <= 270) {
     try {
-      await postTweet(response);
+      await tweet(response);
       log.info('Emergence thought posted to X');
     } catch (err) {
       log.error({ err }, 'Failed to post emergence thought');
@@ -268,7 +269,7 @@ export function startDreamCycle(): void {
   log.info('Starting dream cycle scheduler');
 
   // Run dream cycle every 6 hours (0:00, 6:00, 12:00, 18:00)
-  dreamCron = cron.schedule('0 */6 * * *', async () => {
+  dreamCron = cron.schedule(config.intervals.dreamCycleCron, async () => {
     log.info('=== DREAM CYCLE BEGINNING ===');
 
     try {
@@ -298,7 +299,7 @@ export function startDreamCycle(): void {
   });
 
   // Run memory decay daily at 3am
-  decayCron = cron.schedule('0 3 * * *', async () => {
+  decayCron = cron.schedule(config.intervals.memoryDecayCron, async () => {
     log.info('Running memory decay');
     try {
       await decayMemories();
@@ -319,7 +320,7 @@ export function startDreamCycle(): void {
     } catch (err) {
       log.error({ err }, 'Initial dream cycle failed');
     }
-  }, 120_000); // 2 minutes after boot
+  }, config.intervals.dreamCycleBootDelayMs);
 }
 
 export function stopDreamCycle(): void {

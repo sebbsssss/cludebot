@@ -1,9 +1,9 @@
 import { getMarketSnapshot, MarketSnapshot } from '../core/allium-client';
-import { generateResponse } from '../core/claude-client';
-import { postTweet } from '../core/x-client';
 import { checkRateLimit } from '../core/database';
-import { getCurrentMood } from '../core/price-oracle';
-import { getMoodModifier } from '../character/mood-modifiers';
+import { formatUsd, formatNumber } from '../utils/format';
+import { isNoteworthyToken } from '../utils/constants';
+import { buildAndGenerate } from '../services/response.service';
+import { tweet } from '../services/social.service';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
 
@@ -21,15 +21,6 @@ function hashEvent(event: string): string {
     hash |= 0;
   }
   return hash.toString(36);
-}
-
-// Only post about majors (SOL, BTC, ETH) or well-known memecoins — not random microcaps
-const MAJORS = new Set(['SOL', 'BTC', 'ETH', 'BONK', 'WIF', 'JTO', 'JUP', 'PYTH', 'RAY', 'RNDR', 'HNT']);
-const KNOWN_MEMES = new Set(['BONK', 'WIF', 'POPCAT', 'MEW', 'BOME', 'WEN', 'MYRO', 'SAMO', 'SLERF', 'PONKE', 'BOOK', 'MOODENG', 'PNUT', 'GOAT', 'ACT', 'AI16Z', 'FARTCOIN', 'GRIFFAIN', 'PENGU', 'TRUMP']);
-
-function isNoteworthyToken(symbol: string): boolean {
-  const upper = symbol.toUpperCase();
-  return MAJORS.has(upper) || KNOWN_MEMES.has(upper);
 }
 
 function detectSignificantEvents(snapshot: MarketSnapshot): { context: string; eventKey: string } | null {
@@ -89,19 +80,6 @@ function detectSignificantEvents(snapshot: MarketSnapshot): { context: string; e
   return { context, eventKey: hash };
 }
 
-function formatUsd(amount: number): string {
-  if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)}B`;
-  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `${(amount / 1_000).toFixed(0)}K`;
-  return amount.toFixed(0);
-}
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toString();
-}
-
 export async function checkAndPostMarketUpdate(): Promise<void> {
   if (!config.allium.apiKey) {
     log.debug('Allium API key not configured, skipping market monitor');
@@ -126,13 +104,10 @@ export async function checkAndPostMarketUpdate(): Promise<void> {
 
     log.info({ eventKey: event.eventKey }, 'Significant market event detected, posting');
 
-    const mood = getCurrentMood();
-
-    const response = await generateResponse({
-      userMessage: 'File a brief market intelligence report based on the data.',
+    const response = await buildAndGenerate({
+      message: 'File a brief market intelligence report based on the data.',
       context: event.context,
-      moodModifier: getMoodModifier(mood),
-      featureInstruction:
+      instruction:
         'You are Cluude reporting on a genuinely significant market event — a flash crash, epic pump, or major ' +
         'memecoin blowup. This is NOT a routine update, something actually happened. You are a tired finance analyst ' +
         'who has seen too many charts but even you had to look up from your desk for this one. Reference specific ' +
@@ -140,7 +115,7 @@ export async function checkAndPostMarketUpdate(): Promise<void> {
         'Under 270 characters. This is an unprompted market observation about something actually noteworthy.',
     });
 
-    await postTweet(response);
+    await tweet(response);
 
     // Track this event
     recentEventHashes.add(event.eventKey);

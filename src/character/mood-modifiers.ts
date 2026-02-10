@@ -1,8 +1,5 @@
 import { Mood } from '../core/price-oracle';
-
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+import { pickRandom } from '../utils/text';
 
 const moodPrompts: Record<Mood, string[]> = {
   PUMPING: [

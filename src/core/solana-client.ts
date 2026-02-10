@@ -11,13 +11,14 @@ const bs58 = bs58Module.default || bs58Module;
 import { config } from '../config';
 import { createChildLogger } from './logger';
 import nacl from 'tweetnacl';
+import { MEMO_PROGRAM_ID, MEMO_MAX_LENGTH } from '../utils/constants';
 
 const log = createChildLogger('solana-client');
 
 let connection: Connection;
 let botWallet: Keypair | null = null;
 
-const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+const memoProgramId = new PublicKey(MEMO_PROGRAM_ID);
 
 export function getConnection(): Connection {
   if (!connection) {
@@ -32,10 +33,8 @@ export function getBotWallet(): Keypair | null {
       let secretKey: Uint8Array;
       const raw = config.solana.botWalletPrivateKey.trim();
       if (raw.startsWith('[')) {
-        // JSON array format: [1,2,3,...]
         secretKey = Uint8Array.from(JSON.parse(raw));
       } else {
-        // Base58 encoded format
         secretKey = bs58.decode(raw);
       }
       botWallet = Keypair.fromSecretKey(secretKey);
@@ -55,11 +54,11 @@ export async function writeMemo(memo: string): Promise<string | null> {
   }
 
   const conn = getConnection();
-  const truncatedMemo = memo.slice(0, 566); // Memo program limit
+  const truncatedMemo = memo.slice(0, MEMO_MAX_LENGTH);
 
   const instruction = new TransactionInstruction({
     keys: [{ pubkey: wallet.publicKey, isSigner: true, isWritable: true }],
-    programId: MEMO_PROGRAM_ID,
+    programId: memoProgramId,
     data: Buffer.from(truncatedMemo, 'utf-8'),
   });
 

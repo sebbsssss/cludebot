@@ -3,12 +3,11 @@ import { classifyMention } from './classifier';
 import { handleWalletRoast } from '../features/wallet-roast';
 import { handleOnchainOpinion } from '../features/onchain-opinion';
 import { determineHolderTier, getLinkedWallet } from '../features/holder-tier';
-import { generateResponse } from '../core/claude-client';
-import { postReply } from '../core/x-client';
 import { isAlreadyProcessed, markProcessed } from '../core/database';
 import { getCurrentMood } from '../core/price-oracle';
-import { getMoodModifier } from '../character/mood-modifiers';
-import { getTierModifier } from '../character/tier-modifiers';
+import { cleanMentionText, extractTokenMentions } from '../utils/text';
+import { buildAndGenerate } from '../services/response.service';
+import { replyAndMark } from '../services/social.service';
 import {
   storeMemory,
   recallMemories,
@@ -66,10 +65,10 @@ async function handleGeneralReply(
   authorId: string,
   tier: Awaited<ReturnType<typeof determineHolderTier>>
 ): Promise<void> {
-  const mood = getCurrentMood();
-  const cleanText = text.replace(/@\w+/g, '').trim();
+  const cleanText = cleanMentionText(text);
 
   // Recall relevant memories for this user and context
+  const mood = getCurrentMood();
   const memories = await recallMemories({
     relatedUser: authorId,
     query: cleanText,
@@ -80,20 +79,24 @@ async function handleGeneralReply(
 
   const memoryContext = formatMemoryContext(memories);
 
-  const response = await generateResponse({
-    userMessage: cleanText,
-    moodModifier: getMoodModifier(mood),
-    tierModifier: getTierModifier(tier),
-    memoryContext: memoryContext || undefined,
-    featureInstruction:
+  const response = await buildAndGenerate({
+    message: cleanText,
+    tier,
+    instruction:
       'Someone mentioned you on X. Respond in character. ' +
       'Under 270 characters. Be yourself: tired, polite, accidentally honest.' +
       (memories.length > 0 ? ' You have memories of past interactions — use them naturally if relevant.' : ''),
+    memory: {
+      relatedUser: authorId,
+      query: cleanText,
+      tags: [tier, mood, 'general'],
+      memoryTypes: ['episodic', 'semantic', 'self_model'],
+      limit: 4,
+    },
   });
 
-  const replyId = await postReply(tweetId, response);
-  await markProcessed(tweetId, 'general', replyId);
-  log.info({ tweetId, replyId, memoriesUsed: memories.length }, 'General reply posted');
+  await replyAndMark(tweetId, response, 'general');
+  log.info({ tweetId, memoriesUsed: memories.length }, 'General reply posted');
 }
 
 async function storeInteractionMemory(
@@ -104,7 +107,7 @@ async function storeInteractionMemory(
   tier: Awaited<ReturnType<typeof determineHolderTier>>
 ): Promise<void> {
   const mood = getCurrentMood();
-  const cleanText = text.replace(/@\w+/g, '').trim();
+  const cleanText = cleanMentionText(text);
 
   // Get wallet address if linked
   const walletLink = await getLinkedWallet(authorId);
@@ -130,9 +133,9 @@ async function storeInteractionMemory(
   if (isFirst) tags.push('first_interaction');
 
   // Look for token/crypto mentions in the text
-  const tokenMentions = cleanText.match(/\$[A-Z]{2,10}/gi);
-  if (tokenMentions) {
-    tags.push(...tokenMentions.map(t => t.toUpperCase()));
+  const tokenMentions = extractTokenMentions(cleanText);
+  if (tokenMentions.length > 0) {
+    tags.push(...tokenMentions);
   }
 
   await storeMemory({

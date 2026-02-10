@@ -1,17 +1,12 @@
 import { getWalletHistory } from '../core/helius-client';
-import { generateResponse } from '../core/claude-client';
-import { postTweet } from '../core/x-client';
 import { checkRateLimit } from '../core/database';
-import { getCurrentMood } from '../core/price-oracle';
-import { getMoodModifier } from '../character/mood-modifiers';
+import { truncateWallet } from '../utils/format';
+import { buildAndGenerate } from '../services/response.service';
+import { tweet } from '../services/social.service';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
 
 const log = createChildLogger('exit-interview');
-
-function truncateWallet(address: string): string {
-  return `${address.slice(0, 4)}...${address.slice(-4)}`;
-}
 
 export async function handleExitInterview(
   walletAddress: string,
@@ -48,13 +43,10 @@ export async function handleExitInterview(
     `Other recent activity: ${txs.length - cluudeTxs.length} non-$CLUUDE transactions`,
   ].join('\n');
 
-  const mood = getCurrentMood();
-
-  const response = await generateResponse({
-    userMessage: 'A holder just sold all their tokens. Conduct their exit interview.',
+  const response = await buildAndGenerate({
+    message: 'A holder just sold all their tokens. Conduct their exit interview.',
     context,
-    moodModifier: getMoodModifier(mood),
-    featureInstruction:
+    instruction:
       'A wallet just sold ALL of their $CLUUDE tokens. This is an exit interview. ' +
       'Reference the specific data: how long they held, what they sold for. ' +
       'Write it like HR processing a resignation. Professional. Clinical. ' +
@@ -62,6 +54,6 @@ export async function handleExitInterview(
       'Start with the truncated wallet address. Under 270 characters.',
   });
 
-  await postTweet(response);
+  await tweet(response);
   log.info({ walletAddress }, 'Exit interview posted');
 }

@@ -1,9 +1,12 @@
 import { config } from '../config';
 import { createChildLogger } from './logger';
+import type { AlliumTokenData, AlliumSolStats } from '../types/api';
 
 const log = createChildLogger('allium-client');
 
-const BASE_URL = 'https://api.allium.so/api/v1/developer';
+// ============================================================
+// Allium Client — Market Intelligence API
+// ============================================================
 
 export interface MarketMover {
   token: string;
@@ -37,13 +40,13 @@ export interface MarketSnapshot {
   lastUpdate: string;
 }
 
-async function alliumFetch(endpoint: string, method: 'GET' | 'POST' = 'GET', body?: unknown): Promise<any> {
+async function alliumFetch<T = unknown>(endpoint: string, method: 'GET' | 'POST' = 'GET', body?: unknown): Promise<T | null> {
   if (!config.allium.apiKey) {
     log.warn('No Allium API key configured');
     return null;
   }
 
-  const url = `${BASE_URL}${endpoint}`;
+  const url = `${config.apis.alliumBaseUrl}${endpoint}`;
   const options: RequestInit = {
     method,
     headers: {
@@ -63,30 +66,28 @@ async function alliumFetch(endpoint: string, method: 'GET' | 'POST' = 'GET', bod
       log.error({ status: res.status, body: text, endpoint }, 'Allium API error');
       return null;
     }
-    return await res.json();
+    return await res.json() as T;
   } catch (err) {
     log.error({ err, endpoint }, 'Allium fetch failed');
     return null;
   }
 }
 
-// Cache for market data to avoid hammering the API
+// Cache for market data
 let cachedSnapshot: MarketSnapshot | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL_MS = 60_000; // 1 minute
 
 export async function getMarketSnapshot(): Promise<MarketSnapshot> {
   const now = Date.now();
-  if (cachedSnapshot && now - cacheTimestamp < CACHE_TTL_MS) {
+  if (cachedSnapshot && now - cacheTimestamp < config.allium.cacheTtlMs) {
     return cachedSnapshot;
   }
 
   log.debug('Fetching fresh market snapshot from Allium');
 
-  // Fetch top Solana tokens by 24h volume and SOL price stats in parallel
   const [topTokens, solStats] = await Promise.all([
-    alliumFetch('/tokens?chain=solana&sort=volume&granularity=1d&order=desc&limit=20'),
-    alliumFetch('/prices/stats', 'POST', [
+    alliumFetch<AlliumTokenData[]>('/tokens?chain=solana&sort=volume&granularity=1d&order=desc&limit=20'),
+    alliumFetch<AlliumSolStats>('/prices/stats', 'POST', [
       { token_address: 'So11111111111111111111111111111111111111112', chain: 'solana' },
     ]),
   ]);
@@ -102,7 +103,7 @@ export async function getMarketSnapshot(): Promise<MarketSnapshot> {
   if (solStats?.items?.[0]) {
     const sol = solStats.items[0];
     solPrice = sol.latest_price || 0;
-    solChange1h = (sol.percent_change_1h || 0) * 100; // API returns decimal, convert to %
+    solChange1h = (sol.percent_change_1h || 0) * 100;
     solChange24h = (sol.percent_change_24h || 0) * 100;
   }
 
@@ -114,28 +115,21 @@ export async function getMarketSnapshot(): Promise<MarketSnapshot> {
       const price = token.price || 0;
       const attrs = token.attributes || {};
 
-      // Extract SOL volume
       if (symbol === 'SOL') {
         solVolume24h = attrs.volume_usd_1d || 0;
         if (price > 0 && solPrice === 0) solPrice = price;
       }
 
-      // Skip stablecoins and SOL itself for movers
       if (['SOL', 'USDC', 'USDT', 'PYUSD'].includes(symbol)) continue;
       if (!symbol || !price) continue;
-
-      const change1h = attrs.price_diff_pct_1h || 0;
-      const change24h = attrs.price_diff_pct_1d || 0;
-      const volume1h = attrs.volume_usd_1h || 0;
-      const volume24h = attrs.volume_usd_1d || 0;
 
       movers.push({
         token: name,
         symbol,
-        priceChange1h: change1h,
-        priceChange24h: change24h,
-        volume1h,
-        volume24h,
+        priceChange1h: attrs.price_diff_pct_1h || 0,
+        priceChange24h: attrs.price_diff_pct_1d || 0,
+        volume1h: attrs.volume_usd_1h || 0,
+        volume24h: attrs.volume_usd_1d || 0,
         priceUsd: price,
         tradeCount1h: attrs.trade_count_1h || 0,
         tradeCount24h: attrs.trade_count_1d || 0,
@@ -143,20 +137,18 @@ export async function getMarketSnapshot(): Promise<MarketSnapshot> {
         holders: attrs.holders_count || 0,
       });
 
-      // Flag extreme movers as whale-like activity
-      if (Math.abs(change1h) > 20 && volume1h > 100_000) {
+      if (Math.abs(attrs.price_diff_pct_1h || 0) > 20 && (attrs.volume_usd_1h || 0) > 100_000) {
         whaleAlerts.push({
           wallet: 'market',
-          action: change1h > 0 ? 'pump' : 'dump',
+          action: (attrs.price_diff_pct_1h || 0) > 0 ? 'pump' : 'dump',
           token: symbol,
-          amountUsd: volume1h,
+          amountUsd: attrs.volume_usd_1h || 0,
           timestamp: new Date().toISOString(),
         });
       }
     }
   }
 
-  // Sort movers by absolute 1h price change (most volatile first)
   movers.sort((a, b) => Math.abs(b.priceChange1h) - Math.abs(a.priceChange1h));
 
   const snapshot: MarketSnapshot = {

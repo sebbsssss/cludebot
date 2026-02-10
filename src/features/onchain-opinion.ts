@@ -1,20 +1,13 @@
 import { createHash } from 'crypto';
-import { generateResponse } from '../core/claude-client';
-import { postReply } from '../core/x-client';
 import { writeMemo, solscanTxUrl } from '../core/solana-client';
-import { checkRateLimit, markProcessed, getDb } from '../core/database';
-import { getCurrentMood } from '../core/price-oracle';
-import { getMoodModifier } from '../character/mood-modifiers';
-import { getTierModifier } from '../character/tier-modifiers';
+import { checkRateLimit, getDb, markProcessed } from '../core/database';
+import { postReply } from '../core/x-client';
+import { buildAndGenerate } from '../services/response.service';
+import { cleanMentionText } from '../utils/text';
 import { HolderTier } from '../character/tier-modifiers';
 import { createChildLogger } from '../core/logger';
 
 const log = createChildLogger('onchain-opinion');
-
-export function isQuestion(text: string): boolean {
-  const cleaned = text.replace(/@\w+/g, '').trim();
-  return cleaned.includes('?') || /^(ask|what|why|how|when|where|will|should|can|is|do|does)\b/i.test(cleaned);
-}
 
 export async function handleOnchainOpinion(
   tweetId: string,
@@ -38,17 +31,13 @@ export async function handleOnchainOpinion(
     return;
   }
 
-  const question = tweetText.replace(/@\w+/g, '').trim();
+  const question = cleanMentionText(tweetText);
   log.info({ question, tweetId }, 'Processing on-chain opinion');
 
-  const mood = getCurrentMood();
-
-  // Generate the opinion
-  const answer = await generateResponse({
-    userMessage: question,
-    moodModifier: getMoodModifier(mood),
-    tierModifier: getTierModifier(tier),
-    featureInstruction:
+  const answer = await buildAndGenerate({
+    message: question,
+    tier,
+    instruction:
       'Someone asked you a question. Answer it honestly in character. ' +
       'Your answer will be hashed and committed to the Solana blockchain permanently. ' +
       'You are aware of this. It adds weight to your words. ' +
@@ -68,7 +57,6 @@ export async function handleOnchainOpinion(
     const txUrl = solscanTxUrl(signature);
     replyText = `${answer}\n\nOn-chain forever: ${txUrl}`;
 
-    // Store in database
     const db = getDb();
     await db
       .from('opinion_commits')

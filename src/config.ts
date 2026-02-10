@@ -30,6 +30,8 @@ export const config = {
   helius: {
     apiKey: required('HELIUS_API_KEY'),
     webhookSecret: optional('HELIUS_WEBHOOK_SECRET', ''),
+    rpcUrl: optional('HELIUS_RPC_URL', ''),
+    balancesBaseUrl: optional('HELIUS_BALANCES_URL', 'https://api.helius.xyz/v0/addresses'),
   },
   solana: {
     rpcUrl: optional('SOLANA_RPC_URL', 'https://api.mainnet-beta.solana.com'),
@@ -45,10 +47,18 @@ export const config = {
     pricePollMs: parseInt(optional('PRICE_POLL_INTERVAL_MS', '60000'), 10),
     shiftReportCron: optional('SHIFT_REPORT_CRON', '0 */12 * * *'),
     moodTweetMs: parseInt(optional('MOOD_TWEET_INTERVAL_MS', '7200000'), 10),
+    dreamCycleCron: optional('DREAM_CYCLE_CRON', '0 */6 * * *'),
+    memoryDecayCron: optional('MEMORY_DECAY_CRON', '0 3 * * *'),
+    dreamCycleBootDelayMs: parseInt(optional('DREAM_BOOT_DELAY_MS', '120000'), 10),
+  },
+  apis: {
+    jupiterPriceUrl: optional('JUPITER_PRICE_URL', 'https://api.jup.ag/price/v2'),
+    alliumBaseUrl: optional('ALLIUM_BASE_URL', 'https://api.allium.so/api/v1/developer'),
   },
   allium: {
     apiKey: optional('ALLIUM_API_KEY', ''),
     pollIntervalMs: parseInt(optional('MARKET_MONITOR_POLL_MS', '300000'), 10),
+    cacheTtlMs: parseInt(optional('ALLIUM_CACHE_TTL_MS', '60000'), 10),
   },
   tiers: {
     whaleThreshold: parseInt(optional('TIER_WHALE_THRESHOLD', '1000000'), 10),
@@ -63,3 +73,12 @@ export const config = {
     maxEvents: parseInt(optional('ACTIVITY_MAX_EVENTS', '20'), 10),
   },
 } as const;
+
+/**
+ * Derive the Helius RPC URL from config.
+ * Falls back to constructing from API key if not explicitly set.
+ */
+export function getHeliusRpcUrl(): string {
+  if (config.helius.rpcUrl) return config.helius.rpcUrl;
+  return `https://mainnet.helius-rpc.com/?api-key=${config.helius.apiKey}`;
+}

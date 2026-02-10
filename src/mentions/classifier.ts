@@ -1,5 +1,4 @@
-import { extractWalletAddress } from '../features/wallet-roast';
-import { isQuestion } from '../features/onchain-opinion';
+import { extractWalletAddress, isQuestion } from '../utils/text';
 
 export type MentionType = 'wallet-roast' | 'question' | 'general';
 
