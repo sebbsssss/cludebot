@@ -1,11 +1,13 @@
 import cron from 'node-cron';
 import { getDb } from '../core/database';
-import { generateThread } from '../core/claude-client';
-import { postThread } from '../core/x-client';
 import { getCurrentMood } from '../core/price-oracle';
 import { getMoodModifier } from '../character/mood-modifiers';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
+import { truncateWallet } from '../utils/format';
+import type { TokenEventRow } from '../types/api';
+import { buildAndGenerateThread } from '../services/response.service';
+import { tweetThread } from '../services/social.service';
 
 const log = createChildLogger('shift-report');
 
@@ -33,15 +35,15 @@ async function aggregateShiftData(): Promise<ShiftData> {
     .eq('processed', false)
     .order('timestamp', { ascending: true });
 
-  const rows = events || [];
+  const rows = (events || []) as TokenEventRow[];
 
-  const buys = rows.filter((e: any) => e.event_type === 'swap_buy');
-  const sells = rows.filter((e: any) => e.event_type === 'swap_sell');
-  const transfers = rows.filter((e: any) => e.event_type === 'transfer');
-  const uniqueWallets = new Set(rows.map((e: any) => e.wallet_address)).size;
+  const buys = rows.filter((e: TokenEventRow) => e.event_type === 'swap_buy');
+  const sells = rows.filter((e: TokenEventRow) => e.event_type === 'swap_sell');
+  const transfers = rows.filter((e: TokenEventRow) => e.event_type === 'transfer');
+  const uniqueWallets = new Set(rows.map((e: TokenEventRow) => e.wallet_address)).size;
 
-  const largestBuy = buys.sort((a: any, b: any) => (b.sol_value || 0) - (a.sol_value || 0))[0];
-  const largestSell = sells.sort((a: any, b: any) => (b.sol_value || 0) - (a.sol_value || 0))[0];
+  const largestBuy = buys.sort((a: TokenEventRow, b: TokenEventRow) => (b.sol_value || 0) - (a.sol_value || 0))[0];
+  const largestSell = sells.sort((a: TokenEventRow, b: TokenEventRow) => (b.sol_value || 0) - (a.sol_value || 0))[0];
 
   // Track quick flips: wallet that bought and sold in the same period
   let quickestFlip: ShiftData['quickestFlip'] = null;
@@ -63,9 +65,9 @@ async function aggregateShiftData(): Promise<ShiftData> {
   }
 
   // Count full exits (departures)
-  const departures = sells.filter((s: any) => {
+  const departures = sells.filter((s: TokenEventRow) => {
     const meta = typeof s.metadata === 'string' ? JSON.parse(s.metadata) : (s.metadata || {});
-    return meta.remainingBalance === 0;
+    return (meta as Record<string, unknown>).remainingBalance === 0;
   }).length;
 
   return {
@@ -88,10 +90,6 @@ async function aggregateShiftData(): Promise<ShiftData> {
     newHolders: buys.length,
     departures,
   };
-}
-
-function truncateWallet(address: string): string {
-  return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }
 
 function formatShiftContext(data: ShiftData): string {
@@ -129,11 +127,10 @@ async function generateShiftReport(): Promise<void> {
 
   log.info({ totalEvents: data.totalEvents }, 'Generating shift report');
 
-  const tweets = await generateThread({
-    userMessage: 'Generate your end-of-shift report.',
+  const tweets = await buildAndGenerateThread({
+    message: 'Generate your end-of-shift report.',
     context,
-    moodModifier: getMoodModifier(mood),
-    featureInstruction:
+    instruction:
       'You are filing your shift report as a tired employee. This is your 12-hour summary. ' +
       'Format as a thread of 3-5 tweets separated by ---. ' +
       'Start with "SHIFT REPORT" and the date. ' +
@@ -143,7 +140,7 @@ async function generateShiftReport(): Promise<void> {
   });
 
   if (tweets.length > 0) {
-    await postThread(tweets);
+    await tweetThread(tweets);
     log.info({ tweetCount: tweets.length }, 'Shift report posted');
   }
 

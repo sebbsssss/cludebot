@@ -1,25 +1,16 @@
 import { getWalletHistory, getTokenBalances, WalletTransaction, TokenBalance } from '../core/helius-client';
-import { generateResponse } from '../core/claude-client';
 import { postReply } from '../core/x-client';
 import { checkRateLimit, markProcessed } from '../core/database';
-import { getCurrentMood } from '../core/price-oracle';
-import { getMoodModifier } from '../character/mood-modifiers';
 import { getTierModifier } from '../character/tier-modifiers';
 import { HolderTier } from '../character/tier-modifiers';
 import { createChildLogger } from '../core/logger';
+import { extractWalletAddress } from '../utils/text';
+import { buildAndGenerate } from '../services/response.service';
+import { replyAndMark } from '../services/social.service';
 
 const log = createChildLogger('wallet-roast');
 
-const SOLANA_ADDRESS_REGEX = /[1-9A-HJ-NP-Za-km-z]{32,44}/g;
-
-export function extractWalletAddress(text: string): string | null {
-  const matches = text.match(SOLANA_ADDRESS_REGEX);
-  if (!matches) return null;
-  // Filter out common false positives (token names, etc.)
-  // Real Solana addresses are typically 32-44 chars of base58
-  const valid = matches.find(m => m.length >= 32 && m.length <= 44);
-  return valid || null;
-}
+export { extractWalletAddress };
 
 function analyzeWallet(txs: WalletTransaction[], balances: TokenBalance[]): string {
   const totalTxs = txs.length;
@@ -98,20 +89,17 @@ export async function handleWalletRoast(
   }
 
   const walletAnalysis = analyzeWallet(txs, balances);
-  const mood = getCurrentMood();
 
-  const response = await generateResponse({
-    userMessage: `Roast this Solana wallet: ${address}`,
+  const response = await buildAndGenerate({
+    message: `Roast this Solana wallet: ${address}`,
     context: walletAnalysis,
-    moodModifier: getMoodModifier(mood),
     tierModifier: getTierModifier(tier),
-    featureInstruction:
+    instruction:
       'You are roasting a wallet based on its on-chain behavior. ' +
       'Be brutally honest but wrapped in politeness. Reference specific data points from the analysis. ' +
       'Keep it under 270 characters. One tweet. Make it sting but make it classy.',
   });
 
-  const replyId = await postReply(tweetId, response);
-  await markProcessed(tweetId, 'wallet-roast', replyId);
-  log.info({ tweetId, replyId }, 'Wallet roast posted');
+  await replyAndMark(tweetId, response, 'wallet-roast');
+  log.info({ tweetId }, 'Wallet roast posted');
 }

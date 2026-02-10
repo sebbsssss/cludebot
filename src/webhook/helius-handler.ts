@@ -1,31 +1,12 @@
 import { getDb } from '../core/database';
 import { config } from '../config';
-import { flagWhaleSell } from '../core/price-oracle';
-import { handleExitInterview } from '../features/exit-interview';
 import { getCludeBalance } from '../core/helius-client';
 import { createChildLogger } from '../core/logger';
+import { eventBus } from '../events/event-bus';
+import { lamportsToSol } from '../utils/format';
+import type { HeliusWebhookPayload } from '../types/api';
 
 const log = createChildLogger('helius-handler');
-
-interface HeliusWebhookPayload {
-  signature: string;
-  timestamp: number;
-  type: string;
-  description: string;
-  fee: number;
-  nativeTransfers: Array<{
-    fromUserAccount: string;
-    toUserAccount: string;
-    amount: number;
-  }>;
-  tokenTransfers: Array<{
-    mint: string;
-    fromUserAccount: string;
-    toUserAccount: string;
-    tokenAmount: number;
-    tokenStandard: string;
-  }>;
-}
 
 export async function handleHeliusWebhook(payload: HeliusWebhookPayload[]): Promise<void> {
   for (const tx of payload) {
@@ -63,7 +44,7 @@ async function processTransaction(tx: HeliusWebhookPayload): Promise<void> {
     // Calculate SOL value from native transfers
     const solValue = tx.nativeTransfers.reduce((sum, nt) => {
       if (nt.fromUserAccount === transfer.fromUserAccount || nt.toUserAccount === transfer.toUserAccount) {
-        return sum + nt.amount / 1e9;
+        return sum + lamportsToSol(nt.amount);
       }
       return sum;
     }, 0);
@@ -81,18 +62,20 @@ async function processTransaction(tx: HeliusWebhookPayload): Promise<void> {
         metadata: { type: tx.type, description: tx.description },
       }, { onConflict: 'signature' });
 
+    const wallet = transfer.fromUserAccount;
+
     // Check for whale sell (arbitrary: > 10 SOL value)
     if (eventType === 'swap_sell' && solValue > 10) {
-      log.info({ wallet: transfer.fromUserAccount, solValue }, 'Whale sell detected');
-      flagWhaleSell();
+      log.info({ wallet, solValue }, 'Whale sell detected');
+      eventBus.emit('whale:sell', { wallet, solValue, signature: tx.signature });
     }
 
     // Check for full exit (balance → 0)
-    if (eventType === 'swap_sell' && transfer.fromUserAccount) {
-      const remainingBalance = await getCludeBalance(transfer.fromUserAccount);
+    if (eventType === 'swap_sell' && wallet) {
+      const remainingBalance = await getCludeBalance(wallet);
       if (remainingBalance === 0) {
-        log.info({ wallet: transfer.fromUserAccount }, 'Full exit detected');
-        await handleExitInterview(transfer.fromUserAccount, transfer.tokenAmount, solValue);
+        log.info({ wallet }, 'Full exit detected');
+        eventBus.emit('holder:exit', { wallet, tokenAmount: transfer.tokenAmount, solValue });
       }
     }
   }
