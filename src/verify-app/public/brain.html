@@ -7,7 +7,7 @@
   <meta name="description" content="Neural map of an AI's memory. Each node a thought. Each edge a connection. Watch it think.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #030308;
@@ -19,29 +19,22 @@
       --semantic: #4a8aff;
       --procedural: #4a8a5a;
       --selfmodel: #b04ae0;
-      --mono: 'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace;
+      --mono: 'JetBrains Mono', 'Courier New', monospace;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       overflow: hidden;
       font-family: var(--mono);
       background: var(--bg);
       color: var(--text);
       font-size: 12px;
       -webkit-font-smoothing: antialiased;
-      cursor: crosshair;
     }
 
-    canvas {
-      display: block;
-      position: fixed;
-      top: 0;
-      left: 0;
-    }
+    canvas { display: block; }
 
     /* ---- HUD OVERLAY ---- */
     .hud {
@@ -50,10 +43,10 @@
       pointer-events: none;
     }
 
-    .hud-top-left {
-      top: 24px;
-      left: 28px;
-    }
+    .hud-tl { top: 24px; left: 28px; }
+    .hud-tr { top: 24px; right: 28px; }
+    .hud-bl { bottom: 24px; left: 28px; }
+    .hud-br { bottom: 24px; right: 28px; }
 
     .hud-title {
       font-size: 11px;
@@ -64,7 +57,7 @@
       margin-bottom: 4px;
     }
 
-    .hud-subtitle {
+    .hud-sub {
       font-size: 10px;
       color: #2a2a2a;
       letter-spacing: 2px;
@@ -77,25 +70,11 @@
       color: #333;
     }
 
-    .hud-stats .val {
-      color: #666;
-      font-weight: 500;
-    }
+    .hud-stats .v { color: #666; font-weight: 500; }
+    .hud-stats .l { color: #2a2a2a; margin-left: 6px; }
 
-    .hud-stats .label {
-      color: #2a2a2a;
-      margin-left: 6px;
-    }
-
-    /* ---- TYPE LEGEND ---- */
-    .hud-top-right {
-      top: 24px;
-      right: 28px;
-    }
-
-    .legend {
-      text-align: right;
-    }
+    /* ---- LEGEND ---- */
+    .legend { text-align: right; }
 
     .legend-item {
       display: flex;
@@ -112,27 +91,76 @@
       user-select: none;
     }
 
-    .legend-item:hover {
-      color: #666;
-    }
-
-    .legend-item.disabled {
-      opacity: 0.25;
-    }
+    .legend-item:hover { color: #666; }
+    .legend-item.off { opacity: 0.2; }
 
     .legend-dot {
-      width: 8px;
-      height: 8px;
+      width: 8px; height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
     }
 
-    /* ---- BOTTOM NAV ---- */
-    .hud-bottom-left {
-      bottom: 24px;
-      left: 28px;
+    /* ---- FILTER BAR ---- */
+    .filter-bar {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(3, 3, 8, 0.8);
+      border: 1px solid #1a1a1a;
+      padding: 8px 18px;
+      backdrop-filter: blur(12px);
+      pointer-events: auto;
     }
 
+    .filter-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: #333;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .filter-val {
+      font-size: 10px;
+      color: #555;
+      min-width: 28px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 120px;
+      height: 2px;
+      background: #1a1a1a;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #555;
+      border: 1px solid #333;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #555;
+      border: 1px solid #333;
+      cursor: pointer;
+    }
+
+    /* ---- NAV ---- */
     .hud-nav {
       font-size: 10px;
       letter-spacing: 1px;
@@ -145,21 +173,10 @@
       transition: color 0.3s;
     }
 
-    .hud-nav a:hover {
-      color: var(--accent);
-    }
-
-    .hud-nav span {
-      color: #1a1a1a;
-      margin: 0 6px;
-    }
+    .hud-nav a:hover { color: var(--accent); }
+    .hud-nav span { color: #1a1a1a; margin: 0 6px; }
 
     /* ---- CONTROLS ---- */
-    .hud-bottom-right {
-      bottom: 24px;
-      right: 28px;
-    }
-
     .controls {
       display: flex;
       gap: 4px;
@@ -167,13 +184,12 @@
     }
 
     .ctrl-btn {
-      width: 28px;
-      height: 28px;
+      width: 28px; height: 28px;
       border: 1px solid #1a1a1a;
       background: rgba(3, 3, 8, 0.8);
       color: #444;
       font-family: var(--mono);
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -181,33 +197,28 @@
       transition: all 0.2s;
     }
 
-    .ctrl-btn:hover {
-      border-color: #333;
-      color: #888;
-    }
+    .ctrl-btn:hover { border-color: #333; color: #888; }
+    .ctrl-btn.active { border-color: var(--accent); color: var(--accent); }
 
     /* ---- DETAIL PANEL ---- */
-    .detail-panel {
+    .detail {
       position: fixed;
-      bottom: 60px;
+      bottom: 100px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 20;
-      background: rgba(6, 6, 12, 0.92);
+      background: rgba(6, 6, 12, 0.94);
       border: 1px solid #1a1a1a;
       padding: 16px 22px;
-      max-width: 520px;
+      max-width: 540px;
       width: 90%;
       backdrop-filter: blur(20px);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s;
+      transition: opacity 0.2s;
     }
 
-    .detail-panel.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    .detail.vis { opacity: 1; pointer-events: auto; }
 
     .detail-type {
       font-size: 9px;
@@ -232,9 +243,7 @@
       letter-spacing: 0.5px;
     }
 
-    .detail-meta .val {
-      color: #555;
-    }
+    .detail-meta .v { color: #555; }
 
     .detail-tags {
       display: flex;
@@ -251,31 +260,25 @@
       letter-spacing: 0.5px;
     }
 
-    .detail-evidence {
+    .detail-ev {
       margin-top: 8px;
       font-size: 9px;
       color: #2a2a2a;
     }
 
-    .detail-evidence span {
-      color: var(--accent);
-    }
+    .detail-ev em { color: var(--accent); font-style: normal; }
 
-    /* ---- LOADING STATE ---- */
+    /* ---- LOADING ---- */
     .loading {
       position: fixed;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 30;
       text-align: center;
       transition: opacity 0.8s;
     }
 
-    .loading.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
+    .loading.gone { opacity: 0; pointer-events: none; }
 
     .loading-text {
       font-size: 10px;
@@ -295,16 +298,22 @@
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
       background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 3px,
-        rgba(0, 0, 0, 0.04) 3px,
-        rgba(0, 0, 0, 0.04) 6px
+        0deg, transparent, transparent 3px,
+        rgba(0, 0, 0, 0.04) 3px, rgba(0, 0, 0, 0.04) 6px
       );
       pointer-events: none;
       z-index: 9998;
     }
   </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
 
@@ -312,612 +321,755 @@
     <div class="loading-text">MAPPING CORTEX</div>
   </div>
 
-  <canvas id="brain"></canvas>
-
-  <!-- HUD: top-left stats -->
-  <div class="hud hud-top-left">
+  <!-- HUD: top-left -->
+  <div class="hud hud-tl">
     <div class="hud-title">THE CORTEX</div>
-    <div class="hud-subtitle">NEURAL MEMORY MAP</div>
-    <div class="hud-stats" id="hudStats">
-      <div><span class="val" id="statNodes">--</span><span class="label">nodes</span></div>
-      <div><span class="val" id="statEdges">--</span><span class="label">edges</span></div>
-      <div><span class="val" id="statAvgDecay">--</span><span class="label">avg decay</span></div>
-      <div><span class="val" id="statAvgImp">--</span><span class="label">avg importance</span></div>
+    <div class="hud-sub">3D NEURAL MEMORY MAP</div>
+    <div class="hud-stats" id="stats">
+      <div><span class="v" id="sNodes">--</span><span class="l">nodes</span></div>
+      <div><span class="v" id="sEdges">--</span><span class="l">edges</span></div>
+      <div><span class="v" id="sDecay">--</span><span class="l">avg decay</span></div>
+      <div><span class="v" id="sImp">--</span><span class="l">avg importance</span></div>
     </div>
   </div>
 
   <!-- HUD: top-right legend -->
-  <div class="hud hud-top-right">
+  <div class="hud hud-tr">
     <div class="legend" id="legend">
-      <div class="legend-item" data-type="episodic" onclick="toggleType('episodic')">
-        EPISODIC <div class="legend-dot" style="background: var(--episodic)"></div>
+      <div class="legend-item" data-type="episodic">
+        EPISODIC <div class="legend-dot" style="background:var(--episodic)"></div>
       </div>
-      <div class="legend-item" data-type="semantic" onclick="toggleType('semantic')">
-        SEMANTIC <div class="legend-dot" style="background: var(--semantic)"></div>
+      <div class="legend-item" data-type="semantic">
+        SEMANTIC <div class="legend-dot" style="background:var(--semantic)"></div>
       </div>
-      <div class="legend-item" data-type="procedural" onclick="toggleType('procedural')">
-        PROCEDURAL <div class="legend-dot" style="background: var(--procedural)"></div>
+      <div class="legend-item" data-type="procedural">
+        PROCEDURAL <div class="legend-dot" style="background:var(--procedural)"></div>
       </div>
-      <div class="legend-item" data-type="self_model" onclick="toggleType('self_model')">
-        SELF-MODEL <div class="legend-dot" style="background: var(--selfmodel)"></div>
+      <div class="legend-item" data-type="self_model">
+        SELF-MODEL <div class="legend-dot" style="background:var(--selfmodel)"></div>
       </div>
     </div>
   </div>
 
   <!-- HUD: bottom-left nav -->
-  <div class="hud hud-bottom-left">
+  <div class="hud hud-bl">
     <div class="hud-nav">
-      <a href="/">HOME</a>
-      <span>/</span>
-      <a href="/manifesto.html">MANIFESTO</a>
-      <span>/</span>
+      <a href="/">HOME</a><span>/</span>
+      <a href="/manifesto.html">MANIFESTO</a><span>/</span>
       <a href="https://x.com/Cludebot" target="_blank">X</a>
     </div>
   </div>
 
   <!-- HUD: bottom-right controls -->
-  <div class="hud hud-bottom-right">
+  <div class="hud hud-br">
     <div class="controls">
-      <button class="ctrl-btn" onclick="zoomIn()" title="Zoom in">+</button>
-      <button class="ctrl-btn" onclick="zoomOut()" title="Zoom out">&minus;</button>
-      <button class="ctrl-btn" onclick="resetView()" title="Reset view">&cir;</button>
+      <button class="ctrl-btn" id="btnRotate" title="Auto-rotate">&#x27F3;</button>
+      <button class="ctrl-btn" id="btnReset" title="Reset camera">&#x25CB;</button>
     </div>
   </div>
 
-  <!-- Detail panel -->
-  <div class="detail-panel" id="detailPanel">
-    <div class="detail-type" id="detailType"></div>
-    <div class="detail-summary" id="detailSummary"></div>
-    <div class="detail-meta" id="detailMeta"></div>
-    <div class="detail-tags" id="detailTags"></div>
-    <div class="detail-evidence" id="detailEvidence"></div>
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span class="filter-label">Importance</span>
+    <input type="range" id="impSlider" min="0" max="100" value="0">
+    <span class="filter-val" id="impVal">0%</span>
+    <span style="color:#1a1a1a;margin:0 4px">|</span>
+    <span class="filter-label">Decay</span>
+    <input type="range" id="decaySlider" min="0" max="100" value="0">
+    <span class="filter-val" id="decayVal">0%</span>
   </div>
 
-<script>
-(function() {
-  'use strict';
+  <!-- Detail panel -->
+  <div class="detail" id="detail">
+    <div class="detail-type" id="dType"></div>
+    <div class="detail-summary" id="dSummary"></div>
+    <div class="detail-meta" id="dMeta"></div>
+    <div class="detail-tags" id="dTags"></div>
+    <div class="detail-ev" id="dEv"></div>
+  </div>
 
-  // ---- CONFIG ----
-  var TYPE_COLORS = {
-    episodic:   { r: 232, g: 98,  b: 44  },
-    semantic:   { r: 74,  g: 138, b: 255 },
-    procedural: { r: 74,  g: 138, b: 90  },
-    self_model: { r: 176, g: 74,  b: 224 }
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ============================================
+// CONFIG
+// ============================================
+const TYPE_COLORS = {
+  episodic:   new THREE.Color(0xe8622c),
+  semantic:   new THREE.Color(0x4a8aff),
+  procedural: new THREE.Color(0x4a8a5a),
+  self_model: new THREE.Color(0xb04ae0),
+};
+
+const TYPE_NAMES = {
+  episodic: 'EPISODIC',
+  semantic: 'SEMANTIC',
+  procedural: 'PROCEDURAL',
+  self_model: 'SELF-MODEL',
+};
+
+const PHYSICS = {
+  repulsion: 1200,
+  attraction: 0.005,
+  tagAttraction: 0.0006,
+  centering: 0.008,
+  damping: 0.9,
+};
+
+// ============================================
+// STATE
+// ============================================
+let nodes = [];
+let evidenceEdges = [];
+let tagEdges = [];
+let nodeMap = {};
+let hiddenTypes = {};
+let impThreshold = 0;
+let decayThreshold = 0;
+let hoveredNode = null;
+let selectedNode = null;
+let frameCount = 0;
+
+// ============================================
+// THREE.JS SETUP
+// ============================================
+const W = window.innerWidth;
+const H = window.innerHeight;
+const dpr = Math.min(window.devicePixelRatio, 2);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x030308);
+scene.fog = new THREE.FogExp2(0x030308, 0.0018);
+
+const camera = new THREE.PerspectiveCamera(60, W / H, 1, 3000);
+camera.position.set(0, 80, 380);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(W, H);
+renderer.setPixelRatio(dpr);
+renderer.toneMapping = THREE.ReinhardToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.prepend(renderer.domElement);
+
+// Controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.rotateSpeed = 0.4;
+controls.zoomSpeed = 0.7;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.3;
+controls.maxDistance = 1200;
+controls.minDistance = 50;
+
+// Bloom
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(W, H),
+  1.4,  // strength
+  0.6,  // radius
+  0.15  // threshold
+);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
+// Raycaster
+const raycaster = new THREE.Raycaster();
+raycaster.params.Mesh = { threshold: 2 };
+const pointer = new THREE.Vector2();
+
+// Resize
+window.addEventListener('resize', () => {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+  composer.setSize(w, h);
+});
+
+// ============================================
+// AMBIENT PARTICLES
+// ============================================
+function createParticles() {
+  const count = 600;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const r = 400 + Math.random() * 600;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    positions[i * 3 + 2] = r * Math.cos(phi);
+    const brightness = 0.04 + Math.random() * 0.06;
+    colors[i * 3] = brightness;
+    colors[i * 3 + 1] = brightness;
+    colors[i * 3 + 2] = brightness + 0.02;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const mat = new THREE.PointsMaterial({
+    size: 1.5,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.8,
+    sizeAttenuation: true,
+    depthWrite: false,
+  });
+  scene.add(new THREE.Points(geo, mat));
+}
+createParticles();
+
+// ============================================
+// DATA FETCH & GRAPH BUILD
+// ============================================
+const nodeGroup = new THREE.Group();
+scene.add(nodeGroup);
+
+let evidenceLineMesh = null;
+let tagLineMesh = null;
+
+function fetchBrain() {
+  fetch('/api/brain?limit=200')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.nodes || data.nodes.length === 0) {
+        document.querySelector('.loading-text').textContent = 'NO MEMORIES FOUND';
+        return;
+      }
+      buildGraph(data.nodes);
+      document.getElementById('loading').classList.add('gone');
+    })
+    .catch(() => {
+      document.querySelector('.loading-text').textContent = 'CORTEX OFFLINE';
+    });
+}
+
+function buildGraph(rawNodes) {
+  // Clear previous
+  while (nodeGroup.children.length) nodeGroup.remove(nodeGroup.children[0]);
+  if (evidenceLineMesh) { scene.remove(evidenceLineMesh); evidenceLineMesh = null; }
+  if (tagLineMesh) { scene.remove(tagLineMesh); tagLineMesh = null; }
+
+  nodes = [];
+  evidenceEdges = [];
+  tagEdges = [];
+  nodeMap = {};
+
+  const spread = Math.sqrt(rawNodes.length) * 40;
+
+  // Type-based region offsets for brain-like initial layout
+  const typeOffsets = {
+    episodic:   { x: 0,   y: 0.3, z: 0.5 },
+    semantic:   { x: -0.5, y: 0,   z: 0 },
+    procedural: { x: 0.5, y: 0,   z: 0 },
+    self_model: { x: 0,   y: 0.5, z: -0.2 },
   };
 
-  var PHYSICS = {
-    repulsion: 800,
-    attraction: 0.004,
-    tagAttraction: 0.0008,
-    centering: 0.01,
-    damping: 0.92,
-    minDistance: 40
-  };
+  for (let i = 0; i < rawNodes.length; i++) {
+    const raw = rawNodes[i];
+    const off = typeOffsets[raw.type] || { x: 0, y: 0, z: 0 };
 
-  // ---- STATE ----
-  var canvas = document.getElementById('brain');
-  var ctx = canvas.getContext('2d');
-  var nodes = [];
-  var edges = [];
-  var tagEdges = [];
-  var nodeMap = {};
-  var hiddenTypes = {};
-  var camera = { x: 0, y: 0, zoom: 1 };
-  var targetCamera = { x: 0, y: 0, zoom: 1 };
-  var mouse = { x: 0, y: 0, worldX: 0, worldY: 0 };
-  var hoveredNode = null;
-  var selectedNode = null;
-  var dragging = false;
-  var dragStart = { x: 0, y: 0, camX: 0, camY: 0 };
-  var time = 0;
-  var dpr = window.devicePixelRatio || 1;
+    // Spherical random + type offset
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = (0.3 + Math.random() * 0.7) * spread;
 
-  // ---- CANVAS SETUP ----
-  function resize() {
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const baseR = 2 + (raw.importance || 0.5) * 6;
+    const color = TYPE_COLORS[raw.type] || new THREE.Color(0x888888);
+
+    // Core sphere
+    const geo = new THREE.SphereGeometry(baseR, 12, 8);
+    const mat = new THREE.MeshBasicMaterial({
+      color: color.clone(),
+      transparent: true,
+      opacity: 0.2 + 0.8 * (raw.decay || 1),
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+
+    const px = r * Math.sin(phi) * Math.cos(theta) + off.x * spread;
+    const py = r * Math.sin(phi) * Math.sin(theta) + off.y * spread;
+    const pz = r * Math.cos(phi) + off.z * spread;
+    mesh.position.set(px, py, pz);
+    nodeGroup.add(mesh);
+
+    // Inner bright core
+    const innerGeo = new THREE.SphereGeometry(baseR * 0.4, 8, 6);
+    const innerMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color().copy(color).lerp(new THREE.Color(1, 1, 1), 0.4),
+      transparent: true,
+      opacity: 0.5 + 0.5 * (raw.decay || 1),
+    });
+    const innerMesh = new THREE.Mesh(innerGeo, innerMat);
+    mesh.add(innerMesh);
+
+    // Glow halo (additive blended larger sphere)
+    const glowGeo = new THREE.SphereGeometry(baseR * 2.5, 12, 8);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: color.clone(),
+      transparent: true,
+      opacity: 0.06 * (raw.decay || 1),
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.BackSide,
+    });
+    const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+    mesh.add(glowMesh);
+
+    const node = {
+      id: raw.id,
+      type: raw.type,
+      summary: raw.summary,
+      tags: raw.tags || [],
+      importance: raw.importance || 0.5,
+      decay: raw.decay || 1,
+      valence: raw.valence || 0,
+      accessCount: raw.accessCount || 0,
+      source: raw.source || '',
+      evidenceIds: raw.evidenceIds || [],
+      createdAt: raw.createdAt,
+      lastAccessed: raw.lastAccessed,
+      mesh: mesh,
+      baseRadius: baseR,
+      x: px, y: py, z: pz,
+      vx: 0, vy: 0, vz: 0,
+      visible: true,
+    };
+
+    nodes.push(node);
+    nodeMap[node.id] = node;
   }
-  window.addEventListener('resize', resize);
-  resize();
 
-  // ---- DATA FETCH ----
-  function fetchBrain() {
-    fetch('/api/brain?limit=200')
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (!data.nodes || data.nodes.length === 0) {
-          document.getElementById('loading').querySelector('.loading-text').textContent = 'NO MEMORIES FOUND';
-          return;
-        }
-        buildGraph(data.nodes);
-        document.getElementById('loading').classList.add('hidden');
-      })
-      .catch(function() {
-        document.getElementById('loading').querySelector('.loading-text').textContent = 'CORTEX OFFLINE';
-      });
-  }
-
-  // ---- GRAPH CONSTRUCTION ----
-  function buildGraph(rawNodes) {
-    nodes = [];
-    edges = [];
-    tagEdges = [];
-    nodeMap = {};
-
-    // Create nodes with random initial positions
-    var spread = Math.sqrt(rawNodes.length) * 60;
-    for (var i = 0; i < rawNodes.length; i++) {
-      var raw = rawNodes[i];
-      var angle = Math.random() * Math.PI * 2;
-      var radius = Math.random() * spread;
-      var node = {
-        id: raw.id,
-        type: raw.type,
-        summary: raw.summary,
-        tags: raw.tags,
-        importance: raw.importance || 0.5,
-        decay: raw.decay || 1,
-        valence: raw.valence || 0,
-        accessCount: raw.accessCount || 0,
-        source: raw.source || '',
-        evidenceIds: raw.evidenceIds || [],
-        createdAt: raw.createdAt,
-        lastAccessed: raw.lastAccessed,
-        x: Math.cos(angle) * radius,
-        y: Math.sin(angle) * radius,
-        vx: 0,
-        vy: 0,
-        baseRadius: 3 + raw.importance * 10,
-        pulsePhase: Math.random() * Math.PI * 2
-      };
-      nodes.push(node);
-      nodeMap[node.id] = node;
-    }
-
-    // Build evidence edges
-    for (var i = 0; i < nodes.length; i++) {
-      var n = nodes[i];
-      for (var j = 0; j < n.evidenceIds.length; j++) {
-        var targetId = n.evidenceIds[j];
-        if (nodeMap[targetId]) {
-          edges.push({ source: n, target: nodeMap[targetId], type: 'evidence' });
-        }
+  // Build evidence edges
+  for (const n of nodes) {
+    for (const tid of n.evidenceIds) {
+      if (nodeMap[tid]) {
+        evidenceEdges.push({ source: n, target: nodeMap[tid] });
       }
     }
+  }
 
-    // Build tag-based proximity edges (shared tags = weak attraction)
-    var tagIndex = {};
-    for (var i = 0; i < nodes.length; i++) {
-      var n = nodes[i];
-      for (var t = 0; t < n.tags.length; t++) {
-        var tag = n.tags[t];
-        if (!tagIndex[tag]) tagIndex[tag] = [];
-        tagIndex[tag].push(n);
-      }
+  // Build tag edges (shared tags = proximity)
+  const tagIndex = {};
+  for (const n of nodes) {
+    for (const t of n.tags) {
+      if (!tagIndex[t]) tagIndex[t] = [];
+      tagIndex[t].push(n);
     }
-    var tagEdgeSet = {};
-    var tagKeys = Object.keys(tagIndex);
-    for (var k = 0; k < tagKeys.length; k++) {
-      var group = tagIndex[tagKeys[k]];
-      if (group.length < 2 || group.length > 30) continue; // skip very common tags
-      for (var a = 0; a < Math.min(group.length, 8); a++) {
-        for (var b = a + 1; b < Math.min(group.length, 8); b++) {
-          var key = Math.min(group[a].id, group[b].id) + ':' + Math.max(group[a].id, group[b].id);
-          if (!tagEdgeSet[key]) {
-            tagEdgeSet[key] = true;
-            tagEdges.push({ source: group[a], target: group[b], tag: tagKeys[k] });
-          }
+  }
+  const seen = new Set();
+  for (const tag of Object.keys(tagIndex)) {
+    const group = tagIndex[tag];
+    if (group.length < 2 || group.length > 25) continue;
+    const lim = Math.min(group.length, 6);
+    for (let a = 0; a < lim; a++) {
+      for (let b = a + 1; b < lim; b++) {
+        const key = Math.min(group[a].id, group[b].id) + ':' + Math.max(group[a].id, group[b].id);
+        if (!seen.has(key)) {
+          seen.add(key);
+          tagEdges.push({ source: group[a], target: group[b] });
         }
       }
     }
-
-    // Update HUD stats
-    document.getElementById('statNodes').textContent = nodes.length;
-    document.getElementById('statEdges').textContent = edges.length + tagEdges.length;
-    var totalDecay = 0, totalImp = 0;
-    for (var i = 0; i < nodes.length; i++) {
-      totalDecay += nodes[i].decay;
-      totalImp += nodes[i].importance;
-    }
-    document.getElementById('statAvgDecay').textContent = ((totalDecay / nodes.length) * 100).toFixed(0) + '%';
-    document.getElementById('statAvgImp').textContent = ((totalImp / nodes.length) * 100).toFixed(0) + '%';
   }
 
-  // ---- PHYSICS SIMULATION ----
-  function simulate() {
-    var n = nodes.length;
-    if (n === 0) return;
+  // Create edge geometries
+  createEdgeGeometry();
+  updateStats();
+  frameCount = 0; // restart active physics
+}
 
-    // Repulsion (all pairs - use spatial hash for optimization on large sets)
-    for (var i = 0; i < n; i++) {
-      if (hiddenTypes[nodes[i].type]) continue;
-      for (var j = i + 1; j < n; j++) {
-        if (hiddenTypes[nodes[j].type]) continue;
-        var dx = nodes[j].x - nodes[i].x;
-        var dy = nodes[j].y - nodes[i].y;
-        var dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        if (dist > 500) continue; // skip far pairs
-        var force = PHYSICS.repulsion / (dist * dist);
-        var fx = (dx / dist) * force;
-        var fy = (dy / dist) * force;
-        nodes[i].vx -= fx;
-        nodes[i].vy -= fy;
-        nodes[j].vx += fx;
-        nodes[j].vy += fy;
-      }
-    }
-
-    // Evidence edge attraction
-    for (var i = 0; i < edges.length; i++) {
-      var e = edges[i];
-      if (hiddenTypes[e.source.type] || hiddenTypes[e.target.type]) continue;
-      var dx = e.target.x - e.source.x;
-      var dy = e.target.y - e.source.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      var force = dist * PHYSICS.attraction;
-      e.source.vx += (dx / dist) * force;
-      e.source.vy += (dy / dist) * force;
-      e.target.vx -= (dx / dist) * force;
-      e.target.vy -= (dy / dist) * force;
-    }
-
-    // Tag edge attraction (weaker)
-    for (var i = 0; i < tagEdges.length; i++) {
-      var e = tagEdges[i];
-      if (hiddenTypes[e.source.type] || hiddenTypes[e.target.type]) continue;
-      var dx = e.target.x - e.source.x;
-      var dy = e.target.y - e.source.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      if (dist < PHYSICS.minDistance) continue;
-      var force = dist * PHYSICS.tagAttraction;
-      e.source.vx += (dx / dist) * force;
-      e.source.vy += (dy / dist) * force;
-      e.target.vx -= (dx / dist) * force;
-      e.target.vy -= (dy / dist) * force;
-    }
-
-    // Centering force + velocity integration
-    for (var i = 0; i < n; i++) {
-      var node = nodes[i];
-      if (hiddenTypes[node.type]) continue;
-      node.vx -= node.x * PHYSICS.centering;
-      node.vy -= node.y * PHYSICS.centering;
-      node.vx *= PHYSICS.damping;
-      node.vy *= PHYSICS.damping;
-      node.x += node.vx;
-      node.y += node.vy;
-    }
-  }
-
-  // ---- RENDERING ----
-  function render() {
-    time += 0.016;
-    var w = window.innerWidth;
-    var h = window.innerHeight;
-
-    ctx.clearRect(0, 0, w, h);
-
-    // Background gradient — deep space
-    var grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.7);
-    grad.addColorStop(0, '#06060e');
-    grad.addColorStop(1, '#020204');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-
-    // Camera interpolation
-    camera.x += (targetCamera.x - camera.x) * 0.08;
-    camera.y += (targetCamera.y - camera.y) * 0.08;
-    camera.zoom += (targetCamera.zoom - camera.zoom) * 0.08;
-
-    ctx.save();
-    ctx.translate(w / 2, h / 2);
-    ctx.scale(camera.zoom, camera.zoom);
-    ctx.translate(-camera.x, -camera.y);
-
-    // Draw tag edges (very faint)
-    ctx.lineWidth = 0.5;
-    for (var i = 0; i < tagEdges.length; i++) {
-      var e = tagEdges[i];
-      if (hiddenTypes[e.source.type] || hiddenTypes[e.target.type]) continue;
-      var alpha = 0.02 * Math.min(e.source.decay, e.target.decay);
-      if (hoveredNode && (e.source === hoveredNode || e.target === hoveredNode)) {
-        alpha = 0.12;
-      }
-      ctx.strokeStyle = 'rgba(255,255,255,' + alpha + ')';
-      ctx.beginPath();
-      ctx.moveTo(e.source.x, e.source.y);
-      ctx.lineTo(e.target.x, e.target.y);
-      ctx.stroke();
-    }
-
-    // Draw evidence edges (brighter, directional)
-    for (var i = 0; i < edges.length; i++) {
-      var e = edges[i];
-      if (hiddenTypes[e.source.type] || hiddenTypes[e.target.type]) continue;
-      var sc = TYPE_COLORS[e.source.type];
-      var alpha = 0.08 + 0.05 * Math.min(e.source.importance, e.target.importance);
-      if (hoveredNode && (e.source === hoveredNode || e.target === hoveredNode)) {
-        alpha = 0.5;
-      }
-      ctx.strokeStyle = 'rgba(' + sc.r + ',' + sc.g + ',' + sc.b + ',' + alpha + ')';
-      ctx.lineWidth = hoveredNode && (e.source === hoveredNode || e.target === hoveredNode) ? 1.5 : 0.8;
-      ctx.beginPath();
-      ctx.moveTo(e.source.x, e.source.y);
-      ctx.lineTo(e.target.x, e.target.y);
-      ctx.stroke();
-    }
-
-    // Draw nodes
-    hoveredNode = null;
-    var closestDist = 20 / camera.zoom;
-
-    for (var i = 0; i < nodes.length; i++) {
-      var node = nodes[i];
-      if (hiddenTypes[node.type]) continue;
-
-      var col = TYPE_COLORS[node.type];
-      var pulse = 1 + 0.15 * Math.sin(time * 1.5 + node.pulsePhase);
-      var r = node.baseRadius * pulse;
-      var alpha = 0.15 + 0.85 * node.decay;
-
-      // Check hover
-      var sx = (node.x - camera.x) * camera.zoom + w / 2;
-      var sy = (node.y - camera.y) * camera.zoom + h / 2;
-      var dx = mouse.x - sx;
-      var dy = mouse.y - sy;
-      var dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < closestDist) {
-        closestDist = dist;
-        hoveredNode = node;
-      }
-
-      var isHovered = false;
-      // We'll set this after the loop
-
-      // Outer glow
-      var glowR = r * 3;
-      var glow = ctx.createRadialGradient(node.x, node.y, r * 0.5, node.x, node.y, glowR);
-      glow.addColorStop(0, 'rgba(' + col.r + ',' + col.g + ',' + col.b + ',' + (0.12 * alpha) + ')');
-      glow.addColorStop(1, 'rgba(' + col.r + ',' + col.g + ',' + col.b + ',0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, glowR, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Core
-      ctx.fillStyle = 'rgba(' + col.r + ',' + col.g + ',' + col.b + ',' + alpha + ')';
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Bright center
-      ctx.fillStyle = 'rgba(' + Math.min(col.r + 80, 255) + ',' + Math.min(col.g + 80, 255) + ',' + Math.min(col.b + 80, 255) + ',' + (alpha * 0.7) + ')';
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, r * 0.35, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Draw hover highlight
-    if (hoveredNode) {
-      var hn = hoveredNode;
-      var col = TYPE_COLORS[hn.type];
-      var r = hn.baseRadius * 1.6;
-
-      // Bright ring
-      ctx.strokeStyle = 'rgba(' + col.r + ',' + col.g + ',' + col.b + ',0.6)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(hn.x, hn.y, r + 4, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Expanded glow
-      var glow = ctx.createRadialGradient(hn.x, hn.y, r, hn.x, hn.y, r * 5);
-      glow.addColorStop(0, 'rgba(' + col.r + ',' + col.g + ',' + col.b + ',0.15)');
-      glow.addColorStop(1, 'rgba(' + col.r + ',' + col.g + ',' + col.b + ',0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(hn.x, hn.y, r * 5, 0, Math.PI * 2);
-      ctx.fill();
-
-      showDetail(hn);
-    } else {
-      hideDetail();
-    }
-
-    ctx.restore();
-  }
-
-  // ---- DETAIL PANEL ----
-  var detailPanel = document.getElementById('detailPanel');
-  var currentDetailId = null;
-
-  function showDetail(node) {
-    if (currentDetailId === node.id) return;
-    currentDetailId = node.id;
-
-    var typeNames = { episodic: 'EPISODIC', semantic: 'SEMANTIC', procedural: 'PROCEDURAL', self_model: 'SELF-MODEL' };
-    var col = TYPE_COLORS[node.type];
-    var colorStr = 'rgb(' + col.r + ',' + col.g + ',' + col.b + ')';
-
-    document.getElementById('detailType').textContent = typeNames[node.type] || node.type;
-    document.getElementById('detailType').style.color = colorStr;
-    document.getElementById('detailSummary').textContent = node.summary;
-
-    var decayLabel = node.decay > 0.8 ? 'FRESH' : (node.decay > 0.4 ? 'FADING' : 'DECAYED');
-    var age = timeSince(node.createdAt);
-
-    document.getElementById('detailMeta').innerHTML =
-      '<span>IMP <span class="val">' + (node.importance * 100).toFixed(0) + '%</span></span>' +
-      '<span>DECAY <span class="val">' + (node.decay * 100).toFixed(0) + '% ' + decayLabel + '</span></span>' +
-      '<span>RECALLS <span class="val">' + node.accessCount + '</span></span>' +
-      '<span>AGE <span class="val">' + age + '</span></span>' +
-      (node.source ? '<span>SRC <span class="val">' + node.source + '</span></span>' : '');
-
-    var tagsHtml = '';
-    for (var i = 0; i < Math.min(node.tags.length, 8); i++) {
-      tagsHtml += '<span class="detail-tag">' + node.tags[i] + '</span>';
-    }
-    document.getElementById('detailTags').innerHTML = tagsHtml;
-
-    if (node.evidenceIds.length > 0) {
-      document.getElementById('detailEvidence').innerHTML =
-        'EVIDENCE LINKS: <span>' + node.evidenceIds.length + ' source memories</span>';
-    } else {
-      document.getElementById('detailEvidence').innerHTML = '';
-    }
-
-    detailPanel.classList.add('visible');
-  }
-
-  function hideDetail() {
-    if (!selectedNode) {
-      detailPanel.classList.remove('visible');
-      currentDetailId = null;
-    }
-  }
-
-  function timeSince(dateStr) {
-    if (!dateStr) return '?';
-    var seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return seconds + 's';
-    var minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return minutes + 'm';
-    var hours = Math.floor(minutes / 60);
-    if (hours < 24) return hours + 'h';
-    var days = Math.floor(hours / 24);
-    return days + 'd';
-  }
-
-  // ---- INTERACTION ----
-  canvas.addEventListener('mousemove', function(e) {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-    if (dragging) {
-      var dx = (e.clientX - dragStart.x) / camera.zoom;
-      var dy = (e.clientY - dragStart.y) / camera.zoom;
-      targetCamera.x = dragStart.camX - dx;
-      targetCamera.y = dragStart.camY - dy;
-    }
+// ============================================
+// EDGE GEOMETRY
+// ============================================
+function createEdgeGeometry() {
+  // Evidence edges (colored by source type)
+  if (evidenceLineMesh) scene.remove(evidenceLineMesh);
+  const ePositions = new Float32Array(evidenceEdges.length * 6);
+  const eColors = new Float32Array(evidenceEdges.length * 6);
+  const eGeo = new THREE.BufferGeometry();
+  eGeo.setAttribute('position', new THREE.BufferAttribute(ePositions, 3));
+  eGeo.setAttribute('color', new THREE.BufferAttribute(eColors, 3));
+  const eMat = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.35,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
   });
+  evidenceLineMesh = new THREE.LineSegments(eGeo, eMat);
+  scene.add(evidenceLineMesh);
 
-  canvas.addEventListener('mousedown', function(e) {
-    if (hoveredNode) {
-      selectedNode = hoveredNode;
-      showDetail(selectedNode);
-    } else {
-      selectedNode = null;
-      dragging = true;
-      dragStart.x = e.clientX;
-      dragStart.y = e.clientY;
-      dragStart.camX = targetCamera.x;
-      dragStart.camY = targetCamera.y;
-      canvas.style.cursor = 'grabbing';
+  // Tag edges (dim white)
+  if (tagLineMesh) scene.remove(tagLineMesh);
+  const tPositions = new Float32Array(tagEdges.length * 6);
+  const tGeo = new THREE.BufferGeometry();
+  tGeo.setAttribute('position', new THREE.BufferAttribute(tPositions, 3));
+  const tMat = new THREE.LineBasicMaterial({
+    color: 0x222233,
+    transparent: true,
+    opacity: 0.08,
+    depthWrite: false,
+  });
+  tagLineMesh = new THREE.LineSegments(tGeo, tMat);
+  scene.add(tagLineMesh);
+}
+
+function updateEdgePositions() {
+  if (!evidenceLineMesh || !tagLineMesh) return;
+
+  // Evidence edges
+  const ePos = evidenceLineMesh.geometry.attributes.position.array;
+  const eCol = evidenceLineMesh.geometry.attributes.color.array;
+  let ei = 0, ci = 0;
+  for (const e of evidenceEdges) {
+    const vis = e.source.visible && e.target.visible;
+    const sx = vis ? e.source.x : 0, sy = vis ? e.source.y : 0, sz = vis ? e.source.z : 0;
+    const tx = vis ? e.target.x : 0, ty = vis ? e.target.y : 0, tz = vis ? e.target.z : 0;
+    ePos[ei++] = sx; ePos[ei++] = sy; ePos[ei++] = sz;
+    ePos[ei++] = tx; ePos[ei++] = ty; ePos[ei++] = tz;
+    const col = TYPE_COLORS[e.source.type] || new THREE.Color(0x444444);
+    const a = vis ? 1 : 0;
+    eCol[ci++] = col.r * a; eCol[ci++] = col.g * a; eCol[ci++] = col.b * a;
+    eCol[ci++] = col.r * a * 0.5; eCol[ci++] = col.g * a * 0.5; eCol[ci++] = col.b * a * 0.5;
+  }
+  evidenceLineMesh.geometry.attributes.position.needsUpdate = true;
+  evidenceLineMesh.geometry.attributes.color.needsUpdate = true;
+
+  // Tag edges
+  const tPos = tagLineMesh.geometry.attributes.position.array;
+  let ti = 0;
+  for (const e of tagEdges) {
+    const vis = e.source.visible && e.target.visible;
+    tPos[ti++] = vis ? e.source.x : 0; tPos[ti++] = vis ? e.source.y : 0; tPos[ti++] = vis ? e.source.z : 0;
+    tPos[ti++] = vis ? e.target.x : 0; tPos[ti++] = vis ? e.target.y : 0; tPos[ti++] = vis ? e.target.z : 0;
+  }
+  tagLineMesh.geometry.attributes.position.needsUpdate = true;
+}
+
+// ============================================
+// 3D FORCE SIMULATION
+// ============================================
+function simulate() {
+  const n = nodes.length;
+  if (n === 0) return;
+
+  // Repulsion (all visible pairs)
+  for (let i = 0; i < n; i++) {
+    if (!nodes[i].visible) continue;
+    for (let j = i + 1; j < n; j++) {
+      if (!nodes[j].visible) continue;
+      const dx = nodes[j].x - nodes[i].x;
+      const dy = nodes[j].y - nodes[i].y;
+      const dz = nodes[j].z - nodes[i].z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+      if (dist > 500) continue;
+      const force = PHYSICS.repulsion / (dist * dist);
+      const fx = (dx / dist) * force;
+      const fy = (dy / dist) * force;
+      const fz = (dz / dist) * force;
+      nodes[i].vx -= fx; nodes[i].vy -= fy; nodes[i].vz -= fz;
+      nodes[j].vx += fx; nodes[j].vy += fy; nodes[j].vz += fz;
     }
-  });
+  }
 
-  canvas.addEventListener('mouseup', function() {
-    dragging = false;
-    canvas.style.cursor = 'crosshair';
-  });
+  // Evidence edge attraction
+  for (const e of evidenceEdges) {
+    if (!e.source.visible || !e.target.visible) continue;
+    const dx = e.target.x - e.source.x;
+    const dy = e.target.y - e.source.y;
+    const dz = e.target.z - e.source.z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+    const force = dist * PHYSICS.attraction;
+    const fx = (dx / dist) * force;
+    const fy = (dy / dist) * force;
+    const fz = (dz / dist) * force;
+    e.source.vx += fx; e.source.vy += fy; e.source.vz += fz;
+    e.target.vx -= fx; e.target.vy -= fy; e.target.vz -= fz;
+  }
 
-  canvas.addEventListener('wheel', function(e) {
-    e.preventDefault();
-    var zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
-    targetCamera.zoom = Math.max(0.2, Math.min(5, targetCamera.zoom * zoomDelta));
-  }, { passive: false });
+  // Tag edge attraction (weaker)
+  for (const e of tagEdges) {
+    if (!e.source.visible || !e.target.visible) continue;
+    const dx = e.target.x - e.source.x;
+    const dy = e.target.y - e.source.y;
+    const dz = e.target.z - e.source.z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+    if (dist < 30) continue;
+    const force = dist * PHYSICS.tagAttraction;
+    const fx = (dx / dist) * force;
+    const fy = (dy / dist) * force;
+    const fz = (dz / dist) * force;
+    e.source.vx += fx; e.source.vy += fy; e.source.vz += fz;
+    e.target.vx -= fx; e.target.vy -= fy; e.target.vz -= fz;
+  }
 
-  // Touch support
-  var lastTouchDist = 0;
-  canvas.addEventListener('touchstart', function(e) {
-    if (e.touches.length === 1) {
-      mouse.x = e.touches[0].clientX;
-      mouse.y = e.touches[0].clientY;
-      dragging = true;
-      dragStart.x = e.touches[0].clientX;
-      dragStart.y = e.touches[0].clientY;
-      dragStart.camX = targetCamera.x;
-      dragStart.camY = targetCamera.y;
-    } else if (e.touches.length === 2) {
-      var dx = e.touches[0].clientX - e.touches[1].clientX;
-      var dy = e.touches[0].clientY - e.touches[1].clientY;
-      lastTouchDist = Math.sqrt(dx * dx + dy * dy);
-    }
-  });
+  // Centering + integration
+  for (let i = 0; i < n; i++) {
+    const node = nodes[i];
+    if (!node.visible) continue;
+    node.vx -= node.x * PHYSICS.centering;
+    node.vy -= node.y * PHYSICS.centering;
+    node.vz -= node.z * PHYSICS.centering;
+    node.vx *= PHYSICS.damping;
+    node.vy *= PHYSICS.damping;
+    node.vz *= PHYSICS.damping;
+    node.x += node.vx;
+    node.y += node.vy;
+    node.z += node.vz;
+    node.mesh.position.set(node.x, node.y, node.z);
+  }
+}
 
-  canvas.addEventListener('touchmove', function(e) {
-    e.preventDefault();
-    if (e.touches.length === 1 && dragging) {
-      mouse.x = e.touches[0].clientX;
-      mouse.y = e.touches[0].clientY;
-      var dx = (e.touches[0].clientX - dragStart.x) / camera.zoom;
-      var dy = (e.touches[0].clientY - dragStart.y) / camera.zoom;
-      targetCamera.x = dragStart.camX - dx;
-      targetCamera.y = dragStart.camY - dy;
-    } else if (e.touches.length === 2) {
-      var dx = e.touches[0].clientX - e.touches[1].clientX;
-      var dy = e.touches[0].clientY - e.touches[1].clientY;
-      var dist = Math.sqrt(dx * dx + dy * dy);
-      if (lastTouchDist > 0) {
-        var scale = dist / lastTouchDist;
-        targetCamera.zoom = Math.max(0.2, Math.min(5, targetCamera.zoom * scale));
-      }
-      lastTouchDist = dist;
-    }
-  }, { passive: false });
+// ============================================
+// FILTERING
+// ============================================
+function applyFilters() {
+  let visCount = 0;
+  for (const node of nodes) {
+    const typeHidden = !!hiddenTypes[node.type];
+    const belowImp = node.importance * 100 < impThreshold;
+    const belowDecay = node.decay * 100 < decayThreshold;
+    node.visible = !typeHidden && !belowImp && !belowDecay;
+    node.mesh.visible = node.visible;
+    if (node.visible) visCount++;
+  }
+  document.getElementById('sNodes').textContent = visCount;
+  updateVisibleEdgeCount();
+}
 
-  canvas.addEventListener('touchend', function() {
-    dragging = false;
-    lastTouchDist = 0;
-  });
+function updateVisibleEdgeCount() {
+  let count = 0;
+  for (const e of evidenceEdges) {
+    if (e.source.visible && e.target.visible) count++;
+  }
+  for (const e of tagEdges) {
+    if (e.source.visible && e.target.visible) count++;
+  }
+  document.getElementById('sEdges').textContent = count;
+}
 
-  // ---- CONTROLS ----
-  window.toggleType = function(type) {
+// Legend toggle
+document.querySelectorAll('.legend-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const type = item.dataset.type;
     hiddenTypes[type] = !hiddenTypes[type];
-    var item = document.querySelector('.legend-item[data-type="' + type + '"]');
-    if (item) item.classList.toggle('disabled');
-  };
+    item.classList.toggle('off');
+    applyFilters();
+  });
+});
 
-  window.zoomIn = function() {
-    targetCamera.zoom = Math.min(5, targetCamera.zoom * 1.3);
-  };
+// Importance slider
+document.getElementById('impSlider').addEventListener('input', e => {
+  impThreshold = parseInt(e.target.value);
+  document.getElementById('impVal').textContent = impThreshold + '%';
+  applyFilters();
+});
 
-  window.zoomOut = function() {
-    targetCamera.zoom = Math.max(0.2, targetCamera.zoom * 0.7);
-  };
+// Decay slider
+document.getElementById('decaySlider').addEventListener('input', e => {
+  decayThreshold = parseInt(e.target.value);
+  document.getElementById('decayVal').textContent = decayThreshold + '%';
+  applyFilters();
+});
 
-  window.resetView = function() {
-    targetCamera.x = 0;
-    targetCamera.y = 0;
-    targetCamera.zoom = 1;
+// Controls
+const btnRotate = document.getElementById('btnRotate');
+btnRotate.classList.add('active');
+btnRotate.addEventListener('click', () => {
+  controls.autoRotate = !controls.autoRotate;
+  btnRotate.classList.toggle('active');
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  camera.position.set(0, 80, 380);
+  controls.target.set(0, 0, 0);
+  selectedNode = null;
+  document.getElementById('detail').classList.remove('vis');
+});
+
+// ============================================
+// RAYCASTING & INTERACTION
+// ============================================
+let highlightRing = null;
+const ringGeo = new THREE.RingGeometry(1, 1.3, 32);
+const ringMat = new THREE.MeshBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.5,
+  side: THREE.DoubleSide,
+  depthWrite: false,
+});
+
+function createHighlightRing() {
+  highlightRing = new THREE.Mesh(ringGeo, ringMat);
+  highlightRing.visible = false;
+  scene.add(highlightRing);
+}
+createHighlightRing();
+
+window.addEventListener('pointermove', e => {
+  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+});
+
+window.addEventListener('click', e => {
+  // Ignore clicks on HUD elements
+  if (e.target.closest('.hud, .filter-bar, .detail, .ctrl-btn, .legend-item')) return;
+
+  if (hoveredNode) {
+    selectedNode = hoveredNode;
+    showDetail(selectedNode);
+  } else {
     selectedNode = null;
-  };
+    document.getElementById('detail').classList.remove('vis');
+  }
+});
 
-  // ---- MAIN LOOP ----
-  var frameCount = 0;
-  function loop() {
-    // Run physics (throttle after settling)
-    if (frameCount < 600) {
-      simulate();
-    } else if (frameCount % 3 === 0) {
-      simulate();
+function doRaycast() {
+  raycaster.setFromCamera(pointer, camera);
+  const meshes = nodes.filter(n => n.visible).map(n => n.mesh);
+  const hits = raycaster.intersectObjects(meshes, false);
+
+  let prev = hoveredNode;
+  hoveredNode = null;
+
+  if (hits.length > 0) {
+    const hitMesh = hits[0].object;
+    for (const n of nodes) {
+      if (n.mesh === hitMesh && n.visible) {
+        hoveredNode = n;
+        break;
+      }
     }
-
-    render();
-    frameCount++;
-    requestAnimationFrame(loop);
   }
 
-  // ---- INIT ----
-  fetchBrain();
-  loop();
+  if (hoveredNode) {
+    document.body.style.cursor = 'pointer';
+    const col = TYPE_COLORS[hoveredNode.type];
+    ringMat.color.copy(col);
+    const scale = hoveredNode.baseRadius * 2;
+    highlightRing.scale.set(scale, scale, scale);
+    highlightRing.position.copy(hoveredNode.mesh.position);
+    highlightRing.lookAt(camera.position);
+    highlightRing.visible = true;
 
-  // Refresh data every 2 minutes
-  setInterval(fetchBrain, 120000);
+    if (!selectedNode) showDetail(hoveredNode);
+  } else {
+    document.body.style.cursor = 'default';
+    highlightRing.visible = false;
+    if (!selectedNode) {
+      document.getElementById('detail').classList.remove('vis');
+    }
+  }
+}
 
-})();
+// ============================================
+// DETAIL PANEL
+// ============================================
+function showDetail(node) {
+  const col = TYPE_COLORS[node.type];
+  document.getElementById('dType').textContent = TYPE_NAMES[node.type] || node.type;
+  document.getElementById('dType').style.color = '#' + col.getHexString();
+  document.getElementById('dSummary').textContent = node.summary;
+
+  const decay = node.decay;
+  const decayLabel = decay > 0.8 ? 'FRESH' : (decay > 0.4 ? 'FADING' : 'DECAYED');
+  const age = timeSince(node.createdAt);
+
+  document.getElementById('dMeta').innerHTML =
+    '<span>IMP <span class="v">' + (node.importance * 100).toFixed(0) + '%</span></span>' +
+    '<span>DECAY <span class="v">' + (decay * 100).toFixed(0) + '% ' + decayLabel + '</span></span>' +
+    '<span>RECALLS <span class="v">' + node.accessCount + '</span></span>' +
+    '<span>AGE <span class="v">' + age + '</span></span>' +
+    (node.source ? '<span>SRC <span class="v">' + node.source + '</span></span>' : '');
+
+  let tagsHtml = '';
+  for (let i = 0; i < Math.min(node.tags.length, 8); i++) {
+    tagsHtml += '<span class="detail-tag">' + node.tags[i] + '</span>';
+  }
+  document.getElementById('dTags').innerHTML = tagsHtml;
+
+  document.getElementById('dEv').innerHTML = node.evidenceIds.length > 0
+    ? 'EVIDENCE: <em>' + node.evidenceIds.length + ' linked memories</em>'
+    : '';
+
+  document.getElementById('detail').classList.add('vis');
+}
+
+function timeSince(dateStr) {
+  if (!dateStr) return '?';
+  const s = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
+// ============================================
+// HUD STATS
+// ============================================
+function updateStats() {
+  document.getElementById('sNodes').textContent = nodes.length;
+  document.getElementById('sEdges').textContent = evidenceEdges.length + tagEdges.length;
+  let td = 0, ti = 0;
+  for (const n of nodes) { td += n.decay; ti += n.importance; }
+  document.getElementById('sDecay').textContent = nodes.length ? ((td / nodes.length) * 100).toFixed(0) + '%' : '--';
+  document.getElementById('sImp').textContent = nodes.length ? ((ti / nodes.length) * 100).toFixed(0) + '%' : '--';
+}
+
+// ============================================
+// ANIMATION LOOP
+// ============================================
+function animate() {
+  requestAnimationFrame(animate);
+
+  // Physics (throttle after settling)
+  if (frameCount < 500) {
+    simulate();
+  } else if (frameCount % 4 === 0) {
+    simulate();
+  }
+
+  // Sync edge positions
+  updateEdgePositions();
+
+  // Raycasting (every other frame for perf)
+  if (frameCount % 2 === 0) {
+    doRaycast();
+  }
+
+  // Pulse selected node highlight ring
+  if (selectedNode && highlightRing.visible) {
+    const t = performance.now() * 0.002;
+    ringMat.opacity = 0.3 + 0.2 * Math.sin(t);
+  }
+
+  controls.update();
+  composer.render();
+  frameCount++;
+}
+
+// ============================================
+// INIT
+// ============================================
+fetchBrain();
+animate();
+
+// Refresh every 2 minutes
+setInterval(fetchBrain, 120000);
+
 </script>
 </body>
 </html>
