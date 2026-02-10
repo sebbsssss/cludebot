@@ -1030,6 +1030,70 @@ function updateStats() {
 }
 
 // ============================================
+// ACTIVITY BLINKS
+// ============================================
+const activeBlinks = []; // { node, startTime, duration }
+
+function triggerRandomBlink() {
+  if (nodes.length === 0) return;
+  const visible = nodes.filter(n => n.visible);
+  if (visible.length === 0) return;
+  const node = visible[Math.floor(Math.random() * visible.length)];
+  activeBlinks.push({
+    node,
+    startTime: performance.now(),
+    duration: 300 + Math.random() * 700,
+  });
+}
+
+function blinkActivity() {
+  const now = performance.now();
+
+  // Trigger new blinks randomly (avg 3-6 per second)
+  if (Math.random() < 0.07) triggerRandomBlink();
+
+  // Occasionally fire a burst (simulates a cluster of activity)
+  if (Math.random() < 0.005) {
+    for (let i = 0; i < 3 + Math.floor(Math.random() * 5); i++) {
+      triggerRandomBlink();
+    }
+  }
+
+  // Process active blinks
+  for (let i = activeBlinks.length - 1; i >= 0; i--) {
+    const b = activeBlinks[i];
+    const elapsed = now - b.startTime;
+    const progress = elapsed / b.duration;
+
+    if (progress >= 1) {
+      // Reset to normal
+      const decay = b.node.decay || 1;
+      b.node.mesh.material.opacity = 0.2 + 0.8 * decay;
+      // Reset glow child
+      const glowChild = b.node.mesh.children[1];
+      if (glowChild) glowChild.material.opacity = 0.06 * decay;
+      activeBlinks.splice(i, 1);
+      continue;
+    }
+
+    // Sharp in, slow out
+    const intensity = progress < 0.15
+      ? progress / 0.15
+      : 1 - ((progress - 0.15) / 0.85);
+
+    const decay = b.node.decay || 1;
+    const baseOpacity = 0.2 + 0.8 * decay;
+    b.node.mesh.material.opacity = baseOpacity + intensity * (1 - baseOpacity);
+
+    // Amplify glow during blink
+    const glowChild = b.node.mesh.children[1];
+    if (glowChild) {
+      glowChild.material.opacity = (0.06 + intensity * 0.25) * decay;
+    }
+  }
+}
+
+// ============================================
 // ANIMATION LOOP
 // ============================================
 function animate() {
@@ -1055,6 +1119,9 @@ function animate() {
     const t = performance.now() * 0.002;
     ringMat.opacity = 0.3 + 0.2 * Math.sin(t);
   }
+
+  // Random activity blinks — fire random nodes brighter momentarily
+  blinkActivity();
 
   controls.update();
   composer.render();
