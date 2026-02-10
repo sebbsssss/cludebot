@@ -333,15 +333,30 @@ export function createServer(): express.Application {
         return;
       }
 
+      const safeContent = String(content).slice(0, 1000);
+      const safeSummary = String(summary).slice(0, 200);
+
       const memoryId = await storeMemory({
         type: 'episodic',
-        content: String(content).slice(0, 1000),
-        summary: String(summary).slice(0, 200),
+        content: safeContent,
+        summary: safeSummary,
         tags: ['demo', 'maas'],
         importance: 0.5,
         source: 'demo-maas',
         relatedUser: 'demo-visitor',
       });
+
+      // Fire-and-forget devnet commit
+      if (memoryId) {
+        const contentHash = createHash('sha256').update(safeContent).digest('hex');
+        const memo = `clude-memory | id: ${memoryId} | type: episodic | hash: ${contentHash.slice(0, 16)} | ${safeSummary.slice(0, 400)}`;
+        writeMemoDevnet(memo).then(async (signature) => {
+          if (signature) {
+            const db = getDb();
+            await db.from('memories').update({ solana_signature: signature }).eq('id', memoryId);
+          }
+        }).catch(() => {});
+      }
 
       res.json({ stored: true, memory_id: memoryId, timestamp: new Date().toISOString() });
     } catch (err) {
