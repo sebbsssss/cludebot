@@ -94,6 +94,34 @@ export function createServer(): express.Application {
     }
   });
 
+  // Brain visualization API (full graph data for neural network viz)
+  app.get('/api/brain', async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 150, 300);
+      const memories = await getRecentMemories(720, undefined, limit);
+      res.json({
+        nodes: memories.map(m => ({
+          id: m.id,
+          type: m.memory_type,
+          summary: m.summary,
+          tags: m.tags || [],
+          importance: m.importance,
+          decay: m.decay_factor,
+          valence: m.emotional_valence,
+          accessCount: m.access_count,
+          source: m.source,
+          evidenceIds: m.evidence_ids || [],
+          createdAt: m.created_at,
+          lastAccessed: m.last_accessed,
+        })),
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Brain endpoint error');
+      res.status(500).json({ error: 'Failed to fetch brain data' });
+    }
+  });
+
   // Market data API (Allium-powered)
   app.get('/api/market-data', async (_req, res) => {
     try {
