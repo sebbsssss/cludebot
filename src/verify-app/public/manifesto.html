@@ -54,7 +54,7 @@
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* ---- NAV ---- */
+    /* ---- NAV (hardcoded — identical across all pages) ---- */
     nav {
       position: fixed;
       top: 0;
@@ -62,7 +62,9 @@
       z-index: 100;
       background: rgba(6, 6, 6, 0.92);
       backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid #1a1a1a;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 14px;
     }
 
     .nav-inner {
@@ -84,7 +86,7 @@
       font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 6px;
-      color: var(--accent);
+      color: #e8622c;
       text-transform: uppercase;
       text-decoration: none;
     }
@@ -96,7 +98,7 @@
       align-items: center;
       gap: 0.5rem;
       font-size: 0.7rem;
-      color: var(--text-dim);
+      color: #555;
       letter-spacing: 1px;
     }
 
@@ -104,7 +106,7 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #3a5a3a;
+      background: #4a8a5a;
       animation: dotPulse 3s ease-in-out infinite;
     }
 
@@ -121,7 +123,7 @@
     }
 
     .nav-links a {
-      color: var(--text-dim);
+      color: #555;
       font-size: 0.7rem;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -129,12 +131,12 @@
       text-decoration: none;
     }
 
-    .nav-links a:hover { color: var(--white); text-decoration: none; }
-    .nav-links a.nav-active { color: var(--white); }
+    .nav-links a:hover { color: #c8c8c8; text-decoration: none; }
+    .nav-links a.nav-active { color: #c8c8c8; }
 
     .nav-links a.nav-agents {
       color: #8a7a50;
-      border: 1px solid #161616;
+      border: 1px solid #1a1a1a;
       padding: 0.2rem 0.6rem;
       margin-left: auto;
       transition: all 0.3s;

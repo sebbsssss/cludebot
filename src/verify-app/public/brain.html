@@ -16,10 +16,10 @@
       --text-dim: #555;
       --text-faint: #2a2a2a;
       --accent: #e8622c;
-      --episodic: #ff4466;
-      --semantic: #00d4ff;
-      --procedural: #00ff88;
-      --selfmodel: #cc44ff;
+      --episodic: #c25a5a;
+      --semantic: #5a8ab0;
+      --procedural: #5a9a6a;
+      --selfmodel: #8a6aaa;
       --mono: 'JetBrains Mono', 'Courier New', monospace;
     }
 
@@ -161,7 +161,7 @@
       cursor: pointer;
     }
 
-    /* ---- TOP NAV (matches homepage) ---- */
+    /* ---- NAV (hardcoded — identical across all pages) ---- */
     nav {
       position: fixed;
       top: 0;
@@ -169,7 +169,8 @@
       z-index: 100;
       background: rgba(6, 6, 6, 0.92);
       backdrop-filter: blur(16px);
-      border-bottom: 1px solid #161616;
+      border-bottom: 1px solid #1a1a1a;
+      font-size: 14px;
     }
 
     .nav-inner {
@@ -191,7 +192,7 @@
       font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 6px;
-      color: var(--accent);
+      color: #e8622c;
       text-transform: uppercase;
       text-decoration: none;
     }
@@ -214,7 +215,7 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #3a5a3a;
+      background: #4a8a5a;
       animation: pulse-dot 3s ease-in-out infinite;
     }
 
@@ -240,17 +241,17 @@
     }
 
     .nav-links a:hover {
-      color: #999;
+      color: #c8c8c8;
       text-decoration: none;
     }
 
     .nav-links a.nav-active {
-      color: #999;
+      color: #c8c8c8;
     }
 
     .nav-links a.nav-agents {
       color: #8a7a50;
-      border: 1px solid #161616;
+      border: 1px solid #1a1a1a;
       padding: 0.2rem 0.6rem;
       margin-left: auto;
       transition: all 0.3s;
@@ -525,7 +526,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+// UnrealBloomPass removed — too bright
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // ============================================
@@ -786,10 +787,10 @@ function brainRegionPosition(type) {
 // CONFIG
 // ============================================
 const TYPE_COLORS = {
-  episodic:   new THREE.Color(0xff4466),
-  semantic:   new THREE.Color(0x00d4ff),
-  procedural: new THREE.Color(0x00ff88),
-  self_model: new THREE.Color(0xcc44ff),
+  episodic:   new THREE.Color(0xc25a5a),
+  semantic:   new THREE.Color(0x5a8ab0),
+  procedural: new THREE.Color(0x5a9a6a),
+  self_model: new THREE.Color(0x8a6aaa),
 };
 
 const TYPE_NAMES = {
@@ -800,7 +801,7 @@ const TYPE_NAMES = {
 };
 
 const PARTICLE_COUNT = 1000;
-const BASE_COLOR = new THREE.Color(0x0a1520);
+const BASE_COLOR = new THREE.Color(0x1a2a35);
 
 // ============================================
 // STATE
@@ -866,17 +867,9 @@ controls.autoRotateSpeed = 0.4;
 controls.maxDistance = 1200;
 controls.minDistance = 50;
 
-// Bloom
+// No bloom — clean render only
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-
-const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(W, H),
-  0.5,   // strength (subtle glow only)
-  0.4,   // radius
-  0.35   // threshold (only bright things bloom)
-);
-composer.addPass(bloomPass);
 composer.addPass(new OutputPass());
 
 // Raycaster
@@ -974,7 +967,7 @@ function createParticleSystem() {
     `,
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
   });
 
   particleMesh = new THREE.Points(particleGeometry, particleMaterial);
@@ -1078,12 +1071,12 @@ function colorParticlesNearMemories() {
       const strength = influence * influence * 0.7; // quadratic falloff
       const importance = closestNode.importance || 0.5;
 
-      particleColors[i3] = lerp(strength * importance, particleColors[i3], col.r * 0.8);
-      particleColors[i3 + 1] = lerp(strength * importance, particleColors[i3 + 1], col.g * 0.8);
-      particleColors[i3 + 2] = lerp(strength * importance, particleColors[i3 + 2], col.b * 0.8);
+      particleColors[i3] = lerp(strength * importance, particleColors[i3], col.r * 0.5);
+      particleColors[i3 + 1] = lerp(strength * importance, particleColors[i3 + 1], col.g * 0.5);
+      particleColors[i3 + 2] = lerp(strength * importance, particleColors[i3 + 2], col.b * 0.5);
 
-      particleAlphas[i] = Math.min(1.0, particleAlphas[i] + strength * 0.4);
-      particleSizes[i] = Math.min(3.5, particleSizes[i] + strength * 1.5);
+      particleAlphas[i] = Math.min(0.7, particleAlphas[i] + strength * 0.25);
+      particleSizes[i] = Math.min(3.0, particleSizes[i] + strength * 1.0);
     } else {
       // Gradually fade back to base color
       const br = 0.15 + (i % 7) * 0.03;
@@ -1146,13 +1139,13 @@ function updatePulseWaves(dt) {
         const waveFactor = (1 - distFromWave / wave.width) * fade * wave.intensity;
 
         // Brighten particle
-        particleAlphas[i] = Math.min(0.8, particleAlphas[i] + waveFactor * 0.4);
-        particleSizes[i] = Math.min(3.5, particleSizes[i] + waveFactor * 1.5);
+        particleAlphas[i] = Math.min(0.7, particleAlphas[i] + waveFactor * 0.3);
+        particleSizes[i] = Math.min(3.0, particleSizes[i] + waveFactor * 1.0);
 
         // Tint with wave color
-        particleColors[i3] = Math.min(1, particleColors[i3] + wave.color.r * waveFactor * 0.25);
-        particleColors[i3 + 1] = Math.min(1, particleColors[i3 + 1] + wave.color.g * waveFactor * 0.25);
-        particleColors[i3 + 2] = Math.min(1, particleColors[i3 + 2] + wave.color.b * waveFactor * 0.25);
+        particleColors[i3] = Math.min(0.6, particleColors[i3] + wave.color.r * waveFactor * 0.15);
+        particleColors[i3 + 1] = Math.min(0.6, particleColors[i3 + 1] + wave.color.g * waveFactor * 0.15);
+        particleColors[i3 + 2] = Math.min(0.6, particleColors[i3 + 2] + wave.color.b * waveFactor * 0.15);
       }
     }
   }
@@ -1188,34 +1181,33 @@ function buildMemoryNodes(rawNodes) {
     const color = TYPE_COLORS[raw.type] || new THREE.Color(0x888888);
     const decay = raw.decay || 1;
 
-    // Bright core sphere
+    // Core sphere
     const geo = new THREE.SphereGeometry(baseR, 14, 10);
     const mat = new THREE.MeshBasicMaterial({
-      color: color.clone().lerp(new THREE.Color(1, 1, 1), 0.15),
+      color: color.clone(),
       transparent: true,
-      opacity: 0.3 + 0.4 * decay,
+      opacity: 0.4 + 0.3 * decay,
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(pos.x, pos.y, pos.z);
     nodeGroup.add(mesh);
 
-    // Inner hot core
+    // Inner core
     const innerGeo = new THREE.SphereGeometry(baseR * 0.5, 8, 6);
     const innerMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(0.9, 0.9, 1.0),
+      color: color.clone().lerp(new THREE.Color(1, 1, 1), 0.3),
       transparent: true,
-      opacity: 0.2 + 0.3 * decay,
+      opacity: 0.3 + 0.2 * decay,
     });
     const innerMesh = new THREE.Mesh(innerGeo, innerMat);
     mesh.add(innerMesh);
 
-    // Glow halo
-    const glowGeo = new THREE.SphereGeometry(baseR * 2.5, 16, 10);
+    // Subtle glow halo
+    const glowGeo = new THREE.SphereGeometry(baseR * 2, 16, 10);
     const glowMat = new THREE.MeshBasicMaterial({
       color: color.clone(),
       transparent: true,
-      opacity: 0.03 * decay,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.06 * decay,
       depthWrite: false,
       side: THREE.BackSide,
     });
@@ -1432,9 +1424,9 @@ function restoreNodeOpacities() {
   for (const n of memoryNodes) {
     if (!n.visible) continue;
     const decay = n.decay || 1;
-    n.mesh.material.opacity = 0.3 + 0.4 * decay;
-    if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 0.2 + 0.3 * decay;
-    if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.03 * decay;
+    n.mesh.material.opacity = 0.4 + 0.3 * decay;
+    if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 0.3 + 0.2 * decay;
+    if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.06 * decay;
   }
   highlightRing.visible = false;
 }
