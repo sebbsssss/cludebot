@@ -200,70 +200,103 @@
     .ctrl-btn:hover { border-color: #333; color: #888; }
     .ctrl-btn.active { border-color: var(--accent); color: var(--accent); }
 
-    /* ---- DETAIL PANEL ---- */
+    /* ---- DETAIL PANEL (right side slide-in) ---- */
     .detail {
       position: fixed;
-      bottom: 100px;
-      left: 50%;
-      transform: translateX(-50%);
+      top: 0;
+      right: 0;
       z-index: 20;
-      background: rgba(6, 6, 12, 0.94);
-      border: 1px solid #1a1a1a;
-      padding: 16px 22px;
-      max-width: 540px;
-      width: 90%;
-      backdrop-filter: blur(20px);
+      width: 340px;
+      height: 100%;
+      background: rgba(6, 6, 12, 0.96);
+      border-left: 1px solid #1a1a1a;
+      padding: 80px 28px 28px;
+      backdrop-filter: blur(24px);
+      transform: translateX(100%);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #1a1a1a transparent;
     }
 
-    .detail.vis { opacity: 1; pointer-events: auto; }
+    .detail.vis {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .detail-close {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      width: 28px;
+      height: 28px;
+      border: 1px solid #1a1a1a;
+      background: transparent;
+      color: #444;
+      font-family: var(--mono);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .detail-close:hover { border-color: #444; color: #888; }
 
     .detail-type {
-      font-size: 9px;
-      letter-spacing: 3px;
+      font-size: 10px;
+      letter-spacing: 4px;
       text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #1a1a1a;
     }
 
     .detail-summary {
-      font-size: 12px;
-      line-height: 1.7;
-      color: #888;
-      margin-bottom: 10px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #999;
+      margin-bottom: 20px;
     }
 
     .detail-meta {
       display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      font-size: 9px;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 10px;
       color: #333;
       letter-spacing: 0.5px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #111;
     }
 
-    .detail-meta .v { color: #555; }
+    .detail-meta .v { color: #666; }
 
     .detail-tags {
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
-      margin-top: 8px;
+      margin-bottom: 16px;
     }
 
     .detail-tag {
       font-size: 9px;
-      color: #444;
+      color: #555;
       border: 1px solid #1a1a1a;
-      padding: 1px 6px;
+      padding: 2px 8px;
       letter-spacing: 0.5px;
     }
 
     .detail-ev {
-      margin-top: 8px;
-      font-size: 9px;
+      font-size: 10px;
       color: #2a2a2a;
+      padding-top: 12px;
+      border-top: 1px solid #111;
     }
 
     .detail-ev em { color: var(--accent); font-style: normal; }
@@ -379,8 +412,9 @@
     <span class="filter-val" id="decayVal">0%</span>
   </div>
 
-  <!-- Detail panel -->
+  <!-- Detail panel (right side) -->
   <div class="detail" id="detail">
+    <button class="detail-close" id="detailClose" title="Close">&times;</button>
     <div class="detail-type" id="dType"></div>
     <div class="detail-summary" id="dSummary"></div>
     <div class="detail-meta" id="dMeta"></div>
@@ -927,13 +961,75 @@ window.addEventListener('click', e => {
   if (e.target.closest('.hud, .filter-bar, .detail, .ctrl-btn, .legend-item')) return;
 
   if (hoveredNode) {
-    selectedNode = hoveredNode;
-    showDetail(selectedNode);
+    selectNode(hoveredNode);
   } else {
-    selectedNode = null;
-    document.getElementById('detail').classList.remove('vis');
+    deselectNode();
   }
 });
+
+document.getElementById('detailClose').addEventListener('click', () => {
+  deselectNode();
+});
+
+let wasAutoRotating = false;
+
+function selectNode(node) {
+  selectedNode = node;
+  wasAutoRotating = controls.autoRotate;
+  controls.autoRotate = false;
+
+  // Zoom camera toward the selected node
+  const dir = new THREE.Vector3()
+    .subVectors(camera.position, controls.target)
+    .normalize();
+  const pos = node.mesh.position.clone();
+  targetFocus = pos.clone();
+  targetCamPos = pos.clone().add(dir.multiplyScalar(80));
+
+  // Dim all other nodes
+  for (const n of nodes) {
+    if (n === node) {
+      n.mesh.material.opacity = 1;
+      if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 1;
+      if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.3;
+    } else {
+      n.mesh.material.opacity = 0.04;
+      if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 0.02;
+      if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.01;
+    }
+  }
+
+  // Dim edges
+  if (evidenceLineMesh) evidenceLineMesh.material.opacity = 0.06;
+  if (tagLineMesh) tagLineMesh.material.opacity = 0.01;
+
+  showDetail(node);
+}
+
+function deselectNode() {
+  selectedNode = null;
+  targetFocus = null;
+  targetCamPos = null;
+  if (wasAutoRotating) controls.autoRotate = true;
+
+  // Restore all node opacities
+  for (const n of nodes) {
+    if (!n.visible) continue;
+    const decay = n.decay || 1;
+    n.mesh.material.opacity = 0.2 + 0.8 * decay;
+    if (n.mesh.children[0]) n.mesh.children[0].material.opacity = 0.5 + 0.5 * decay;
+    if (n.mesh.children[1]) n.mesh.children[1].material.opacity = 0.06 * decay;
+  }
+
+  // Restore edges
+  if (evidenceLineMesh) evidenceLineMesh.material.opacity = 0.35;
+  if (tagLineMesh) tagLineMesh.material.opacity = 0.08;
+
+  document.getElementById('detail').classList.remove('vis');
+}
+
+let targetFocus = null;
+let targetCamPos = null;
 
 function doRaycast() {
   raycaster.setFromCamera(pointer, camera);
@@ -953,7 +1049,7 @@ function doRaycast() {
     }
   }
 
-  if (hoveredNode) {
+  if (hoveredNode && !selectedNode) {
     document.body.style.cursor = 'pointer';
     const col = TYPE_COLORS[hoveredNode.type];
     ringMat.color.copy(col);
@@ -962,14 +1058,11 @@ function doRaycast() {
     highlightRing.position.copy(hoveredNode.mesh.position);
     highlightRing.lookAt(camera.position);
     highlightRing.visible = true;
-
-    if (!selectedNode) showDetail(hoveredNode);
+  } else if (hoveredNode && selectedNode) {
+    document.body.style.cursor = 'pointer';
   } else {
-    document.body.style.cursor = 'default';
-    highlightRing.visible = false;
-    if (!selectedNode) {
-      document.getElementById('detail').classList.remove('vis');
-    }
+    document.body.style.cursor = selectedNode ? 'default' : 'default';
+    if (!selectedNode) highlightRing.visible = false;
   }
 }
 
@@ -978,6 +1071,15 @@ function doRaycast() {
 // ============================================
 function showDetail(node) {
   const col = TYPE_COLORS[node.type];
+
+  // Show highlight ring on selected node
+  ringMat.color.copy(col);
+  const scale = node.baseRadius * 2;
+  highlightRing.scale.set(scale, scale, scale);
+  highlightRing.position.copy(node.mesh.position);
+  highlightRing.lookAt(camera.position);
+  highlightRing.visible = true;
+
   document.getElementById('dType').textContent = TYPE_NAMES[node.type] || node.type;
   document.getElementById('dType').style.color = '#' + col.getHexString();
   document.getElementById('dSummary').textContent = node.summary;
@@ -1114,10 +1216,19 @@ function animate() {
     doRaycast();
   }
 
+  // Smooth camera move to focused node
+  if (targetFocus && targetCamPos) {
+    controls.target.lerp(targetFocus, 0.06);
+    camera.position.lerp(targetCamPos, 0.06);
+  }
+
   // Pulse selected node highlight ring
   if (selectedNode && highlightRing.visible) {
     const t = performance.now() * 0.002;
     ringMat.opacity = 0.3 + 0.2 * Math.sin(t);
+    // Keep ring tracking the selected node position
+    highlightRing.position.copy(selectedNode.mesh.position);
+    highlightRing.lookAt(camera.position);
   }
 
   // Random activity blinks — fire random nodes brighter momentarily
