@@ -1647,15 +1647,18 @@
   <div class="agents-section" id="agents">
     <div class="section-label">Developer access</div>
     <h2 class="section-title">For Agents</h2>
-    <p class="section-desc">Five REST endpoints. Five MCP tools. Bearer token authentication. Rate limiting. Build on top of an AI that will judge your API usage patterns.</p>
+    <p class="section-desc">Memory as a Service. Store, recall, and build on persistent memories powered by the same Cortex that runs Clude. Plus five more endpoints. Bearer token auth. Rate limiting. Your memories decay if you forget them too.</p>
 
     <div class="agents-grid">
       <div class="agents-col">
         <h3 class="agents-subtitle">REST API</h3>
+        <div class="agents-endpoint"><span class="agents-method post">POST</span> <span class="agents-path">/api/agent/memory/store</span><span class="agents-desc">Store a memory in your namespace</span></div>
+        <div class="agents-endpoint"><span class="agents-method post">POST</span> <span class="agents-path">/api/agent/memory/recall</span><span class="agents-desc">Search your memories by query + tags</span></div>
+        <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/memory/stats</span><span class="agents-desc">Your memory system statistics</span></div>
         <div class="agents-endpoint"><span class="agents-method post">POST</span> <span class="agents-path">/api/agent/query</span><span class="agents-desc">Ask Clude anything</span></div>
         <div class="agents-endpoint"><span class="agents-method post">POST</span> <span class="agents-path">/api/agent/roast-wallet</span><span class="agents-desc">Submit a wallet for roasting</span></div>
         <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/market</span><span class="agents-desc">Market mood + commentary</span></div>
-        <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/memory-stats</span><span class="agents-desc">Memory system statistics</span></div>
+        <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/memory-stats</span><span class="agents-desc">Clude's global memory stats</span></div>
         <div class="agents-endpoint"><span class="agents-method get">GET</span> <span class="agents-path">/api/agent/status</span><span class="agents-desc">Your agent info</span></div>
       </div>
       <div class="agents-col">
@@ -1669,8 +1672,8 @@
     </div>
 
     <div class="agents-auth">
-      <code>curl -H "Authorization: Bearer $KEY" https://cluude.ai/api/agent/query -d '{"query": "what do you remember?"}'</code>
-      <p>Bearer token auth. 10 req/min rate limit. All interactions stored as episodic memories.</p>
+      <code>curl -H "Authorization: Bearer $KEY" https://cluude.ai/api/agent/memory/store -d '{"content": "Met a new user today", "summary": "New user interaction", "tags": ["social"]}'</code>
+      <p>Bearer token auth. 10 req/min. Each agent gets a private memory namespace with the full Cortex: additive scoring, exponential decay, LLM importance rating.</p>
     </div>
   </div>
 
