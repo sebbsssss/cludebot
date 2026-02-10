@@ -1,11 +1,10 @@
-import { extractWalletAddress } from '../features/wallet-roast';
-import { isQuestion } from '../features/onchain-opinion';
+import { extractWalletAddress, isQuestion, cleanMentionText } from '../utils/text';
 
 export type MentionType = 'wallet-roast' | 'question' | 'general';
 
 export function classifyMention(text: string): MentionType {
   // Strip @ mentions for classification
-  const cleaned = text.replace(/@\w+/g, '').trim();
+  const cleaned = cleanMentionText(text);
 
   // Check for wallet address first (highest priority)
   if (extractWalletAddress(cleaned)) {

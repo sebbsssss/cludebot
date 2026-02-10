@@ -2,6 +2,8 @@ import { Helius } from 'helius-sdk';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { config } from '../config';
 import { createChildLogger } from './logger';
+import { HELIUS_BALANCES_BASE_URL } from '../utils/constants';
+import type { HeliusBalancesResponse, HeliusTokenBalance } from '../types/api';
 
 const log = createChildLogger('helius-client');
 
@@ -85,11 +87,11 @@ export async function getWalletHistory(address: string, limit = 50): Promise<Wal
 export async function getTokenBalances(address: string): Promise<TokenBalance[]> {
   log.debug({ address }, 'Fetching token balances');
   try {
-    const url = `https://api.helius.xyz/v0/addresses/${address}/balances?api-key=${config.helius.apiKey}`;
+    const url = `${HELIUS_BALANCES_BASE_URL}/${address}/balances?api-key=${config.helius.apiKey}`;
     const res = await fetch(url);
-    const data = await res.json() as any;
-    const tokens = data.tokens || [];
-    return tokens.map((t: any) => ({
+    const data = await res.json() as HeliusBalancesResponse;
+    const tokens: HeliusTokenBalance[] = data.tokens || [];
+    return tokens.map((t: HeliusTokenBalance) => ({
       mint: t.mint,
       amount: t.amount / Math.pow(10, t.decimals || 0),
       decimals: t.decimals || 0,

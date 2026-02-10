@@ -1,5 +1,14 @@
 import { getDb } from './database';
 import { createChildLogger } from './logger';
+import {
+  clamp,
+  timeAgo,
+  MEMORY_DECAY_RATE,
+  MEMORY_MIN_DECAY,
+  MEMORY_RECENCY_HALF_LIFE_HOURS,
+  MEMORY_MAX_CONTENT_LENGTH,
+  MEMORY_MAX_SUMMARY_LENGTH,
+} from '../utils';
 
 const log = createChildLogger('memory');
 
@@ -56,13 +65,13 @@ export interface StoreMemoryOptions {
 }
 
 export interface RecallOptions {
-  query?: string;            // Text to search against summaries
-  tags?: string[];           // Tags to match
-  relatedUser?: string;      // Filter by user
-  memoryTypes?: MemoryType[];// Filter by type
-  limit?: number;            // Max results
-  minImportance?: number;    // Minimum importance threshold
-  minDecay?: number;         // Minimum decay factor
+  query?: string;
+  tags?: string[];
+  relatedUser?: string;
+  memoryTypes?: MemoryType[];
+  limit?: number;
+  minImportance?: number;
+  minDecay?: number;
 }
 
 // ---- STORE ---- //
@@ -75,8 +84,8 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
       .from('memories')
       .insert({
         memory_type: opts.type,
-        content: opts.content.slice(0, 5000), // Cap content size
-        summary: opts.summary.slice(0, 500),
+        content: opts.content.slice(0, MEMORY_MAX_CONTENT_LENGTH),
+        summary: opts.summary.slice(0, MEMORY_MAX_SUMMARY_LENGTH),
         tags: opts.tags || [],
         emotional_valence: clamp(opts.emotionalValence ?? 0, -1, 1),
         importance: clamp(opts.importance ?? 0.5, 0, 1),
@@ -111,8 +120,7 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
 // ---- RECALL ---- //
 
 // Retrieves memories ranked by a composite score:
-//   score = tag_relevance * importance * recency_weight * decay_factor
-// Uses text similarity (pg_trgm) when a query is provided.
+//   score = text_relevance * tag_relevance * importance * recency_weight * decay_factor
 export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
   const db = getDb();
   const limit = opts.limit || 5;
@@ -137,7 +145,6 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
       query = query.gte('importance', opts.minImportance);
     }
     if (opts.tags && opts.tags.length > 0) {
-      // Match any of the provided tags
       query = query.overlaps('tags', opts.tags);
     }
 
@@ -151,37 +158,15 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     if (!data || data.length === 0) return [];
 
     // Score and rank
-    const now = Date.now();
-    const scored = data.map((mem: Memory) => {
-      const ageHours = (now - new Date(mem.created_at).getTime()) / (1000 * 60 * 60);
-      const recencyWeight = 1 / (1 + ageHours / 24); // Half-life of ~24 hours
+    const scored = data.map((mem: Memory) => ({
+      ...mem,
+      _score: scoreMemory(mem, opts),
+    }));
 
-      // Tag overlap score
-      let tagScore = 0.5; // Base score
-      if (opts.tags && opts.tags.length > 0 && mem.tags) {
-        const overlap = mem.tags.filter(t => opts.tags!.includes(t)).length;
-        tagScore = 0.5 + 0.5 * (overlap / opts.tags.length);
-      }
-
-      // Text similarity (simple keyword overlap if query provided)
-      let textScore = 0.5;
-      if (opts.query) {
-        const queryWords = opts.query.toLowerCase().split(/\s+/);
-        const summaryLower = mem.summary.toLowerCase();
-        const matches = queryWords.filter(w => w.length > 2 && summaryLower.includes(w)).length;
-        textScore = 0.3 + 0.7 * Math.min(matches / Math.max(queryWords.length, 1), 1);
-      }
-
-      const score = textScore * tagScore * mem.importance * recencyWeight * mem.decay_factor;
-
-      return { ...mem, _score: score };
-    });
-
-    // Sort by composite score, take top N
     scored.sort((a: { _score: number }, b: { _score: number }) => b._score - a._score);
     const results = scored.slice(0, limit);
 
-    // Update access counts asynchronously
+    // Update access counts in parallel
     const ids = results.map((m: Memory) => m.id);
     updateMemoryAccess(ids).catch(() => {});
 
@@ -198,14 +183,42 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
   }
 }
 
+/**
+ * Pure scoring function — takes a memory and recall options, returns a composite relevance score.
+ * Extracted for testability.
+ */
+export function scoreMemory(mem: Memory, opts: RecallOptions): number {
+  const now = Date.now();
+  const ageHours = (now - new Date(mem.created_at).getTime()) / (1000 * 60 * 60);
+  const recencyWeight = 1 / (1 + ageHours / MEMORY_RECENCY_HALF_LIFE_HOURS);
+
+  // Tag overlap score
+  let tagScore = 0.5;
+  if (opts.tags && opts.tags.length > 0 && mem.tags) {
+    const overlap = mem.tags.filter(t => opts.tags!.includes(t)).length;
+    tagScore = 0.5 + 0.5 * (overlap / opts.tags.length);
+  }
+
+  // Text similarity (keyword overlap)
+  let textScore = 0.5;
+  if (opts.query) {
+    const queryWords = opts.query.toLowerCase().split(/\s+/);
+    const summaryLower = mem.summary.toLowerCase();
+    const matches = queryWords.filter(w => w.length > 2 && summaryLower.includes(w)).length;
+    textScore = 0.3 + 0.7 * Math.min(matches / Math.max(queryWords.length, 1), 1);
+  }
+
+  return textScore * tagScore * mem.importance * recencyWeight * mem.decay_factor;
+}
+
 // ---- ACCESS TRACKING ---- //
 
 async function updateMemoryAccess(ids: number[]): Promise<void> {
   if (ids.length === 0) return;
   const db = getDb();
 
-  for (const id of ids) {
-    // Fetch current access_count, increment, update
+  // Batch update in parallel instead of sequential loop
+  await Promise.all(ids.map(async (id) => {
     const { data: current } = await db
       .from('memories')
       .select('access_count')
@@ -220,32 +233,28 @@ async function updateMemoryAccess(ids: number[]): Promise<void> {
         decay_factor: 1.0, // Reset decay on access — memory is reinforced
       })
       .eq('id', id);
-  }
+  }));
 }
 
 // ---- DECAY ---- //
 
-// Run daily: memories that haven't been accessed lose relevance over time
 export async function decayMemories(): Promise<number> {
   const db = getDb();
-  const DECAY_RATE = 0.95; // 5% decay per cycle
-  const MIN_DECAY = 0.05;
 
   try {
-    // Decay all memories that haven't been accessed in the last 24 hours
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const { data, error } = await db
       .from('memories')
       .select('id, decay_factor')
       .lt('last_accessed', cutoff)
-      .gt('decay_factor', MIN_DECAY);
+      .gt('decay_factor', MEMORY_MIN_DECAY);
 
     if (error || !data) return 0;
 
     let decayed = 0;
     for (const mem of data) {
-      const newDecay = Math.max(mem.decay_factor * DECAY_RATE, MIN_DECAY);
+      const newDecay = Math.max(mem.decay_factor * MEMORY_DECAY_RATE, MEMORY_MIN_DECAY);
       await db
         .from('memories')
         .update({ decay_factor: newDecay })
@@ -264,7 +273,7 @@ export async function decayMemories(): Promise<number> {
   }
 }
 
-// ---- STATS (for self-awareness) ---- //
+// ---- STATS ---- //
 
 export interface MemoryStats {
   total: number;
@@ -293,11 +302,10 @@ export async function getMemoryStats(): Promise<MemoryStats> {
   };
 
   try {
-    // Total count by type
     const { data: memories } = await db
       .from('memories')
       .select('memory_type, importance, decay_factor, created_at, related_user, tags')
-      .gt('decay_factor', 0.05);
+      .gt('decay_factor', MEMORY_MIN_DECAY);
 
     if (memories && memories.length > 0) {
       stats.total = memories.length;
@@ -324,21 +332,16 @@ export async function getMemoryStats(): Promise<MemoryStats> {
       stats.avgDecay = decaySum / memories.length;
       stats.uniqueUsers = users.size;
 
-      // Sort tags by count
       stats.topTags = Object.entries(tagCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([tag, count]) => ({ tag, count }));
 
-      // Oldest and newest
-      const sorted = memories
-        .map(m => m.created_at)
-        .sort();
+      const sorted = memories.map(m => m.created_at).sort();
       stats.oldestMemory = sorted[0] || null;
       stats.newestMemory = sorted[sorted.length - 1] || null;
     }
 
-    // Dream session count
     const { count } = await db
       .from('dream_logs')
       .select('id', { count: 'exact', head: true });
@@ -351,7 +354,7 @@ export async function getMemoryStats(): Promise<MemoryStats> {
   return stats;
 }
 
-// ---- RECENT MEMORIES (for consolidation) ---- //
+// ---- RECENT MEMORIES ---- //
 
 export async function getRecentMemories(
   hours: number,
@@ -381,7 +384,7 @@ export async function getRecentMemories(
   return data || [];
 }
 
-// ---- SELF-MODEL MEMORIES ---- //
+// ---- SELF-MODEL ---- //
 
 export async function getSelfModel(): Promise<Memory[]> {
   const db = getDb();
@@ -418,7 +421,7 @@ export async function storeDreamLog(
     .insert({
       session_type: sessionType,
       input_memory_ids: inputMemoryIds,
-      output: output.slice(0, 5000),
+      output: output.slice(0, MEMORY_MAX_CONTENT_LENGTH),
       new_memories_created: newMemoryIds,
     });
 
@@ -429,13 +432,11 @@ export async function storeDreamLog(
 
 // ---- HELPERS ---- //
 
-// Build memory context string for injection into Claude's system prompt
 export function formatMemoryContext(memories: Memory[]): string {
   if (memories.length === 0) return '';
 
   const lines: string[] = ['## Memory Recall'];
 
-  // Group by type
   const episodic = memories.filter(m => m.memory_type === 'episodic');
   const semantic = memories.filter(m => m.memory_type === 'semantic');
   const procedural = memories.filter(m => m.memory_type === 'procedural');
@@ -444,8 +445,7 @@ export function formatMemoryContext(memories: Memory[]): string {
   if (episodic.length > 0) {
     lines.push('### Past Interactions');
     for (const m of episodic) {
-      const age = getTimeAgo(m.created_at);
-      lines.push(`- [${age}] ${m.summary}`);
+      lines.push(`- [${timeAgo(m.created_at)}] ${m.summary}`);
     }
   }
 
@@ -476,57 +476,37 @@ export function formatMemoryContext(memories: Memory[]): string {
   return lines.join('\n');
 }
 
-// Derive importance score from interaction context
 export function calculateImportance(opts: {
   tier?: string;
   feature?: string;
   mood?: string;
   isFirstInteraction?: boolean;
 }): number {
-  let score = 0.4; // Base
+  let score = 0.4;
 
-  // Holder tier
   if (opts.tier === 'WHALE') score += 0.3;
   else if (opts.tier === 'SMALL') score += 0.1;
-  else if (opts.tier === 'SELLER') score += 0.2; // Interesting — they left
+  else if (opts.tier === 'SELLER') score += 0.2;
 
-  // Feature type
   if (opts.feature === 'wallet-roast') score += 0.1;
-  else if (opts.feature === 'question') score += 0.15; // Committed on-chain
+  else if (opts.feature === 'question') score += 0.15;
   else if (opts.feature === 'exit-interview') score += 0.25;
 
-  // Mood (extreme moods = more memorable events)
   if (opts.mood === 'PUMPING' || opts.mood === 'DUMPING') score += 0.1;
   if (opts.mood === 'NEW_ATH' || opts.mood === 'WHALE_SELL') score += 0.15;
 
-  // First interaction with user
   if (opts.isFirstInteraction) score += 0.1;
 
   return clamp(score, 0, 1);
 }
 
-// Derive emotional valence from mood
 export function moodToValence(mood: string): number {
   switch (mood) {
-    case 'PUMPING': return 0.3;   // Cautiously positive
-    case 'NEW_ATH': return 0.5;   // Suspicious optimism
-    case 'DUMPING': return -0.4;  // Validated pessimism
-    case 'WHALE_SELL': return -0.6; // Melancholic
-    case 'SIDEWAYS': return -0.1; // Existential boredom
+    case 'PUMPING': return 0.3;
+    case 'NEW_ATH': return 0.5;
+    case 'DUMPING': return -0.4;
+    case 'WHALE_SELL': return -0.6;
+    case 'SIDEWAYS': return -0.1;
     default: return 0;
   }
-}
-
-function clamp(val: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, val));
-}
-
-function getTimeAgo(dateStr: string): string {
-  const ms = Date.now() - new Date(dateStr).getTime();
-  const hours = Math.floor(ms / (1000 * 60 * 60));
-  if (hours < 1) return 'just now';
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
 }

@@ -1,9 +1,9 @@
 import { config } from '../config';
 import { createChildLogger } from './logger';
+import { ALLIUM_BASE_URL } from '../utils/constants';
+import type { AlliumTokenData, AlliumSolStats } from '../types/api';
 
 const log = createChildLogger('allium-client');
-
-const BASE_URL = 'https://api.allium.so/api/v1/developer';
 
 export interface MarketMover {
   token: string;
@@ -37,13 +37,13 @@ export interface MarketSnapshot {
   lastUpdate: string;
 }
 
-async function alliumFetch(endpoint: string, method: 'GET' | 'POST' = 'GET', body?: unknown): Promise<any> {
+async function alliumFetch<T>(endpoint: string, method: 'GET' | 'POST' = 'GET', body?: unknown): Promise<T | null> {
   if (!config.allium.apiKey) {
     log.warn('No Allium API key configured');
     return null;
   }
 
-  const url = `${BASE_URL}${endpoint}`;
+  const url = `${ALLIUM_BASE_URL}${endpoint}`;
   const options: RequestInit = {
     method,
     headers: {
@@ -63,7 +63,7 @@ async function alliumFetch(endpoint: string, method: 'GET' | 'POST' = 'GET', bod
       log.error({ status: res.status, body: text, endpoint }, 'Allium API error');
       return null;
     }
-    return await res.json();
+    return await res.json() as T;
   } catch (err) {
     log.error({ err, endpoint }, 'Allium fetch failed');
     return null;
@@ -85,8 +85,8 @@ export async function getMarketSnapshot(): Promise<MarketSnapshot> {
 
   // Fetch top Solana tokens by 24h volume and SOL price stats in parallel
   const [topTokens, solStats] = await Promise.all([
-    alliumFetch('/tokens?chain=solana&sort=volume&granularity=1d&order=desc&limit=20'),
-    alliumFetch('/prices/stats', 'POST', [
+    alliumFetch<AlliumTokenData[]>('/tokens?chain=solana&sort=volume&granularity=1d&order=desc&limit=20'),
+    alliumFetch<AlliumSolStats>('/prices/stats', 'POST', [
       { token_address: 'So11111111111111111111111111111111111111112', chain: 'solana' },
     ]),
   ]);

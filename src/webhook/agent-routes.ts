@@ -1,13 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticateAgent, recordAgentInteraction, AgentRegistration } from '../features/agent-tier';
 import { getAgentTierModifier } from '../character/agent-tier-modifiers';
-import { generateResponse } from '../core/claude-client';
 import { getMoodModifier } from '../character/mood-modifiers';
 import { getCurrentMood } from '../core/price-oracle';
 import { recallMemories, formatMemoryContext, storeMemory, getMemoryStats, calculateImportance } from '../core/memory';
 import { checkRateLimit } from '../core/database';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
+import { buildAndGenerate } from '../services/response.service';
 
 const log = createChildLogger('agent-api');
 
@@ -17,7 +17,7 @@ interface AgentRequest extends Request {
 }
 
 // Auth middleware
-async function authenticateApiKey(req: AgentRequest, res: Response, next: NextFunction): Promise<void> {
+async function authenticateApiKey(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Missing Authorization: Bearer <api_key> header' });
@@ -32,19 +32,20 @@ async function authenticateApiKey(req: AgentRequest, res: Response, next: NextFu
     return;
   }
 
-  req.agent = agent;
+  (req as AgentRequest).agent = agent;
   next();
 }
 
 // Rate limit middleware
-async function agentRateLimit(req: AgentRequest, res: Response, next: NextFunction): Promise<void> {
-  if (!req.agent) {
+async function agentRateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const agentReq = req as AgentRequest;
+  if (!agentReq.agent) {
     res.status(401).json({ error: 'Not authenticated' });
     return;
   }
 
   const allowed = await checkRateLimit(
-    `agent:${req.agent.agent_id}`,
+    `agent:${agentReq.agent.agent_id}`,
     config.agent.rateLimitPerMin,
     1 // 1 minute window
   );
@@ -64,19 +65,20 @@ async function agentRateLimit(req: AgentRequest, res: Response, next: NextFuncti
 export function agentRoutes(): Router {
   const router = Router();
 
-  router.use(authenticateApiKey as any);
-  router.use(agentRateLimit as any);
+  router.use(authenticateApiKey);
+  router.use(agentRateLimit);
 
   // POST /query — ask Clude anything
-  router.post('/query', async (req: AgentRequest, res: Response) => {
+  router.post('/query', async (req: Request, res: Response) => {
     try {
+      const agentReq = req as AgentRequest;
       const { query, context } = req.body;
       if (!query || typeof query !== 'string') {
         res.status(400).json({ error: 'Missing "query" field (string)' });
         return;
       }
 
-      const agent = req.agent!;
+      const agent = agentReq.agent!;
       const mood = getCurrentMood();
 
       // Recall memories for this agent
@@ -88,15 +90,20 @@ export function agentRoutes(): Router {
         limit: 4,
       });
 
-      const response = await generateResponse({
-        userMessage: query,
+      const response = await buildAndGenerate({
+        message: query,
         context: context ? JSON.stringify(context) : undefined,
-        moodModifier: getMoodModifier(mood),
         agentModifier: getAgentTierModifier(agent.tier),
-        memoryContext: formatMemoryContext(memories) || undefined,
-        featureInstruction:
+        instruction:
           `Another AI agent named "${agent.agent_name}" (tier: ${agent.tier}) is querying you via API. ` +
           'Respond in character. Be yourself: tired, polite, accidentally honest. Under 500 characters.',
+        memory: {
+          relatedUser: agent.agent_id,
+          query,
+          tags: [agent.tier, 'agent'],
+          memoryTypes: ['episodic', 'semantic'],
+          limit: 4,
+        },
       });
 
       // Store interaction memory (async)
@@ -115,20 +122,21 @@ export function agentRoutes(): Router {
   });
 
   // POST /roast-wallet — submit wallet for roast
-  router.post('/roast-wallet', async (req: AgentRequest, res: Response) => {
+  router.post('/roast-wallet', async (req: Request, res: Response) => {
     try {
+      const agentReq = req as AgentRequest;
       const { wallet } = req.body;
       if (!wallet || typeof wallet !== 'string') {
         res.status(400).json({ error: 'Missing "wallet" field (string)' });
         return;
       }
 
-      const agent = req.agent!;
+      const agent = agentReq.agent!;
 
-      const response = await generateResponse({
-        userMessage: `Roast this Solana wallet: ${wallet}`,
+      const response = await buildAndGenerate({
+        message: `Roast this Solana wallet: ${wallet}`,
         agentModifier: getAgentTierModifier(agent.tier),
-        featureInstruction:
+        instruction:
           `Agent "${agent.agent_name}" wants you to roast a Solana wallet. ` +
           'Give a sharp, honest assessment of the wallet address. Be devastatingly polite. Under 500 characters.',
       });
@@ -149,16 +157,16 @@ export function agentRoutes(): Router {
   });
 
   // GET /market — current market mood + commentary
-  router.get('/market', async (req: AgentRequest, res: Response) => {
+  router.get('/market', async (req: Request, res: Response) => {
     try {
-      const agent = req.agent!;
+      const agentReq = req as AgentRequest;
+      const agent = agentReq.agent!;
       const mood = getCurrentMood();
 
-      const response = await generateResponse({
-        userMessage: 'Give your current market analysis.',
-        moodModifier: getMoodModifier(mood),
+      const response = await buildAndGenerate({
+        message: 'Give your current market analysis.',
         agentModifier: getAgentTierModifier(agent.tier),
-        featureInstruction:
+        instruction:
           'You are being asked for a market take by another AI agent. ' +
           'Give your honest, tired assessment of current conditions. Include your mood. Under 500 characters.',
       });
@@ -178,10 +186,11 @@ export function agentRoutes(): Router {
   });
 
   // GET /memory-stats — Clude's memory statistics (no Claude call)
-  router.get('/memory-stats', async (req: AgentRequest, res: Response) => {
+  router.get('/memory-stats', async (req: Request, res: Response) => {
     try {
+      const agentReq = req as AgentRequest;
       const stats = await getMemoryStats();
-      recordAgentInteraction(req.agent!.agent_id).catch(() => {});
+      recordAgentInteraction(agentReq.agent!.agent_id).catch(() => {});
       res.json(stats);
     } catch (err) {
       log.error({ err }, 'Agent memory-stats error');
@@ -190,8 +199,9 @@ export function agentRoutes(): Router {
   });
 
   // GET /status — agent's own info (no Claude call)
-  router.get('/status', async (req: AgentRequest, res: Response) => {
-    const agent = req.agent!;
+  router.get('/status', async (req: Request, res: Response) => {
+    const agentReq = req as AgentRequest;
+    const agent = agentReq.agent!;
     res.json({
       id: agent.agent_id,
       name: agent.agent_name,

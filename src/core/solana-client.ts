@@ -11,13 +11,14 @@ const bs58 = bs58Module.default || bs58Module;
 import { config } from '../config';
 import { createChildLogger } from './logger';
 import nacl from 'tweetnacl';
+import { MEMO_PROGRAM_ID as MEMO_PROGRAM_ID_STRING, MEMO_MAX_LENGTH, SOLSCAN_TX_BASE_URL } from '../utils/constants';
 
 const log = createChildLogger('solana-client');
 
 let connection: Connection;
 let botWallet: Keypair | null = null;
 
-const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+const MEMO_PROGRAM_ID = new PublicKey(MEMO_PROGRAM_ID_STRING);
 
 export function getConnection(): Connection {
   if (!connection) {
@@ -55,7 +56,7 @@ export async function writeMemo(memo: string): Promise<string | null> {
   }
 
   const conn = getConnection();
-  const truncatedMemo = memo.slice(0, 566); // Memo program limit
+  const truncatedMemo = memo.slice(0, MEMO_MAX_LENGTH);
 
   const instruction = new TransactionInstruction({
     keys: [{ pubkey: wallet.publicKey, isSigner: true, isWritable: true }],
@@ -85,5 +86,5 @@ export function verifySignature(
 }
 
 export function solscanTxUrl(signature: string): string {
-  return `https://solscan.io/tx/${signature}`;
+  return `${SOLSCAN_TX_BASE_URL}/${signature}`;
 }

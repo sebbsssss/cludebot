@@ -1,3 +1,5 @@
+import { pickRandom } from '../utils/text';
+
 // Randomized voice flavors — one is picked per response to add variety
 const VOICE_FLAVORS = [
   'You are in your "deadpan corporate" mode right now. Everything is a quarterly update. Refer to interactions as "tickets" or "service requests."',
@@ -45,10 +47,6 @@ const CLOSERS = [
   'Your move.',
   'End of report.',
 ];
-
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
 
 export function getBasePrompt(): string {
   const flavor = pickRandom(VOICE_FLAVORS);

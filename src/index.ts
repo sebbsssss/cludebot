@@ -9,6 +9,7 @@ import { startDreamCycle, stopDreamCycle } from './features/dream-cycle';
 import { startServer } from './webhook/server';
 import { getBotWallet } from './core/solana-client';
 import { createChildLogger } from './core/logger';
+import { registerEventHandlers } from './events/handlers';
 
 const log = createChildLogger('main');
 
@@ -20,6 +21,10 @@ async function main(): Promise<void> {
   // Phase 1: Initialize core
   await initDatabase();
   log.info('Database initialized');
+
+  // Register event handlers (wires webhook events to feature logic)
+  registerEventHandlers();
+  log.info('Event handlers registered');
 
   // Load bot wallet if configured
   const wallet = getBotWallet();

@@ -1,20 +1,18 @@
 import { createHash } from 'crypto';
-import { generateResponse } from '../core/claude-client';
 import { postReply } from '../core/x-client';
 import { writeMemo, solscanTxUrl } from '../core/solana-client';
 import { checkRateLimit, markProcessed, getDb } from '../core/database';
-import { getCurrentMood } from '../core/price-oracle';
-import { getMoodModifier } from '../character/mood-modifiers';
 import { getTierModifier } from '../character/tier-modifiers';
 import { HolderTier } from '../character/tier-modifiers';
 import { createChildLogger } from '../core/logger';
+import { isQuestion, cleanMentionText } from '../utils/text';
+import { buildAndGenerate } from '../services/response.service';
+import { replyAndMark } from '../services/social.service';
 
 const log = createChildLogger('onchain-opinion');
 
-export function isQuestion(text: string): boolean {
-  const cleaned = text.replace(/@\w+/g, '').trim();
-  return cleaned.includes('?') || /^(ask|what|why|how|when|where|will|should|can|is|do|does)\b/i.test(cleaned);
-}
+// Re-export isQuestion for backward compat (classifier.ts imports it)
+export { isQuestion };
 
 export async function handleOnchainOpinion(
   tweetId: string,
@@ -38,17 +36,14 @@ export async function handleOnchainOpinion(
     return;
   }
 
-  const question = tweetText.replace(/@\w+/g, '').trim();
+  const question = cleanMentionText(tweetText);
   log.info({ question, tweetId }, 'Processing on-chain opinion');
 
-  const mood = getCurrentMood();
-
   // Generate the opinion
-  const answer = await generateResponse({
-    userMessage: question,
-    moodModifier: getMoodModifier(mood),
+  const answer = await buildAndGenerate({
+    message: question,
     tierModifier: getTierModifier(tier),
-    featureInstruction:
+    instruction:
       'Someone asked you a question. Answer it honestly in character. ' +
       'Your answer will be hashed and committed to the Solana blockchain permanently. ' +
       'You are aware of this. It adds weight to your words. ' +
@@ -83,7 +78,6 @@ export async function handleOnchainOpinion(
     replyText = `${answer}\n\n(Tried to put this on-chain but even the blockchain rejected me today.)`;
   }
 
-  const replyId = await postReply(tweetId, replyText);
-  await markProcessed(tweetId, 'onchain-opinion', replyId);
+  await replyAndMark(tweetId, replyText, 'onchain-opinion');
   log.info({ tweetId, signature }, 'On-chain opinion posted');
 }
