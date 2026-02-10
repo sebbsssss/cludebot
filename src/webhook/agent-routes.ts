@@ -3,8 +3,8 @@ import { authenticateAgent, recordAgentInteraction, AgentRegistration } from '..
 import { getAgentTierModifier } from '../character/agent-tier-modifiers';
 import { getMoodModifier } from '../character/mood-modifiers';
 import { getCurrentMood } from '../core/price-oracle';
-import { recallMemories, formatMemoryContext, storeMemory, getMemoryStats, scoreImportanceWithLLM } from '../core/memory';
-import { checkRateLimit } from '../core/database';
+import { recallMemories, formatMemoryContext, storeMemory, getMemoryStats, scoreImportanceWithLLM, type MemoryType } from '../core/memory';
+import { checkRateLimit, getDb } from '../core/database';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
 import { buildAndGenerate } from '../services/response.service';
@@ -210,6 +210,138 @@ export function agentRoutes(): Router {
       registeredAt: agent.registered_at,
       lastUsed: agent.last_used,
     });
+  });
+
+  // ---- Memory as a Service ----
+  // Private memory namespace for each agent, powered by the Cortex.
+
+  // POST /memory/store — store a memory in agent's namespace
+  router.post('/memory/store', async (req: Request, res: Response) => {
+    try {
+      const agentReq = req as AgentRequest;
+      const agent = agentReq.agent!;
+      const { content, summary, tags, type, importance, emotional_valence, source } = req.body;
+
+      if (!content || typeof content !== 'string') {
+        res.status(400).json({ error: 'Missing "content" field (string)' });
+        return;
+      }
+      if (!summary || typeof summary !== 'string') {
+        res.status(400).json({ error: 'Missing "summary" field (string)' });
+        return;
+      }
+
+      const memoryType: MemoryType = type && ['episodic', 'semantic', 'procedural', 'self_model'].includes(type) ? type : 'episodic';
+
+      let imp = typeof importance === 'number' ? Math.max(0, Math.min(1, importance)) : undefined;
+      if (imp === undefined) {
+        imp = await scoreImportanceWithLLM(`Agent "${agent.agent_name}" memory: "${summary.slice(0, 200)}"`);
+      }
+
+      const id = await storeMemory({
+        type: memoryType,
+        content: content.slice(0, 5000),
+        summary: summary.slice(0, 500),
+        tags: Array.isArray(tags) ? tags.slice(0, 20) : [],
+        importance: imp,
+        emotionalValence: typeof emotional_valence === 'number' ? Math.max(-1, Math.min(1, emotional_valence)) : 0,
+        source: typeof source === 'string' ? source.slice(0, 100) : `agent-api:${agent.agent_name}`,
+        relatedUser: agent.agent_id,
+        metadata: { agentName: agent.agent_name },
+      });
+
+      recordAgentInteraction(agent.agent_id).catch(() => {});
+
+      res.json({
+        stored: id !== null,
+        memory_id: id,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Agent memory/store error');
+      res.status(500).json({ error: 'Internal error' });
+    }
+  });
+
+  // POST /memory/recall — search agent's memory namespace
+  router.post('/memory/recall', async (req: Request, res: Response) => {
+    try {
+      const agentReq = req as AgentRequest;
+      const agent = agentReq.agent!;
+      const { query, tags, memory_types, limit, min_importance } = req.body;
+
+      const memories = await recallMemories({
+        query: typeof query === 'string' ? query : undefined,
+        tags: Array.isArray(tags) ? tags : undefined,
+        memoryTypes: Array.isArray(memory_types) ? memory_types.filter((t: string) => ['episodic', 'semantic', 'procedural', 'self_model'].includes(t)) as MemoryType[] : undefined,
+        limit: Math.min(typeof limit === 'number' ? limit : 5, 20),
+        minImportance: typeof min_importance === 'number' ? min_importance : undefined,
+        relatedUser: agent.agent_id,
+      });
+
+      recordAgentInteraction(agent.agent_id).catch(() => {});
+
+      res.json({
+        memories: memories.map(m => ({
+          id: m.id,
+          type: m.memory_type,
+          summary: m.summary,
+          content: m.content,
+          tags: m.tags,
+          importance: m.importance,
+          decay_factor: m.decay_factor,
+          created_at: m.created_at,
+          access_count: m.access_count,
+        })),
+        count: memories.length,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Agent memory/recall error');
+      res.status(500).json({ error: 'Internal error' });
+    }
+  });
+
+  // GET /memory/stats — agent's own memory statistics
+  router.get('/memory/stats', async (req: Request, res: Response) => {
+    try {
+      const agentReq = req as AgentRequest;
+      const agent = agentReq.agent!;
+      const db = getDb();
+
+      const { data } = await db
+        .from('memories')
+        .select('memory_type, importance, decay_factor')
+        .eq('related_user', agent.agent_id)
+        .gt('decay_factor', 0.01);
+
+      const byType: Record<string, number> = { episodic: 0, semantic: 0, procedural: 0, self_model: 0 };
+      let impSum = 0;
+      let decaySum = 0;
+
+      if (data && data.length > 0) {
+        for (const m of data) {
+          if (m.memory_type in byType) byType[m.memory_type]++;
+          impSum += m.importance;
+          decaySum += m.decay_factor;
+        }
+      }
+
+      const total = data?.length || 0;
+
+      recordAgentInteraction(agent.agent_id).catch(() => {});
+
+      res.json({
+        total,
+        byType,
+        avgImportance: total > 0 ? impSum / total : 0,
+        avgDecay: total > 0 ? decaySum / total : 0,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Agent memory/stats error');
+      res.status(500).json({ error: 'Internal error' });
+    }
   });
 
   return router;
