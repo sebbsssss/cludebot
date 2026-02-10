@@ -140,6 +140,9 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
 // ---- ON-CHAIN COMMIT ---- //
 
 async function commitMemoryToChain(memoryId: number, opts: StoreMemoryOptions): Promise<void> {
+  // Skip mainnet commits for demo memories (they use devnet instead)
+  if (opts.source === 'demo' || opts.source === 'demo-maas') return;
+
   const contentHash = createHash('sha256').update(opts.content).digest('hex');
   const memo = `clude-memory | id: ${memoryId} | type: ${opts.type} | hash: ${contentHash.slice(0, 16)} | ${opts.summary.slice(0, 400)}`;
 

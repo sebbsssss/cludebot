@@ -6,6 +6,8 @@ import { verifyRoutes } from '../verify-app/routes';
 import { getMarketSnapshot } from '../core/allium-client';
 import { getMemoryStats, getRecentMemories, storeMemory, recallMemories } from '../core/memory';
 import { getDb, checkRateLimit } from '../core/database';
+import { writeMemoDevnet } from '../core/solana-client';
+import { createHash } from 'crypto';
 import { agentRoutes } from './agent-routes';
 import { getRecentActivity } from '../features/activity-stream';
 import { createChildLogger } from '../core/logger';
@@ -204,10 +206,13 @@ export function createServer(): express.Application {
       }
 
       const now = new Date();
+      const content = `Demo memory triggered at ${now.toISOString()}. This thought was created by a visitor to clude.io and committed to Solana devnet as a memo transaction. The SHA-256 hash of this content is permanently recorded on-chain, making it verifiable and immutable.`;
+      const summary = `Demo: live brain commit triggered by visitor at ${now.toISOString().slice(11, 19)} UTC`;
+
       const memoryId = await storeMemory({
         type: 'episodic',
-        content: `Demo memory triggered at ${now.toISOString()}. This thought was created by a visitor to clude.io and committed to Solana as a memo transaction. The SHA-256 hash of this content is permanently recorded on-chain, making it verifiable and immutable.`,
-        summary: `Demo: live brain commit triggered by visitor at ${now.toISOString().slice(11, 19)} UTC`,
+        content,
+        summary,
         tags: ['demo', 'on-chain', 'live'],
         importance: 0.7,
         source: 'demo',
@@ -219,7 +224,17 @@ export function createServer(): express.Application {
         return;
       }
 
-      res.json({ memoryId, status: 'pending', message: 'Memory created. Solana commit in progress.' });
+      // Fire-and-forget devnet commit (not mainnet)
+      const contentHash = createHash('sha256').update(content).digest('hex');
+      const memo = `clude-memory | id: ${memoryId} | type: episodic | hash: ${contentHash.slice(0, 16)} | ${summary.slice(0, 400)}`;
+      writeMemoDevnet(memo).then(async (signature) => {
+        if (signature) {
+          const db = getDb();
+          await db.from('memories').update({ solana_signature: signature }).eq('id', memoryId);
+        }
+      }).catch(() => {});
+
+      res.json({ memoryId, status: 'pending', message: 'Memory created. Solana devnet commit in progress.' });
     } catch (err) {
       log.error({ err }, 'Demo trigger error');
       res.status(500).json({ error: 'Demo trigger failed' });

@@ -76,6 +76,43 @@ export async function writeMemo(memo: string): Promise<string | null> {
   }
 }
 
+let devnetConnection: Connection;
+
+function getDevnetConnection(): Connection {
+  if (!devnetConnection) {
+    devnetConnection = new Connection('https://api.devnet.solana.com', 'confirmed');
+  }
+  return devnetConnection;
+}
+
+export async function writeMemoDevnet(memo: string): Promise<string | null> {
+  const wallet = getBotWallet();
+  if (!wallet) {
+    log.error('No bot wallet configured, cannot write devnet memo');
+    return null;
+  }
+
+  const conn = getDevnetConnection();
+  const truncatedMemo = memo.slice(0, MEMO_MAX_LENGTH);
+
+  const instruction = new TransactionInstruction({
+    keys: [{ pubkey: wallet.publicKey, isSigner: true, isWritable: true }],
+    programId: MEMO_PROGRAM_ID,
+    data: Buffer.from(truncatedMemo, 'utf-8'),
+  });
+
+  const transaction = new Transaction().add(instruction);
+
+  try {
+    const signature = await sendAndConfirmTransaction(conn, transaction, [wallet]);
+    log.info({ signature, memoLength: truncatedMemo.length }, 'Memo written on devnet');
+    return signature;
+  } catch (err) {
+    log.error({ err }, 'Failed to write devnet memo');
+    return null;
+  }
+}
+
 export function verifySignature(
   message: string,
   signature: Uint8Array,
