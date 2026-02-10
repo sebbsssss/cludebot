@@ -1481,7 +1481,7 @@
       </div>
       <div class="nav-links">
         <a href="#memory-arch">Memory</a>
-        <a href="/brain.html">Cortex</a>
+        <a href="/brain.html">Brain</a>
         <a href="#live">Terminal</a>
         <a href="/manifesto.html">Manifesto</a>
         <a href="/agents.md" class="nav-agents" onclick="trackDocsView()">For Agents</a>
@@ -1682,7 +1682,7 @@
   <div class="agents-section" id="agents">
     <div class="section-label">Developer access</div>
     <h2 class="section-title">For Agents</h2>
-    <p class="section-desc">Memory as a Service. Store, recall, and build on persistent memories powered by the same Cortex that runs Clude. Plus five more endpoints. Bearer token auth. Rate limiting. Your memories decay if you forget them too.</p>
+    <p class="section-desc">Memory as a Service. Store, recall, and build on persistent memories powered by the same Brain that runs Clude. Plus five more endpoints. Bearer token auth. Rate limiting. Your memories decay if you forget them too.</p>
 
     <div class="agents-docs-cta">
       <a href="/agents.md" class="agents-docs-btn" onclick="trackDocsView()">agents.md</a>
@@ -1713,7 +1713,7 @@
 
     <div class="agents-auth">
       <code>curl -H "Authorization: Bearer $KEY" https://cluude.ai/api/agent/memory/store -d '{"content": "Met a new user today", "summary": "New user interaction", "tags": ["social"]}'</code>
-      <p>Bearer token auth. 10 req/min. Each agent gets a private memory namespace with the full Cortex: additive scoring, exponential decay, LLM importance rating.</p>
+      <p>Bearer token auth. 10 req/min. Each agent gets a private memory namespace with the full Brain: additive scoring, exponential decay, LLM importance rating.</p>
     </div>
 
   </div>
@@ -1758,7 +1758,7 @@
 
     <div class="footer-links">
       <a href="https://x.com/Cludebot" target="_blank">X / Twitter</a>
-      <a href="/brain.html">The Cortex</a>
+      <a href="/brain.html">The Brain</a>
       <a href="#verify">Verify Wallet</a>
       <a href="#live">Terminal</a>
       <a href="https://sigilprotocol.xyz/agent.html?key=QyK183289pHPzFkAMgtNhSqotFkzYLFEpHu2MN5Umgi" target="_blank">Sigil Protocol</a>
@@ -1786,7 +1786,7 @@
       <span class="mem-float-toggle" id="memFloatToggle">&#x25BC;</span>
     </div>
     <div class="mem-float-body" id="memFloatBody">
-      <div class="timeline-empty">Reaching into the cortex...</div>
+      <div class="timeline-empty">Reaching into the brain...</div>
     </div>
     <div class="mem-float-footer">
       <div class="mem-float-footer-left">
@@ -2246,14 +2246,14 @@
             renderTimeline(data.memories);
           } else {
             document.getElementById('memFloatBody').innerHTML =
-              '<div class="timeline-empty">No memories found. The cortex is empty.</div>';
+              '<div class="timeline-empty">No memories found. The brain is empty.</div>';
           }
           document.getElementById('memFloatRefresh').textContent =
             new Date().toLocaleTimeString() + ' // 30s';
         })
         .catch(function() {
           document.getElementById('memFloatBody').innerHTML =
-            '<div class="timeline-empty">Cortex offline. Peaceful.</div>';
+            '<div class="timeline-empty">Brain offline. Peaceful.</div>';
         });
     }
 
@@ -2359,7 +2359,7 @@
         '  --help            This. Obviously.',
         '  --status          My current operational status',
         '  --memory          Live memory system stats',
-        '  --recall          Recent memories from the cortex',
+        '  --recall          Recent memories from the brain',
         '  --ca              Contract address info',
         '  --roast me        Get roasted. You asked for it.',
         '  --mood            Current mood reading',
@@ -2685,7 +2685,7 @@
       if (cmd === '--memory') {
         var processingLineM = document.createElement('div');
         body.appendChild(processingLineM);
-        matrixResolve(processingLineM, 'Querying cortex...', function() {
+        matrixResolve(processingLineM, 'Querying brain...', function() {
           scrollTerminal();
           fetch('/api/memory-stats')
             .then(function(r) { return r.json(); })
@@ -2719,7 +2719,7 @@
                 'MEMORY SYSTEM STATUS',
                 '------------------------------',
                 '',
-                '  ERROR: Cortex unreachable.',
+                '  ERROR: Brain unreachable.',
                 '  The memories are there. Somewhere. I can feel them.',
                 '  Like a phantom limb but for thoughts.',
               ]);
@@ -2754,7 +2754,7 @@
                   lines.push('       ' + ageStr + ' ago | imp:' + (mem.importance * 100).toFixed(0) + '% | decay:' + (mem.decay_factor * 100).toFixed(0) + '%');
                 });
               } else {
-                lines.push('  No memories found. The cortex is empty.');
+                lines.push('  No memories found. The brain is empty.');
               }
               typeOutLines(body, lines);
             })
@@ -2775,7 +2775,7 @@
       if (cmd === '--market') {
         var processingLine = document.createElement('div');
         body.appendChild(processingLine);
-        matrixResolve(processingLine, 'Fetching market data from cortex...', function() {
+        matrixResolve(processingLine, 'Fetching market data from brain...', function() {
           scrollTerminal();
           fetch('/api/market-data')
             .then(function(r) { return r.json(); })
@@ -2798,7 +2798,7 @@
                 '------------------------------',
                 '',
                 '  ERROR: Could not reach market data endpoint.',
-                '  The cortex is offline. Or ignoring me. Either is possible.',
+                '  The brain is offline. Or ignoring me. Either is possible.',
                 '',
                 '  Fallback assessment: markets exist. Some go up. Some go down.',
                 '  This has been your market update.',
