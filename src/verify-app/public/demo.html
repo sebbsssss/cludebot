@@ -813,7 +813,7 @@
   }
 
   function showConfirmed(signature) {
-    var solscanUrl = 'https://solscan.io/tx/' + encodeURIComponent(signature);
+    var solscanUrl = 'https://solscan.io/tx/' + encodeURIComponent(signature) + '?cluster=devnet';
     addTermLine(
       '<span class="term-confirmed">[4/4] Confirmed on-chain</span> ' +
       '<a class="term-link" href="' + solscanUrl + '" target="_blank" rel="noopener">' +
