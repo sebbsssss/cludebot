@@ -99,6 +99,67 @@ export function createServer(): express.Application {
     }
   });
 
+  // Consciousness stream API (self-model, emergence, procedural insights)
+  app.get('/api/brain/consciousness', async (req, res) => {
+    try {
+      const [selfModel, emergence, procedural, recentEpisodic, stats] = await Promise.all([
+        getRecentMemories(8760, ['self_model'], 10),
+        getRecentMemories(8760, ['self_model'], 20),
+        getRecentMemories(8760, ['procedural'], 10),
+        getRecentMemories(24, ['episodic'], 5),
+        getMemoryStats(),
+      ]);
+
+      // Separate emergence thoughts (source: 'emergence') from reflections (source: 'reflection')
+      const emergenceThoughts = emergence
+        .filter(m => m.source === 'emergence')
+        .slice(0, 5);
+      const reflections = selfModel
+        .filter(m => m.source === 'reflection')
+        .slice(0, 5);
+
+      // Get last dream cycle time
+      const db = getDb();
+      const { data: lastDream } = await db
+        .from('dream_logs')
+        .select('created_at, session_type')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      res.json({
+        emergence: emergenceThoughts.map(m => ({
+          id: m.id, summary: m.summary, importance: m.importance,
+          createdAt: m.created_at, tags: m.tags,
+        })),
+        selfModel: reflections.map(m => ({
+          id: m.id, summary: m.summary, importance: m.importance,
+          createdAt: m.created_at, tags: m.tags,
+        })),
+        procedural: procedural.map(m => ({
+          id: m.id, summary: m.summary, importance: m.importance,
+          createdAt: m.created_at, tags: m.tags,
+        })),
+        recentActivity: recentEpisodic.map(m => ({
+          id: m.id, summary: m.summary, source: m.source,
+          createdAt: m.created_at,
+        })),
+        stats: {
+          total: stats.total,
+          byType: stats.byType,
+          avgDecay: stats.avgDecay,
+          dreamSessions: stats.totalDreamSessions,
+          lastDream: lastDream?.created_at || null,
+          lastDreamType: lastDream?.session_type || null,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Consciousness endpoint error');
+      res.status(500).json({ error: 'Failed to fetch consciousness data' });
+    }
+  });
+
   // Market data API (Allium-powered)
   app.get('/api/market-data', async (_req, res) => {
     try {

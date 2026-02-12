@@ -2,6 +2,7 @@
  * Text processing utilities for mention handling, wallet extraction, and content analysis.
  */
 
+export const SOLANA_ADDRESS_REGEX = /[1-9A-HJ-NP-Za-km-z]{32,44}/g;
 export const EVM_ADDRESS_REGEX = /0x[a-fA-F0-9]{40}/g;
 
 export function cleanMentionText(text: string): string {

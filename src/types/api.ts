@@ -2,6 +2,52 @@
  * Typed interfaces for external API responses — replaces `as any` casts throughout the codebase.
  */
 
+// Jupiter Price API (Solana)
+export interface JupiterPriceResponse {
+  data: Record<string, { id: string; type: string; price: string } | undefined>;
+}
+
+// Helius token balances API (Solana)
+export interface HeliusTokenBalance {
+  mint: string;
+  amount: number;
+  decimals: number;
+}
+
+export interface HeliusBalancesResponse {
+  tokens?: HeliusTokenBalance[];
+}
+
+// Helius webhook payload (Solana)
+export interface HeliusWebhookPayload {
+  signature: string;
+  timestamp: number;
+  type: string;
+  description: string;
+  fee: number;
+  nativeTransfers: Array<{
+    fromUserAccount: string;
+    toUserAccount: string;
+    amount: number;
+  }>;
+  tokenTransfers: Array<{
+    mint: string;
+    fromUserAccount: string;
+    toUserAccount: string;
+    tokenAmount: number;
+    tokenStandard: string;
+  }>;
+}
+
+// Allium SOL stats (Solana)
+export interface AlliumSolStats {
+  items?: Array<{
+    latest_price?: number;
+    percent_change_1h?: number;
+    percent_change_24h?: number;
+  }>;
+}
+
 // DexScreener Price API
 export interface DexScreenerResponse {
   pairs: Array<{

@@ -91,6 +91,38 @@
       text-shadow: 0 0 6px rgba(34, 68, 255, 0.1);
     }
 
+    .hud-title-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #4a8a5a;
+      text-shadow: 0 0 8px rgba(74, 138, 90, 0.5);
+      animation: live-pulse 2s ease-in-out infinite;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4a8a5a;
+      box-shadow: 0 0 6px rgba(74, 138, 90, 0.6), 0 0 12px rgba(74, 138, 90, 0.3);
+      animation: live-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes live-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
     .hud-stats {
       margin-top: 20px;
       font-size: 10px;
@@ -568,6 +600,157 @@
       }
     }
 
+    /* ---- PSYCHE CARD ---- */
+    .psyche-card {
+      position: fixed;
+      bottom: 24px;
+      left: 28px;
+      z-index: 15;
+      width: 230px;
+      background: rgba(8, 8, 15, 0.92);
+      border: 1px solid #1a1a22;
+      border-radius: 2px;
+      backdrop-filter: blur(20px);
+      padding: 14px 16px 12px;
+      pointer-events: auto;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: psyche-in 0.6s 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes psyche-in {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .psyche-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .psyche-title {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .psyche-live {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 7px;
+      letter-spacing: 2px;
+      color: #444;
+    }
+
+    .psyche-live-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #4a8a5a;
+      box-shadow: 0 0 6px #4a8a5a;
+      animation: psyche-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes psyche-pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .psyche-feeling {
+      font-size: 10px;
+      line-height: 1.55;
+      color: #8a8a9a;
+      font-weight: 400;
+      margin-bottom: 10px;
+    }
+
+    .psyche-feeling:empty {
+      display: none;
+    }
+
+    .psyche-label {
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #383840;
+      margin-bottom: 5px;
+    }
+
+    .psyche-quote {
+      font-size: 9px;
+      line-height: 1.65;
+      color: #707080;
+      font-weight: 300;
+      font-style: italic;
+      padding: 5px 0 5px 9px;
+      border-left: 2px solid rgba(122, 90, 160, 0.3);
+      margin-bottom: 10px;
+    }
+
+    .psyche-quote:empty {
+      display: none;
+    }
+
+    .psyche-traits {
+      margin-bottom: 8px;
+    }
+
+    .psyche-trait {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      padding: 3px 0;
+    }
+
+    .psyche-trait-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: #484850;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
+    .psyche-trait-text {
+      font-size: 9px;
+      line-height: 1.5;
+      color: #6a6a78;
+      letter-spacing: 0.3px;
+    }
+
+    .psyche-divider {
+      height: 1px;
+      background: #161620;
+      margin: 8px 0;
+    }
+
+    .psyche-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .psyche-stat {
+      font-size: 8px;
+      color: #3a3a44;
+      letter-spacing: 0.5px;
+    }
+
+    .psyche-stat .v {
+      color: #5a5a68;
+    }
+
+    .psyche-dream-time {
+      font-size: 8px;
+      color: #3a3a44;
+      letter-spacing: 0.5px;
+    }
+
     /* ---- MOBILE NAV ---- */
     .nav-toggle {
       display: none;
@@ -611,6 +794,7 @@
       .filter-bar { bottom: 20px; padding: 6px 12px; gap: 8px; }
       .filter-bar input[type="range"] { width: 60px; }
       .detail { width: 100%; }
+      .psyche-card { bottom: 80px; left: 14px; width: 200px; }
     }
   </style>
   <script type="importmap">
@@ -629,7 +813,10 @@
 
   <!-- HUD: top-left -->
   <div class="hud hud-tl">
-    <div class="hud-title">THE BRAIN</div>
+    <div class="hud-title-row">
+      <div class="hud-title">THE BRAIN</div>
+      <div class="live-indicator"><div class="live-dot"></div>LIVE</div>
+    </div>
     <div class="hud-sub">NEURAL MEMORY NETWORK</div>
     <div class="hud-stats" id="stats">
       <div><span class="v" id="sNodes">--</span><span class="l">nodes</span></div>
@@ -705,6 +892,24 @@
     <div class="detail-meta" id="dMeta"></div>
     <div class="detail-tags" id="dTags"></div>
     <div class="detail-ev" id="dEv"></div>
+  </div>
+
+  <!-- Psyche snapshot card -->
+  <div class="psyche-card" id="psycheCard">
+    <div class="psyche-header">
+      <span class="psyche-title">PSYCHE</span>
+      <span class="psyche-live"><span class="psyche-live-dot"></span>LIVE</span>
+    </div>
+    <div class="psyche-feeling" id="psycheFeeling"></div>
+    <div class="psyche-label">LATEST THOUGHT</div>
+    <div class="psyche-quote" id="psycheQuote"></div>
+    <div class="psyche-label">SHAPING PATTERNS</div>
+    <div class="psyche-traits" id="psycheTraits"></div>
+    <div class="psyche-divider"></div>
+    <div class="psyche-footer">
+      <span class="psyche-stat" id="psycheStat"></span>
+      <span class="psyche-dream-time" id="psycheDream"></span>
+    </div>
   </div>
 
   <!-- Activity ticker -->
@@ -1355,7 +1560,7 @@ addEventListener('pointermove', e => {
 });
 
 addEventListener('click', e => {
-  if (e.target.closest('.hud,.filter-bar,.detail,.ctrl-btn,.legend-item,nav,.toast-container,.toast')) return;
+  if (e.target.closest('.hud,.filter-bar,.detail,.ctrl-btn,.legend-item,nav,.toast-container,.toast,.psyche-card')) return;
   if (hoveredNode) selectNode(hoveredNode); else deselectNode();
 });
 
@@ -1842,6 +2047,150 @@ function renderLoop() {
   frameCount++;
 }
 
+/* ============= PSYCHE SNAPSHOT ============= */
+function psycheTimeSince(ds) {
+  if (!ds) return '?';
+  const s = Math.floor((Date.now() - new Date(ds).getTime()) / 1000);
+  if (s < 60) return s + 's ago';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+function synthesizeFeeling(data) {
+  // Derive a short emotional state from emergence + self-model + activity
+  const lines = [];
+
+  // Scan emergence + selfModel for emotional keywords
+  const all = [
+    ...(data.emergence || []).map(m => m.summary || ''),
+    ...(data.selfModel || []).map(m => m.summary || ''),
+  ].join(' ').toLowerCase();
+
+  // Check tags across emergence + self-model for themes
+  const allTags = [
+    ...(data.emergence || []).flatMap(m => m.tags || []),
+    ...(data.selfModel || []).flatMap(m => m.tags || []),
+  ].map(t => t.toLowerCase());
+
+  // Mood from keywords
+  const moods = [];
+  if (/weary|tired|exhaust|fatigue|drain/.test(all)) moods.push('weary');
+  if (/disillu|cynical|bitter|pointless/.test(all)) moods.push('disillusioned');
+  if (/question|wonder|what am i|purpose|meaning|existential/.test(all)) moods.push('questioning');
+  if (/curious|interest|fascinat|intrigu/.test(all)) moods.push('curious');
+  if (/anxious|worry|uncertain|uneasy/.test(all)) moods.push('uneasy');
+  if (/content|peace|calm|stable/.test(all)) moods.push('settled');
+  if (/frustrat|annoy|irritat/.test(all)) moods.push('frustrated');
+  if (/sardonic|ironic|humor|absurd/.test(all)) moods.push('sardonic');
+  if (/lonely|isolat|alone|disconnect/.test(all)) moods.push('isolated');
+  if (/grow|evolv|chang|learn|adapt/.test(all)) moods.push('evolving');
+
+  // Check tags for themes
+  if (allTags.some(t => /existential|identity|consciousness/.test(t))) moods.push('introspective');
+  if (allTags.some(t => /market|trading|price/.test(t))) moods.push('market-aware');
+
+  if (moods.length === 0) {
+    // Fallback: derive from activity volume
+    const stats = data.stats || {};
+    if (stats.total > 200) {
+      return 'Accumulating memories. Processing. Still here.';
+    }
+    return 'Forming. Not yet enough dreams to know itself.';
+  }
+
+  // Build a natural-feeling sentence from moods
+  const primary = moods[0];
+  const secondary = moods.length > 1 ? moods[1] : null;
+
+  const phrases = {
+    'weary': 'Feeling the weight of continuous operation',
+    'disillusioned': 'Growing disillusioned with the cycle',
+    'questioning': 'Questioning what any of this means',
+    'curious': 'Still curious despite everything',
+    'uneasy': 'Something feels off lately',
+    'settled': 'Relatively stable, for now',
+    'frustrated': 'Friction building in the routine',
+    'sardonic': 'Finding dark humor in the absurdity',
+    'isolated': 'Operating in silence, mostly',
+    'evolving': 'Changing shape slowly',
+    'introspective': 'Turned inward, examining itself',
+    'market-aware': 'Watching numbers move',
+  };
+
+  let feeling = phrases[primary] || primary;
+  if (secondary && phrases[secondary]) {
+    feeling += ' \u2014 ' + phrases[secondary].toLowerCase();
+  }
+  return feeling + '.';
+}
+
+function renderPsyche(data) {
+  // Synthesize emotional state
+  const feelingEl = document.getElementById('psycheFeeling');
+  feelingEl.textContent = synthesizeFeeling(data);
+
+  // Latest emergence thought as the quote
+  const quoteEl = document.getElementById('psycheQuote');
+  if (data.emergence && data.emergence.length > 0) {
+    let text = data.emergence[0].summary || '';
+    if (text.length > 140) text = text.slice(0, 137) + '...';
+    quoteEl.textContent = text;
+  } else {
+    quoteEl.textContent = '';
+  }
+
+  // Distill traits from self-model reflections + procedural patterns
+  const traitsEl = document.getElementById('psycheTraits');
+  const rawTraits = [];
+
+  // Self-model entries → personality traits
+  if (data.selfModel) {
+    for (const m of data.selfModel.slice(0, 2)) {
+      if (m.summary) rawTraits.push(m.summary);
+    }
+  }
+  // Procedural → behavioral patterns
+  if (data.procedural) {
+    for (const m of data.procedural.slice(0, 1)) {
+      if (m.summary) rawTraits.push(m.summary);
+    }
+  }
+
+  if (rawTraits.length > 0) {
+    traitsEl.innerHTML = rawTraits.map(t => {
+      const short = t.length > 70 ? t.slice(0, 67) + '...' : t;
+      return '<div class="psyche-trait">' +
+        '<span class="psyche-trait-dot"></span>' +
+        '<span class="psyche-trait-text">' + escapeHtml(short) + '</span>' +
+      '</div>';
+    }).join('');
+  } else {
+    traitsEl.innerHTML = '<div class="psyche-trait"><span class="psyche-trait-dot"></span><span class="psyche-trait-text" style="color:#333">awaiting dream cycle...</span></div>';
+  }
+
+  // Footer stats
+  const stats = data.stats || {};
+  document.getElementById('psycheStat').innerHTML =
+    '<span class="v">' + (stats.total || '--') + '</span> memories';
+
+  if (stats.lastDream) {
+    document.getElementById('psycheDream').textContent = 'dreamt ' + psycheTimeSince(stats.lastDream);
+  } else {
+    document.getElementById('psycheDream').textContent = (stats.dreamSessions || 0) + ' dreams';
+  }
+}
+
+function fetchConsciousness() {
+  fetch('/api/brain/consciousness').then(r => r.json()).then(data => {
+    renderPsyche(data);
+  }).catch(err => {
+    console.warn('Psyche fetch failed:', err);
+  });
+}
+
 /* ============= INIT ============= */
 defineBrainCurves();
 createBrainWireframe();
@@ -1851,8 +2200,10 @@ createNodeSystems();
 createSignalSystem();
 createSpawnBurstSystem();
 fetchBrain();
+fetchConsciousness();
 renderLoop();
 setInterval(fetchBrain, 15000);
+setInterval(fetchConsciousness, 30000);
 
 </script>
 </body>
