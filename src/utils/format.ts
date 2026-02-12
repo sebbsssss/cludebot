@@ -19,6 +19,10 @@ export function formatNumber(n: number): string {
   return n.toString();
 }
 
+export function lamportsToSol(lamports: number): number {
+  return lamports / 1e9;
+}
+
 export function weiToEth(wei: number | bigint): number {
   return Number(wei) / 1e18;
 }

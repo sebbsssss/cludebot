@@ -2,6 +2,13 @@
  * Centralized constants — magic numbers, well-known addresses, and configuration defaults.
  */
 
+// Solana
+export const MEMO_PROGRAM_ID = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
+export const JUPITER_PRICE_URL = 'https://api.jup.ag/price/v2';
+export const HELIUS_RPC_BASE_URL = 'https://mainnet.helius-rpc.com';
+export const HELIUS_BALANCES_BASE_URL = 'https://api.helius.xyz/v0/addresses';
+export const SOLSCAN_TX_BASE_URL = 'https://solscan.io/tx';
+
 export const TWEET_MAX_LENGTH = 280;
 export const TWEET_SAFE_LENGTH = 270;
 
@@ -50,11 +57,14 @@ export const MEMO_MAX_LENGTH = 566;
 // Token lists for market monitoring (Base ecosystem)
 export const MAJOR_TOKENS = new Set([
   'ETH', 'BTC', 'USDC', 'AERO', 'cbBTC', 'VIRTUAL', 'MORPHO', 'RSR',
+  'SOL', 'BONK', 'WIF', 'JTO', 'JUP', 'PYTH', 'RAY', 'RNDR', 'HNT',
 ]);
 
 export const KNOWN_MEMECOINS = new Set([
   'BRETT', 'DEGEN', 'TOSHI', 'HIGHER', 'BASED', 'MOCHI', 'NORMIE',
   'KEYCAT', 'DOGINME', 'BENJI', 'SKI',
+  'POPCAT', 'MEW', 'BOME', 'WEN', 'MYRO', 'SAMO', 'SLERF', 'PONKE',
+  'BOOK', 'MOODENG', 'PNUT', 'GOAT', 'ACT', 'AI16Z', 'FARTCOIN', 'GRIFFAIN', 'PENGU', 'TRUMP',
 ]);
 
 export function isNoteworthyToken(symbol: string): boolean {
