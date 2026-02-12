@@ -33,7 +33,7 @@ export const config = {
   },
   solana: {
     rpcUrl: optional('SOLANA_RPC_URL', 'https://api.mainnet-beta.solana.com'),
-    botWalletPrivateKey: optional('SOL_BOT_WALLET_PRIVATE_KEY', ''),
+    botWalletPrivateKey: optional('BOT_WALLET_PRIVATE_KEY', ''),
     cludeTokenMint: optional('CLUUDE_TOKEN_MINT', ''),
   },
   base: {
