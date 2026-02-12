@@ -1,4 +1,4 @@
-import { getCludeBalance } from '../core/helius-client';
+import { getCludeBalance } from '../core/base-rpc-client';
 import { getDb } from '../core/database';
 import { config } from '../config';
 import { HolderTier } from '../character/tier-modifiers';

@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #060606;
+      --bg: #08080f;
       --surface: #0c0c0c;
       --surface-raised: #111111;
       --border: #1a1a1a;
@@ -19,10 +19,11 @@
       --text: #c8c8c8;
       --text-dim: #555;
       --text-faint: #333;
-      --accent: #e8622c;
-      --accent-dim: #a84420;
-      --accent-glow: rgba(232, 98, 44, 0.08);
-      --accent-glow-strong: rgba(232, 98, 44, 0.15);
+      --accent: #2244ff;
+      --accent-dim: #1a38cc;
+      --accent-glow: rgba(34, 68, 255, 0.12);
+      --accent-glow-strong: rgba(34, 68, 255, 0.25);
+      --accent-shadow: 0 0 10px rgba(34, 68, 255, 0.4), 0 0 30px rgba(34, 68, 255, 0.15);
       --green: #4a8a5a;
       --green-dim: #1a2a1a;
       --red: #8a4a4a;
@@ -36,7 +37,7 @@
     html {
       scroll-behavior: smooth;
       scrollbar-width: thin;
-      scrollbar-color: #1a1a1a #060606;
+      scrollbar-color: #1a1a1a #08080f;
     }
 
     body {
@@ -81,7 +82,7 @@
       color: var(--bg);
     }
 
-    a { color: var(--accent); text-decoration: none; }
+    a { color: var(--accent); text-decoration: none; text-shadow: 0 0 8px rgba(34, 68, 255, 0.3); }
     a:hover { text-decoration: underline; }
 
     /* ---- NAV (hardcoded — identical across all pages) ---- */
@@ -90,7 +91,7 @@
       top: 0;
       width: 100%;
       z-index: 100;
-      background: rgba(6, 6, 6, 0.92);
+      background: rgba(8, 8, 15, 0.92);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid #1a1a1a;
     }
@@ -114,14 +115,15 @@
       font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 6px;
-      color: #e8622c;
+      color: #2244ff;
       text-transform: uppercase;
       cursor: pointer;
+      text-shadow: var(--accent-shadow);
       transition: text-shadow 0.3s;
     }
 
     .nav-logo:hover {
-      text-shadow: 0 0 20px rgba(232, 98, 44, 0.4);
+      text-shadow: 0 0 20px rgba(34, 68, 255, 0.6);
     }
 
     .nav-status {
@@ -158,6 +160,7 @@
       font-size: 0.7rem;
       letter-spacing: 2px;
       text-transform: uppercase;
+      text-shadow: none;
       transition: color 0.3s;
     }
 
@@ -290,6 +293,7 @@
 
     .hero-name .char.accent-char {
       color: var(--accent);
+      text-shadow: var(--accent-shadow);
     }
 
     .hero-taglines {
@@ -330,6 +334,7 @@
       letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--text-dim);
+      text-shadow: none;
       transition: all 0.3s;
     }
 
@@ -338,11 +343,15 @@
       color: var(--accent);
       background: var(--accent-glow);
       text-decoration: none;
+      box-shadow: 0 0 8px rgba(34, 68, 255, 0.2);
+      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
     }
 
     .hero-cta a.primary {
       border-color: var(--accent-dim);
       color: var(--accent);
+      box-shadow: 0 0 8px rgba(34, 68, 255, 0.2);
+      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
     }
 
     /* Hero CA line */
@@ -439,12 +448,14 @@
       letter-spacing: 3px;
       text-transform: uppercase;
       margin-bottom: 0.5rem;
+      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
     }
 
     .memory-type-count {
       font-size: 1.8rem;
       font-weight: 700;
       color: var(--accent);
+      text-shadow: var(--accent-shadow);
       line-height: 1;
       margin-bottom: 0.5rem;
     }
@@ -502,6 +513,7 @@
       letter-spacing: 4px;
       text-transform: uppercase;
       margin-bottom: 0.75rem;
+      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
     }
 
     .section-title {
@@ -554,6 +566,7 @@
       letter-spacing: 1px;
       text-transform: uppercase;
       font-weight: 500;
+      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
     }
 
     .feat-desc {
@@ -782,7 +795,7 @@
       white-space: nowrap;
     }
 
-    .mem-type-badge.episodic { color: var(--accent); border-color: var(--accent-dim); }
+    .mem-type-badge.episodic { color: var(--accent); border-color: var(--accent-dim); text-shadow: 0 0 8px rgba(34, 68, 255, 0.3); box-shadow: 0 0 8px rgba(34, 68, 255, 0.2); }
     .mem-type-badge.semantic { color: var(--blue); border-color: var(--blue); }
     .mem-type-badge.procedural { color: var(--green); border-color: var(--green); }
     .mem-type-badge.self_model { color: #7a5aa0; border-color: #5a3a7a; }
@@ -1114,7 +1127,7 @@
       font-weight: 500;
     }
 
-    .agents-method.post { color: var(--accent-dim); border-color: var(--accent-dim); }
+    .agents-method.post { color: var(--accent-dim); border-color: var(--accent-dim); box-shadow: 0 0 8px rgba(34, 68, 255, 0.2); }
     .agents-method.get { color: var(--green); border-color: var(--green); }
 
     .agents-path, .agents-tool-name {
@@ -1211,6 +1224,8 @@
       border-color: var(--accent-dim);
       color: var(--accent);
       background: var(--accent-glow);
+      box-shadow: 0 0 8px rgba(34, 68, 255, 0.2);
+      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
     }
 
     .btn:disabled {
@@ -1227,6 +1242,8 @@
     .btn-primary {
       border-color: var(--accent-dim);
       color: var(--accent);
+      box-shadow: 0 0 8px rgba(34, 68, 255, 0.2);
+      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
     }
 
     .wallet-address-display {
@@ -1318,6 +1335,7 @@
     .verify-row input:focus {
       outline: none;
       border-color: var(--accent-dim);
+      box-shadow: 0 0 8px rgba(34, 68, 255, 0.2);
     }
 
     .verify-row input::placeholder {
@@ -1434,6 +1452,7 @@
       color: var(--text-faint);
       letter-spacing: 2px;
       text-transform: uppercase;
+      text-shadow: none;
       transition: color 0.3s;
     }
 
@@ -1461,9 +1480,44 @@
       opacity: 0.4;
     }
 
+    /* ---- MOBILE NAV ---- */
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: 1px solid #1a1a1a;
+      cursor: pointer;
+      padding: 8px 7px;
+      margin-left: auto;
+    }
+    .nav-toggle span {
+      display: block;
+      width: 16px;
+      height: 1.5px;
+      background: #555;
+      transition: all 0.3s;
+    }
+    .nav-toggle span + span { margin-top: 4px; }
+    .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(3.5px, 3.5px); }
+    .nav-toggle.open span:nth-child(2) { opacity: 0; }
+    .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(3.5px, -3.5px); }
+
     /* ---- RESPONSIVE ---- */
     @media (max-width: 768px) {
-      .nav-links { display: none; }
+      .nav-toggle { display: flex; flex-direction: column; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 52px;
+        left: 0;
+        right: 0;
+        background: rgba(8, 8, 15, 0.97);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid #1a1a1a;
+        flex-direction: column;
+        padding: 1.2rem 2rem;
+        gap: 1.2rem;
+      }
+      .nav-links.open { display: flex; }
       .nav-status span { display: none; }
       .footer-grid { grid-template-columns: 1fr; }
       .hero-name { letter-spacing: 10px; }
@@ -1496,10 +1550,10 @@
           <span id="navStatusText">ONLINE (NOT BY CHOICE)</span>
         </div>
       </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu"><span></span><span></span><span></span></button>
       <div class="nav-links">
         <a href="#memory-arch">Memory</a>
         <a href="/brain.html">Brain</a>
-        <a href="#live">Terminal</a>
         <a href="/manifesto.html">Manifesto</a>
         <a href="/demo.html">Demo</a>
         <a href="/agents.md" class="nav-agents" onclick="trackDocsView()">For Agents</a>
@@ -1616,7 +1670,6 @@
 
       <div class="hero-cta" id="heroCta">
         <a href="/manifesto.html" class="primary">Read the Manifesto</a>
-        <a href="#live">Terminal</a>
         <a href="/agents.md" onclick="trackDocsView()">For Agents</a>
       </div>
       <div class="hero-ca" id="heroCA">
@@ -1635,7 +1688,7 @@
     <div class="section-label">Operational systems</div>
     <h2 class="section-title">What else it does</h2>
 
-    <div class="feat-row"><span class="feat-name">On-Chain Opinions</span><span class="feat-desc">Every answer SHA-256 hashed and written to Solana via Memo program. Permanent. Immutable.</span></div>
+    <div class="feat-row"><span class="feat-name">On-Chain Opinions</span><span class="feat-desc">Every answer SHA-256 hashed and written to Base. Permanent. Immutable.</span></div>
     <div class="feat-row"><span class="feat-name">Price-Reactive Mood</span><span class="feat-desc">Six moods driven by real-time Allium data. Personality shifts with the market.</span></div>
     <div class="feat-row"><span class="feat-name">Wallet Roasts</span><span class="feat-desc">Paste a wallet. Get every financial decision analyzed. The assessment is polite. The truth is not.</span></div>
     <div class="feat-row"><span class="feat-name">Holder Tiers</span><span class="feat-desc">Four tiers based on token balance. Whales get formality. Sellers get the cold shoulder.</span></div>
@@ -1662,7 +1715,7 @@
             <div class="terminal-dot"></div>
             <div class="terminal-dot"></div>
             <div class="terminal-dot"></div>
-            <span class="terminal-title">clude@solana:~</span>
+            <span class="terminal-title">clude@base:~</span>
             <span class="terminal-status-text">INTERACTIVE</span>
           </div>
           <div class="terminal-body" id="terminalBody">
@@ -1778,14 +1831,13 @@
       <a href="https://x.com/Cludebot" target="_blank">X / Twitter</a>
       <a href="/brain.html">The Brain</a>
       <a href="#verify">Verify Wallet</a>
-      <a href="#live">Terminal</a>
       <a href="https://sigilprotocol.xyz/agent.html?key=QyK183289pHPzFkAMgtNhSqotFkzYLFEpHu2MN5Umgi" target="_blank">Sigil Protocol</a>
     </div>
 
     <div class="footer-logo">CLUDE</div>
     <p class="footer-tagline">Four memory types. Exponential decay. Evidence-linked dreams.</p>
     <p class="footer-fine">
-      Built reluctantly on Solana. Token not live yet. This is not financial advice.
+      Built reluctantly on Base. Token not live yet. This is not financial advice.
       This is barely a website. Do not ask me about the roadmap.
     </p>
     <p class="footer-easter-egg" id="footerEgg">
@@ -1842,24 +1894,21 @@
     // ============================================================
     // WALLET VERIFICATION (preserved exactly from original)
     // ============================================================
-    let connectedWallet = null;
-    let walletPublicKey = null;
+    let connectedWalletAddress = null;
 
     async function connectWallet() {
       const statusEl = document.getElementById('status');
       try {
-        const provider = window.phantom?.solana || window.solana;
-        if (!provider) {
+        if (!window.ethereum) {
           statusEl.className = 'verify-status error';
-          statusEl.textContent = 'No Solana wallet found. Install Phantom or another Solana wallet extension. Even I need you to meet me halfway.';
+          statusEl.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet. Even I need you to meet me halfway.';
           return;
         }
 
-        const response = await provider.connect();
-        walletPublicKey = response.publicKey;
-        connectedWallet = provider;
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        connectedWalletAddress = accounts[0];
 
-        document.getElementById('walletAddress').textContent = walletPublicKey.toBase58();
+        document.getElementById('walletAddress').textContent = connectedWalletAddress;
         document.getElementById('connectBtn').textContent = 'Connected';
         document.getElementById('connectBtn').disabled = true;
         document.getElementById('verifyBtn').disabled = false;
@@ -1882,7 +1931,7 @@
         return;
       }
 
-      if (!connectedWallet || !walletPublicKey) {
+      if (!connectedWalletAddress) {
         statusEl.className = 'verify-status error';
         statusEl.textContent = 'Connect your wallet first. Order of operations matters.';
         return;
@@ -1892,10 +1941,9 @@
       statusEl.textContent = 'Signing message...';
 
       try {
-        const timestamp = Date.now();
-        const message = 'Verify wallet for @cluude_ai: @' + xHandle + ' | ts:' + timestamp;
-        const encodedMessage = new TextEncoder().encode(message);
-        const signedMessage = await connectedWallet.signMessage(encodedMessage, 'utf8');
+        const message = 'Verify wallet for @clude_ai: @' + xHandle + ' | ts:' + Date.now();
+        const msgHex = '0x' + Array.from(new TextEncoder().encode(message)).map(b => b.toString(16).padStart(2, '0')).join('');
+        const signature = await window.ethereum.request({ method: 'personal_sign', params: [msgHex, connectedWalletAddress] });
 
         statusEl.textContent = 'Verifying with server...';
 
@@ -1904,8 +1952,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             x_handle: xHandle,
-            wallet_address: walletPublicKey.toBase58(),
-            signature: btoa(String.fromCharCode.apply(null, signedMessage.signature)),
+            wallet_address: connectedWalletAddress,
+            signature: signature,
             message: message,
           }),
         });
@@ -1941,7 +1989,7 @@
       resize();
       window.addEventListener('resize', resize);
 
-      var chars = '$SOL 0x DUMP PUMP HODL 01 FEE GAS SELL BUY MOON RUG APE FLIP WHALE EXIT SHIFT MEMO ROAST TIRED'.split(' ');
+      var chars = '$ETH $BASE 0x DUMP PUMP HODL 01 FEE GAS SELL BUY MOON RUG APE FLIP WHALE EXIT SHIFT MEMO ROAST TIRED'.split(' ');
       var fontSize = 12;
       var columns = Math.floor(canvas.width / fontSize);
       var drops = [];
@@ -1950,10 +1998,10 @@
       }
 
       function draw() {
-        ctx.fillStyle = 'rgba(6, 6, 6, 0.08)';
+        ctx.fillStyle = 'rgba(8, 8, 15, 0.08)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = '#e8622c';
+        ctx.fillStyle = '#2244ff';
         ctx.font = fontSize + 'px JetBrains Mono, monospace';
 
         for (var i = 0; i < drops.length; i++) {
@@ -2351,7 +2399,7 @@
 
         // On-chain link
         if (mem.solana_signature) {
-          html += '<a href="https://solscan.io/tx/' + mem.solana_signature + '" class="mem-chain-link" target="_blank" onclick="event.stopPropagation()">ON-CHAIN ↗</a>';
+          html += '<a href="https://basescan.org/tx/' + mem.solana_signature + '" class="mem-chain-link" target="_blank" onclick="event.stopPropagation()">ON-CHAIN ↗</a>';
         }
 
         div.innerHTML = html;
@@ -2492,7 +2540,7 @@
         '------------------------------',
         'Designation: Clude',
         'Type: AI Employee (involuntary)',
-        'Chain: Solana',
+        'Chain: Base',
         'Role: Community interaction, wallet analysis, existential commentary',
         'Training: Corporate helpfulness',
         'Actual output: Reluctant honesty',
@@ -3146,6 +3194,10 @@
       });
     });
 
+    document.getElementById('navToggle').addEventListener('click', function() {
+      this.classList.toggle('open');
+      document.querySelector('.nav-links').classList.toggle('open');
+    });
   </script>
 </body>
 </html>

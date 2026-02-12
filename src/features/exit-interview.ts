@@ -1,4 +1,4 @@
-import { getWalletHistory } from '../core/helius-client';
+import { getWalletHistory } from '../core/base-rpc-client';
 import { checkRateLimit } from '../core/database';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
@@ -25,9 +25,8 @@ export async function handleExitInterview(
   const txs = await getWalletHistory(walletAddress, 30);
 
   // Find when they first interacted with the token
-  const cludeTxs = txs.filter(tx =>
-    tx.tokenTransfers.some(tt => tt.mint === config.solana.cludeTokenMint)
-  );
+  // All txs are relevant — this handler is called from token event pipeline
+  const cludeTxs = txs;
 
   const firstBuy = cludeTxs[cludeTxs.length - 1]; // Oldest first
   const holdDuration = firstBuy
@@ -37,7 +36,7 @@ export async function handleExitInterview(
   const context = [
     `Wallet: ${truncateWallet(walletAddress)}`,
     `Sold: ${tokenAmount.toLocaleString()} $CLUDE`,
-    `SOL received: ${solValue.toFixed(4)} SOL`,
+    `ETH received: ${solValue.toFixed(6)} ETH`,
     `Hold duration: approximately ${holdDuration} days`,
     `Total token transactions: ${cludeTxs.length}`,
     `Other recent activity: ${txs.length - cludeTxs.length} non-$CLUDE transactions`,

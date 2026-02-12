@@ -2,40 +2,60 @@
  * Typed interfaces for external API responses — replaces `as any` casts throughout the codebase.
  */
 
-// Jupiter Price API
-export interface JupiterPriceResponse {
-  data: Record<string, { id: string; type: string; price: string } | undefined>;
+// DexScreener Price API
+export interface DexScreenerResponse {
+  pairs: Array<{
+    chainId: string;
+    dexId: string;
+    pairAddress: string;
+    baseToken: { address: string; name: string; symbol: string };
+    quoteToken: { address: string; name: string; symbol: string };
+    priceUsd: string;
+    volume: { h24: number; h1?: number };
+    priceChange: { h1: number; h24: number };
+    liquidity: { usd: number };
+  }> | null;
 }
 
-// Helius token balances API
-export interface HeliusTokenBalance {
-  mint: string;
-  amount: number;
-  decimals: number;
-}
-
-export interface HeliusBalancesResponse {
-  tokens?: HeliusTokenBalance[];
-}
-
-// Helius webhook payload (used in helius-handler)
-export interface HeliusWebhookPayload {
-  signature: string;
-  timestamp: number;
-  type: string;
-  description: string;
-  fee: number;
-  nativeTransfers: Array<{
-    fromUserAccount: string;
-    toUserAccount: string;
-    amount: number;
+// Basescan API — transaction list
+export interface BasescanTxResponse {
+  status: string;
+  message: string;
+  result: Array<{
+    blockNumber: string;
+    timeStamp: string;
+    hash: string;
+    from: string;
+    to: string;
+    value: string;
+    gas: string;
+    gasUsed: string;
+    gasPrice: string;
+    isError: string;
+    methodId: string;
+    functionName: string;
+    input: string;
   }>;
-  tokenTransfers: Array<{
-    mint: string;
-    fromUserAccount: string;
-    toUserAccount: string;
-    tokenAmount: number;
-    tokenStandard: string;
+}
+
+// Basescan API — ERC-20 token transfer events
+export interface BasescanTokenTxResponse {
+  status: string;
+  message: string;
+  result: Array<{
+    blockNumber: string;
+    timeStamp: string;
+    hash: string;
+    from: string;
+    to: string;
+    value: string;
+    tokenName: string;
+    tokenSymbol: string;
+    tokenDecimal: string;
+    contractAddress: string;
+    gas: string;
+    gasUsed: string;
+    gasPrice: string;
   }>;
 }
 
@@ -55,7 +75,7 @@ export interface AlliumTokenData {
   };
 }
 
-export interface AlliumSolStats {
+export interface AlliumNativeStats {
   items?: Array<{
     latest_price?: number;
     percent_change_1h?: number;
@@ -63,14 +83,14 @@ export interface AlliumSolStats {
   }>;
 }
 
-// Supabase token_events row (used in shift-report instead of `any`)
+// Supabase token_events row
 export interface TokenEventRow {
   id: number;
   signature: string;
   event_type: string;
   wallet_address: string;
   amount: number;
-  sol_value: number;
+  sol_value: number; // stores ETH value now, column name kept for DB compat
   timestamp: string;
   metadata: Record<string, unknown> | string;
   processed: boolean;

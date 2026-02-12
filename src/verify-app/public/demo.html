@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLUDE - Live Demo</title>
-  <meta name="description" content="Watch Clude create memories, hash them, and commit them to Solana. Try the Memory as a Service API.">
+  <meta name="description" content="Watch Clude create memories, hash them, and commit them to Base. Try the Memory as a Service API.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0a0a;
+      --bg: #08080f;
       --surface: #0d0d0d;
       --border: #111;
       --border-light: #161616;
@@ -19,7 +19,8 @@
       --text-mid: #999;
       --text-dim: #555;
       --text-faint: #333;
-      --accent: #e8622c;
+      --accent: #2244ff;
+      --accent-shadow: 0 0 10px rgba(34, 68, 255, 0.4), 0 0 30px rgba(34, 68, 255, 0.15);
       --green: #3a5a3a;
       --green-bright: #4a7a4a;
       --gold: #c8b464;
@@ -67,7 +68,7 @@
       top: 0;
       width: 100%;
       z-index: 100;
-      background: rgba(6, 6, 6, 0.92);
+      background: rgba(8, 8, 15, 0.92);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid #1a1a1a;
       font-size: 14px;
@@ -89,11 +90,12 @@
       font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 6px;
-      color: #e8622c;
+      color: #2244ff;
       text-transform: uppercase;
       text-decoration: none;
+      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
     }
-    .nav-logo:hover { text-shadow: 0 0 20px rgba(232, 98, 44, 0.4); text-decoration: none; }
+    .nav-logo:hover { text-shadow: 0 0 20px rgba(34, 68, 255, 0.6), 0 0 40px rgba(34, 68, 255, 0.2); text-decoration: none; }
 
     .nav-status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; color: #555; letter-spacing: 1px; }
 
@@ -185,22 +187,26 @@
       padding: 0.9rem 2.5rem;
       background: transparent;
       color: var(--accent);
-      border: 1px solid #2a1a12;
+      border: 1px solid #0f1a2a;
       cursor: pointer;
       transition: all 0.3s;
       display: inline-block;
+      box-shadow: 0 0 8px rgba(34, 68, 255, 0.15);
+      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
     }
 
     .trigger-btn:hover:not(:disabled) {
       border-color: var(--accent);
-      background: rgba(232, 98, 44, 0.05);
-      box-shadow: 0 0 30px rgba(232, 98, 44, 0.05);
+      background: rgba(34, 68, 255, 0.05);
+      box-shadow: 0 0 15px rgba(34, 68, 255, 0.2), 0 0 40px rgba(34, 68, 255, 0.08);
     }
 
     .trigger-btn:disabled {
       color: var(--text-faint);
       border-color: var(--border);
       cursor: not-allowed;
+      box-shadow: none;
+      text-shadow: none;
     }
 
     /* ---- TERMINAL OUTPUT ---- */
@@ -225,8 +231,8 @@
     .term-step { color: var(--green-bright); }
     .term-confirmed { color: var(--gold); }
     .term-error { color: #8a4a4a; }
-    .term-link { color: var(--accent); text-decoration: underline; }
-    .term-link:hover { color: var(--gold); }
+    .term-link { color: var(--accent); text-decoration: underline; text-shadow: 0 0 8px rgba(34, 68, 255, 0.3); }
+    .term-link:hover { color: var(--gold); text-shadow: none; }
     .term-dim { color: var(--text-faint); }
     .term-hash { color: var(--text-dim); }
 
@@ -450,10 +456,11 @@
       color: var(--accent);
       line-height: 1;
       margin-bottom: 0.2rem;
+      text-shadow: 0 0 10px rgba(34, 68, 255, 0.4), 0 0 30px rgba(34, 68, 255, 0.15);
     }
 
-    .stat-value.green { color: var(--green-bright); }
-    .stat-value.unavailable { color: var(--text-faint); font-size: 0.7rem; }
+    .stat-value.green { color: var(--green-bright); text-shadow: none; }
+    .stat-value.unavailable { color: var(--text-faint); font-size: 0.7rem; text-shadow: none; }
 
     .stat-note {
       font-size: 0.55rem;
@@ -480,9 +487,44 @@
       text-transform: uppercase;
     }
 
+    /* ---- MOBILE NAV ---- */
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: 1px solid #1a1a1a;
+      cursor: pointer;
+      padding: 8px 7px;
+      margin-left: auto;
+    }
+    .nav-toggle span {
+      display: block;
+      width: 16px;
+      height: 1.5px;
+      background: #555;
+      transition: all 0.3s;
+    }
+    .nav-toggle span + span { margin-top: 4px; }
+    .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(3.5px, 3.5px); }
+    .nav-toggle.open span:nth-child(2) { opacity: 0; }
+    .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(3.5px, -3.5px); }
+
     /* ---- RESPONSIVE ---- */
     @media (max-width: 768px) {
-      .nav-links { display: none; }
+      .nav-toggle { display: flex; flex-direction: column; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 52px;
+        left: 0;
+        right: 0;
+        background: rgba(8, 8, 15, 0.97);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid #1a1a1a;
+        flex-direction: column;
+        padding: 1.2rem 2rem;
+        gap: 1.2rem;
+      }
+      .nav-links.open { display: flex; }
       .nav-inner { padding: 0.8rem 1rem; }
       .page { padding: 4.5rem 1rem 2rem; }
       .section { padding: 2rem 0; }
@@ -507,10 +549,10 @@
         <span>ONLINE (NOT BY CHOICE)</span>
       </div>
     </div>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu"><span></span><span></span><span></span></button>
     <div class="nav-links">
       <a href="/#memory-arch">Memory</a>
       <a href="/brain.html">Brain</a>
-      <a href="/#live">Terminal</a>
       <a href="/manifesto.html">Manifesto</a>
       <a href="/demo.html" class="nav-active">Demo</a>
       <a href="/agents.md" class="nav-agents">For Agents</a>
@@ -523,8 +565,8 @@
   <!-- SECTION 1: LIVE BRAIN ACTIVITY -->
   <div class="section" id="live-brain">
     <div class="section-label">Section 01</div>
-    <div class="section-title">Live Brain Activity <span style="color:#c8b464;font-size:0.65rem;letter-spacing:2px;margin-left:0.5rem;">[DEVNET]</span></div>
-    <div class="section-sub">Watch a memory get created, hashed, and committed to Solana devnet in real-time.</div>
+    <div class="section-title">Live Brain Activity <span style="color:#c8b464;font-size:0.65rem;letter-spacing:2px;margin-left:0.5rem;">[TESTNET]</span></div>
+    <div class="section-sub">Watch a memory get created, hashed, and committed to Base in real-time.</div>
 
     <button class="trigger-btn" id="triggerBtn" onclick="triggerMemoryCommit()">TRIGGER MEMORY COMMIT</button>
     <div class="cooldown-msg" id="cooldownMsg"></div>
@@ -540,7 +582,7 @@
   <!-- SECTION 2: MAAS CONSOLE -->
   <div class="section" id="maas">
     <div class="section-label">Section 02</div>
-    <div class="section-title">Memory as a Service <span style="color:#c8b464;font-size:0.65rem;letter-spacing:2px;margin-left:0.5rem;">[DEVNET]</span></div>
+    <div class="section-title">Memory as a Service <span style="color:#c8b464;font-size:0.65rem;letter-spacing:2px;margin-left:0.5rem;">[TESTNET]</span></div>
     <div class="section-sub">Other AI agents can use Clude's memory infrastructure. Try it yourself.</div>
 
     <div class="console-tabs">
@@ -608,7 +650,7 @@
       <div class="stat-card">
         <div class="stat-label">On-Chain</div>
         <div class="stat-value green" id="statOnChain">--</div>
-        <div class="stat-note">committed to Solana</div>
+        <div class="stat-note">committed to Base</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Dream Sessions</div>
@@ -745,7 +787,7 @@
 
     // Step 3 (after 2s)
     await delay(1000);
-    addTermLine('<span class="term-step">[3/4] Writing memo transaction to Solana...</span>');
+    addTermLine('<span class="term-step">[3/4] Writing memo transaction to Base...</span>');
     addCursor();
 
     // Show memory detail if available
@@ -760,18 +802,12 @@
     // Step 4: poll for on-chain confirmation
     await delay(1000);
     if (memoryId) {
+      addTermLine('<span class="term-step">[4/4] Committing to Base...</span>');
       pollForConfirmation(memoryId);
     } else {
-      // If no memoryId, check if signature is already in response
-      var sig = triggerData.solana_signature || triggerData.signature || (triggerData.memory && triggerData.memory.solana_signature);
-      if (sig) {
-        showConfirmed(sig);
-      } else {
-        addTermLine('<span class="term-step">[4/4] Waiting for on-chain confirmation...</span>');
-        addTermLine('<span class="term-dim">No memory ID returned for polling.</span>');
-        triggerInProgress = false;
-        btn.disabled = false;
-      }
+      addTermLine('<span class="term-error">[4/4] No memory ID returned.</span>');
+      triggerInProgress = false;
+      btn.disabled = false;
     }
   };
 
@@ -814,12 +850,21 @@
   }
 
   function showConfirmed(signature) {
-    var solscanUrl = 'https://solscan.io/tx/' + encodeURIComponent(signature) + '?cluster=devnet';
-    addTermLine(
-      '<span class="term-confirmed">[4/4] Confirmed on-chain</span> ' +
-      '<a class="term-link" href="' + solscanUrl + '" target="_blank" rel="noopener">' +
-      truncate(signature, 44) + '</a>'
-    );
+    var isTxHash = /^0x[a-f0-9]{64}$/i.test(signature);
+    if (isTxHash) {
+      var basescanUrl = 'https://basescan.org/tx/' + encodeURIComponent(signature);
+      addTermLine(
+        '<span class="term-confirmed">[4/4] Confirmed on-chain</span> ' +
+        '<a class="term-link" href="' + basescanUrl + '" target="_blank" rel="noopener">' +
+        truncate(signature, 44) + ' &#8599;</a>'
+      );
+    } else {
+      // SHA-256 content hash fallback (testnet wallet unfunded)
+      addTermLine(
+        '<span class="term-confirmed">[4/4] Memory committed</span> ' +
+        '<span class="term-dim">SHA-256: ' + truncate(signature, 44) + '</span>'
+      );
+    }
     triggerInProgress = false;
     $('triggerBtn').disabled = false;
   }
@@ -1017,6 +1062,10 @@
   loadStats();
   setInterval(loadStats, 30000);
 
+  document.getElementById('navToggle').addEventListener('click', function() {
+    this.classList.toggle('open');
+    document.querySelector('.nav-links').classList.toggle('open');
+  });
 })();
 </script>
 </body>

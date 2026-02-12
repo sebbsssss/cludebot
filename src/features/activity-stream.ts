@@ -28,7 +28,7 @@ export async function getRecentActivity(
 ): Promise<ActivityEvent[]> {
   const db = getDb();
   const maxEvents = Math.min(limit || config.activity.maxEvents, 50);
-  const minSolValue = minSol ?? config.activity.minSolValue;
+  const minSolValue = minSol ?? config.activity.minEthValue;
 
   const { data, error } = await db
     .from('token_events')
@@ -81,10 +81,10 @@ export async function generateEventCommentary(event: ActivityEvent): Promise<str
     const action = event.type.includes('buy') ? 'bought' : 'sold';
 
     const commentary = await buildAndGenerate({
-      message: `A wallet ${action} ${event.solValue.toFixed(1)} SOL worth of tokens.`,
+      message: `A wallet ${action} ${event.solValue.toFixed(4)} ETH worth of tokens.`,
       instruction:
         `A ${event.isWhale ? 'whale' : 'notable'} ${action} just happened. ` +
-        `Wallet ${event.wallet} ${action} ${event.solValue.toFixed(1)} SOL worth. ` +
+        `Wallet ${event.wallet} ${action} ${event.solValue.toFixed(4)} ETH worth. ` +
         'Give a one-liner reaction. Under 140 characters. Be sharp.',
       maxTokens: 60,
     });
