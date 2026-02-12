@@ -13,7 +13,7 @@ import {
   RETRIEVAL_WEIGHT_IMPORTANCE,
 } from '../utils';
 import { generateImportanceScore } from './claude-client';
-import { writeMemo } from './solana-client';
+import { writeMemo } from './base-client';
 import { eventBus } from '../events/event-bus';
 import { createHash } from 'crypto';
 
@@ -82,6 +82,8 @@ export interface RecallOptions {
   limit?: number;
   minImportance?: number;
   minDecay?: number;
+  /** Skip access tracking (prevents decay reset). Use for internal processing like dream cycles. */
+  trackAccess?: boolean;
 }
 
 // ---- STORE ---- //
@@ -207,9 +209,11 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     scored.sort((a: { _score: number }, b: { _score: number }) => b._score - a._score);
     const results = scored.slice(0, limit);
 
-    // Update access counts in parallel
-    const ids = results.map((m: Memory) => m.id);
-    updateMemoryAccess(ids).catch(() => {});
+    // Update access counts in parallel (skip for internal processing like dream cycles)
+    if (opts.trackAccess !== false) {
+      const ids = results.map((m: Memory) => m.id);
+      updateMemoryAccess(ids).catch(() => {});
+    }
 
     log.debug({
       recalled: results.length,
@@ -279,16 +283,20 @@ async function updateMemoryAccess(ids: number[]): Promise<void> {
   await Promise.all(ids.map(async (id) => {
     const { data: current } = await db
       .from('memories')
-      .select('access_count')
+      .select('access_count, decay_factor')
       .eq('id', id)
       .single();
+
+    // Boost decay on access (not full reset — gradual reinforcement)
+    const currentDecay = current?.decay_factor ?? 0.5;
+    const boostedDecay = Math.min(1.0, currentDecay + 0.1);
 
     await db
       .from('memories')
       .update({
         access_count: (current?.access_count || 0) + 1,
         last_accessed: new Date().toISOString(),
-        decay_factor: 1.0, // Reset decay on access — memory is reinforced
+        decay_factor: boostedDecay,
       })
       .eq('id', id);
   }));

@@ -5,7 +5,7 @@ import type { Mood } from '../core/price-oracle';
  * Typed event bus — decouples webhook handlers from feature logic.
  *
  * Events flow: webhook → eventBus.emit() → registered handlers
- * This prevents direct cross-layer imports (e.g. helius-handler importing exit-interview).
+ * This prevents direct cross-layer imports (e.g. base-handler importing exit-interview).
  */
 export interface BotEvents {
   'whale:sell': { wallet: string; solValue: number; signature: string };

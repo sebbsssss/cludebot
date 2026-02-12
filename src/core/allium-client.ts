@@ -1,7 +1,7 @@
 import { config } from '../config';
 import { createChildLogger } from './logger';
 import { ALLIUM_BASE_URL } from '../utils/constants';
-import type { AlliumTokenData, AlliumSolStats } from '../types/api';
+import type { AlliumTokenData, AlliumNativeStats } from '../types/api';
 
 const log = createChildLogger('allium-client');
 
@@ -30,10 +30,10 @@ export interface WhaleMovement {
 export interface MarketSnapshot {
   topMovers: MarketMover[];
   whaleAlerts: WhaleMovement[];
-  solPrice: number;
-  solChange1h: number;
-  solChange24h: number;
-  solVolume24h: number;
+  ethPrice: number;
+  ethChange1h: number;
+  ethChange24h: number;
+  ethVolume24h: number;
   lastUpdate: string;
 }
 
@@ -83,27 +83,27 @@ export async function getMarketSnapshot(): Promise<MarketSnapshot> {
 
   log.debug('Fetching fresh market snapshot from Allium');
 
-  // Fetch top Solana tokens by 24h volume and SOL price stats in parallel
-  const [topTokens, solStats] = await Promise.all([
-    alliumFetch<AlliumTokenData[]>('/tokens?chain=solana&sort=volume&granularity=1d&order=desc&limit=20'),
-    alliumFetch<AlliumSolStats>('/prices/stats', 'POST', [
-      { token_address: 'So11111111111111111111111111111111111111112', chain: 'solana' },
+  // Fetch top Base tokens by 24h volume and ETH price stats in parallel
+  const [topTokens, ethStats] = await Promise.all([
+    alliumFetch<AlliumTokenData[]>('/tokens?chain=base&sort=volume&granularity=1d&order=desc&limit=20'),
+    alliumFetch<AlliumNativeStats>('/prices/stats', 'POST', [
+      { token_address: '0x4200000000000000000000000000000000000006', chain: 'base' },
     ]),
   ]);
 
   const movers: MarketMover[] = [];
   const whaleAlerts: WhaleMovement[] = [];
-  let solPrice = 0;
-  let solChange1h = 0;
-  let solChange24h = 0;
-  let solVolume24h = 0;
+  let ethPrice = 0;
+  let ethChange1h = 0;
+  let ethChange24h = 0;
+  let ethVolume24h = 0;
 
-  // Parse SOL stats
-  if (solStats?.items?.[0]) {
-    const sol = solStats.items[0];
-    solPrice = sol.latest_price || 0;
-    solChange1h = (sol.percent_change_1h || 0) * 100; // API returns decimal, convert to %
-    solChange24h = (sol.percent_change_24h || 0) * 100;
+  // Parse ETH stats
+  if (ethStats?.items?.[0]) {
+    const eth = ethStats.items[0];
+    ethPrice = eth.latest_price || 0;
+    ethChange1h = (eth.percent_change_1h || 0) * 100; // API returns decimal, convert to %
+    ethChange24h = (eth.percent_change_24h || 0) * 100;
   }
 
   // Parse top tokens
@@ -114,14 +114,14 @@ export async function getMarketSnapshot(): Promise<MarketSnapshot> {
       const price = token.price || 0;
       const attrs = token.attributes || {};
 
-      // Extract SOL volume
-      if (symbol === 'SOL') {
-        solVolume24h = attrs.volume_usd_1d || 0;
-        if (price > 0 && solPrice === 0) solPrice = price;
+      // Extract ETH volume
+      if (symbol === 'ETH' || symbol === 'WETH') {
+        ethVolume24h = attrs.volume_usd_1d || 0;
+        if (price > 0 && ethPrice === 0) ethPrice = price;
       }
 
-      // Skip stablecoins and SOL itself for movers
-      if (['SOL', 'USDC', 'USDT', 'PYUSD'].includes(symbol)) continue;
+      // Skip stablecoins and ETH itself for movers
+      if (['ETH', 'WETH', 'USDC', 'USDT', 'USDbC'].includes(symbol)) continue;
       if (!symbol || !price) continue;
 
       const change1h = attrs.price_diff_pct_1h || 0;
@@ -162,10 +162,10 @@ export async function getMarketSnapshot(): Promise<MarketSnapshot> {
   const snapshot: MarketSnapshot = {
     topMovers: movers.slice(0, 10),
     whaleAlerts: whaleAlerts.slice(0, 5),
-    solPrice,
-    solChange1h,
-    solChange24h,
-    solVolume24h,
+    ethPrice,
+    ethChange1h,
+    ethChange24h,
+    ethVolume24h,
     lastUpdate: new Date().toISOString(),
   };
 
@@ -175,8 +175,8 @@ export async function getMarketSnapshot(): Promise<MarketSnapshot> {
   log.debug({
     movers: movers.length,
     whales: whaleAlerts.length,
-    solPrice: solPrice.toFixed(2),
-    solChange1h: solChange1h.toFixed(2),
+    ethPrice: ethPrice.toFixed(2),
+    ethChange1h: ethChange1h.toFixed(2),
   }, 'Market snapshot updated');
 
   return snapshot;

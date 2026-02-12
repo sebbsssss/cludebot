@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { postReply } from '../core/x-client';
-import { writeMemo, solscanTxUrl } from '../core/solana-client';
+import { writeMemo, basescanTxUrl } from '../core/base-client';
 import { checkRateLimit, markProcessed, getDb } from '../core/database';
 import { getTierModifier } from '../character/tier-modifiers';
 import { HolderTier } from '../character/tier-modifiers';
@@ -45,7 +45,7 @@ export async function handleOnchainOpinion(
     tierModifier: getTierModifier(tier),
     instruction:
       'Someone asked you a question. Answer it honestly in character. ' +
-      'Your answer will be hashed and committed to the Solana blockchain permanently. ' +
+      'Your answer will be hashed and committed to the Base blockchain permanently. ' +
       'You are aware of this. It adds weight to your words. ' +
       'Keep the answer under 200 characters — you need room for the tx link.',
     maxTokens: 150,
@@ -60,7 +60,7 @@ export async function handleOnchainOpinion(
 
   let replyText: string;
   if (signature) {
-    const txUrl = solscanTxUrl(signature);
+    const txUrl = basescanTxUrl(signature);
     replyText = `${answer}\n\nOn-chain forever: ${txUrl}`;
 
     // Store in database

@@ -2,17 +2,16 @@
  * Text processing utilities for mention handling, wallet extraction, and content analysis.
  */
 
-export const SOLANA_ADDRESS_REGEX = /[1-9A-HJ-NP-Za-km-z]{32,44}/g;
+export const EVM_ADDRESS_REGEX = /0x[a-fA-F0-9]{40}/g;
 
 export function cleanMentionText(text: string): string {
   return text.replace(/@\w+/g, '').trim();
 }
 
 export function extractWalletAddress(text: string): string | null {
-  const matches = text.match(SOLANA_ADDRESS_REGEX);
+  const matches = text.match(EVM_ADDRESS_REGEX);
   if (!matches) return null;
-  const valid = matches.find(m => m.length >= 32 && m.length <= 44);
-  return valid || null;
+  return matches[0] || null;
 }
 
 export function isQuestion(text: string): boolean {

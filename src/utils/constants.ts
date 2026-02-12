@@ -2,8 +2,6 @@
  * Centralized constants — magic numbers, well-known addresses, and configuration defaults.
  */
 
-export const MEMO_PROGRAM_ID = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
-export const MEMO_MAX_LENGTH = 566;
 export const TWEET_MAX_LENGTH = 280;
 export const TWEET_SAFE_LENGTH = 270;
 
@@ -29,21 +27,34 @@ export const WHALE_SELL_COOLDOWN_MS = 30 * 60 * 1000;
 export const PUMP_DUMP_THRESHOLD_PERCENT = 10;
 export const SIDEWAYS_THRESHOLD_PERCENT = 2;
 
-// API URLs (defaults, overridable via config)
-export const JUPITER_PRICE_URL = 'https://api.jup.ag/price/v2';
-export const HELIUS_RPC_BASE_URL = 'https://mainnet.helius-rpc.com';
-export const HELIUS_BALANCES_BASE_URL = 'https://api.helius.xyz/v0/addresses';
+// Base chain
+export const BASE_CHAIN_ID = 8453;
+export const BASESCAN_TX_BASE_URL = 'https://basescan.org/tx';
+export const BASESCAN_API_BASE_URL = 'https://api.basescan.org/api';
+export const DEXSCREENER_PRICE_URL = 'https://api.dexscreener.com/latest/dex/tokens';
 export const ALLIUM_BASE_URL = 'https://api.allium.so/api/v1/developer';
-export const SOLSCAN_TX_BASE_URL = 'https://solscan.io/tx';
 
-// Token lists for market monitoring
+// WETH on Base (canonical)
+export const BASE_WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
+
+// Minimal ERC-20 ABI for balance queries
+export const ERC20_BALANCE_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)',
+];
+
+// Memo max length for on-chain calldata
+export const MEMO_MAX_LENGTH = 566;
+
+// Token lists for market monitoring (Base ecosystem)
 export const MAJOR_TOKENS = new Set([
-  'SOL', 'BTC', 'ETH', 'BONK', 'WIF', 'JTO', 'JUP', 'PYTH', 'RAY', 'RNDR', 'HNT',
+  'ETH', 'BTC', 'USDC', 'AERO', 'cbBTC', 'VIRTUAL', 'MORPHO', 'RSR',
 ]);
 
 export const KNOWN_MEMECOINS = new Set([
-  'BONK', 'WIF', 'POPCAT', 'MEW', 'BOME', 'WEN', 'MYRO', 'SAMO', 'SLERF', 'PONKE',
-  'BOOK', 'MOODENG', 'PNUT', 'GOAT', 'ACT', 'AI16Z', 'FARTCOIN', 'GRIFFAIN', 'PENGU', 'TRUMP',
+  'BRETT', 'DEGEN', 'TOSHI', 'HIGHER', 'BASED', 'MOCHI', 'NORMIE',
+  'KEYCAT', 'DOGINME', 'BENJI', 'SKI',
 ]);
 
 export function isNoteworthyToken(symbol: string): boolean {

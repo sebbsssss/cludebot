@@ -1,4 +1,4 @@
-import { getWalletHistory, getTokenBalances, WalletTransaction, TokenBalance } from '../core/helius-client';
+import { getWalletHistory, getTokenBalances, WalletTransaction, TokenBalance } from '../core/base-rpc-client';
 import { postReply } from '../core/x-client';
 import { checkRateLimit, markProcessed } from '../core/database';
 import { getTierModifier } from '../character/tier-modifiers';
@@ -16,43 +16,23 @@ function analyzeWallet(txs: WalletTransaction[], balances: TokenBalance[]): stri
   const totalTxs = txs.length;
   const swaps = txs.filter(t => t.type === 'SWAP');
   const transfers = txs.filter(t => t.type === 'TRANSFER');
-
-  // Quick flips: bought and sold same token within 1 hour
-  let quickFlips = 0;
-  const tokenBuys = new Map<string, number>();
-  for (const tx of swaps) {
-    for (const tt of tx.tokenTransfers) {
-      const key = tt.mint;
-      if (tt.tokenAmount > 0) {
-        // Received token (buy)
-        tokenBuys.set(key, tx.timestamp);
-      } else if (tt.tokenAmount < 0) {
-        // Sent token (sell)
-        const buyTime = tokenBuys.get(key);
-        if (buyTime && (tx.timestamp - buyTime) < 3600) {
-          quickFlips++;
-        }
-      }
-    }
-  }
-
-  const uniqueTokens = new Set(balances.map(b => b.mint)).size;
-  const totalFees = txs.reduce((sum, t) => sum + t.fee, 0) / 1e9; // Convert lamports to SOL
+  const contractCalls = txs.filter(t => t.type === 'CONTRACT_CALL');
+  const uniqueTargets = new Set(txs.map(t => t.to)).size;
+  const totalGas = txs.reduce((sum, t) => sum + t.gasUsed, 0) / 1e18;
 
   const lines = [
     `Total transactions (recent): ${totalTxs}`,
     `Swaps: ${swaps.length}`,
     `Transfers: ${transfers.length}`,
-    `Quick flips (buy+sell within 1hr): ${quickFlips}`,
-    `Unique tokens held: ${uniqueTokens}`,
-    `Total fees burned: ${totalFees.toFixed(4)} SOL`,
+    `Contract calls: ${contractCalls.length}`,
+    `Unique addresses interacted: ${uniqueTargets}`,
+    `Total gas burned: ${totalGas.toFixed(6)} ETH`,
     `Token balances: ${balances.length} different tokens`,
   ];
 
-  // Find interesting patterns
-  if (quickFlips > 3) lines.push('PATTERN: Serial quick-flipper. Buys tops, sells bottoms.');
-  if (uniqueTokens > 20) lines.push('PATTERN: Token hoarder. Portfolio looks like a yard sale.');
-  if (totalFees > 1) lines.push(`PATTERN: Has burned ${totalFees.toFixed(2)} SOL in fees alone. Generous tipper to validators.`);
+  if (swaps.length > totalTxs * 0.7) lines.push('PATTERN: Mostly swaps. Degen trader energy.');
+  if (uniqueTargets > 15) lines.push('PATTERN: Interacts with everything. Portfolio like a buffet.');
+  if (totalGas > 0.01) lines.push(`PATTERN: Has burned ${totalGas.toFixed(4)} ETH in gas alone. Contributing to ETH deflation.`);
   if (totalTxs < 5) lines.push('PATTERN: Barely any history. Either new or uses multiple wallets to hide shame.');
 
   return lines.join('\n');
@@ -91,7 +71,7 @@ export async function handleWalletRoast(
   const walletAnalysis = analyzeWallet(txs, balances);
 
   const response = await buildAndGenerate({
-    message: `Roast this Solana wallet: ${address}`,
+    message: `Roast this wallet on Base: ${address}`,
     context: walletAnalysis,
     tierModifier: getTierModifier(tier),
     instruction:

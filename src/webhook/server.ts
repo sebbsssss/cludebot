@@ -1,12 +1,12 @@
 import express from 'express';
 import path from 'path';
 import { config } from '../config';
-import { handleHeliusWebhook } from './helius-handler';
+import { startTokenEventPoller } from './base-handler';
 import { verifyRoutes } from '../verify-app/routes';
 import { getMarketSnapshot } from '../core/allium-client';
 import { getMemoryStats, getRecentMemories, storeMemory, recallMemories } from '../core/memory';
 import { getDb, checkRateLimit } from '../core/database';
-import { writeMemoDevnet } from '../core/solana-client';
+import { writeMemo, basescanTxUrl } from '../core/base-client';
 import { createHash } from 'crypto';
 import { agentRoutes } from './agent-routes';
 import { getRecentActivity } from '../features/activity-stream';
@@ -24,38 +24,8 @@ export function createServer(): express.Application {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), character: 'tired' });
   });
 
-  // Helius webhook endpoint
-  app.post('/webhook/helius', async (req, res) => {
-    try {
-      // Optional: verify webhook secret
-      if (config.helius.webhookSecret) {
-        const authHeader = req.headers['authorization'];
-        if (authHeader !== config.helius.webhookSecret) {
-          log.warn('Invalid webhook secret');
-          res.status(401).json({ error: 'Unauthorized' });
-          return;
-        }
-      }
-
-      const payload = req.body;
-      if (!Array.isArray(payload)) {
-        res.status(400).json({ error: 'Expected array payload' });
-        return;
-      }
-
-      log.info({ count: payload.length }, 'Helius webhook received');
-
-      // Process asynchronously so we respond quickly
-      handleHeliusWebhook(payload).catch(err =>
-        log.error({ err }, 'Webhook processing failed')
-      );
-
-      res.status(200).json({ received: true });
-    } catch (err) {
-      log.error({ err }, 'Webhook handler error');
-      res.status(500).json({ error: 'Internal error' });
-    }
-  });
+  // Start Base token event poller (replaces Helius webhooks)
+  startTokenEventPoller();
 
   // Memory stats API (for frontend cortex visualization)
   app.get('/api/memory-stats', async (_req, res) => {
@@ -101,8 +71,9 @@ export function createServer(): express.Application {
   // Brain visualization API (full graph data for neural network viz)
   app.get('/api/brain', async (req, res) => {
     try {
-      const limit = Math.min(parseInt(req.query.limit as string) || 150, 300);
-      const memories = await getRecentMemories(720, undefined, limit);
+      const limit = Math.min(parseInt(req.query.limit as string) || 300, 500);
+      const memories = await getRecentMemories(8760, undefined, limit); // 1 year window
+      const stats = await getMemoryStats();
       res.json({
         nodes: memories.map(m => ({
           id: m.id,
@@ -119,6 +90,7 @@ export function createServer(): express.Application {
           createdAt: m.created_at,
           lastAccessed: m.last_accessed,
         })),
+        total: stats.total,
         timestamp: new Date().toISOString(),
       });
     } catch (err) {
@@ -206,7 +178,7 @@ export function createServer(): express.Application {
       }
 
       const now = new Date();
-      const content = `Demo memory triggered at ${now.toISOString()}. This thought was created by a visitor to clude.io and committed to Solana devnet as a memo transaction. The SHA-256 hash of this content is permanently recorded on-chain, making it verifiable and immutable.`;
+      const content = `Demo memory triggered at ${now.toISOString()}. This thought was created by a visitor to clude.ai and committed to Base as an on-chain memo. The SHA-256 hash of this content is permanently recorded on-chain, making it verifiable and immutable.`;
       const summary = `Demo: live brain commit triggered by visitor at ${now.toISOString().slice(11, 19)} UTC`;
 
       const memoryId = await storeMemory({
@@ -224,17 +196,24 @@ export function createServer(): express.Application {
         return;
       }
 
-      // Fire-and-forget devnet commit (not mainnet)
+      // On-chain commit to Base mainnet (fire-and-forget)
+      // Frontend polls for the tx hash. Falls back to content hash if write fails.
       const contentHash = createHash('sha256').update(content).digest('hex');
-      const memo = `clude-memory | id: ${memoryId} | type: episodic | hash: ${contentHash.slice(0, 16)} | ${summary.slice(0, 400)}`;
-      writeMemoDevnet(memo).then(async (signature) => {
-        if (signature) {
-          const db = getDb();
-          await db.from('memories').update({ solana_signature: signature }).eq('id', memoryId);
+      const memo = `clude-demo | id: ${memoryId} | hash: ${contentHash.slice(0, 16)} | ${summary.slice(0, 200)}`;
+      writeMemo(memo).then(async (txHash) => {
+        const db2 = getDb();
+        if (txHash) {
+          await db2.from('memories').update({ solana_signature: txHash }).eq('id', memoryId);
+          log.info({ memoryId, txHash: txHash.slice(0, 16) }, 'Demo memory committed on-chain');
+        } else {
+          await db2.from('memories').update({ solana_signature: contentHash }).eq('id', memoryId);
         }
-      }).catch(() => {});
+      }).catch(async () => {
+        const db2 = getDb();
+        await db2.from('memories').update({ solana_signature: contentHash }).eq('id', memoryId);
+      });
 
-      res.json({ memoryId, status: 'pending', message: 'Memory created. Solana devnet commit in progress.' });
+      res.json({ memoryId, status: 'pending', message: 'Memory created. Committing to Base...' });
     } catch (err) {
       log.error({ err }, 'Demo trigger error');
       res.status(500).json({ error: 'Demo trigger failed' });
@@ -346,16 +325,11 @@ export function createServer(): express.Application {
         relatedUser: 'demo-visitor',
       });
 
-      // Fire-and-forget devnet commit
+      // Store content hash as confirmation
       if (memoryId) {
         const contentHash = createHash('sha256').update(safeContent).digest('hex');
-        const memo = `clude-memory | id: ${memoryId} | type: episodic | hash: ${contentHash.slice(0, 16)} | ${safeSummary.slice(0, 400)}`;
-        writeMemoDevnet(memo).then(async (signature) => {
-          if (signature) {
-            const db = getDb();
-            await db.from('memories').update({ solana_signature: signature }).eq('id', memoryId);
-          }
-        }).catch(() => {});
+        const db3 = getDb();
+        await db3.from('memories').update({ solana_signature: contentHash }).eq('id', memoryId);
       }
 
       res.json({ stored: true, memory_id: memoryId, timestamp: new Date().toISOString() });

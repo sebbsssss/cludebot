@@ -229,6 +229,7 @@ async function runConsolidation(): Promise<void> {
       query: question,
       memoryTypes: ['episodic', 'semantic'],
       limit: 8,
+      trackAccess: false, // Don't reset decay during dream processing
     });
 
     relevant.forEach(m => allInputIds.add(m.id));
@@ -263,14 +264,18 @@ async function runConsolidation(): Promise<void> {
     if (id) allNewIds.push(id);
   }
 
+  // Step 3: Extract procedural memories (behavioral patterns — what works, what doesn't)
+  const proceduralIds = await extractProceduralInsights(recentEpisodic);
+  allNewIds.push(...proceduralIds);
+
   await storeDreamLog(
     'consolidation',
     Array.from(allInputIds),
-    `Focal points: ${focalPoints.join(' | ')}\nInsights generated: ${allNewIds.length}`,
+    `Focal points: ${focalPoints.join(' | ')}\nSemantic insights: ${allNewIds.length - proceduralIds.length}\nProcedural patterns: ${proceduralIds.length}`,
     allNewIds,
   );
 
-  log.info({ focalPoints: focalPoints.length, insights: allNewIds.length }, 'Focal-point consolidation complete');
+  log.info({ focalPoints: focalPoints.length, insights: allNewIds.length, procedural: proceduralIds.length }, 'Focal-point consolidation complete');
 }
 
 /**
@@ -313,6 +318,10 @@ async function runDirectConsolidation(recentEpisodic: Memory[]): Promise<void> {
     if (id) newIds.push(id);
   }
 
+  // Also extract procedural patterns from direct consolidation
+  const proceduralIds = await extractProceduralInsights(recentEpisodic);
+  newIds.push(...proceduralIds);
+
   await storeDreamLog(
     'consolidation',
     recentEpisodic.map(m => m.id),
@@ -320,7 +329,7 @@ async function runDirectConsolidation(recentEpisodic: Memory[]): Promise<void> {
     newIds
   );
 
-  log.info({ observations: newIds.length }, 'Direct consolidation complete');
+  log.info({ observations: newIds.length, procedural: proceduralIds.length }, 'Direct consolidation complete');
 }
 
 // ---- REFLECTION ---- //
@@ -457,6 +466,65 @@ async function runEmergence(): Promise<void> {
   }
 
   log.info('Emergence complete');
+}
+
+// ---- PROCEDURAL EXTRACTION ---- //
+
+/**
+ * Extract behavioral patterns from recent episodic memories (Memp-inspired).
+ * Procedural memories capture "what works" and "what doesn't" —
+ * engagement patterns, response strategies, interaction dynamics.
+ */
+async function extractProceduralInsights(recentEpisodic: Memory[]): Promise<number[]> {
+  if (recentEpisodic.length < 3) return [];
+
+  const numberedMemories = recentEpisodic.map((m, i) =>
+    `[${i + 1}] ${m.summary} (importance: ${m.importance.toFixed(2)}, valence: ${m.emotional_valence.toFixed(2)})`
+  ).join('\n');
+
+  try {
+    const response = await generateResponse({
+      userMessage:
+        'Look at these recent interactions and identify 1-2 behavioral patterns. ' +
+        'What strategies, approaches, or response styles worked well or poorly? ' +
+        'What should you do more of or less of?',
+      context: `RECENT INTERACTIONS:\n${numberedMemories}`,
+      featureInstruction:
+        'You are Clude extracting behavioral patterns from your own interaction history. ' +
+        'Focus on actionable patterns: what tone got engagement, what approaches fell flat, ' +
+        'what types of content resonated, what timing patterns you notice. ' +
+        'Write 1-2 concise behavioral rules. Each should be a single sentence starting with ' +
+        '"When..." or "Users respond..." or a similar actionable framing. ' +
+        'Cite evidence memories in parentheses, e.g. (because of 1, 3). ' +
+        'Separate with newlines. No numbering.',
+      maxTokens: 300,
+    });
+
+    const patterns = response.split('\n').filter(l => l.trim().length > 15);
+    const newIds: number[] = [];
+
+    for (const pattern of patterns.slice(0, 2)) {
+      const { text, evidenceIds } = parseEvidenceCitations(pattern, recentEpisodic);
+
+      const id = await storeMemory({
+        type: 'procedural',
+        content: `Behavioral pattern: ${text}`,
+        summary: text.slice(0, 200),
+        tags: ['procedural', 'behavioral', 'pattern'],
+        importance: 0.65,
+        emotionalValence: 0,
+        source: 'consolidation',
+        evidenceIds,
+      });
+      if (id) newIds.push(id);
+    }
+
+    log.info({ count: newIds.length }, 'Procedural insights extracted');
+    return newIds;
+  } catch (err) {
+    log.warn({ err }, 'Procedural extraction failed');
+    return [];
+  }
 }
 
 // ---- HELPERS ---- //
