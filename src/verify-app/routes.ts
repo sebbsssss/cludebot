@@ -1,15 +1,17 @@
 import { Router } from 'express';
-import { ethers } from 'ethers';
-import { verifySignature } from '../core/base-client';
+import { PublicKey } from '@solana/web3.js';
+import { verifySignature } from '../core/solana-client';
 import { linkWallet } from '../features/holder-tier';
 import { createChildLogger } from '../core/logger';
+import * as bs58Module from 'bs58';
+const bs58 = (bs58Module as any).default || bs58Module;
 
 const log = createChildLogger('verify-routes');
 
 interface VerifyRequest {
   x_handle: string;
   wallet_address: string;
-  signature: string; // hex encoded
+  signature: string; // base64 encoded
   message: string;
 }
 
@@ -33,9 +35,11 @@ export function verifyRoutes(): Router {
         return;
       }
 
-      // Validate wallet address
-      if (!ethers.isAddress(wallet_address)) {
-        res.status(400).json({ error: 'Invalid wallet address' });
+      // Validate Solana wallet address
+      try {
+        new PublicKey(wallet_address);
+      } catch {
+        res.status(400).json({ error: 'Invalid Solana wallet address' });
         return;
       }
 
@@ -45,8 +49,10 @@ export function verifyRoutes(): Router {
         return;
       }
 
-      // Verify EIP-191 signature
-      const isValid = verifySignature(message, signature, wallet_address);
+      // Verify Ed25519 signature
+      const signatureBytes = bs58.decode(signature);
+      const publicKeyBytes = new PublicKey(wallet_address).toBytes();
+      const isValid = verifySignature(message, signatureBytes, publicKeyBytes);
       if (!isValid) {
         log.warn({ x_handle: cleanHandle, wallet: wallet_address }, 'Invalid signature');
         res.status(401).json({ error: 'Invalid signature. Please sign with the correct wallet.' });

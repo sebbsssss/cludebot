@@ -13,7 +13,7 @@ import {
   RETRIEVAL_WEIGHT_IMPORTANCE,
 } from '../utils';
 import { generateImportanceScore } from './claude-client';
-import { writeMemo } from './base-client';
+import { writeMemo } from './solana-client';
 import { eventBus } from '../events/event-bus';
 import { createHash } from 'crypto';
 

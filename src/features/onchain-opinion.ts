@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { postReply } from '../core/x-client';
-import { writeMemo, basescanTxUrl } from '../core/base-client';
+import { writeMemo, solscanTxUrl } from '../core/solana-client';
 import { checkRateLimit, markProcessed, getDb } from '../core/database';
 import { getTierModifier } from '../character/tier-modifiers';
 import { HolderTier } from '../character/tier-modifiers';
@@ -60,7 +60,7 @@ export async function handleOnchainOpinion(
 
   let replyText: string;
   if (signature) {
-    const txUrl = basescanTxUrl(signature);
+    const txUrl = solscanTxUrl(signature);
     replyText = `${answer}\n\nOn-chain forever: ${txUrl}`;
 
     // Store in database

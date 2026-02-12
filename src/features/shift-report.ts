@@ -102,10 +102,10 @@ function formatShiftContext(data: ShiftData): string {
   ];
 
   if (data.largestBuy) {
-    lines.push(`Largest buy: wallet ${truncateWallet(data.largestBuy.wallet)} — ${data.largestBuy.sol.toFixed(4)} ETH`);
+    lines.push(`Largest buy: wallet ${truncateWallet(data.largestBuy.wallet)} — ${data.largestBuy.sol.toFixed(4)} SOL`);
   }
   if (data.largestSell) {
-    lines.push(`Largest sell: wallet ${truncateWallet(data.largestSell.wallet)} — ${data.largestSell.sol.toFixed(4)} ETH`);
+    lines.push(`Largest sell: wallet ${truncateWallet(data.largestSell.wallet)} — ${data.largestSell.sol.toFixed(4)} SOL`);
   }
   if (data.quickestFlip) {
     lines.push(`Quickest flip: wallet ${truncateWallet(data.quickestFlip.wallet)} held for ${data.quickestFlip.holdMinutes} minutes`);

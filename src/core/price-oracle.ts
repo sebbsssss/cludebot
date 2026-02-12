@@ -4,13 +4,13 @@ import { createChildLogger } from './logger';
 import { eventBus } from '../events/event-bus';
 import { percentChange } from '../utils/format';
 import {
-  DEXSCREENER_PRICE_URL,
+  JUPITER_PRICE_URL,
   PRICE_SNAPSHOT_RETENTION_HOURS,
   WHALE_SELL_COOLDOWN_MS,
   PUMP_DUMP_THRESHOLD_PERCENT,
   SIDEWAYS_THRESHOLD_PERCENT,
 } from '../utils/constants';
-import type { DexScreenerResponse } from '../types/api';
+import type { JupiterPriceResponse } from '../types/api';
 
 const log = createChildLogger('price-oracle');
 
@@ -49,18 +49,18 @@ export function flagWhaleSell(): void {
 }
 
 async function fetchPrice(): Promise<{ price: number; volume24h: number } | null> {
-  if (!config.base.cludeTokenAddress) return null;
+  if (!config.solana.cludeTokenMint) return null;
 
   try {
-    const url = `${DEXSCREENER_PRICE_URL}/${config.base.cludeTokenAddress}`;
+    const url = `${JUPITER_PRICE_URL}?ids=${config.solana.cludeTokenMint}`;
     const res = await fetch(url);
-    const data = await res.json() as DexScreenerResponse;
-    const pair = data.pairs?.find(p => p.chainId === 'base');
-    if (!pair) return null;
+    const data = await res.json() as JupiterPriceResponse;
+    const tokenData = data.data?.[config.solana.cludeTokenMint];
+    if (!tokenData) return null;
 
     return {
-      price: parseFloat(pair.priceUsd),
-      volume24h: pair.volume?.h24 || 0,
+      price: parseFloat(tokenData.price),
+      volume24h: 0,
     };
   } catch (err) {
     log.error({ err }, 'Failed to fetch price');

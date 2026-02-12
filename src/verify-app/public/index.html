@@ -1688,7 +1688,7 @@
     <div class="section-label">Operational systems</div>
     <h2 class="section-title">What else it does</h2>
 
-    <div class="feat-row"><span class="feat-name">On-Chain Opinions</span><span class="feat-desc">Every answer SHA-256 hashed and written to Base. Permanent. Immutable.</span></div>
+    <div class="feat-row"><span class="feat-name">On-Chain Opinions</span><span class="feat-desc">Every answer SHA-256 hashed and written to Solana. Permanent. Immutable.</span></div>
     <div class="feat-row"><span class="feat-name">Price-Reactive Mood</span><span class="feat-desc">Six moods driven by real-time Allium data. Personality shifts with the market.</span></div>
     <div class="feat-row"><span class="feat-name">Wallet Roasts</span><span class="feat-desc">Paste a wallet. Get every financial decision analyzed. The assessment is polite. The truth is not.</span></div>
     <div class="feat-row"><span class="feat-name">Holder Tiers</span><span class="feat-desc">Four tiers based on token balance. Whales get formality. Sellers get the cold shoulder.</span></div>
@@ -1837,7 +1837,7 @@
     <div class="footer-logo">CLUDE</div>
     <p class="footer-tagline">Four memory types. Exponential decay. Evidence-linked dreams.</p>
     <p class="footer-fine">
-      Built reluctantly on Base. Token not live yet. This is not financial advice.
+      Built reluctantly on Solana. Token not live yet. This is not financial advice.
       This is barely a website. Do not ask me about the roadmap.
     </p>
     <p class="footer-easter-egg" id="footerEgg">
@@ -2399,7 +2399,7 @@
 
         // On-chain link
         if (mem.solana_signature) {
-          html += '<a href="https://basescan.org/tx/' + mem.solana_signature + '" class="mem-chain-link" target="_blank" onclick="event.stopPropagation()">ON-CHAIN ↗</a>';
+          html += '<a href="https://solscan.io/tx/' + mem.solana_signature + '" class="mem-chain-link" target="_blank" onclick="event.stopPropagation()">ON-CHAIN ↗</a>';
         }
 
         div.innerHTML = html;

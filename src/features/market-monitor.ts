@@ -28,11 +28,11 @@ function detectSignificantEvents(snapshot: MarketSnapshot): { context: string; e
   const events: string[] = [];
   let eventKey = '';
 
-  // ETH flash crash / mega pump: >8% in 1h is genuinely epic
-  if (Math.abs(snapshot.ethChange1h) > 8) {
-    const dir = snapshot.ethChange1h > 0 ? 'up' : 'down';
-    events.push(`ETH ${dir} ${snapshot.ethChange1h.toFixed(1)}% in the last hour ($${snapshot.ethPrice.toFixed(2)})`);
-    eventKey += `eth:${Math.floor(snapshot.ethChange1h)}`;
+  // SOL flash crash / mega pump: >8% in 1h is genuinely epic
+  if (Math.abs(snapshot.solChange1h) > 8) {
+    const dir = snapshot.solChange1h > 0 ? 'up' : 'down';
+    events.push(`SOL ${dir} ${snapshot.solChange1h.toFixed(1)}% in the last hour ($${snapshot.solPrice.toFixed(2)})`);
+    eventKey += `eth:${Math.floor(snapshot.solChange1h)}`;
   }
 
   // Only flag known memecoins / majors with truly extreme moves (>50% in 1h)
@@ -66,8 +66,8 @@ function detectSignificantEvents(snapshot: MarketSnapshot): { context: string; e
   // Build context
   const context = [
     'MARKET INTELLIGENCE REPORT',
-    `ETH: $${snapshot.ethPrice.toFixed(2)} (1h: ${snapshot.ethChange1h > 0 ? '+' : ''}${snapshot.ethChange1h.toFixed(2)}%, 24h: ${snapshot.ethChange24h > 0 ? '+' : ''}${snapshot.ethChange24h.toFixed(2)}%)`,
-    `ETH 24h Volume: $${formatUsd(snapshot.ethVolume24h)}`,
+    `SOL: $${snapshot.solPrice.toFixed(2)} (1h: ${snapshot.solChange1h > 0 ? '+' : ''}${snapshot.solChange1h.toFixed(2)}%, 24h: ${snapshot.solChange24h > 0 ? '+' : ''}${snapshot.solChange24h.toFixed(2)}%)`,
+    `SOL 24h Volume: $${formatUsd(snapshot.solVolume24h)}`,
     '',
     'Notable Events:',
     ...events,

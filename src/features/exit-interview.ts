@@ -1,4 +1,4 @@
-import { getWalletHistory } from '../core/base-rpc-client';
+import { getWalletHistory } from '../core/helius-client';
 import { checkRateLimit } from '../core/database';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
