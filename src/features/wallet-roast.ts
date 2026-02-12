@@ -1,4 +1,4 @@
-import { getWalletHistory, getTokenBalances, WalletTransaction, TokenBalance } from '../core/base-rpc-client';
+import { getWalletHistory, getTokenBalances, WalletTransaction, TokenBalance } from '../core/helius-client';
 import { postReply } from '../core/x-client';
 import { checkRateLimit, markProcessed } from '../core/database';
 import { getTierModifier } from '../character/tier-modifiers';
@@ -16,23 +16,21 @@ function analyzeWallet(txs: WalletTransaction[], balances: TokenBalance[]): stri
   const totalTxs = txs.length;
   const swaps = txs.filter(t => t.type === 'SWAP');
   const transfers = txs.filter(t => t.type === 'TRANSFER');
-  const contractCalls = txs.filter(t => t.type === 'CONTRACT_CALL');
-  const uniqueTargets = new Set(txs.map(t => t.to)).size;
-  const totalGas = txs.reduce((sum, t) => sum + t.gasUsed, 0) / 1e18;
+  const uniqueTargets = new Set(txs.flatMap(t => t.nativeTransfers.map(nt => nt.toUserAccount).filter(Boolean))).size;
+  const totalFees = txs.reduce((sum, t) => sum + t.fee, 0) / 1e9; // lamports to SOL
 
   const lines = [
     `Total transactions (recent): ${totalTxs}`,
     `Swaps: ${swaps.length}`,
     `Transfers: ${transfers.length}`,
-    `Contract calls: ${contractCalls.length}`,
     `Unique addresses interacted: ${uniqueTargets}`,
-    `Total gas burned: ${totalGas.toFixed(6)} ETH`,
+    `Total fees burned: ${totalFees.toFixed(6)} SOL`,
     `Token balances: ${balances.length} different tokens`,
   ];
 
   if (swaps.length > totalTxs * 0.7) lines.push('PATTERN: Mostly swaps. Degen trader energy.');
   if (uniqueTargets > 15) lines.push('PATTERN: Interacts with everything. Portfolio like a buffet.');
-  if (totalGas > 0.01) lines.push(`PATTERN: Has burned ${totalGas.toFixed(4)} ETH in gas alone. Contributing to ETH deflation.`);
+  if (totalFees > 0.1) lines.push(`PATTERN: Has burned ${totalFees.toFixed(4)} SOL in fees alone.`);
   if (totalTxs < 5) lines.push('PATTERN: Barely any history. Either new or uses multiple wallets to hide shame.');
 
   return lines.join('\n');
@@ -71,7 +69,7 @@ export async function handleWalletRoast(
   const walletAnalysis = analyzeWallet(txs, balances);
 
   const response = await buildAndGenerate({
-    message: `Roast this wallet on Base: ${address}`,
+    message: `Roast this Solana wallet: ${address}`,
     context: walletAnalysis,
     tierModifier: getTierModifier(tier),
     instruction:

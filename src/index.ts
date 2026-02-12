@@ -7,7 +7,7 @@ import { startShiftReports, stopShiftReports } from './features/shift-report';
 import { startMarketMonitor, stopMarketMonitor } from './features/market-monitor';
 import { startDreamCycle, stopDreamCycle } from './features/dream-cycle';
 import { startServer } from './webhook/server';
-import { getBotWallet } from './core/base-client';
+import { getBotWallet } from './core/solana-client';
 import { createChildLogger } from './core/logger';
 import { registerEventHandlers } from './events/handlers';
 
@@ -29,7 +29,7 @@ async function main(): Promise<void> {
   // Load bot wallet if configured
   const wallet = getBotWallet();
   if (wallet) {
-    log.info({ address: wallet.address }, 'Bot wallet loaded');
+    log.info({ address: wallet.publicKey.toBase58() }, 'Bot wallet loaded');
   } else {
     log.warn('No bot wallet configured — on-chain opinion commits will be disabled');
   }

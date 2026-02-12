@@ -1,12 +1,12 @@
 import express from 'express';
 import path from 'path';
 import { config } from '../config';
-import { startTokenEventPoller } from './base-handler';
+import { handleHeliusWebhook } from './helius-handler';
 import { verifyRoutes } from '../verify-app/routes';
 import { getMarketSnapshot } from '../core/allium-client';
 import { getMemoryStats, getRecentMemories, storeMemory, recallMemories } from '../core/memory';
 import { getDb, checkRateLimit } from '../core/database';
-import { writeMemo, basescanTxUrl } from '../core/base-client';
+import { writeMemo, solscanTxUrl } from '../core/solana-client';
 import { createHash } from 'crypto';
 import { agentRoutes } from './agent-routes';
 import { getRecentActivity } from '../features/activity-stream';
@@ -24,8 +24,16 @@ export function createServer(): express.Application {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), character: 'tired' });
   });
 
-  // Start Base token event poller (replaces Helius webhooks)
-  startTokenEventPoller();
+  // Helius webhook endpoint for token events
+  app.post('/webhook/helius', async (req, res) => {
+    try {
+      await handleHeliusWebhook(req.body);
+      res.json({ ok: true });
+    } catch (err) {
+      log.error({ err }, 'Helius webhook error');
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
+  });
 
   // Memory stats API (for frontend cortex visualization)
   app.get('/api/memory-stats', async (_req, res) => {
@@ -239,7 +247,7 @@ export function createServer(): express.Application {
       }
 
       const now = new Date();
-      const content = `Demo memory triggered at ${now.toISOString()}. This thought was created by a visitor to clude.ai and committed to Base as an on-chain memo. The SHA-256 hash of this content is permanently recorded on-chain, making it verifiable and immutable.`;
+      const content = `Demo memory triggered at ${now.toISOString()}. This thought was created by a visitor to clude.io and committed to Solana as an on-chain memo. The SHA-256 hash of this content is permanently recorded on-chain, making it verifiable and immutable.`;
       const summary = `Demo: live brain commit triggered by visitor at ${now.toISOString().slice(11, 19)} UTC`;
 
       const memoryId = await storeMemory({
@@ -257,7 +265,7 @@ export function createServer(): express.Application {
         return;
       }
 
-      // On-chain commit to Base mainnet (fire-and-forget)
+      // On-chain commit to Solana mainnet (fire-and-forget)
       // Frontend polls for the tx hash. Falls back to content hash if write fails.
       const contentHash = createHash('sha256').update(content).digest('hex');
       const memo = `clude-demo | id: ${memoryId} | hash: ${contentHash.slice(0, 16)} | ${summary.slice(0, 200)}`;
@@ -274,7 +282,7 @@ export function createServer(): express.Application {
         await db2.from('memories').update({ solana_signature: contentHash }).eq('id', memoryId);
       });
 
-      res.json({ memoryId, status: 'pending', message: 'Memory created. Committing to Base...' });
+      res.json({ memoryId, status: 'pending', message: 'Memory created. Committing to Solana...' });
     } catch (err) {
       log.error({ err }, 'Demo trigger error');
       res.status(500).json({ error: 'Demo trigger failed' });

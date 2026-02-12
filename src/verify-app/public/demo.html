@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLUDE - Live Demo</title>
-  <meta name="description" content="Watch Clude create memories, hash them, and commit them to Base. Try the Memory as a Service API.">
+  <meta name="description" content="Watch Clude create memories, hash them, and commit them to Solana. Try the Memory as a Service API.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -566,7 +566,7 @@
   <div class="section" id="live-brain">
     <div class="section-label">Section 01</div>
     <div class="section-title">Live Brain Activity <span style="color:#c8b464;font-size:0.65rem;letter-spacing:2px;margin-left:0.5rem;">[TESTNET]</span></div>
-    <div class="section-sub">Watch a memory get created, hashed, and committed to Base in real-time.</div>
+    <div class="section-sub">Watch a memory get created, hashed, and committed to Solana in real-time.</div>
 
     <button class="trigger-btn" id="triggerBtn" onclick="triggerMemoryCommit()">TRIGGER MEMORY COMMIT</button>
     <div class="cooldown-msg" id="cooldownMsg"></div>
@@ -650,7 +650,7 @@
       <div class="stat-card">
         <div class="stat-label">On-Chain</div>
         <div class="stat-value green" id="statOnChain">--</div>
-        <div class="stat-note">committed to Base</div>
+        <div class="stat-note">committed to Solana</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Dream Sessions</div>
@@ -787,7 +787,7 @@
 
     // Step 3 (after 2s)
     await delay(1000);
-    addTermLine('<span class="term-step">[3/4] Writing memo transaction to Base...</span>');
+    addTermLine('<span class="term-step">[3/4] Writing memo transaction to Solana...</span>');
     addCursor();
 
     // Show memory detail if available
@@ -802,7 +802,7 @@
     // Step 4: poll for on-chain confirmation
     await delay(1000);
     if (memoryId) {
-      addTermLine('<span class="term-step">[4/4] Committing to Base...</span>');
+      addTermLine('<span class="term-step">[4/4] Committing to Solana...</span>');
       pollForConfirmation(memoryId);
     } else {
       addTermLine('<span class="term-error">[4/4] No memory ID returned.</span>');
@@ -850,16 +850,16 @@
   }
 
   function showConfirmed(signature) {
-    var isTxHash = /^0x[a-f0-9]{64}$/i.test(signature);
-    if (isTxHash) {
-      var basescanUrl = 'https://basescan.org/tx/' + encodeURIComponent(signature);
+    var isSolSig = /^[1-9A-HJ-NP-Za-km-z]{32,}$/.test(signature) && signature.length > 40;
+    if (isSolSig) {
+      var solscanUrl = 'https://solscan.io/tx/' + encodeURIComponent(signature);
       addTermLine(
         '<span class="term-confirmed">[4/4] Confirmed on-chain</span> ' +
-        '<a class="term-link" href="' + basescanUrl + '" target="_blank" rel="noopener">' +
+        '<a class="term-link" href="' + solscanUrl + '" target="_blank" rel="noopener">' +
         truncate(signature, 44) + ' &#8599;</a>'
       );
     } else {
-      // SHA-256 content hash fallback (testnet wallet unfunded)
+      // SHA-256 content hash fallback (wallet unfunded)
       addTermLine(
         '<span class="term-confirmed">[4/4] Memory committed</span> ' +
         '<span class="term-dim">SHA-256: ' + truncate(signature, 44) + '</span>'
