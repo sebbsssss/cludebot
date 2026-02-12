@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { Helius } = require('helius-sdk') as { Helius: any };
+const { createHelius } = require('helius-sdk') as { createHelius: (apiKey: string) => any };
 import { Connection, PublicKey } from '@solana/web3.js';
 import { config } from '../config';
 import { createChildLogger } from './logger';
@@ -8,7 +8,7 @@ import type { HeliusBalancesResponse, HeliusTokenBalance } from '../types/api';
 
 const log = createChildLogger('helius-client');
 
-const helius = new Helius(config.helius.apiKey);
+const helius = createHelius(config.helius.apiKey);
 const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${config.helius.apiKey}`;
 const connection = new Connection(heliusRpcUrl);
 
