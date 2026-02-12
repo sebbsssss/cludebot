@@ -454,15 +454,21 @@ async function runEmergence(): Promise<void> {
     id ? [id] : []
   );
 
-  // Occasionally post emergence thoughts (rate limited: 1 per 12 hours)
+  // Only post emergence thoughts when they feel genuinely meaningful:
+  // - Must have enough self-model depth (5+ memories feeding into this)
+  // - Rate limited to 1 per 12 hours
+  // - Must fit in a tweet
+  const hasDepth = selfModel.length >= 5;
   const canPost = await checkRateLimit('global:emergence-tweet', 1, 720);
-  if (canPost && response.length <= 270) {
+  if (hasDepth && canPost && response.length <= 270) {
     try {
       await postTweet(response);
       log.info('Emergence thought posted to X');
     } catch (err) {
       log.error({ err }, 'Failed to post emergence thought');
     }
+  } else if (!hasDepth) {
+    log.debug({ selfModelCount: selfModel.length }, 'Emergence not deep enough to post — skipping tweet');
   }
 
   log.info('Emergence complete');

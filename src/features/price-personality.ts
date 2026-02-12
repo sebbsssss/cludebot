@@ -7,20 +7,33 @@ import { tweet } from '../services/social.service';
 
 const log = createChildLogger('price-personality');
 
-export async function maybePostMoodTweet(): Promise<void> {
-  // Rate limit: 1 reflective post per 2 hours
-  if (!(await checkRateLimit('global:mood-tweet', 1, 120))) return;
+// Minimum importance threshold — only tweet when something genuinely meaningful happened
+const IMPORTANCE_THRESHOLD = 0.65;
+// Need at least this many recent memories to have enough context
+const MIN_MEMORY_COUNT = 3;
 
-  // Pull recent memories — the raw material for reflection
-  const recentMemories = await getRecentMemories(12, ['episodic', 'semantic', 'self_model'], 10);
-  if (recentMemories.length < 2) {
-    log.debug('Not enough recent memories to reflect on');
+export async function maybePostMoodTweet(): Promise<void> {
+  // Pull recent memories — see if anything meaningful happened
+  const recentMemories = await getRecentMemories(12, ['episodic', 'semantic', 'self_model'], 15);
+
+  if (recentMemories.length < MIN_MEMORY_COUNT) {
+    log.debug({ count: recentMemories.length }, 'Not enough recent memories — skipping');
     return;
   }
 
-  // Pick the most impactful recent memory as the anchor
+  // Find the most impactful memory — this is the potential anchor
   const sorted = [...recentMemories].sort((a, b) => b.importance - a.importance);
   const anchor = sorted[0];
+
+  // Quality gate: only post if the anchor memory is genuinely significant
+  if (anchor.importance < IMPORTANCE_THRESHOLD) {
+    log.debug({ topImportance: anchor.importance.toFixed(2) }, 'Nothing meaningful enough to reflect on — skipping');
+    return;
+  }
+
+  // Rate limit: 1 reflective post per 4 hours (less frequent, higher quality)
+  if (!(await checkRateLimit('global:mood-tweet', 1, 240))) return;
+
   const supporting = sorted.slice(1, 4);
 
   const memoryContext = [
@@ -33,7 +46,7 @@ export async function maybePostMoodTweet(): Promise<void> {
     `Total memories in last 12 hours: ${recentMemories.length}`,
   ].join('\n');
 
-  log.info({ anchorId: anchor.id, memoryCount: recentMemories.length }, 'Posting reflective tweet');
+  log.info({ anchorId: anchor.id, importance: anchor.importance, memoryCount: recentMemories.length }, 'Posting reflective tweet');
 
   const response = await buildAndGenerate({
     message: 'Reflect on your most recent experience and how it affected you.',
