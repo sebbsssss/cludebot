@@ -34,14 +34,14 @@ export const WHALE_SELL_COOLDOWN_MS = 30 * 60 * 1000;
 export const PUMP_DUMP_THRESHOLD_PERCENT = 10;
 export const SIDEWAYS_THRESHOLD_PERCENT = 2;
 
-// Base chain
+// Base chain (dormant — kept for future switch-back)
 export const BASE_CHAIN_ID = 8453;
 export const BASESCAN_TX_BASE_URL = 'https://basescan.org/tx';
 export const BASESCAN_API_BASE_URL = 'https://api.basescan.org/api';
 export const DEXSCREENER_PRICE_URL = 'https://api.dexscreener.com/latest/dex/tokens';
 export const ALLIUM_BASE_URL = 'https://api.allium.so/api/v1/developer';
 
-// WETH on Base (canonical)
+// WETH on Base (dormant — kept for future switch-back)
 export const BASE_WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
 
 // Minimal ERC-20 ABI for balance queries
