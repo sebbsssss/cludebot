@@ -1,7 +1,7 @@
 {
   "name": "clude-bot",
   "version": "1.0.0",
-  "description": "Clude — a dysfunctional AI meme token bot on Base",
+  "description": "Clude — a dysfunctional AI meme token bot on Solana",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

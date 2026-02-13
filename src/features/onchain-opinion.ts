@@ -46,9 +46,9 @@ export async function handleOnchainOpinion(
     tierModifier: getTierModifier(tier),
     instruction:
       'Someone asked you a question. Answer it honestly in character. ' +
-      'Your answer will be hashed and committed to the Base blockchain permanently. ' +
+      'Your answer will be hashed and committed to Solana permanently. ' +
       'You are aware of this. It adds weight to your words. ' +
-      'Keep the answer under 200 characters — you need room for the tx link.',
+      'Keep the answer under 270 characters.',
     maxTokens: 150,
   });
 
