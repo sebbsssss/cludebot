@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { postReply } from '../core/x-client';
 import { writeMemo, solscanTxUrl } from '../core/solana-client';
 import { checkRateLimit, markProcessed, getDb } from '../core/database';
+import { config } from '../config';
 import { getTierModifier } from '../character/tier-modifiers';
 import { HolderTier } from '../character/tier-modifiers';
 import { createChildLogger } from '../core/logger';
@@ -60,10 +61,15 @@ export async function handleOnchainOpinion(
 
   let replyText: string;
   if (signature) {
-    const txUrl = solscanTxUrl(signature);
-    replyText = `${answer}\n\nOn-chain forever: ${txUrl}`;
+    // Tx link in tweets is toggleable via SHOW_TX_LINKS_IN_TWEETS env var
+    if (config.features.showTxLinksInTweets) {
+      const txUrl = solscanTxUrl(signature);
+      replyText = `${answer}\n\nOn-chain forever: ${txUrl}`;
+    } else {
+      replyText = answer;
+    }
 
-    // Store in database
+    // Store in database (always keep the signature for the web UI)
     const db = getDb();
     await db
       .from('opinion_commits')

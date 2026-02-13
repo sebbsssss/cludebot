@@ -64,6 +64,9 @@ export const config = {
   agent: {
     rateLimitPerMin: parseInt(optional('AGENT_RATE_LIMIT', '10'), 10),
   },
+  features: {
+    showTxLinksInTweets: optional('SHOW_TX_LINKS_IN_TWEETS', 'false') === 'true',
+  },
   activity: {
     minSolValue: parseFloat(optional('ACTIVITY_MIN_SOL', '5.0')),
     minEthValue: parseFloat(optional('ACTIVITY_MIN_ETH', '0.1')),
