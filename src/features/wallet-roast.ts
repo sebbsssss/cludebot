@@ -7,6 +7,7 @@ import { createChildLogger } from '../core/logger';
 import { extractWalletAddress } from '../utils/text';
 import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
+import { PublicKey } from '@solana/web3.js';
 
 const log = createChildLogger('wallet-roast');
 
@@ -44,6 +45,14 @@ export async function handleWalletRoast(
 ): Promise<void> {
   const address = extractWalletAddress(tweetText);
   if (!address) return;
+
+  // Validate that the extracted string is a real Solana address
+  try {
+    new PublicKey(address);
+  } catch {
+    log.debug({ address }, 'Invalid Solana address extracted, skipping');
+    return;
+  }
 
   // Rate limit: 1 roast per user per hour
   if (!(await checkRateLimit(`roast:${authorId}`, 1, 60))) {

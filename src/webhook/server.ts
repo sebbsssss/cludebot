@@ -7,12 +7,58 @@ import { getMarketSnapshot } from '../core/allium-client';
 import { getMemoryStats, getRecentMemories, storeMemory, recallMemories } from '../core/memory';
 import { getDb, checkRateLimit } from '../core/database';
 import { writeMemo, solscanTxUrl } from '../core/solana-client';
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 import { agentRoutes } from './agent-routes';
 import { getRecentActivity } from '../features/activity-stream';
 import { createChildLogger } from '../core/logger';
+import rateLimit from 'express-rate-limit';
 
 const log = createChildLogger('server');
+
+// Rate limiters
+const webhookLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many webhook requests' },
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many API requests' },
+});
+
+// Helius webhook signature verification middleware
+function verifyHeliusWebhook(req: express.Request, res: express.Response, next: express.NextFunction): void {
+  const secret = config.helius.webhookSecret;
+  if (!secret) {
+    // No secret configured — skip verification (log warning on first request)
+    next();
+    return;
+  }
+
+  const authHeader = req.headers['authorization'] as string | undefined;
+  if (!authHeader) {
+    log.warn('Helius webhook request missing Authorization header');
+    res.status(401).json({ error: 'Missing webhook authorization' });
+    return;
+  }
+
+  // Constant-time comparison to prevent timing attacks
+  const authBuffer = Buffer.from(authHeader);
+  const secretBuffer = Buffer.from(secret);
+  if (authBuffer.length !== secretBuffer.length || !timingSafeEqual(authBuffer, secretBuffer)) {
+    log.warn('Invalid Helius webhook authorization');
+    res.status(401).json({ error: 'Invalid webhook authorization' });
+    return;
+  }
+
+  next();
+}
 
 export function createServer(): express.Application {
   const app = express();
@@ -24,8 +70,8 @@ export function createServer(): express.Application {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), character: 'tired' });
   });
 
-  // Helius webhook endpoint for token events
-  app.post('/webhook/helius', async (req, res) => {
+  // Helius webhook endpoint for token events (with signature verification + rate limiting)
+  app.post('/webhook/helius', webhookLimiter, verifyHeliusWebhook, async (req, res) => {
     try {
       await handleHeliusWebhook(req.body);
       res.json({ ok: true });
@@ -34,6 +80,9 @@ export function createServer(): express.Application {
       res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
+
+  // Apply rate limiting to all API routes
+  app.use('/api', apiLimiter);
 
   // Memory stats API (for frontend cortex visualization)
   app.get('/api/memory-stats', async (_req, res) => {
