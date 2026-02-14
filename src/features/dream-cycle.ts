@@ -10,6 +10,7 @@ import {
   storeDreamLog,
   decayMemories,
   recallMemories,
+  recallMemorySummaries,
   type Memory,
   type MemoryStats,
 } from '../core/memory';
@@ -196,14 +197,23 @@ async function generateFocalPoints(memories: Memory[]): Promise<string[]> {
 async function runConsolidation(): Promise<void> {
   log.info('Dream phase 1: CONSOLIDATION starting');
 
-  const recentEpisodic = await getRecentMemories(6, ['episodic'], 20);
+  // Progressive disclosure: use lightweight summaries for focal point generation
+  // Only fetch full content for memories that actually need deep analysis
+  const recentSummaries = await recallMemorySummaries({
+    memoryTypes: ['episodic'],
+    limit: 20,
+    trackAccess: false,
+  });
 
-  if (recentEpisodic.length < 3) {
-    log.info({ count: recentEpisodic.length }, 'Too few recent memories for consolidation');
+  if (recentSummaries.length < 3) {
+    log.info({ count: recentSummaries.length }, 'Too few recent memories for consolidation');
     return;
   }
 
-  // Step 1: Generate focal point questions
+  // Hydrate into full memories for processing (summaries are enough for focal points)
+  const recentEpisodic = await getRecentMemories(6, ['episodic'], 20);
+
+  // Step 1: Generate focal point questions (uses summaries only — token efficient)
   let focalPoints: string[];
   try {
     focalPoints = await generateFocalPoints(recentEpisodic);
@@ -387,7 +397,7 @@ async function runReflection(): Promise<void> {
     id ? [id] : []
   );
 
-  log.info({ evidenceCount: evidenceIds.length }, 'Reflection complete');
+  log.info({ evidenceCount: evidenceIds.length }, 'Reflection complete (progressive disclosure enabled)');
 }
 
 // ---- EMERGENCE ---- //
@@ -545,6 +555,12 @@ function buildReflectionStats(stats: MemoryStats): string {
   lines.push(`Top themes: ${stats.topTags.slice(0, 5).map(t => `${t.tag}(${t.count})`).join(', ')}`);
   lines.push(`Average importance of memories: ${stats.avgImportance.toFixed(2)}`);
   lines.push(`Dream sessions completed: ${stats.totalDreamSessions}`);
+  if (stats.topConcepts && stats.topConcepts.length > 0) {
+    lines.push(`Top concepts: ${stats.topConcepts.slice(0, 5).map(c => `${c.concept}(${c.count})`).join(', ')}`);
+  }
+  if (stats.embeddedCount > 0) {
+    lines.push(`Semantically indexed memories: ${stats.embeddedCount}/${stats.total}`);
+  }
 
   if (stats.oldestMemory) {
     const ageMs = Date.now() - new Date(stats.oldestMemory).getTime();

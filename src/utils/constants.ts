@@ -13,16 +13,48 @@ export const TWEET_MAX_LENGTH = 280;
 export const TWEET_SAFE_LENGTH = 270;
 
 // Memory system
-export const MEMORY_DECAY_RATE = 0.95;
+export const MEMORY_DECAY_RATE = 0.95;                  // Legacy: uniform decay (now per-type below)
 export const MEMORY_MIN_DECAY = 0.05;
 export const MEMORY_MAX_CONTENT_LENGTH = 5000;
 export const MEMORY_MAX_SUMMARY_LENGTH = 500;
+
+// Type-specific decay rates (per 24h cycle)
+// Episodic events fade fastest; identity/knowledge persists longest.
+export const DECAY_RATES: Record<string, number> = {
+  episodic:   0.93,   // Individual events fade quickly
+  semantic:   0.98,   // Learned knowledge persists
+  procedural: 0.97,   // Behavioral patterns are stable
+  self_model:  0.99,  // Identity is nearly permanent
+};
 
 // Memory retrieval — additive scoring (Park et al. 2023, Generative Agents)
 export const RECENCY_DECAY_BASE = 0.995;               // Exponential: 0.995^hours since last access
 export const RETRIEVAL_WEIGHT_RECENCY = 0.5;            // Paper: recency has lowest weight
 export const RETRIEVAL_WEIGHT_RELEVANCE = 3.0;          // Paper: relevance dominates
 export const RETRIEVAL_WEIGHT_IMPORTANCE = 2.0;         // Paper: importance is second
+export const RETRIEVAL_WEIGHT_VECTOR = 4.0;             // Vector similarity (highest when available)
+
+// Structured concept ontology for cross-cutting knowledge classification
+// Replaces freeform tagging with a controlled vocabulary for precise retrieval.
+export const MEMORY_CONCEPTS = [
+  'market_event',        // Price movements, ATH, dumps, volume spikes
+  'holder_behavior',     // Whale moves, exits, accumulation, selling patterns
+  'self_insight',        // Self-observations, identity reflections
+  'social_interaction',  // Mentions, replies, conversations on X
+  'community_pattern',   // Recurring community behaviors, engagement trends
+  'token_economics',     // Swaps, liquidity, transfers, on-chain activity
+  'sentiment_shift',     // Mood changes, market sentiment transitions
+  'recurring_user',      // Returning users, first interactions, relationship building
+  'whale_activity',      // Large holder movements, big trades
+  'price_action',        // Chart patterns, price analysis, technical signals
+  'engagement_pattern',  // What content resonates, what falls flat
+  'identity_evolution',  // How Clude is changing, personality shifts
+] as const;
+export type MemoryConcept = typeof MEMORY_CONCEPTS[number];
+
+// Embedding system
+export const EMBEDDING_DIMENSIONS = 1024;
+export const EMBEDDING_FRAGMENT_MAX_LENGTH = 2000;       // Max chars per fragment for granular decomposition
 
 // Event-driven reflection triggers
 export const REFLECTION_IMPORTANCE_THRESHOLD = 10;      // Cumulative importance to trigger reflection (0-1 scale)

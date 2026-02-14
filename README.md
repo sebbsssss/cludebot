@@ -6,7 +6,9 @@ Token: `$CLUDE` on Solana.
 
 Clude monitors on-chain Solana activity, reacts to price movements, roasts wallets, writes shift reports, and holds opinions it commits to the blockchain. But what makes it different is the memory.
 
-Most AI agents are stateless — every interaction starts from zero. Clude runs a persistent cognitive architecture called **The Brain**, built on techniques from [Stanford's Generative Agents](https://arxiv.org/abs/2304.03442) (Park et al. 2023) — additive retrieval scoring, exponential recency decay, LLM-based importance rating, focal-point question generation, and evidence-linked reflections — combined with ideas from [MemGPT/Letta](https://arxiv.org/abs/2310.08560) (multi-tier self-managed memory) and the [CoALA framework](https://arxiv.org/abs/2309.02427) (episodic/semantic/procedural separation). Four memory types are scored via `recency + relevance + importance`, decayed exponentially, and recalled contextually. Memories that go unaccessed fade. Memories that get recalled are reinforced.
+Most AI agents are stateless — every interaction starts from zero. Clude runs a persistent cognitive architecture called **The Brain**, built on techniques from [Stanford's Generative Agents](https://arxiv.org/abs/2304.03442) (Park et al. 2023) — additive retrieval scoring, exponential recency decay, LLM-based importance rating, focal-point question generation, and evidence-linked reflections — combined with ideas from [MemGPT/Letta](https://arxiv.org/abs/2310.08560) (multi-tier self-managed memory) and the [CoALA framework](https://arxiv.org/abs/2309.02427) (episodic/semantic/procedural separation). Four memory types are scored via a hybrid retrieval system combining **vector similarity + keyword matching + tag overlap + importance**, decayed with type-specific exponential rates, and recalled contextually. Memories that go unaccessed fade. Memories that get recalled are reinforced.
+
+The retrieval system uses **pgvector** for semantic similarity search with HNSW indexing, **granular vector decomposition** (each memory is split into fragments — summary, content chunks, tag context — with per-fragment embeddings for precision matching), and a **structured concept ontology** of 12 controlled vocabulary labels auto-classified via keyword heuristics. A **progressive disclosure** pattern (lightweight summaries first, full hydration on demand) keeps token budgets tight during dream cycles.
 
 Dream cycles are triggered either on a 6-hour schedule or by accumulated importance exceeding a threshold (event-driven reflection). Each cycle generates focal-point questions from recent experience, retrieves relevant memories for each question, produces evidence-linked semantic insights, and reflects on accumulated self-knowledge — with every derived memory traceable back to its source evidence. The result is an agent that remembers who you are, what it said to you last time, and what it's been thinking about since.
 
@@ -16,11 +18,11 @@ Dream cycles are triggered either on a 6-hour schedule or by accumulated importa
 
 ```
 src/
-├── core/           # Database, AI client, price oracle, blockchain, X client
+├── core/           # Database, AI client, price oracle, blockchain, X client, embeddings
 ├── features/       # Autonomous behaviors (dream cycle, shift reports, mood tweets, etc.)
 ├── character/      # Prompt engineering — 20 voice flavors, mood modifiers, tier modifiers
 ├── mentions/       # Twitter mention polling → classification → dispatch
-├── webhook/        # Express server, Helius webhook handler, agent API
+├── webhook/        # Express server (rate-limited), Helius webhook handler (HMAC-verified), agent API
 ├── events/         # Typed event bus decoupling webhooks from features
 ├── services/       # Response pipeline (mood → memory → generate) and social posting
 ├── types/          # Shared TypeScript interfaces for API responses
@@ -49,16 +51,25 @@ Four memory tiers inspired by [Stanford Generative Agents](https://arxiv.org/abs
 | `procedural` | Behavioral patterns — what works, what doesn't |
 | `self_model` | Clude's evolving understanding of itself |
 
-**Retrieval scoring** uses the additive formula from Park et al. (2023):
+**Hybrid retrieval** combines four scoring signals via the additive formula from Park et al. (2023):
 
 ```
-score = (0.5 * recency + 3.0 * relevance + 2.0 * importance) * decay_factor
+score = (0.5 * recency + 3.0 * relevance + 2.0 * importance + 4.0 * vector_similarity) * decay_factor
 ```
 
 - **Recency**: Exponential decay `0.995^hoursSinceAccess` — accessing a memory resets its clock. 24h: 0.89, 1 week: 0.43, 1 month: 0.03.
-- **Relevance**: Average of text similarity and tag overlap scores (0–1).
+- **Relevance**: Average of keyword similarity (trigram) and tag overlap scores (0–1).
 - **Importance**: LLM-scored 1–10 using a dedicated low-temperature call with Clude-specific context, normalized to 0–1. Falls back to rule-based scoring on failure.
-- **Decay factor**: Multiplicative gate — 5% daily reduction for unaccessed memories. Accessed memories reset to 1.0.
+- **Vector similarity** (weight 4.0): Cosine similarity via pgvector HNSW indexes. Searches both memory-level and fragment-level embeddings, taking the best match. Gracefully skipped when no embedding provider is configured.
+- **Decay factor**: Type-specific multiplicative gate — `episodic: 0.93`, `semantic: 0.98`, `procedural: 0.97`, `self_model: 0.99` per day for unaccessed memories. Accessed memories reset to 1.0.
+
+**Granular vector decomposition**: Each memory is split into semantic fragments (summary, content chunks up to 2000 chars, tag context) with per-fragment embeddings stored in `memory_fragments`. Vector search matches against precise sub-memory content rather than whole blobs, then deduplicates to parent memory IDs.
+
+**Structured concept ontology**: Memories are auto-classified into 12 controlled vocabulary labels (`market_analysis`, `holder_behavior`, `self_reflection`, `community_interaction`, `price_action`, `whale_activity`, `technical_knowledge`, `emotional_state`, `opinion`, `relationship`, `pattern_recognition`, `meta_cognition`) via keyword heuristics in `inferConcepts()`. Concepts are GIN-indexed for fast filtering and aggregation.
+
+**Progressive disclosure**: `recallMemorySummaries()` returns lightweight ~50-token previews (id, summary, type, importance, concepts) for token-efficient scanning. `hydrateMemories()` fetches full content for selected IDs. Dream cycles use this to stay within token budgets.
+
+**Pluggable embedding system**: Supports Voyage AI (`voyage-3-lite`) and OpenAI (`text-embedding-3-small`) via plain `fetch()` — no SDK dependencies. Configured via `EMBEDDING_PROVIDER` env var. Fully optional; all retrieval gracefully falls back to keyword + tag scoring when disabled.
 
 **Dream cycle** runs three phases, triggered either by a 6-hour cron or by accumulated importance exceeding a threshold (event-driven reflection, min 30-minute interval):
 
@@ -118,7 +129,8 @@ Supabase PostgreSQL. Tables:
 
 | Table | Purpose |
 |-------|---------|
-| `memories` | Core memory records with decay, importance, tags |
+| `memories` | Core memory records with decay, importance, tags, concepts, vector embeddings |
+| `memory_fragments` | Granular vector decomposition — per-fragment embeddings for precision retrieval |
 | `dream_logs` | Dream cycle session outputs |
 | `token_events` | On-chain activity (buys, sells, transfers) |
 | `price_snapshots` | Price history for mood calculation |
@@ -127,6 +139,10 @@ Supabase PostgreSQL. Tables:
 | `opinion_commits` | On-chain opinion records with Solana signatures |
 | `rate_limits` | Rate limit tracking per key/window |
 | `agent_keys` | External AI agent registration and tiers |
+
+**PostgreSQL extensions**: `pgvector` (HNSW-indexed semantic similarity search), `pg_trgm` (fuzzy trigram text matching).
+
+**RPC functions**: `match_memories()` (memory-level vector search with metadata filtering), `match_memory_fragments()` (fragment-level search with deduplication to parent memory).
 
 ---
 
@@ -168,6 +184,12 @@ CLUUDE_TOKEN_MINT       # empty = no price polling
 HELIUS_WEBHOOK_SECRET   # empty = no webhook verification
 ALLIUM_API_KEY          # empty = no market monitor
 PORT                    # default: 3000
+
+# Embedding system (optional — falls back to keyword scoring)
+EMBEDDING_PROVIDER      # 'voyage' or 'openai' (empty = disabled)
+EMBEDDING_API_KEY       # API key for chosen provider
+EMBEDDING_MODEL         # default: voyage-3-lite / text-embedding-3-small
+EMBEDDING_DIMENSIONS    # default: 1024
 ```
 
 ### Run
@@ -203,4 +225,4 @@ railway up
 
 ## Stack
 
-TypeScript, Node.js, Express, Supabase, Solana Web3.js, Helius SDK, Twitter API v2, Anthropic Claude, Pino logging, node-cron.
+TypeScript, Node.js, Express, Supabase (PostgreSQL + pgvector), Solana Web3.js, Helius SDK, Twitter API v2, Anthropic Claude, Pino logging, node-cron.
