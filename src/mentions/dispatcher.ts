@@ -56,7 +56,7 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   } catch (err) {
     log.error({ tweetId, err }, 'Failed to dispatch mention');
     // Mark as processed to avoid retrying bad tweets forever
-    await replyAndMark(tweetId, '', 'error').catch(() => {});
+    await replyAndMark(tweetId, '', 'error').catch(markErr => log.warn({ markErr }, 'Failed to mark errored tweet'));
   }
 }
 

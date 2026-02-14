@@ -130,7 +130,7 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
     });
 
     // Commit memory to Solana (fire-and-forget)
-    commitMemoryToChain(data.id, opts).catch(() => {});
+    commitMemoryToChain(data.id, opts).catch(err => log.warn({ err }, 'On-chain memory commit failed'));
 
     return data.id;
   } catch (err) {
@@ -212,7 +212,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     // Update access counts in parallel (skip for internal processing like dream cycles)
     if (opts.trackAccess !== false) {
       const ids = results.map((m: Memory) => m.id);
-      updateMemoryAccess(ids).catch(() => {});
+      updateMemoryAccess(ids).catch(err => log.warn({ err }, 'Memory access tracking failed'));
     }
 
     log.debug({

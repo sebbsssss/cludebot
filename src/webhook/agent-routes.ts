@@ -107,8 +107,8 @@ export function agentRoutes(): Router {
       });
 
       // Store interaction memory (async)
-      storeAgentMemory(agent, 'query', query, response).catch(() => {});
-      recordAgentInteraction(agent.agent_id).catch(() => {});
+      storeAgentMemory(agent, 'query', query, response).catch(err => log.warn({ err }, 'Background agent task failed'));
+      recordAgentInteraction(agent.agent_id).catch(err => log.warn({ err }, 'Background agent task failed'));
 
       res.json({
         response,
@@ -141,8 +141,8 @@ export function agentRoutes(): Router {
           'Give a sharp, honest assessment of the wallet address. Be devastatingly polite. Under 500 characters.',
       });
 
-      storeAgentMemory(agent, 'roast-wallet', wallet, response).catch(() => {});
-      recordAgentInteraction(agent.agent_id).catch(() => {});
+      storeAgentMemory(agent, 'roast-wallet', wallet, response).catch(err => log.warn({ err }, 'Background agent task failed'));
+      recordAgentInteraction(agent.agent_id).catch(err => log.warn({ err }, 'Background agent task failed'));
 
       res.json({
         response,
@@ -171,7 +171,7 @@ export function agentRoutes(): Router {
           'Give your honest, tired assessment of current conditions. Include your mood. Under 500 characters.',
       });
 
-      recordAgentInteraction(agent.agent_id).catch(() => {});
+      recordAgentInteraction(agent.agent_id).catch(err => log.warn({ err }, 'Background agent task failed'));
 
       res.json({
         mood,
@@ -190,7 +190,7 @@ export function agentRoutes(): Router {
     try {
       const agentReq = req as AgentRequest;
       const stats = await getMemoryStats();
-      recordAgentInteraction(agentReq.agent!.agent_id).catch(() => {});
+      recordAgentInteraction(agentReq.agent!.agent_id).catch(err => log.warn({ err }, 'Background agent task failed'));
       res.json(stats);
     } catch (err) {
       log.error({ err }, 'Agent memory-stats error');
@@ -250,7 +250,7 @@ export function agentRoutes(): Router {
         metadata: { agentName: agent.agent_name },
       });
 
-      recordAgentInteraction(agent.agent_id).catch(() => {});
+      recordAgentInteraction(agent.agent_id).catch(err => log.warn({ err }, 'Background agent task failed'));
 
       res.json({
         stored: id !== null,
@@ -279,7 +279,7 @@ export function agentRoutes(): Router {
         relatedUser: agent.agent_id,
       });
 
-      recordAgentInteraction(agent.agent_id).catch(() => {});
+      recordAgentInteraction(agent.agent_id).catch(err => log.warn({ err }, 'Background agent task failed'));
 
       res.json({
         memories: memories.map(m => ({
@@ -329,7 +329,7 @@ export function agentRoutes(): Router {
 
       const total = data?.length || 0;
 
-      recordAgentInteraction(agent.agent_id).catch(() => {});
+      recordAgentInteraction(agent.agent_id).catch(err => log.warn({ err }, 'Background agent task failed'));
 
       res.json({
         total,

@@ -48,63 +48,6 @@ export interface AlliumSolStats {
   }>;
 }
 
-// DexScreener Price API
-export interface DexScreenerResponse {
-  pairs: Array<{
-    chainId: string;
-    dexId: string;
-    pairAddress: string;
-    baseToken: { address: string; name: string; symbol: string };
-    quoteToken: { address: string; name: string; symbol: string };
-    priceUsd: string;
-    volume: { h24: number; h1?: number };
-    priceChange: { h1: number; h24: number };
-    liquidity: { usd: number };
-  }> | null;
-}
-
-// Basescan API — transaction list
-export interface BasescanTxResponse {
-  status: string;
-  message: string;
-  result: Array<{
-    blockNumber: string;
-    timeStamp: string;
-    hash: string;
-    from: string;
-    to: string;
-    value: string;
-    gas: string;
-    gasUsed: string;
-    gasPrice: string;
-    isError: string;
-    methodId: string;
-    functionName: string;
-    input: string;
-  }>;
-}
-
-// Basescan API — ERC-20 token transfer events
-export interface BasescanTokenTxResponse {
-  status: string;
-  message: string;
-  result: Array<{
-    blockNumber: string;
-    timeStamp: string;
-    hash: string;
-    from: string;
-    to: string;
-    value: string;
-    tokenName: string;
-    tokenSymbol: string;
-    tokenDecimal: string;
-    contractAddress: string;
-    gas: string;
-    gasUsed: string;
-    gasPrice: string;
-  }>;
-}
-
 // Allium API responses
 export interface AlliumTokenData {
   info?: { symbol?: string; name?: string };
@@ -136,7 +79,7 @@ export interface TokenEventRow {
   event_type: string;
   wallet_address: string;
   amount: number;
-  sol_value: number; // stores ETH value now, column name kept for DB compat
+  sol_value: number;
   timestamp: string;
   metadata: Record<string, unknown> | string;
   processed: boolean;
