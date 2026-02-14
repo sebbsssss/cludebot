@@ -60,6 +60,12 @@ export const config = {
   features: {
     showTxLinksInTweets: optional('SHOW_TX_LINKS_IN_TWEETS', 'false') === 'true',
   },
+  embedding: {
+    provider: optional('EMBEDDING_PROVIDER', '') as '' | 'voyage' | 'openai',
+    apiKey: optional('EMBEDDING_API_KEY', ''),
+    model: optional('EMBEDDING_MODEL', ''),
+    dimensions: parseInt(optional('EMBEDDING_DIMENSIONS', '1024'), 10),
+  },
   activity: {
     minSolValue: parseFloat(optional('ACTIVITY_MIN_SOL', '5.0')),
     minEthValue: parseFloat(optional('ACTIVITY_MIN_ETH', '0.1')),

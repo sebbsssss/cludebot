@@ -3,7 +3,6 @@ import { createChildLogger } from './logger';
 import {
   clamp,
   timeAgo,
-  MEMORY_DECAY_RATE,
   MEMORY_MIN_DECAY,
   MEMORY_MAX_CONTENT_LENGTH,
   MEMORY_MAX_SUMMARY_LENGTH,
@@ -11,9 +10,13 @@ import {
   RETRIEVAL_WEIGHT_RECENCY,
   RETRIEVAL_WEIGHT_RELEVANCE,
   RETRIEVAL_WEIGHT_IMPORTANCE,
+  RETRIEVAL_WEIGHT_VECTOR,
+  DECAY_RATES,
+  EMBEDDING_FRAGMENT_MAX_LENGTH,
 } from '../utils';
 import { generateImportanceScore } from './claude-client';
 import { writeMemo } from './solana-client';
+import { generateEmbedding, generateEmbeddings, isEmbeddingEnabled } from './embeddings';
 import { eventBus } from '../events/event-bus';
 import { createHash } from 'crypto';
 
@@ -28,6 +31,13 @@ const log = createChildLogger('memory');
 // - CoALA cognitive architecture (episodic/semantic/procedural)
 // - Memp (procedural memory that improves from trajectories)
 // - Anthropic's introspective awareness research
+//
+// Enhancements beyond Generative Agents:
+// - Hybrid retrieval: vector similarity + keyword + tag scoring
+// - Granular vector decomposition: per-fragment embeddings for precision
+// - Type-specific decay: episodic fades fast, identity persists
+// - Structured concept ontology: controlled vocabulary for cross-cutting knowledge
+// - Progressive disclosure: lightweight summaries → full hydration on demand
 //
 // 4 memory types:
 //   episodic    — individual interaction records (conversations, events)
@@ -44,6 +54,7 @@ export interface Memory {
   content: string;
   summary: string;
   tags: string[];
+  concepts: string[];
   emotional_valence: number;
   importance: number;
   access_count: number;
@@ -59,11 +70,25 @@ export interface Memory {
   solana_signature: string | null;
 }
 
+/** Lightweight memory summary for progressive disclosure (no content field). */
+export interface MemorySummary {
+  id: number;
+  memory_type: MemoryType;
+  summary: string;
+  tags: string[];
+  concepts: string[];
+  importance: number;
+  decay_factor: number;
+  created_at: string;
+  source: string;
+}
+
 export interface StoreMemoryOptions {
   type: MemoryType;
   content: string;
   summary: string;
   tags?: string[];
+  concepts?: string[];
   emotionalValence?: number;
   importance?: number;
   source: string;
@@ -84,12 +109,57 @@ export interface RecallOptions {
   minDecay?: number;
   /** Skip access tracking (prevents decay reset). Use for internal processing like dream cycles. */
   trackAccess?: boolean;
+  /** Pre-computed vector similarity scores from hybrid search (internal use). */
+  _vectorScores?: Map<number, number>;
+}
+
+// ---- CONCEPT ONTOLOGY ---- //
+
+/**
+ * Auto-classify memories into structured concepts using keyword heuristics.
+ * Provides consistent cross-cutting knowledge labels without LLM cost.
+ * Concepts are additive to freeform tags, not a replacement.
+ */
+export function inferConcepts(summary: string, source: string, tags: string[]): string[] {
+  const concepts: string[] = [];
+  const lower = summary.toLowerCase();
+  const tagSet = new Set(tags.map(t => t.toLowerCase()));
+
+  if (source === 'market' || tagSet.has('price') || /price|pump|dump|ath|market|volume/.test(lower))
+    concepts.push('market_event');
+  if (/whale|holder|seller|buyer|exit|accumula/.test(lower))
+    concepts.push('holder_behavior');
+  if (source === 'reflection' || source === 'emergence' || /myself|i am|i feel|identity|who i/.test(lower))
+    concepts.push('self_insight');
+  if (source === 'mention' || /tweet|reply|said|asked|mentioned|dm/.test(lower))
+    concepts.push('social_interaction');
+  if (/pattern|trend|recurring|always|usually|community/.test(lower))
+    concepts.push('community_pattern');
+  if (/token|sol|mint|swap|transfer|liquidity|staking/.test(lower))
+    concepts.push('token_economics');
+  if (/mood|sentiment|feel|vibe|energy|atmosphere/.test(lower))
+    concepts.push('sentiment_shift');
+  if (tagSet.has('first_interaction') || /returning|regular|again|came back/.test(lower))
+    concepts.push('recurring_user');
+  if (/whale|large|massive|huge|big (buy|sell)/.test(lower))
+    concepts.push('whale_activity');
+  if (/price|chart|candle|volume|mcap|cap/.test(lower))
+    concepts.push('price_action');
+  if (/engagement|likes|retweet|viral|reach|impressions/.test(lower))
+    concepts.push('engagement_pattern');
+  if (source === 'emergence' || /becoming|evolving|changed|grew|identity/.test(lower))
+    concepts.push('identity_evolution');
+
+  return [...new Set(concepts)];
 }
 
 // ---- STORE ---- //
 
 export async function storeMemory(opts: StoreMemoryOptions): Promise<number | null> {
   const db = getDb();
+
+  // Auto-classify concepts if not explicitly provided
+  const concepts = opts.concepts || inferConcepts(opts.summary, opts.source, opts.tags || []);
 
   try {
     const { data, error } = await db
@@ -99,6 +169,7 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
         content: opts.content.slice(0, MEMORY_MAX_CONTENT_LENGTH),
         summary: opts.summary.slice(0, MEMORY_MAX_SUMMARY_LENGTH),
         tags: opts.tags || [],
+        concepts,
         emotional_valence: clamp(opts.emotionalValence ?? 0, -1, 1),
         importance: clamp(opts.importance ?? 0.5, 0, 1),
         source: opts.source,
@@ -121,6 +192,7 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
       type: opts.type,
       summary: opts.summary.slice(0, 60),
       importance: opts.importance,
+      concepts,
     }, 'Memory stored');
 
     // Notify reflection trigger system (Park et al. 2023 — event-driven reflection)
@@ -131,6 +203,9 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
 
     // Commit memory to Solana (fire-and-forget)
     commitMemoryToChain(data.id, opts).catch(err => log.warn({ err }, 'On-chain memory commit failed'));
+
+    // Generate embeddings and store fragments (fire-and-forget)
+    embedMemory(data.id, opts).catch(err => log.warn({ err }, 'Embedding generation failed'));
 
     return data.id;
   } catch (err) {
@@ -160,23 +235,153 @@ async function commitMemoryToChain(memoryId: number, opts: StoreMemoryOptions): 
   log.debug({ memoryId, signature: signature.slice(0, 16) }, 'Memory committed on-chain');
 }
 
+// ---- EMBEDDING & GRANULAR DECOMPOSITION ---- //
+
+/**
+ * Generate vector embedding for a memory and decompose into semantic fragments.
+ * Each fragment gets its own embedding for precise sub-memory retrieval.
+ *
+ * Fragment types:
+ *   summary     — the memory's summary (always stored)
+ *   content_chunk — content split at natural boundaries
+ *   tag_context — tags + concepts as a descriptive sentence
+ */
+async function embedMemory(memoryId: number, opts: StoreMemoryOptions): Promise<void> {
+  if (!isEmbeddingEnabled()) return;
+
+  const db = getDb();
+
+  // Build fragment texts for granular decomposition
+  const fragments: { type: string; text: string }[] = [];
+
+  // Fragment 1: Summary (always)
+  fragments.push({ type: 'summary', text: opts.summary });
+
+  // Fragment 2+: Content chunks (split at sentence/paragraph boundaries)
+  const content = opts.content.slice(0, MEMORY_MAX_CONTENT_LENGTH);
+  if (content.length > EMBEDDING_FRAGMENT_MAX_LENGTH) {
+    const sentences = content.match(/[^.!?\n]+[.!?\n]+/g) || [content];
+    let chunk = '';
+    for (const sentence of sentences) {
+      if (chunk.length + sentence.length > EMBEDDING_FRAGMENT_MAX_LENGTH && chunk.length > 0) {
+        fragments.push({ type: 'content_chunk', text: chunk.trim() });
+        chunk = '';
+      }
+      chunk += sentence;
+    }
+    if (chunk.trim()) fragments.push({ type: 'content_chunk', text: chunk.trim() });
+  } else {
+    fragments.push({ type: 'content_chunk', text: content });
+  }
+
+  // Fragment 3: Tag/concept context as natural language
+  const allLabels = [...(opts.tags || []), ...(opts.concepts || inferConcepts(opts.summary, opts.source, opts.tags || []))];
+  if (allLabels.length > 0) {
+    fragments.push({ type: 'tag_context', text: `Context: ${allLabels.join(', ')}. ${opts.summary}` });
+  }
+
+  // Batch-generate all embeddings
+  const embeddings = await generateEmbeddings(fragments.map(f => f.text));
+
+  // Store primary embedding on the memory itself (summary embedding)
+  const summaryEmbedding = embeddings[0];
+  if (summaryEmbedding) {
+    await db
+      .from('memories')
+      .update({ embedding: JSON.stringify(summaryEmbedding) })
+      .eq('id', memoryId);
+  }
+
+  // Store all fragments with their embeddings
+  const fragmentRows = fragments.map((f, i) => ({
+    memory_id: memoryId,
+    fragment_type: f.type,
+    content: f.text.slice(0, EMBEDDING_FRAGMENT_MAX_LENGTH),
+    embedding: embeddings[i] ? JSON.stringify(embeddings[i]) : null,
+  })).filter(r => r.embedding !== null);
+
+  if (fragmentRows.length > 0) {
+    const { error } = await db.from('memory_fragments').insert(fragmentRows);
+    if (error) {
+      log.warn({ error: error.message, memoryId }, 'Failed to store memory fragments');
+    }
+  }
+
+  log.debug({ memoryId, fragments: fragmentRows.length }, 'Memory embedded with fragments');
+}
+
 // ---- RECALL ---- //
 
-// Retrieves memories ranked by additive composite score (Park et al. 2023):
-//   score = (w_recency * recency + w_relevance * relevance + w_importance * importance) * decay_factor
+/**
+ * Hybrid retrieval combining vector similarity, keyword matching, and structured scoring.
+ *
+ * When embeddings are available:
+ *   1. Generate query embedding
+ *   2. Run vector search (memory-level + fragment-level) for semantic candidates
+ *   3. Merge with metadata-filtered candidates from Supabase
+ *   4. Score all candidates with enhanced composite formula
+ *
+ * When embeddings are unavailable:
+ *   Falls back to existing keyword + tag + importance scoring.
+ *
+ * score = (w_recency * recency + w_relevance * relevance + w_importance * importance
+ *          + w_vector * vector_similarity) * decay_factor
+ */
 export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
   const db = getDb();
   const limit = opts.limit || 5;
   const minDecay = opts.minDecay ?? 0.1;
 
   try {
+    // Phase 1: Vector search for semantic candidates (if available)
+    let vectorScores = opts._vectorScores || new Map<number, number>();
+
+    if (opts.query && isEmbeddingEnabled() && !opts._vectorScores) {
+      const queryEmbedding = await generateEmbedding(opts.query);
+      if (queryEmbedding) {
+        // Search both memory-level and fragment-level embeddings
+        const [memoryMatches, fragmentMatches] = await Promise.all([
+          db.rpc('match_memories', {
+            query_embedding: JSON.stringify(queryEmbedding),
+            match_threshold: 0.3,
+            match_count: limit * 3,
+            filter_types: opts.memoryTypes || null,
+            filter_user: opts.relatedUser || null,
+            min_decay: minDecay,
+          }).then(r => r.data || []),
+          db.rpc('match_memory_fragments', {
+            query_embedding: JSON.stringify(queryEmbedding),
+            match_threshold: 0.3,
+            match_count: limit * 3,
+          }).then(r => r.data || []),
+        ]).catch(() => [[], []] as [any[], any[]]);
+
+        // Merge: take highest similarity per memory_id across both sources
+        for (const m of memoryMatches) {
+          const current = vectorScores.get(m.id) || 0;
+          vectorScores.set(m.id, Math.max(current, m.similarity));
+        }
+        for (const f of fragmentMatches) {
+          const current = vectorScores.get(f.memory_id) || 0;
+          vectorScores.set(f.memory_id, Math.max(current, f.max_similarity));
+        }
+
+        log.debug({
+          memoryHits: memoryMatches.length,
+          fragmentHits: fragmentMatches.length,
+          uniqueMemories: vectorScores.size,
+        }, 'Vector search completed');
+      }
+    }
+
+    // Phase 2: Metadata-filtered candidates from Supabase
     let query = db
       .from('memories')
       .select('*')
       .gte('decay_factor', minDecay)
       .order('importance', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(limit * 3); // Over-fetch then re-rank
+      .limit(limit * 3);
 
     if (opts.memoryTypes && opts.memoryTypes.length > 0) {
       query = query.in('memory_type', opts.memoryTypes);
@@ -198,12 +403,30 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
       return [];
     }
 
-    if (!data || data.length === 0) return [];
+    // Phase 3: Merge vector candidates with metadata candidates
+    let candidates: Memory[] = data || [];
 
-    // Score and rank
-    const scored = data.map((mem: Memory) => ({
+    // If vector search found memories not in the metadata set, fetch them
+    if (vectorScores.size > 0) {
+      const metadataIds = new Set(candidates.map(m => m.id));
+      const missingIds = [...vectorScores.keys()].filter(id => !metadataIds.has(id));
+
+      if (missingIds.length > 0) {
+        const { data: vectorOnly } = await db
+          .from('memories')
+          .select('*')
+          .in('id', missingIds);
+        if (vectorOnly) candidates = [...candidates, ...vectorOnly];
+      }
+    }
+
+    if (candidates.length === 0) return [];
+
+    // Phase 4: Score and rank with enhanced composite formula
+    const scoredOpts = vectorScores.size > 0 ? { ...opts, _vectorScores: vectorScores } : opts;
+    const scored = candidates.map((mem: Memory) => ({
       ...mem,
-      _score: scoreMemory(mem, opts),
+      _score: scoreMemory(mem, scoredOpts),
     }));
 
     scored.sort((a: { _score: number }, b: { _score: number }) => b._score - a._score);
@@ -219,6 +442,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
       recalled: results.length,
       topScore: results[0]?._score?.toFixed(3),
       query: opts.query?.slice(0, 40),
+      vectorAssisted: vectorScores.size > 0,
     }, 'Memories recalled');
 
     return results;
@@ -229,14 +453,15 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
 }
 
 /**
- * Additive scoring function (Park et al. 2023, Generative Agents).
+ * Enhanced scoring function with optional vector similarity component.
  *
- * score = (w_recency * recency + w_relevance * relevance + w_importance * importance) * decay_factor
+ * When vector similarity is available:
+ *   score = (w_recency * recency + w_relevance * keyword_relevance
+ *            + w_importance * importance + w_vector * vector_sim) * decay
  *
- * Recency: exponential decay from last access time (0.995^hours). Access resets the clock.
- * Relevance: average of keyword overlap and tag overlap (both 0-1).
- * Importance: direct use of memory.importance (0-1).
- * Decay: multiplicative gate — decayed memories are suppressed regardless of other factors.
+ * When not available (graceful fallback):
+ *   score = (w_recency * recency + w_relevance * keyword_relevance
+ *            + w_importance * importance) * decay
  */
 export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   const now = Date.now();
@@ -250,27 +475,115 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   if (opts.query) {
     const queryWords = opts.query.toLowerCase().split(/\s+/);
     const summaryLower = mem.summary.toLowerCase();
-    const matches = queryWords.filter(w => w.length > 2 && summaryLower.includes(w)).length;
+    const contentLower = mem.content?.toLowerCase() || '';
+    // Check both summary and content for keyword matches
+    const matches = queryWords.filter(w =>
+      w.length > 2 && (summaryLower.includes(w) || contentLower.includes(w))
+    ).length;
     textScore = 0.3 + 0.7 * Math.min(matches / Math.max(queryWords.length, 1), 1);
   }
 
-  // Tag overlap score
+  // Tag + concept overlap score
   let tagScore = 0.5;
-  if (opts.tags && opts.tags.length > 0 && mem.tags) {
-    const overlap = mem.tags.filter(t => opts.tags!.includes(t)).length;
-    tagScore = 0.5 + 0.5 * (overlap / opts.tags.length);
+  if (opts.tags && opts.tags.length > 0) {
+    const memLabels = [...(mem.tags || []), ...(mem.concepts || [])];
+    const overlap = memLabels.filter(t => opts.tags!.includes(t)).length;
+    tagScore = 0.5 + 0.5 * Math.min(overlap / opts.tags.length, 1);
   }
 
   // Relevance: average of text and tag similarity
   const relevance = (textScore + tagScore) / 2;
 
-  // Additive formula with paper weights, gated by decay
-  const rawScore =
+  // Vector similarity component (0 if not available)
+  const vectorSim = opts._vectorScores?.get(mem.id) || 0;
+
+  // Additive formula, gated by decay
+  let rawScore =
     RETRIEVAL_WEIGHT_RECENCY * recency +
     RETRIEVAL_WEIGHT_RELEVANCE * relevance +
     RETRIEVAL_WEIGHT_IMPORTANCE * mem.importance;
 
+  // Add vector component when available (highest weight — dominates when present)
+  if (vectorSim > 0) {
+    rawScore += RETRIEVAL_WEIGHT_VECTOR * vectorSim;
+  }
+
   return rawScore * mem.decay_factor;
+}
+
+// ---- PROGRESSIVE DISCLOSURE ---- //
+
+/**
+ * Lightweight recall that returns only summaries (~50 tokens each).
+ * Use for dream cycle focal point generation, overview scans, and
+ * anywhere full content isn't needed. 10x more token-efficient than full recall.
+ *
+ * Call hydrateMemories() to fetch full content for selected IDs.
+ */
+export async function recallMemorySummaries(opts: RecallOptions): Promise<MemorySummary[]> {
+  const db = getDb();
+  const limit = opts.limit || 10;
+  const minDecay = opts.minDecay ?? 0.1;
+
+  try {
+    let query = db
+      .from('memories')
+      .select('id, memory_type, summary, tags, concepts, importance, decay_factor, created_at, source')
+      .gte('decay_factor', minDecay)
+      .order('importance', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (opts.memoryTypes && opts.memoryTypes.length > 0) {
+      query = query.in('memory_type', opts.memoryTypes);
+    }
+    if (opts.relatedUser) {
+      query = query.eq('related_user', opts.relatedUser);
+    }
+    if (opts.minImportance) {
+      query = query.gte('importance', opts.minImportance);
+    }
+    if (opts.tags && opts.tags.length > 0) {
+      query = query.overlaps('tags', opts.tags);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      log.error({ error: error.message }, 'Memory summary recall failed');
+      return [];
+    }
+
+    return (data || []) as MemorySummary[];
+  } catch (err) {
+    log.error({ err }, 'Memory summary recall failed');
+    return [];
+  }
+}
+
+/**
+ * Fetch full memory content for specific IDs (second stage of progressive disclosure).
+ * Use after recallMemorySummaries() to hydrate only the memories you actually need.
+ */
+export async function hydrateMemories(ids: number[]): Promise<Memory[]> {
+  if (ids.length === 0) return [];
+  const db = getDb();
+
+  try {
+    const { data, error } = await db
+      .from('memories')
+      .select('*')
+      .in('id', ids);
+
+    if (error) {
+      log.error({ error: error.message }, 'Memory hydration failed');
+      return [];
+    }
+
+    return (data || []) as Memory[];
+  } catch (err) {
+    log.error({ err }, 'Memory hydration failed');
+    return [];
+  }
 }
 
 // ---- ACCESS TRACKING ---- //
@@ -304,6 +617,11 @@ async function updateMemoryAccess(ids: number[]): Promise<void> {
 
 // ---- DECAY ---- //
 
+/**
+ * Apply type-specific memory decay.
+ * Episodic memories fade fastest (0.93/day), self-model slowest (0.99/day).
+ * This mirrors human cognition: events are forgotten but identity persists.
+ */
 export async function decayMemories(): Promise<number> {
   const db = getDb();
 
@@ -312,7 +630,7 @@ export async function decayMemories(): Promise<number> {
 
     const { data, error } = await db
       .from('memories')
-      .select('id, decay_factor')
+      .select('id, memory_type, decay_factor')
       .lt('last_accessed', cutoff)
       .gt('decay_factor', MEMORY_MIN_DECAY);
 
@@ -320,7 +638,8 @@ export async function decayMemories(): Promise<number> {
 
     let decayed = 0;
     for (const mem of data) {
-      const newDecay = Math.max(mem.decay_factor * MEMORY_DECAY_RATE, MEMORY_MIN_DECAY);
+      const rate = DECAY_RATES[mem.memory_type] ?? 0.95;
+      const newDecay = Math.max(mem.decay_factor * rate, MEMORY_MIN_DECAY);
       await db
         .from('memories')
         .update({ decay_factor: newDecay })
@@ -329,7 +648,7 @@ export async function decayMemories(): Promise<number> {
     }
 
     if (decayed > 0) {
-      log.info({ decayed }, 'Memory decay applied');
+      log.info({ decayed }, 'Type-specific memory decay applied');
     }
 
     return decayed;
@@ -351,6 +670,8 @@ export interface MemoryStats {
   totalDreamSessions: number;
   uniqueUsers: number;
   topTags: { tag: string; count: number }[];
+  topConcepts: { concept: string; count: number }[];
+  embeddedCount: number;
 }
 
 export async function getMemoryStats(): Promise<MemoryStats> {
@@ -365,12 +686,14 @@ export async function getMemoryStats(): Promise<MemoryStats> {
     totalDreamSessions: 0,
     uniqueUsers: 0,
     topTags: [],
+    topConcepts: [],
+    embeddedCount: 0,
   };
 
   try {
     const { data: memories } = await db
       .from('memories')
-      .select('memory_type, importance, decay_factor, created_at, related_user, tags')
+      .select('memory_type, importance, decay_factor, created_at, related_user, tags, concepts, embedding')
       .gt('decay_factor', MEMORY_MIN_DECAY);
 
     if (memories && memories.length > 0) {
@@ -379,6 +702,7 @@ export async function getMemoryStats(): Promise<MemoryStats> {
       let impSum = 0;
       let decaySum = 0;
       const tagCounts: Record<string, number> = {};
+      const conceptCounts: Record<string, number> = {};
       const users = new Set<string>();
 
       for (const m of memories) {
@@ -387,9 +711,15 @@ export async function getMemoryStats(): Promise<MemoryStats> {
         impSum += m.importance;
         decaySum += m.decay_factor;
         if (m.related_user) users.add(m.related_user);
+        if (m.embedding) stats.embeddedCount++;
         if (m.tags) {
           for (const tag of m.tags) {
             tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+          }
+        }
+        if (m.concepts) {
+          for (const concept of m.concepts) {
+            conceptCounts[concept] = (conceptCounts[concept] || 0) + 1;
           }
         }
       }
@@ -402,6 +732,11 @@ export async function getMemoryStats(): Promise<MemoryStats> {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([tag, count]) => ({ tag, count }));
+
+      stats.topConcepts = Object.entries(conceptCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([concept, count]) => ({ concept, count }));
 
       const sorted = memories.map(m => m.created_at).sort();
       stats.oldestMemory = sorted[0] || null;
