@@ -63,6 +63,9 @@ function verifyHeliusWebhook(req: express.Request, res: express.Response, next: 
 export function createServer(): express.Application {
   const app = express();
 
+  // Trust reverse proxy (Railway, etc.) for correct IP in rate limiting
+  app.set('trust proxy', 1);
+
   app.use(express.json());
 
   // Health check with DB connectivity probe
