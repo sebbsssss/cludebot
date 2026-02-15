@@ -11,9 +11,14 @@ import {
   RETRIEVAL_WEIGHT_RELEVANCE,
   RETRIEVAL_WEIGHT_IMPORTANCE,
   RETRIEVAL_WEIGHT_VECTOR,
+  RETRIEVAL_WEIGHT_GRAPH,
   DECAY_RATES,
   EMBEDDING_FRAGMENT_MAX_LENGTH,
+  LINK_SIMILARITY_THRESHOLD,
+  MAX_AUTO_LINKS,
+  LINK_CO_RETRIEVAL_BOOST,
 } from '../utils';
+import type { MemoryLinkType } from '../utils/constants';
 import { generateImportanceScore } from './claude-client';
 import { writeMemo } from './solana-client';
 import { generateEmbedding, generateEmbeddings, isEmbeddingEnabled } from './embeddings';
@@ -206,6 +211,9 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
 
     // Generate embeddings and store fragments (fire-and-forget)
     embedMemory(data.id, opts).catch(err => log.warn({ err }, 'Embedding generation failed'));
+
+    // Auto-link to related memories (fire-and-forget, runs after embedding is available)
+    autoLinkMemory(data.id, opts).catch(err => log.warn({ err }, 'Auto-linking failed'));
 
     return data.id;
   } catch (err) {
@@ -436,12 +444,68 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     }));
 
     scored.sort((a: { _score: number }, b: { _score: number }) => b._score - a._score);
-    const results = scored.slice(0, limit);
+    let results = scored.slice(0, limit);
+
+    // Phase 5: Graph expansion — pull in linked memories not already in results
+    if (results.length > 0) {
+      try {
+        const seedIds = results.map((m: Memory) => m.id);
+        const { data: linked } = await db.rpc('get_linked_memories', {
+          seed_ids: seedIds,
+          min_strength: 0.2,
+          max_results: limit,
+        });
+
+        if (linked && linked.length > 0) {
+          const resultIdSet = new Set(seedIds);
+          const graphCandidateIds = linked
+            .filter((l: { memory_id: number }) => !resultIdSet.has(l.memory_id))
+            .map((l: { memory_id: number }) => l.memory_id);
+
+          if (graphCandidateIds.length > 0) {
+            // Fetch the linked memories
+            const { data: graphMemories } = await db
+              .from('memories')
+              .select('*')
+              .in('id', graphCandidateIds);
+
+            if (graphMemories && graphMemories.length > 0) {
+              // Build link strength map
+              const linkStrengthMap = new Map<number, number>();
+              for (const l of linked) {
+                const current = linkStrengthMap.get(l.memory_id) || 0;
+                linkStrengthMap.set(l.memory_id, Math.max(current, l.strength));
+              }
+
+              // Score graph-expanded memories with link boost
+              const graphScored = (graphMemories as Memory[]).map(mem => ({
+                ...mem,
+                _score: scoreMemory(mem, scoredOpts) + RETRIEVAL_WEIGHT_GRAPH * (linkStrengthMap.get(mem.id) || 0),
+              }));
+
+              // Merge, re-sort, and trim
+              results = [...results, ...graphScored]
+                .sort((a: { _score: number }, b: { _score: number }) => b._score - a._score)
+                .slice(0, limit);
+
+              log.debug({
+                graphExpanded: graphMemories.length,
+                linkedTotal: linked.length,
+              }, 'Graph expansion applied');
+            }
+          }
+        }
+      } catch (err) {
+        log.debug({ err }, 'Graph expansion skipped (RPC unavailable)');
+      }
+    }
 
     // Update access counts in parallel (skip for internal processing like dream cycles)
     if (opts.trackAccess !== false) {
       const ids = results.map((m: Memory) => m.id);
       updateMemoryAccess(ids).catch(err => log.warn({ err }, 'Memory access tracking failed'));
+      // Hebbian: reinforce links between co-retrieved memories
+      reinforceCoRetrievedLinks(ids).catch(err => log.debug({ err }, 'Link reinforcement failed'));
     }
 
     log.debug({
@@ -606,6 +670,178 @@ async function updateMemoryAccess(ids: number[]): Promise<void> {
   const { error } = await db.rpc('batch_boost_memory_access', { memory_ids: ids });
   if (error) {
     log.warn({ error: error.message, ids }, 'Batch memory access update failed');
+  }
+}
+
+// ---- ASSOCIATION GRAPH ---- //
+
+/**
+ * Create a typed, weighted link between two memories.
+ * Idempotent — upserts on (source_id, target_id, link_type).
+ */
+export async function createMemoryLink(
+  sourceId: number,
+  targetId: number,
+  linkType: MemoryLinkType,
+  strength = 0.5
+): Promise<void> {
+  if (sourceId === targetId) return;
+  const db = getDb();
+
+  const { error } = await db
+    .from('memory_links')
+    .upsert({
+      source_id: sourceId,
+      target_id: targetId,
+      link_type: linkType,
+      strength: clamp(strength, 0, 1),
+    }, { onConflict: 'source_id,target_id,link_type' });
+
+  if (error) {
+    log.debug({ error: error.message, sourceId, targetId, linkType }, 'Link creation failed');
+  }
+}
+
+/**
+ * Auto-link a new memory to related existing memories.
+ * Uses vector similarity, concept overlap, and user overlap to find candidates.
+ * Classifies link type via lightweight heuristics.
+ */
+async function autoLinkMemory(memoryId: number, opts: StoreMemoryOptions): Promise<void> {
+  const db = getDb();
+
+  // 1. Link evidence_ids as 'supports' links
+  if (opts.evidenceIds && opts.evidenceIds.length > 0) {
+    for (const evidenceId of opts.evidenceIds) {
+      await createMemoryLink(memoryId, evidenceId, 'supports', 0.8);
+    }
+  }
+
+  // 2. Find candidates via vector similarity (if embeddings available)
+  const candidates: Array<{ id: number; similarity: number; memory_type: string; concepts: string[]; related_user: string | null; emotional_valence: number; created_at: string }> = [];
+
+  if (isEmbeddingEnabled()) {
+    const embedding = await generateEmbedding(opts.summary);
+    if (embedding) {
+      const { data: similar } = await db.rpc('match_memories', {
+        query_embedding: JSON.stringify(embedding),
+        match_threshold: LINK_SIMILARITY_THRESHOLD,
+        match_count: MAX_AUTO_LINKS * 2,
+      });
+
+      if (similar) {
+        // Fetch metadata for link classification
+        const similarIds = similar.map((s: { id: number }) => s.id).filter((id: number) => id !== memoryId);
+        if (similarIds.length > 0) {
+          const { data: metas } = await db
+            .from('memories')
+            .select('id, memory_type, concepts, related_user, emotional_valence, created_at')
+            .in('id', similarIds);
+
+          if (metas) {
+            const simMap = new Map<number, number>(similar.map((s: Record<string, unknown>) => [Number(s.id), Number(s.similarity)]));
+            for (const m of metas as Array<Record<string, unknown>>) {
+              const mid = Number(m.id);
+              candidates.push({
+                id: mid,
+                similarity: simMap.get(mid) || 0,
+                memory_type: String(m.memory_type),
+                concepts: (m.concepts || []) as string[],
+                related_user: m.related_user ? String(m.related_user) : null,
+                emotional_valence: Number(m.emotional_valence || 0),
+                created_at: String(m.created_at),
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Also find by concept overlap (fallback when no embeddings)
+  if (candidates.length < MAX_AUTO_LINKS && opts.concepts && opts.concepts.length > 0) {
+    const { data: conceptMatches } = await db
+      .from('memories')
+      .select('id, memory_type, concepts, related_user, emotional_valence, created_at')
+      .overlaps('concepts', opts.concepts)
+      .neq('id', memoryId)
+      .order('created_at', { ascending: false })
+      .limit(MAX_AUTO_LINKS);
+
+    if (conceptMatches) {
+      const existingIds = new Set(candidates.map(c => c.id));
+      for (const m of conceptMatches) {
+        if (!existingIds.has(m.id)) {
+          candidates.push({ ...m, similarity: 0.4 });
+        }
+      }
+    }
+  }
+
+  // 4. Classify link types and create links (limit to MAX_AUTO_LINKS)
+  const concepts = opts.concepts || [];
+  let linksCreated = 0;
+
+  for (const candidate of candidates.slice(0, MAX_AUTO_LINKS)) {
+    if (candidate.id === memoryId) continue;
+
+    const linkType = classifyLinkType(opts, candidate, concepts);
+    const strength = candidate.similarity > 0 ? clamp(candidate.similarity, 0.3, 0.9) : 0.5;
+
+    await createMemoryLink(memoryId, candidate.id, linkType, strength);
+    linksCreated++;
+  }
+
+  if (linksCreated > 0) {
+    log.debug({ memoryId, linksCreated }, 'Auto-linked memory');
+  }
+}
+
+/**
+ * Classify the relationship type between a new memory and an existing candidate.
+ */
+function classifyLinkType(
+  newMem: StoreMemoryOptions,
+  candidate: { memory_type: string; concepts: string[]; related_user: string | null; emotional_valence: number; created_at: string },
+  newConcepts: string[]
+): MemoryLinkType {
+  const sameUser = newMem.relatedUser && newMem.relatedUser === candidate.related_user;
+  const recentCandidate = (Date.now() - new Date(candidate.created_at).getTime()) < 6 * 60 * 60 * 1000; // within 6h
+  const conceptOverlap = (candidate.concepts || []).filter(c => newConcepts.includes(c)).length;
+  const valenceFlip = Math.abs((newMem.emotionalValence || 0) - candidate.emotional_valence) > 1.0;
+
+  // Same user + recent = temporal sequence
+  if (sameUser && recentCandidate) return 'follows';
+
+  // Large emotional valence difference = potential contradiction
+  if (valenceFlip && conceptOverlap > 0) return 'contradicts';
+
+  // Semantic memory building on episodic = elaboration
+  if (newMem.type === 'semantic' && candidate.memory_type === 'episodic') return 'elaborates';
+
+  // High concept overlap = related
+  if (conceptOverlap >= 2) return 'relates';
+
+  return 'relates';
+}
+
+/**
+ * Hebbian reinforcement: boost link strength between co-retrieved memories.
+ * "Memories that fire together wire together."
+ */
+async function reinforceCoRetrievedLinks(ids: number[]): Promise<void> {
+  if (ids.length < 2) return;
+  const db = getDb();
+
+  const { data, error } = await db.rpc('boost_link_strength', {
+    memory_ids: ids,
+    boost_amount: LINK_CO_RETRIEVAL_BOOST,
+  });
+
+  if (error) {
+    log.debug({ error: error.message }, 'Link reinforcement RPC failed');
+  } else if (data && data > 0) {
+    log.debug({ boosted: data }, 'Co-retrieval link reinforcement applied');
   }
 }
 

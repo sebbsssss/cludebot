@@ -11,6 +11,7 @@ import {
   decayMemories,
   recallMemories,
   recallMemorySummaries,
+  createMemoryLink,
   type Memory,
   type MemoryStats,
 } from '../core/memory';
@@ -298,7 +299,13 @@ async function runConsolidation(): Promise<void> {
       source: 'consolidation',
       evidenceIds,
     });
-    if (id) allNewIds.push(id);
+    if (id) {
+      allNewIds.push(id);
+      // Link new insight to all source episodic memories
+      for (const srcMem of relevant) {
+        createMemoryLink(id, srcMem.id, 'supports', 0.7).catch(() => {});
+      }
+    }
   }
 
   // Step 3: Extract procedural memories (behavioral patterns — what works, what doesn't)
@@ -416,6 +423,19 @@ async function runReflection(): Promise<void> {
     source: 'reflection',
     evidenceIds,
   });
+
+  // Link new self_model to previous self_model memories (temporal chain)
+  if (id) {
+    const previousSelfModels = allInputMemories.filter(m => m.memory_type === 'self_model');
+    for (const prev of previousSelfModels.slice(0, 3)) {
+      createMemoryLink(id, prev.id, 'follows', 0.7).catch(() => {});
+    }
+    // Link to supporting semantic memories
+    const supportingSemantics = allInputMemories.filter(m => m.memory_type === 'semantic');
+    for (const sem of supportingSemantics.slice(0, 3)) {
+      createMemoryLink(id, sem.id, 'supports', 0.6).catch(() => {});
+    }
+  }
 
   await storeDreamLog(
     'reflection',

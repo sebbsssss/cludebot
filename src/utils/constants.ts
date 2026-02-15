@@ -52,6 +52,14 @@ export const MEMORY_CONCEPTS = [
 ] as const;
 export type MemoryConcept = typeof MEMORY_CONCEPTS[number];
 
+// Memory association graph
+export const RETRIEVAL_WEIGHT_GRAPH = 1.5;              // Graph-linked memory boost in scoring
+export const LINK_SIMILARITY_THRESHOLD = 0.6;            // Min vector similarity for auto-linking
+export const MAX_AUTO_LINKS = 5;                         // Max links created per new memory
+export const LINK_CO_RETRIEVAL_BOOST = 0.05;             // Hebbian strength boost on co-retrieval
+
+export type MemoryLinkType = 'supports' | 'contradicts' | 'elaborates' | 'causes' | 'follows' | 'relates';
+
 // Embedding system
 export const EMBEDDING_DIMENSIONS = 1024;
 export const EMBEDDING_FRAGMENT_MAX_LENGTH = 2000;       // Max chars per fragment for granular decomposition
