@@ -340,37 +340,43 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
       const queryEmbedding = await generateEmbedding(opts.query);
       if (queryEmbedding) {
         // Search both memory-level and fragment-level embeddings
-        const [memoryMatches, fragmentMatches] = await Promise.all([
-          db.rpc('match_memories', {
-            query_embedding: JSON.stringify(queryEmbedding),
-            match_threshold: 0.3,
-            match_count: limit * 3,
-            filter_types: opts.memoryTypes || null,
-            filter_user: opts.relatedUser || null,
-            min_decay: minDecay,
-          }).then(r => r.data || []),
-          db.rpc('match_memory_fragments', {
-            query_embedding: JSON.stringify(queryEmbedding),
-            match_threshold: 0.3,
-            match_count: limit * 3,
-          }).then(r => r.data || []),
-        ]).catch(() => [[], []] as [any[], any[]]);
+        try {
+          const [memoryMatches, fragmentMatches] = await Promise.all([
+            db.rpc('match_memories', {
+              query_embedding: JSON.stringify(queryEmbedding),
+              match_threshold: 0.3,
+              match_count: limit * 3,
+              filter_types: opts.memoryTypes || null,
+              filter_user: opts.relatedUser || null,
+              min_decay: minDecay,
+            }).then(r => r.data || []),
+            db.rpc('match_memory_fragments', {
+              query_embedding: JSON.stringify(queryEmbedding),
+              match_threshold: 0.3,
+              match_count: limit * 3,
+            }).then(r => r.data || []),
+          ]);
 
-        // Merge: take highest similarity per memory_id across both sources
-        for (const m of memoryMatches) {
-          const current = vectorScores.get(m.id) || 0;
-          vectorScores.set(m.id, Math.max(current, m.similarity));
-        }
-        for (const f of fragmentMatches) {
-          const current = vectorScores.get(f.memory_id) || 0;
-          vectorScores.set(f.memory_id, Math.max(current, f.max_similarity));
-        }
+          // Merge: take highest similarity per memory_id across both sources
+          for (const m of memoryMatches) {
+            const current = vectorScores.get(m.id) || 0;
+            vectorScores.set(m.id, Math.max(current, m.similarity));
+          }
+          for (const f of fragmentMatches) {
+            const current = vectorScores.get(f.memory_id) || 0;
+            vectorScores.set(f.memory_id, Math.max(current, f.max_similarity));
+          }
 
-        log.debug({
-          memoryHits: memoryMatches.length,
-          fragmentHits: fragmentMatches.length,
-          uniqueMemories: vectorScores.size,
-        }, 'Vector search completed');
+          log.debug({
+            memoryHits: memoryMatches.length,
+            fragmentHits: fragmentMatches.length,
+            uniqueMemories: vectorScores.size,
+          }, 'Vector search completed');
+        } catch (err) {
+          log.warn({ err }, 'Vector search RPC failed, falling back to keyword retrieval');
+        }
+      } else {
+        log.debug('Query embedding generation returned null, using keyword-only retrieval');
       }
     }
 
@@ -497,15 +503,19 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   // Vector similarity component (0 if not available)
   const vectorSim = opts._vectorScores?.get(mem.id) || 0;
 
-  // Additive formula, gated by decay
+  // Additive formula, normalized so vector vs non-vector scores are comparable
   let rawScore =
     RETRIEVAL_WEIGHT_RECENCY * recency +
     RETRIEVAL_WEIGHT_RELEVANCE * relevance +
     RETRIEVAL_WEIGHT_IMPORTANCE * mem.importance;
 
-  // Add vector component when available (highest weight — dominates when present)
   if (vectorSim > 0) {
     rawScore += RETRIEVAL_WEIGHT_VECTOR * vectorSim;
+    // Normalize: with vector, max raw = 0.5+3.0+2.0+3.0 = 8.5
+    rawScore /= (RETRIEVAL_WEIGHT_RECENCY + RETRIEVAL_WEIGHT_RELEVANCE + RETRIEVAL_WEIGHT_IMPORTANCE + RETRIEVAL_WEIGHT_VECTOR);
+  } else {
+    // Normalize: without vector, max raw = 0.5+3.0+2.0 = 5.5
+    rawScore /= (RETRIEVAL_WEIGHT_RECENCY + RETRIEVAL_WEIGHT_RELEVANCE + RETRIEVAL_WEIGHT_IMPORTANCE);
   }
 
   return rawScore * mem.decay_factor;
@@ -592,27 +602,11 @@ async function updateMemoryAccess(ids: number[]): Promise<void> {
   if (ids.length === 0) return;
   const db = getDb();
 
-  // Batch update in parallel instead of sequential loop
-  await Promise.all(ids.map(async (id) => {
-    const { data: current } = await db
-      .from('memories')
-      .select('access_count, decay_factor')
-      .eq('id', id)
-      .single();
-
-    // Boost decay on access (not full reset — gradual reinforcement)
-    const currentDecay = current?.decay_factor ?? 0.5;
-    const boostedDecay = Math.min(1.0, currentDecay + 0.1);
-
-    await db
-      .from('memories')
-      .update({
-        access_count: (current?.access_count || 0) + 1,
-        last_accessed: new Date().toISOString(),
-        decay_factor: boostedDecay,
-      })
-      .eq('id', id);
-  }));
+  // Single batch query: increment access_count, refresh last_accessed, boost decay
+  const { error } = await db.rpc('batch_boost_memory_access', { memory_ids: ids });
+  if (error) {
+    log.warn({ error: error.message, ids }, 'Batch memory access update failed');
+  }
 }
 
 // ---- DECAY ---- //
@@ -624,34 +618,33 @@ async function updateMemoryAccess(ids: number[]): Promise<void> {
  */
 export async function decayMemories(): Promise<number> {
   const db = getDb();
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   try {
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    let totalDecayed = 0;
 
-    const { data, error } = await db
-      .from('memories')
-      .select('id, memory_type, decay_factor')
-      .lt('last_accessed', cutoff)
-      .gt('decay_factor', MEMORY_MIN_DECAY);
+    // Batch decay per memory type (4 queries instead of N)
+    for (const [memType, rate] of Object.entries(DECAY_RATES)) {
+      const { data, error } = await db.rpc('batch_decay_memories', {
+        decay_type: memType,
+        decay_rate: rate,
+        min_decay: MEMORY_MIN_DECAY,
+        cutoff,
+      });
 
-    if (error || !data) return 0;
+      if (error) {
+        log.warn({ error: error.message, memType }, 'Batch decay failed for type');
+        continue;
+      }
 
-    let decayed = 0;
-    for (const mem of data) {
-      const rate = DECAY_RATES[mem.memory_type] ?? 0.95;
-      const newDecay = Math.max(mem.decay_factor * rate, MEMORY_MIN_DECAY);
-      await db
-        .from('memories')
-        .update({ decay_factor: newDecay })
-        .eq('id', mem.id);
-      decayed++;
+      totalDecayed += (data as number) || 0;
     }
 
-    if (decayed > 0) {
-      log.info({ decayed }, 'Type-specific memory decay applied');
+    if (totalDecayed > 0) {
+      log.info({ decayed: totalDecayed }, 'Type-specific memory decay applied');
     }
 
-    return decayed;
+    return totalDecayed;
   } catch (err) {
     log.error({ err }, 'Memory decay failed');
     return 0;

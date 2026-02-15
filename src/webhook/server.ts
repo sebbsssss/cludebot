@@ -65,9 +65,20 @@ export function createServer(): express.Application {
 
   app.use(express.json());
 
-  // Health check
-  app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString(), character: 'tired' });
+  // Health check with DB connectivity probe
+  app.get('/health', async (_req, res) => {
+    try {
+      const db = getDb();
+      const { error } = await db.from('memories').select('id').limit(1);
+      res.json({
+        status: error ? 'degraded' : 'ok',
+        timestamp: new Date().toISOString(),
+        character: 'tired',
+        database: error ? 'unreachable' : 'connected',
+      });
+    } catch {
+      res.status(503).json({ status: 'error', timestamp: new Date().toISOString(), database: 'unreachable' });
+    }
   });
 
   // Helius webhook endpoint for token events (with signature verification + rate limiting)

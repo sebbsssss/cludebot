@@ -32,7 +32,7 @@ export const RECENCY_DECAY_BASE = 0.995;               // Exponential: 0.995^hou
 export const RETRIEVAL_WEIGHT_RECENCY = 0.5;            // Paper: recency has lowest weight
 export const RETRIEVAL_WEIGHT_RELEVANCE = 3.0;          // Paper: relevance dominates
 export const RETRIEVAL_WEIGHT_IMPORTANCE = 2.0;         // Paper: importance is second
-export const RETRIEVAL_WEIGHT_VECTOR = 4.0;             // Vector similarity (highest when available)
+export const RETRIEVAL_WEIGHT_VECTOR = 3.0;             // Vector similarity (high but not dominant)
 
 // Structured concept ontology for cross-cutting knowledge classification
 // Replaces freeform tagging with a controlled vocabulary for precise retrieval.
@@ -57,7 +57,7 @@ export const EMBEDDING_DIMENSIONS = 1024;
 export const EMBEDDING_FRAGMENT_MAX_LENGTH = 2000;       // Max chars per fragment for granular decomposition
 
 // Event-driven reflection triggers
-export const REFLECTION_IMPORTANCE_THRESHOLD = 10;      // Cumulative importance to trigger reflection (0-1 scale)
+export const REFLECTION_IMPORTANCE_THRESHOLD = 2.0;     // Cumulative importance to trigger reflection (3-4 interactions)
 export const REFLECTION_MIN_INTERVAL_MS = 30 * 60 * 1000; // Min 30 min between reflections
 
 // Price oracle
@@ -72,7 +72,7 @@ export const ALLIUM_BASE_URL = 'https://api.allium.so/api/v1/developer';
 // Memo max length for on-chain calldata
 export const MEMO_MAX_LENGTH = 566;
 
-// Token lists for market monitoring (Base ecosystem)
+// Token lists for market monitoring
 export const MAJOR_TOKENS = new Set([
   'ETH', 'BTC', 'USDC', 'AERO', 'cbBTC', 'VIRTUAL', 'MORPHO', 'RSR',
   'SOL', 'BONK', 'WIF', 'JTO', 'JUP', 'PYTH', 'RAY', 'RNDR', 'HNT',
