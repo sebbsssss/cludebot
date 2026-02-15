@@ -36,7 +36,7 @@ export async function handleExitInterview(
   const context = [
     `Wallet: ${truncateWallet(walletAddress)}`,
     `Sold: ${tokenAmount.toLocaleString()} $CLUDE`,
-    `ETH received: ${solValue.toFixed(6)} ETH`,
+    `SOL received: ${solValue.toFixed(6)} SOL`,
     `Hold duration: approximately ${holdDuration} days`,
     `Total token transactions: ${cludeTxs.length}`,
     `Other recent activity: ${txs.length - cludeTxs.length} non-$CLUDE transactions`,

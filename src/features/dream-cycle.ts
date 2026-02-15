@@ -52,6 +52,7 @@ const log = createChildLogger('dream-cycle');
 let importanceAccumulator = 0;
 let lastReflectionTime = Date.now();
 let reflectionInProgress = false;
+const REFLECTION_TIMEOUT_MS = 10 * 60 * 1000; // 10 min max per reflection cycle
 
 /**
  * Called via event bus when an episodic memory is stored.
@@ -81,17 +82,27 @@ async function triggerReflection(): Promise<void> {
   try {
     log.info({ accumulator: importanceAccumulator.toFixed(2) }, '=== DREAM CYCLE TRIGGERED ===');
 
-    await runConsolidation();
-    await sleep(3000);
-    await runReflection();
-    await sleep(3000);
-    await runEmergence();
+    // Timeout protection: if dream cycle hangs, force-reset after 10 min
+    await Promise.race([
+      (async () => {
+        await runConsolidation();
+        await sleep(3000);
+        await runReflection();
+        await sleep(3000);
+        await runEmergence();
+      })(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Dream cycle timed out after 10 minutes')), REFLECTION_TIMEOUT_MS)
+      ),
+    ]);
 
     importanceAccumulator = 0;
     lastReflectionTime = Date.now();
     await saveAccumulator();
 
     log.info('=== DREAM CYCLE COMPLETE ===');
+  } catch (err) {
+    log.error({ err }, 'Dream cycle failed or timed out');
   } finally {
     reflectionInProgress = false;
   }
@@ -144,22 +155,38 @@ function parseEvidenceCitations(
   text: string,
   sourceMemories: Memory[]
 ): { text: string; evidenceIds: number[] } {
-  const citationRegex = /\((?:because of|based on|from|citing|evidence:?|ref:?)\s*([\d,\s]+)\)/i;
-  const match = text.match(citationRegex);
+  // Try multiple citation patterns in priority order
+  const citationPatterns = [
+    /\((?:because of|based on|from|citing|evidence:?|ref:?|see)\s*([\d,\s]+)\)/gi,
+    /\[([\d,\s]+)\]/g,     // [1, 2, 3] bracket notation
+    /\(([\d,\s]+)\)/g,     // (1, 2, 3) bare numbers in parens
+  ];
 
-  if (!match) {
-    return { text: text.trim(), evidenceIds: [] };
+  for (const pattern of citationPatterns) {
+    const matches = [...text.matchAll(pattern)];
+    if (matches.length === 0) continue;
+
+    const evidenceIds: number[] = [];
+    let cleanText = text;
+
+    for (const match of matches) {
+      const indices = match[1]
+        .split(',')
+        .map(s => parseInt(s.trim(), 10))
+        .filter(n => !isNaN(n) && n >= 1 && n <= sourceMemories.length);
+
+      for (const idx of indices) {
+        evidenceIds.push(sourceMemories[idx - 1].id);
+      }
+      cleanText = cleanText.replace(match[0], '');
+    }
+
+    if (evidenceIds.length > 0) {
+      return { text: cleanText.trim(), evidenceIds: [...new Set(evidenceIds)] };
+    }
   }
 
-  const indices = match[1]
-    .split(',')
-    .map(s => parseInt(s.trim(), 10))
-    .filter(n => !isNaN(n) && n >= 1 && n <= sourceMemories.length);
-
-  const evidenceIds = indices.map(i => sourceMemories[i - 1].id);
-  const cleanText = text.replace(citationRegex, '').trim();
-
-  return { text: cleanText, evidenceIds };
+  return { text: text.trim(), evidenceIds: [] };
 }
 
 // ---- FOCAL POINT GENERATION ---- //
