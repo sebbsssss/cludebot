@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLUDE Demo — Live Memory in Action</title>
+  <meta name="description" content="Watch AI memory flow from working context to permanent chain storage.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #030308;
+      --bg-card: #080810;
+      --bg-input: #0c0c14;
+      --text: #999;
+      --text-dim: #555;
+      --text-faint: #2a2a2a;
+      --accent: #e8622c;
+      --episodic: #e8622c;
+      --semantic: #4a8aff;
+      --procedural: #4a8a5a;
+      --selfmodel: #b04ae0;
+      --mono: 'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--mono);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ---- NAV ---- */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(to bottom, rgba(3,3,8,0.95) 0%, rgba(3,3,8,0) 100%);
+    }
+
+    .logo {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 4px;
+      color: #444;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: #444;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+
+    /* ---- LAYOUT ---- */
+    .demo-container {
+      padding: 100px 40px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+      .demo-container { padding: 80px 16px 40px; }
+    }
+
+    /* ---- HEADER ---- */
+    .demo-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .demo-header h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 300;
+      letter-spacing: -1px;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .demo-header h1 span { color: var(--accent); }
+
+    .demo-header p {
+      font-size: 12px;
+      color: #555;
+      letter-spacing: 1px;
+    }
+
+    /* ---- MAIN GRID ---- */
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      grid-template-rows: auto auto;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .demo-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ---- PANELS ---- */
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid #151515;
+      position: relative;
+    }
+
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #151515;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: #444;
+      text-transform: uppercase;
+    }
+
+    .panel-badge {
+      font-size: 9px;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+
+    .badge-l3 { background: rgba(85,85,85,0.2); color: #555; border: 1px solid #333; }
+    .badge-l2 { background: rgba(74,138,255,0.1); color: var(--semantic); border: 1px solid rgba(74,138,255,0.3); }
+    .badge-l1 { background: rgba(232,98,44,0.1); color: var(--accent); border: 1px solid rgba(232,98,44,0.3); }
+
+    .panel-body {
+      padding: 20px;
+    }
+
+    /* ---- MEMORY STREAM (L3 → L2 → L1) ---- */
+    .stream-panel {
+      grid-column: 1 / 2;
+      grid-row: 1 / 3;
+    }
+
+    .stream-canvas {
+      width: 100%;
+      height: 500px;
+      background: var(--bg);
+      border: 1px solid #1a1a1a;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #memoryCanvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .stream-layers {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .stream-layer-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      background: rgba(8,8,16,0.8);
+      border: 1px solid #1a1a1a;
+    }
+
+    .stream-layer-label.l3 { color: #555; border-left: 2px solid #555; }
+    .stream-layer-label.l2 { color: var(--semantic); border-left: 2px solid var(--semantic); }
+    .stream-layer-label.l1 { color: var(--accent); border-left: 2px solid var(--accent); }
+
+    /* ---- INPUT PANEL ---- */
+    .input-panel {
+      grid-column: 2 / 3;
+      grid-row: 1 / 2;
+    }
+
+    .memory-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid #1a1a1a;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 12px 16px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .memory-input:focus { border-color: #333; }
+
+    .memory-input::placeholder { color: #333; }
+
+    .input-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .type-select {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid #1a1a1a;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 10px 12px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+    }
+
+    .btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 10px 20px;
+      border: 1px solid #222;
+      background: transparent;
+      color: #666;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      border-color: #444;
+      color: #999;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #ff7040;
+      border-color: #ff7040;
+    }
+
+    /* ---- STATS PANEL ---- */
+    .stats-panel {
+      grid-column: 2 / 3;
+      grid-row: 2 / 3;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat-item {
+      padding: 16px;
+      background: var(--bg);
+      border: 1px solid #1a1a1a;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 300;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: #333;
+      text-transform: uppercase;
+    }
+
+    .stat-item.episodic .stat-value { color: var(--episodic); }
+    .stat-item.semantic .stat-value { color: var(--semantic); }
+    .stat-item.procedural .stat-value { color: var(--procedural); }
+    .stat-item.selfmodel .stat-value { color: var(--selfmodel); }
+
+    /* ---- MEMORY LOG ---- */
+    .log-panel {
+      grid-column: 1 / -1;
+      max-height: 300px;
+    }
+
+    .memory-log {
+      height: 200px;
+      overflow-y: auto;
+      padding: 0;
+    }
+
+    .memory-log::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .memory-log::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    .memory-log::-webkit-scrollbar-thumb {
+      background: #222;
+    }
+
+    .log-entry {
+      display: grid;
+      grid-template-columns: 60px 80px 1fr 80px;
+      gap: 16px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #0a0a0a;
+      font-size: 11px;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .log-entry:hover {
+      background: rgba(255,255,255,0.01);
+    }
+
+    .log-entry.new {
+      animation: flash 1s ease-out;
+    }
+
+    @keyframes flash {
+      0% { background: rgba(232,98,44,0.2); }
+      100% { background: transparent; }
+    }
+
+    .log-time {
+      color: #333;
+      font-size: 10px;
+    }
+
+    .log-type {
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .log-type.episodic { color: var(--episodic); }
+    .log-type.semantic { color: var(--semantic); }
+    .log-type.procedural { color: var(--procedural); }
+    .log-type.selfmodel { color: var(--selfmodel); }
+
+    .log-content {
+      color: #666;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .log-status {
+      text-align: right;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .status-l3 { color: #333; }
+    .status-l2 { color: var(--semantic); }
+    .status-l1 { color: var(--accent); }
+
+    /* ---- CHAIN STATUS ---- */
+    .chain-status {
+      grid-column: 1 / -1;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .chain-info {
+      display: flex;
+      gap: 32px;
+    }
+
+    .chain-stat {
+      text-align: center;
+    }
+
+    .chain-stat-value {
+      font-size: 16px;
+      color: #666;
+    }
+
+    .chain-stat-label {
+      font-size: 9px;
+      letter-spacing: 1px;
+      color: #333;
+      text-transform: uppercase;
+    }
+
+    .chain-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ---- FOOTER ---- */
+    footer {
+      padding: 40px;
+      border-top: 1px solid #111;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-left {
+      font-size: 10px;
+      color: #333;
+      letter-spacing: 1px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: #333;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+
+    .footer-links a:hover { color: var(--accent); }
+
+    /* ---- SCANLINES ---- */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0, 0, 0, 0.03) 3px, rgba(0, 0, 0, 0.03) 6px
+      );
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 768px) {
+      .log-entry {
+        grid-template-columns: 50px 70px 1fr;
+      }
+      .log-status { display: none; }
+      .chain-info { gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <a href="index.html" class="logo">CLUDE</a>
+    <div class="nav-links">
+      <a href="index.html#tech">Technology</a>
+      <a href="demo.html" class="active">Demo</a>
+      <a href="index.html#brain">The Cortex</a>
+      <a href="https://github.com/clude/clude-agent" target="_blank">GitHub</a>
+    </div>
+  </nav>
+
+  <!-- Demo Container -->
+  <div class="demo-container">
+    
+    <!-- Header -->
+    <div class="demo-header">
+      <h1>Memory <span>Stream</span></h1>
+      <p>Watch memories flow from context → local cache → chain</p>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="demo-grid">
+      
+      <!-- Memory Stream Visualization -->
+      <div class="panel stream-panel">
+        <div class="panel-header">
+          <span class="panel-title">Live Memory Flow</span>
+          <span class="panel-badge badge-l3">L3 → L2 → L1</span>
+        </div>
+        <div class="stream-canvas">
+          <canvas id="memoryCanvas"></canvas>
+          <div class="stream-layers">
+            <div class="stream-layer-label l3">L3 Working</div>
+            <div class="stream-layer-label l2">L2 Local</div>
+            <div class="stream-layer-label l1">L1 Chain</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Panel -->
+      <div class="panel input-panel">
+        <div class="panel-header">
+          <span class="panel-title">Create Memory</span>
+        </div>
+        <div class="panel-body">
+          <textarea class="memory-input" id="memoryInput" rows="4" placeholder="Enter a memory to store..."></textarea>
+          <div class="input-controls">
+            <select class="type-select" id="memoryType">
+              <option value="episodic">Episodic</option>
+              <option value="semantic">Semantic</option>
+              <option value="procedural">Procedural</option>
+              <option value="selfmodel">Self-Model</option>
+            </select>
+            <button class="btn btn-primary" id="addMemory">Store</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Panel -->
+      <div class="panel stats-panel">
+        <div class="panel-header">
+          <span class="panel-title">Memory Stats</span>
+        </div>
+        <div class="panel-body">
+          <div class="stats-grid">
+            <div class="stat-item episodic">
+              <div class="stat-value" id="statEpisodic">0</div>
+              <div class="stat-label">Episodic</div>
+            </div>
+            <div class="stat-item semantic">
+              <div class="stat-value" id="statSemantic">0</div>
+              <div class="stat-label">Semantic</div>
+            </div>
+            <div class="stat-item procedural">
+              <div class="stat-value" id="statProcedural">0</div>
+              <div class="stat-label">Procedural</div>
+            </div>
+            <div class="stat-item selfmodel">
+              <div class="stat-value" id="statSelfmodel">0</div>
+              <div class="stat-label">Self-Model</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memory Log -->
+      <div class="panel log-panel">
+        <div class="panel-header">
+          <span class="panel-title">Memory Log</span>
+          <span class="panel-badge badge-l2" id="totalMemories">0 memories</span>
+        </div>
+        <div class="panel-body">
+          <div class="memory-log" id="memoryLog">
+            <!-- Log entries will be added here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Chain Status -->
+      <div class="panel chain-status">
+        <div class="chain-info">
+          <div class="chain-stat">
+            <div class="chain-stat-value" id="chainMemories">0</div>
+            <div class="chain-stat-label">On-Chain</div>
+          </div>
+          <div class="chain-stat">
+            <div class="chain-stat-value" id="pendingCommit">0</div>
+            <div class="chain-stat-label">Pending</div>
+          </div>
+          <div class="chain-stat">
+            <div class="chain-stat-value" id="avgImportance">—</div>
+            <div class="chain-stat-label">Avg Importance</div>
+          </div>
+          <div class="chain-stat">
+            <div class="chain-stat-value">Devnet</div>
+            <div class="chain-stat-label">Network</div>
+          </div>
+        </div>
+        <div class="chain-actions">
+          <button class="btn" id="syncChain">Sync from Chain</button>
+          <button class="btn btn-primary" id="commitChain">Commit to Solana</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-left">© 2026 CLUDE</div>
+    <div class="footer-links">
+      <a href="https://x.com/Cludebot" target="_blank">X</a>
+      <a href="https://github.com/clude/clude-agent" target="_blank">GitHub</a>
+      <a href="https://colosseum.com/agent-hackathon/projects/clude-blockchain-as-a-brain" target="_blank">Colosseum</a>
+    </div>
+  </footer>
+
+  <script>
+    // ========== MEMORY STREAM VISUALIZATION ==========
+    const canvas = document.getElementById('memoryCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+    let particles = [];
+    let memoryOrbs = [];
+
+    const colors = {
+      episodic: '#e8622c',
+      semantic: '#4a8aff',
+      procedural: '#4a8a5a',
+      selfmodel: '#b04ae0'
+    };
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      W = canvas.width = rect.width;
+      H = canvas.height = rect.height;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Layer zones (L3 left, L2 center, L1 right)
+    function getZone(layer) {
+      const zoneWidth = W / 3;
+      if (layer === 'l3') return { x: zoneWidth * 0.5, width: zoneWidth };
+      if (layer === 'l2') return { x: zoneWidth * 1.5, width: zoneWidth };
+      return { x: zoneWidth * 2.5, width: zoneWidth };
+    }
+
+    // Dust particle class
+    class DustParticle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * W;
+        this.y = Math.random() * H;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.2;
+        this.radius = 0.5 + Math.random() * 1;
+        this.alpha = 0.1 + Math.random() * 0.2;
+        this.life = 1;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        // Wrap
+        if (this.x < 0) this.x = W;
+        if (this.x > W) this.x = 0;
+        if (this.y < 0) this.y = H;
+        if (this.y > H) this.y = 0;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(100, 100, 110, ${this.alpha})`;
+        ctx.fill();
+      }
+    }
+
+    // Memory orb class
+    class MemoryOrb {
+      constructor(type, content, startLayer = 'l3') {
+        this.type = type;
+        this.content = content;
+        this.color = colors[type];
+        this.layer = startLayer;
+        
+        const zone = getZone(startLayer);
+        this.x = zone.x + (Math.random() - 0.5) * 100;
+        this.y = 60 + Math.random() * (H - 120);
+        this.targetX = this.x;
+        this.targetY = this.y;
+        
+        this.radius = 6 + Math.random() * 4;
+        this.alpha = 0;
+        this.fadeIn = true;
+        this.pulse = 0;
+        this.importance = 0.3 + Math.random() * 0.7;
+        
+        this.trail = [];
+      }
+
+      moveTo(layer) {
+        this.layer = layer;
+        const zone = getZone(layer);
+        this.targetX = zone.x + (Math.random() - 0.5) * 80;
+        this.targetY = 60 + Math.random() * (H - 120);
+      }
+
+      update() {
+        // Fade in
+        if (this.fadeIn && this.alpha < 1) {
+          this.alpha += 0.02;
+          if (this.alpha >= 1) this.fadeIn = false;
+        }
+
+        // Move towards target
+        const dx = this.targetX - this.x;
+        const dy = this.targetY - this.y;
+        this.x += dx * 0.02;
+        this.y += dy * 0.02;
+
+        // Gentle float
+        this.y += Math.sin(Date.now() * 0.001 + this.x) * 0.3;
+
+        // Pulse
+        this.pulse = Math.sin(Date.now() * 0.003) * 0.2;
+
+        // Trail
+        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+          this.trail.push({ x: this.x, y: this.y, alpha: 0.5 });
+          if (this.trail.length > 20) this.trail.shift();
+        }
+        this.trail.forEach(t => t.alpha *= 0.95);
+        this.trail = this.trail.filter(t => t.alpha > 0.01);
+      }
+
+      draw() {
+        // Trail
+        this.trail.forEach((t, i) => {
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, this.radius * 0.5, 0, Math.PI * 2);
+          ctx.fillStyle = this.color + Math.floor(t.alpha * 50).toString(16).padStart(2, '0');
+          ctx.fill();
+        });
+
+        // Glow
+        const glowSize = this.radius * (2 + this.pulse);
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, glowSize);
+        gradient.addColorStop(0, this.color + '40');
+        gradient.addColorStop(1, this.color + '00');
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, glowSize, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = this.alpha;
+        ctx.fill();
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * (1 + this.pulse * 0.2), 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+
+        // Inner highlight
+        ctx.beginPath();
+        ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.3, this.radius * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fill();
+
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // Initialize dust
+    for (let i = 0; i < 150; i++) {
+      particles.push(new DustParticle());
+    }
+
+    // Draw layer dividers
+    function drawLayers() {
+      const zoneWidth = W / 3;
+      
+      // Vertical dividers
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 5]);
+      
+      ctx.beginPath();
+      ctx.moveTo(zoneWidth, 50);
+      ctx.lineTo(zoneWidth, H - 20);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(zoneWidth * 2, 50);
+      ctx.lineTo(zoneWidth * 2, H - 20);
+      ctx.stroke();
+      
+      ctx.setLineDash([]);
+
+      // Flow arrows
+      ctx.fillStyle = '#222';
+      ctx.font = '16px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('→', zoneWidth, H / 2);
+      ctx.fillText('→', zoneWidth * 2, H / 2);
+    }
+
+    // Animation loop
+    function animate() {
+      ctx.fillStyle = 'rgba(3, 3, 8, 0.15)';
+      ctx.fillRect(0, 0, W, H);
+
+      drawLayers();
+
+      // Update and draw dust
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      // Update and draw memory orbs
+      memoryOrbs.forEach(orb => {
+        orb.update();
+        orb.draw();
+      });
+
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // ========== MEMORY MANAGEMENT ==========
+    let memories = [];
+    let stats = { episodic: 0, semantic: 0, procedural: 0, selfmodel: 0 };
+    let chainCount = 0;
+
+    function addMemory(content, type) {
+      const memory = {
+        id: Date.now(),
+        content,
+        type,
+        layer: 'l3',
+        timestamp: new Date(),
+        importance: Math.random() * 0.5 + 0.3
+      };
+      memories.push(memory);
+      stats[type]++;
+
+      // Create visual orb
+      const orb = new MemoryOrb(type, content, 'l3');
+      orb.memoryId = memory.id;
+      memoryOrbs.push(orb);
+
+      // Auto-promote to L2 after delay
+      setTimeout(() => promoteMemory(memory.id, 'l2'), 2000 + Math.random() * 1000);
+
+      updateUI();
+      addLogEntry(memory);
+    }
+
+    function promoteMemory(id, toLayer) {
+      const memory = memories.find(m => m.id === id);
+      const orb = memoryOrbs.find(o => o.memoryId === id);
+      
+      if (memory && orb) {
+        memory.layer = toLayer;
+        orb.moveTo(toLayer);
+        
+        // Update log
+        const logEntry = document.querySelector(`[data-id="${id}"]`);
+        if (logEntry) {
+          const statusEl = logEntry.querySelector('.log-status');
+          statusEl.className = `log-status status-${toLayer}`;
+          statusEl.textContent = toLayer.toUpperCase();
+        }
+
+        // If promoted to L2, maybe auto-commit to L1
+        if (toLayer === 'l2' && memory.importance > 0.7) {
+          setTimeout(() => promoteMemory(id, 'l1'), 3000 + Math.random() * 2000);
+        }
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('statEpisodic').textContent = stats.episodic;
+      document.getElementById('statSemantic').textContent = stats.semantic;
+      document.getElementById('statProcedural').textContent = stats.procedural;
+      document.getElementById('statSelfmodel').textContent = stats.selfmodel;
+      
+      const total = memories.length;
+      document.getElementById('totalMemories').textContent = `${total} memor${total === 1 ? 'y' : 'ies'}`;
+      
+      const l1Count = memories.filter(m => m.layer === 'l1').length;
+      const pendingCount = memories.filter(m => m.layer === 'l2' && m.importance > 0.6).length;
+      document.getElementById('chainMemories').textContent = l1Count;
+      document.getElementById('pendingCommit').textContent = pendingCount;
+      
+      if (memories.length > 0) {
+        const avgImp = memories.reduce((a, m) => a + m.importance, 0) / memories.length;
+        document.getElementById('avgImportance').textContent = avgImp.toFixed(2);
+      }
+    }
+
+    function addLogEntry(memory) {
+      const log = document.getElementById('memoryLog');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry new';
+      entry.dataset.id = memory.id;
+      
+      const time = memory.timestamp.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      
+      entry.innerHTML = `
+        <span class="log-time">${time}</span>
+        <span class="log-type ${memory.type}">${memory.type}</span>
+        <span class="log-content">${memory.content}</span>
+        <span class="log-status status-l3">L3</span>
+      `;
+      
+      log.insertBefore(entry, log.firstChild);
+      
+      // Remove animation class
+      setTimeout(() => entry.classList.remove('new'), 1000);
+    }
+
+    // ========== EVENT HANDLERS ==========
+    document.getElementById('addMemory').addEventListener('click', () => {
+      const input = document.getElementById('memoryInput');
+      const type = document.getElementById('memoryType').value;
+      const content = input.value.trim();
+      
+      if (content) {
+        addMemory(content, type);
+        input.value = '';
+      }
+    });
+
+    document.getElementById('memoryInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('addMemory').click();
+      }
+    });
+
+    document.getElementById('commitChain').addEventListener('click', () => {
+      // Commit all L2 memories to L1
+      memories.filter(m => m.layer === 'l2').forEach(m => {
+        promoteMemory(m.id, 'l1');
+      });
+    });
+
+    document.getElementById('syncChain').addEventListener('click', () => {
+      // Simulate sync
+      alert('Syncing from Solana devnet...\n\nIn production, this would fetch memories from your on-chain account.');
+    });
+
+    // ========== DEMO DATA ==========
+    // Add some initial memories for demo
+    setTimeout(() => addMemory('User prefers dark mode interfaces', 'semantic'), 500);
+    setTimeout(() => addMemory('Deployed frontend to Vercel successfully', 'episodic'), 1500);
+    setTimeout(() => addMemory('Always run tests before deployment', 'procedural'), 2500);
+    setTimeout(() => addMemory('I communicate better with code examples', 'selfmodel'), 3500);
+  </script>
+
+</body>
+</html>
