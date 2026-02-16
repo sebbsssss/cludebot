@@ -414,26 +414,157 @@
 
     /* ---- BRAIN SECTION ---- */
     .brain-section {
-      padding: 0;
-      min-height: 100vh;
-      position: relative;
+      padding: 80px;
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, var(--bg) 0%, #0a0a15 50%, var(--bg) 100%);
     }
 
-    .brain-section h2 {
+    .brain-link {
+      display: block;
+      padding: 80px 120px;
+      border: 1px solid #1a1a2a;
+      background: linear-gradient(135deg, #0a0a15 0%, #080812 100%);
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brain-link::before {
+      content: '';
       position: absolute;
-      top: 40px;
-      left: 40px;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at center, rgba(34,68,255,0.1) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .brain-link:hover {
+      border-color: #2244ff;
+      transform: translateY(-4px);
+      box-shadow: 0 20px 60px rgba(34,68,255,0.15);
+    }
+
+    .brain-link:hover::before {
+      opacity: 1;
+    }
+
+    .brain-link h2 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: #2244ff;
+      margin-bottom: 16px;
+      text-shadow: 0 0 30px rgba(34,68,255,0.5);
+    }
+
+    .brain-link p {
+      font-size: 12px;
+      color: #555;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+    }
+
+    .brain-cta {
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: #888;
+      text-transform: uppercase;
+    }
+
+    .brain-link:hover .brain-cta {
+      color: #2244ff;
+    }
+
+    /* Verify Section */
+    .verify-section {
+      padding: 80px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .verify-card {
+      max-width: 500px;
+      width: 100%;
+      padding: 48px;
+      border: 1px solid #1a1a1a;
+      background: var(--bg-card);
+      text-align: center;
+    }
+
+    .verify-card h2 {
       font-size: 11px;
       letter-spacing: 4px;
-      color: #333;
-      text-transform: uppercase;
-      z-index: 10;
+      color: var(--accent);
+      margin-bottom: 12px;
     }
 
-    .brain-frame {
-      width: 100%;
-      height: 100vh;
-      border: none;
+    .verify-card > p {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 32px;
+    }
+
+    .verify-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .verify-form input {
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 14px 16px;
+      border: 1px solid #1a1a1a;
+      background: #0a0a0f;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .verify-form input:focus {
+      border-color: var(--accent);
+    }
+
+    .verify-form input::placeholder {
+      color: #333;
+    }
+
+    .wallet-display {
+      margin-top: 16px;
+      font-size: 11px;
+      color: #444;
+      word-break: break-all;
+    }
+
+    .verify-status {
+      margin-top: 12px;
+      font-size: 11px;
+      padding: 12px;
+      display: none;
+    }
+
+    .verify-status.show {
+      display: block;
+    }
+
+    .verify-status.success {
+      background: rgba(74, 138, 90, 0.1);
+      border: 1px solid #4a8a5a;
+      color: #4a8a5a;
+    }
+
+    .verify-status.error {
+      background: rgba(232, 98, 44, 0.1);
+      border: 1px solid var(--accent);
+      color: var(--accent);
     }
 
     /* ---- INSTALL SECTION ---- */
@@ -665,10 +796,30 @@
     </div>
   </section>
 
-  <!-- Brain Visualization -->
+  <!-- Brain Link -->
   <section class="brain-section" id="brain">
-    <h2>The Cortex — Live Memory Map</h2>
-    <iframe class="brain-frame" src="brain.html"></iframe>
+    <a href="brain.html" class="brain-link">
+      <div class="brain-link-content">
+        <h2>THE BRAIN</h2>
+        <p>Live 3D neural map of Clude's memory</p>
+        <span class="brain-cta">Enter the Cortex →</span>
+      </div>
+    </a>
+  </section>
+
+  <!-- Wallet Verification -->
+  <section class="verify-section" id="verify">
+    <div class="verify-card">
+      <h2>WALLET VERIFICATION</h2>
+      <p>Link your wallet to interact with Clude on X</p>
+      <div class="verify-form">
+        <input type="text" id="xHandle" placeholder="Your X handle (e.g. @username)">
+        <button class="btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+        <button class="btn btn-primary" id="verifyBtn" onclick="verify()" disabled>Sign & Verify</button>
+      </div>
+      <div class="wallet-display" id="walletAddress"></div>
+      <div class="verify-status" id="status"></div>
+    </div>
   </section>
 
   <!-- Install -->
@@ -871,5 +1022,93 @@
     });
   </script>
 
+  <!-- Wallet Verification Script -->
+  <script>
+    let walletAddress = null;
+    let provider = null;
+
+    async function connectWallet() {
+      const statusEl = document.getElementById('status');
+      const walletEl = document.getElementById('walletAddress');
+      const verifyBtn = document.getElementById('verifyBtn');
+      const connectBtn = document.getElementById('connectBtn');
+
+      try {
+        if (!window.solana || !window.solana.isPhantom) {
+          statusEl.textContent = 'Please install Phantom wallet';
+          statusEl.className = 'verify-status show error';
+          return;
+        }
+
+        provider = window.solana;
+        const resp = await provider.connect();
+        walletAddress = resp.publicKey.toString();
+        
+        walletEl.textContent = walletAddress;
+        connectBtn.textContent = 'Connected';
+        connectBtn.disabled = true;
+        verifyBtn.disabled = false;
+        
+        statusEl.className = 'verify-status';
+      } catch (err) {
+        statusEl.textContent = 'Connection failed: ' + err.message;
+        statusEl.className = 'verify-status show error';
+      }
+    }
+
+    async function verify() {
+      const statusEl = document.getElementById('status');
+      const xHandle = document.getElementById('xHandle').value.trim().replace('@', '');
+
+      if (!xHandle) {
+        statusEl.textContent = 'Please enter your X handle';
+        statusEl.className = 'verify-status show error';
+        return;
+      }
+
+      if (!walletAddress) {
+        statusEl.textContent = 'Please connect wallet first';
+        statusEl.className = 'verify-status show error';
+        return;
+      }
+
+      try {
+        statusEl.textContent = 'Signing message...';
+        statusEl.className = 'verify-status show';
+
+        const message = `I am @${xHandle} and I am linking my wallet ${walletAddress} to Clude.`;
+        const encodedMessage = new TextEncoder().encode(message);
+        const signedMessage = await provider.signMessage(encodedMessage, 'utf8');
+        
+        const signature = btoa(String.fromCharCode(...signedMessage.signature));
+
+        statusEl.textContent = 'Verifying...';
+
+        const resp = await fetch('/api/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            x_handle: xHandle,
+            wallet_address: walletAddress,
+            signature: signature,
+            message: message
+          })
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok) {
+          statusEl.textContent = '✓ Verified! ' + data.message;
+          statusEl.className = 'verify-status show success';
+        } else {
+          statusEl.textContent = data.error || 'Verification failed';
+          statusEl.className = 'verify-status show error';
+        }
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + err.message;
+        statusEl.className = 'verify-status show error';
+      }
+    }
+  </script>
 </body>
 </html>
