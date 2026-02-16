@@ -806,6 +806,19 @@
   <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.min.js">
 </head>
 <body>
+<script>
+// Embed mode - hide nav/footer when loaded in iframe
+if (window.location.search.includes('embed=1') || window.parent !== window) {
+  document.documentElement.classList.add('embed-mode');
+}
+</script>
+<style>
+.embed-mode nav,
+.embed-mode .psyche-footer,
+.embed-mode .hud-bl { display: none !important; }
+.embed-mode .hud-tl { top: 24px !important; }
+.embed-mode .hud-tr { top: 24px !important; }
+</style>
 
   <div class="loading" id="loading">
     <div class="loading-text">MAPPING NEURAL NETWORK</div>
