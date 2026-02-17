@@ -27,6 +27,25 @@ export function getConnection(): Connection {
   return connection;
 }
 
+/** @internal SDK escape hatch — allows Cortex to inject Solana config. */
+export function _configureSolana(rpcUrl: string, privateKey?: string): void {
+  connection = new Connection(rpcUrl, 'confirmed');
+  if (privateKey) {
+    try {
+      const raw = privateKey.trim();
+      let secretKey: Uint8Array;
+      if (raw.startsWith('[')) {
+        secretKey = Uint8Array.from(JSON.parse(raw));
+      } else {
+        secretKey = bs58.decode(raw);
+      }
+      botWallet = Keypair.fromSecretKey(secretKey);
+    } catch (err) {
+      log.error({ err }, 'SDK: Failed to load bot wallet');
+    }
+  }
+}
+
 export function getBotWallet(): Keypair | null {
   if (!botWallet && config.solana.botWalletPrivateKey) {
     try {

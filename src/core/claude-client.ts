@@ -5,7 +5,29 @@ import { getBasePrompt, getRandomCloser } from '../character/base-prompt';
 
 const log = createChildLogger('claude-client');
 
-const anthropic = new Anthropic({ apiKey: config.anthropic.apiKey });
+let anthropic: Anthropic;
+try {
+  anthropic = new Anthropic({ apiKey: config.anthropic.apiKey || 'placeholder' });
+} catch {
+  anthropic = null as unknown as Anthropic;
+}
+
+let _anthropicOverride: Anthropic | null = null;
+let _modelOverride: string | null = null;
+
+function getClient(): Anthropic {
+  return _anthropicOverride || anthropic;
+}
+
+function getModel(): string {
+  return _modelOverride || config.anthropic.model;
+}
+
+/** @internal SDK escape hatch — allows Cortex to inject a pre-configured Anthropic client. */
+export function _setAnthropicClient(client: Anthropic, model?: string): void {
+  _anthropicOverride = client;
+  _modelOverride = model || null;
+}
 
 export interface GenerateOptions {
   userMessage: string;
@@ -40,8 +62,8 @@ export async function generateResponse(options: GenerateOptions): Promise<string
 
   log.debug({ systemLength: systemPrompt.length, userLength: userContent.length }, 'Generating response');
 
-  const response = await anthropic.messages.create({
-    model: config.anthropic.model,
+  const response = await getClient().messages.create({
+    model: getModel(),
     max_tokens: options.maxTokens || 300,
     temperature: 0.9,
     system: systemPrompt,
@@ -75,8 +97,8 @@ export async function generateResponse(options: GenerateOptions): Promise<string
  * Uses low maxTokens and temperature 0 for deterministic, fast scoring.
  */
 export async function generateImportanceScore(description: string): Promise<string> {
-  const response = await anthropic.messages.create({
-    model: config.anthropic.model,
+  const response = await getClient().messages.create({
+    model: getModel(),
     max_tokens: 10,
     temperature: 0,
     system:

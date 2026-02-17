@@ -1,0 +1,47 @@
+import type { MemoryType, Memory, MemorySummary, StoreMemoryOptions, RecallOptions, MemoryStats } from '../core/memory';
+import type { MemoryLinkType, MemoryConcept } from '../utils/constants';
+
+export interface CortexConfig {
+  /** Supabase connection. Required. */
+  supabase: {
+    url: string;
+    serviceKey: string;
+  };
+
+  /** Anthropic API config. Required for dream cycles and LLM importance scoring. */
+  anthropic?: {
+    apiKey: string;
+    model?: string;
+  };
+
+  /** Embedding provider config. Optional — falls back to keyword-only retrieval. */
+  embedding?: {
+    provider: 'voyage' | 'openai';
+    apiKey: string;
+    model?: string;
+    dimensions?: number;
+  };
+
+  /** Solana on-chain commit config. Optional — memories won't be committed on-chain. */
+  solana?: {
+    rpcUrl?: string;
+    botWalletPrivateKey?: string;
+  };
+}
+
+export interface DreamOptions {
+  /** Custom handler for emergence output (replaces posting to X). */
+  onEmergence?: (text: string) => Promise<void>;
+}
+
+// Re-export all public types
+export type {
+  MemoryType,
+  Memory,
+  MemorySummary,
+  StoreMemoryOptions,
+  RecallOptions,
+  MemoryStats,
+  MemoryLinkType,
+  MemoryConcept,
+};

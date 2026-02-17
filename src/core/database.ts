@@ -14,6 +14,11 @@ export function getDb(): SupabaseClient {
   return supabase;
 }
 
+/** @internal SDK escape hatch — allows Cortex to inject a pre-configured client. */
+export function _setDb(client: SupabaseClient): void {
+  supabase = client;
+}
+
 export async function initDatabase(): Promise<void> {
   const db = getDb();
 
