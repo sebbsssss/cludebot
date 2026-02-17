@@ -1,10 +1,17 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+const siteOnly = process.env.SITE_ONLY === 'true';
+
 function required(key: string): string {
   const val = process.env[key];
   if (!val) throw new Error(`Missing required env var: ${key}`);
   return val;
+}
+
+function requiredUnlessSiteOnly(key: string): string {
+  if (siteOnly) return process.env[key] || '';
+  return required(key);
 }
 
 function optional(key: string, fallback: string): string {
@@ -13,18 +20,18 @@ function optional(key: string, fallback: string): string {
 
 export const config = {
   x: {
-    apiKey: required('X_API_KEY'),
-    apiSecret: required('X_API_SECRET'),
-    accessToken: required('X_ACCESS_TOKEN'),
-    accessSecret: required('X_ACCESS_SECRET'),
-    botUserId: required('X_BOT_USER_ID'),
+    apiKey: requiredUnlessSiteOnly('X_API_KEY'),
+    apiSecret: requiredUnlessSiteOnly('X_API_SECRET'),
+    accessToken: requiredUnlessSiteOnly('X_ACCESS_TOKEN'),
+    accessSecret: requiredUnlessSiteOnly('X_ACCESS_SECRET'),
+    botUserId: requiredUnlessSiteOnly('X_BOT_USER_ID'),
   },
   supabase: {
-    url: required('SUPABASE_URL'),
-    serviceKey: required('SUPABASE_SERVICE_KEY'),
+    url: requiredUnlessSiteOnly('SUPABASE_URL'),
+    serviceKey: requiredUnlessSiteOnly('SUPABASE_SERVICE_KEY'),
   },
   anthropic: {
-    apiKey: required('ANTHROPIC_API_KEY'),
+    apiKey: requiredUnlessSiteOnly('ANTHROPIC_API_KEY'),
     model: 'claude-opus-4-6' as const,
   },
   helius: {
@@ -66,6 +73,7 @@ export const config = {
   },
   features: {
     showTxLinksInTweets: optional('SHOW_TX_LINKS_IN_TWEETS', 'false') === 'true',
+    siteOnly: optional('SITE_ONLY', 'false') === 'true',
   },
   embedding: {
     provider: optional('EMBEDDING_PROVIDER', '') as '' | 'voyage' | 'openai',
