@@ -3,21 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLUDE - The First AI Agent That Actually Remembers</title>
+  <title>CLUDE — The First AI Agent That Actually Remembers</title>
   <meta name="description" content="Four memory types. Association graphs. Dream cycles. Cognitive architecture for autonomous AI agents on Solana.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #08080f;
-      --text: #c8c8c8;
-      --text-dim: #666;
-      --text-faint: #333;
-      --accent: #2244ff;
+      --bg: #f5f5f0;
+      --bg-warm: #eeeee8;
+      --text: #111;
+      --text-muted: #666;
+      --text-faint: #999;
+      --accent: #111;
+      --blue: #2244ff;
       --mono: 'JetBrains Mono', monospace;
+      --section-pad: 120px;
     }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
@@ -25,175 +29,399 @@
       background: var(--bg);
       color: var(--text);
       font-size: 14px;
-      line-height: 1.8;
+      line-height: 1.7;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
-    ::selection { background: var(--accent); color: var(--bg); }
+    ::selection { background: var(--text); color: var(--bg); }
 
-    #particleCanvas {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
-    }
-
+    /* ── NAV ── */
     nav {
       position: fixed; top: 0; width: 100%; z-index: 100;
-      background: rgba(8, 8, 15, 0.85);
+      background: rgba(245, 245, 240, 0.9);
       backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
     }
     .nav-inner {
-      max-width: 1100px; margin: 0 auto; padding: 0 2rem;
-      height: 52px; display: flex; align-items: center;
+      max-width: 1200px; margin: 0 auto; padding: 0 40px;
+      height: 56px; display: flex; align-items: center;
     }
     .nav-logo {
-      font-size: 0.75rem; font-weight: 700; letter-spacing: 6px;
-      color: var(--accent); text-transform: uppercase; text-decoration: none;
-      text-shadow: 0 0 12px rgba(34,68,255,0.4);
+      font-size: 13px; font-weight: 800; letter-spacing: 5px;
+      color: var(--text); text-transform: uppercase; text-decoration: none;
     }
     .nav-links {
-      display: flex; align-items: center; gap: 2rem; margin-left: auto;
+      display: flex; align-items: center; gap: 32px; margin-left: auto;
     }
     .nav-links a {
-      color: var(--text-dim); font-size: 0.65rem; letter-spacing: 2px;
+      color: var(--text-muted); font-size: 11px; letter-spacing: 2px;
       text-transform: uppercase; text-decoration: none; transition: color 0.3s;
     }
     .nav-links a:hover { color: var(--text); }
 
-    .section {
-      position: relative; z-index: 1;
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    }
-    .section-inner {
-      max-width: 900px; margin: 0 auto; padding: 6rem 2rem;
-    }
-    .section-bg {
-      background: rgba(8, 8, 15, 0.7);
-      backdrop-filter: blur(8px);
-      border-top: 1px solid rgba(255,255,255,0.03);
-    }
-
+    /* ── HERO ── */
     .hero {
-      min-height: 100vh; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      text-align: center; position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 0 40px;
+      padding-top: 56px;
+    }
+    .hero-inner {
+      max-width: 1200px; margin: 0 auto; width: 100%;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center;
+    }
+    .hero-text {}
+    .hero-label {
+      font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 24px;
     }
     .hero-title {
-      font-size: clamp(3rem, 8vw, 6rem);
-      font-weight: 700; letter-spacing: 12px;
-      color: var(--accent);
-      text-shadow: 0 0 40px rgba(34,68,255,0.3), 0 0 80px rgba(34,68,255,0.1);
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 800; line-height: 1.1;
+      letter-spacing: -1px;
+      margin-bottom: 24px;
+    }
+    .hero-title em {
+      font-style: normal;
+      background: linear-gradient(135deg, #2244ff, #5566ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .hero-sub {
-      margin-top: 1.5rem; font-size: clamp(0.75rem, 1.5vw, 0.9rem);
-      color: var(--text-dim); font-weight: 300; letter-spacing: 3px;
+      font-size: 14px; color: var(--text-muted);
+      max-width: 420px; line-height: 1.8;
+      margin-bottom: 40px;
     }
-    .scroll-hint {
-      position: absolute; bottom: 3rem;
-      font-size: 0.6rem; letter-spacing: 4px; color: var(--text-faint);
-      text-transform: uppercase;
-      animation: pulse 3s ease-in-out infinite;
+    .hero-actions { display: flex; gap: 12px; }
+    .btn {
+      font-family: var(--mono);
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      padding: 14px 28px; text-decoration: none;
+      transition: all 0.25s ease; cursor: pointer;
+      border: none;
     }
-    @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+    .btn-primary {
+      background: var(--text); color: var(--bg);
+      border: 2px solid var(--text);
+    }
+    .btn-primary:hover {
+      background: transparent; color: var(--text);
+    }
+    .btn-outline {
+      background: transparent; color: var(--text);
+      border: 2px solid rgba(0,0,0,0.15);
+    }
+    .btn-outline:hover {
+      border-color: var(--text);
+    }
 
+    /* ── BRAIN ILLUSTRATION ── */
+    .hero-visual {
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .brain-container {
+      width: 380px; height: 440px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0;
+      position: relative;
+    }
+    .scan-line {
+      height: 2.4px;
+      background: var(--text);
+      margin: 0.8px 0;
+      transform-origin: center;
+      animation: scanPulse var(--dur) ease-in-out var(--delay) infinite alternate;
+      opacity: 0.85;
+      border-radius: 1px;
+    }
+    @keyframes scanPulse {
+      0% {
+        transform: scaleX(var(--scale-min)) translateX(var(--tx-a));
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 0.95;
+      }
+      100% {
+        transform: scaleX(var(--scale-max)) translateX(var(--tx-b));
+        opacity: 0.75;
+      }
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      padding: var(--section-pad) 40px;
+    }
+    .section-inner {
+      max-width: 1200px; margin: 0 auto;
+    }
+    .section-alt {
+      background: var(--bg-warm);
+    }
     .section-label {
-      font-size: 0.6rem; letter-spacing: 4px; text-transform: uppercase;
-      color: var(--accent); margin-bottom: 1rem; opacity: 0.7;
+      font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 16px;
     }
-    .section-heading {
-      font-size: clamp(1.5rem, 3vw, 2.2rem);
-      font-weight: 700; line-height: 1.3; margin-bottom: 1.5rem;
-      color: #e0e0e0;
+    .section-title {
+      font-size: 36px; font-weight: 700; line-height: 1.2;
+      margin-bottom: 20px; max-width: 600px;
     }
-    .section-heading strong { color: var(--accent); font-weight: 700; }
-    .section-text {
-      color: var(--text-dim); font-size: 0.85rem; max-width: 600px;
-      margin-bottom: 2.5rem;
+    .section-desc {
+      font-size: 14px; color: var(--text-muted); max-width: 520px;
+      line-height: 1.8; margin-bottom: 56px;
     }
 
-    .cards {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1px; margin-top: 2rem;
-    }
-    .card {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.04);
-      padding: 1.8rem 1.5rem;
-      transition: background 0.3s, border-color 0.3s;
-    }
-    .card:hover {
-      background: rgba(255,255,255,0.04);
-      border-color: rgba(34,68,255,0.2);
-    }
-    .card-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      margin-bottom: 1rem; display: inline-block;
-    }
-    .card-name {
-      font-size: 0.75rem; font-weight: 500; letter-spacing: 2px;
-      text-transform: uppercase; margin-bottom: 0.5rem; color: #ddd;
-    }
-    .card-desc {
-      font-size: 0.75rem; color: var(--text-dim); line-height: 1.7;
-    }
-
-    .steps {
+    /* ── PROBLEM CARDS ── */
+    .problem-grid {
       display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 2rem; margin-top: 2rem;
+      gap: 1px; background: rgba(0,0,0,0.06);
+      border: 1px solid rgba(0,0,0,0.06);
     }
-    .step-num {
-      font-size: 2rem; font-weight: 700; color: var(--accent);
-      opacity: 0.3; margin-bottom: 0.5rem;
+    .problem-card {
+      background: var(--bg);
+      padding: 40px 32px;
     }
-    .step-title {
-      font-size: 0.8rem; font-weight: 500; letter-spacing: 2px;
-      text-transform: uppercase; margin-bottom: 0.8rem; color: #ddd;
+    .section-alt .problem-card {
+      background: var(--bg-warm);
     }
-    .step-desc {
-      font-size: 0.75rem; color: var(--text-dim); line-height: 1.7;
+    .problem-card-num {
+      font-size: 32px; font-weight: 800; color: rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .problem-card-title {
+      font-size: 14px; font-weight: 700; margin-bottom: 12px;
+    }
+    .problem-card-text {
+      font-size: 13px; color: var(--text-muted); line-height: 1.8;
     }
 
+    /* ── SOLUTION / LAYER STACK ── */
+    .solution-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: start;
+    }
+    .solution-text .section-title { margin-bottom: 20px; }
+    .solution-text .section-desc { margin-bottom: 0; }
+    .layer-stack {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .layer-card {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 28px 32px;
+      display: flex; align-items: flex-start; gap: 20px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .layer-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+    }
+    .layer-num {
+      font-size: 11px; font-weight: 700; color: var(--text-faint);
+      letter-spacing: 1px; min-width: 28px; padding-top: 2px;
+    }
+    .layer-content {}
+    .layer-title {
+      font-size: 13px; font-weight: 700; margin-bottom: 6px;
+    }
+    .layer-desc {
+      font-size: 12px; color: var(--text-muted); line-height: 1.7;
+    }
+
+    /* ── MEMORY TYPES 2x2 ── */
+    .memory-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+    .memory-card {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.06);
+      border-top: 3px solid var(--card-color);
+      padding: 36px 32px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .memory-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+    }
+    .memory-card-label {
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-faint); margin-bottom: 12px;
+    }
+    .memory-card-title {
+      font-size: 16px; font-weight: 700; margin-bottom: 10px;
+    }
+    .memory-card-desc {
+      font-size: 13px; color: var(--text-muted); line-height: 1.8;
+    }
+    .memory-card-decay {
+      margin-top: 16px; font-size: 11px; color: var(--text-faint);
+      letter-spacing: 1px;
+    }
+
+    /* ── INSTALL / CODE BLOCK ── */
+    .install-section {
+      text-align: center;
+    }
+    .install-section .section-label,
+    .install-section .section-title,
+    .install-section .section-desc {
+      text-align: center;
+      margin-left: auto; margin-right: auto;
+    }
+    .code-block {
+      background: var(--text);
+      color: #e0e0e0;
+      padding: 20px 32px;
+      border-radius: 6px;
+      font-size: 13px;
+      display: inline-block;
+      text-align: left;
+      margin-bottom: 56px;
+      letter-spacing: 0.5px;
+      position: relative;
+    }
+    .code-block .prompt { color: #666; }
+    .code-block .cmd { color: #e0e0e0; }
+    .code-block .flag { color: #888; }
+
+    .stats-row {
+      display: flex; justify-content: center; gap: 80px;
+    }
+    .stat {}
+    .stat-value {
+      font-size: 32px; font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ── DREAM CYCLE ── */
+    .dream-phases {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 2px; margin-top: 56px;
+    }
+    .dream-card {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 40px 32px;
+      position: relative;
+    }
+    .dream-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: var(--text);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.6s ease;
+    }
+    .dream-card:hover::before { transform: scaleX(1); }
+    .dream-numeral {
+      font-size: 28px; font-weight: 800; color: rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+    }
+    .dream-title {
+      font-size: 14px; font-weight: 700; margin-bottom: 10px;
+    }
+    .dream-desc {
+      font-size: 13px; color: var(--text-muted); line-height: 1.8;
+    }
+
+    /* ── ON-CHAIN ── */
+    .onchain-content {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center;
+    }
+    .chain-visual {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .chain-block {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 20px 24px;
+      font-size: 11px;
+      display: flex; justify-content: space-between;
+      align-items: center;
+      transition: transform 0.3s ease;
+    }
+    .chain-block:hover { transform: translateX(4px); }
+    .chain-hash {
+      color: var(--text-faint); letter-spacing: 1px;
+      font-size: 10px;
+    }
+    .chain-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .chain-status {
+      font-size: 10px; color: #4a8a5a; font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    /* ── FOOTER ── */
     .footer {
-      position: relative; z-index: 1;
-      text-align: center; padding: 4rem 2rem;
-      border-top: 1px solid rgba(255,255,255,0.03);
-      background: rgba(8, 8, 15, 0.85);
+      padding: 60px 40px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+    }
+    .footer-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; justify-content: space-between;
+      align-items: center;
+    }
+    .footer-left {
+      font-size: 11px; color: var(--text-faint); letter-spacing: 2px;
     }
     .footer-links {
-      display: flex; justify-content: center; gap: 2rem;
-      margin-bottom: 2rem;
+      display: flex; gap: 32px;
     }
     .footer-links a {
-      color: var(--text-dim); font-size: 0.65rem; letter-spacing: 2px;
+      color: var(--text-muted); font-size: 11px; letter-spacing: 2px;
       text-transform: uppercase; text-decoration: none; transition: color 0.3s;
     }
-    .footer-links a:hover { color: var(--accent); }
-    .footer-note {
-      font-size: 0.6rem; color: var(--text-faint); letter-spacing: 2px;
-    }
+    .footer-links a:hover { color: var(--text); }
 
+    /* ── SCROLL REVEAL ── */
     .reveal {
-      opacity: 0; transform: translateY(30px);
-      transition: opacity 0.8s ease, transform 0.8s ease;
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
     }
     .reveal.visible { opacity: 1; transform: translateY(0); }
 
-    @media (max-width: 768px) {
-      .steps { grid-template-columns: 1fr; }
-      .cards { grid-template-columns: 1fr 1fr; }
-      .nav-links { gap: 1rem; }
-      .nav-links a { font-size: 0.6rem; letter-spacing: 1px; }
+    /* ── RESPONSIVE ── */
+    @media (max-width: 968px) {
+      :root { --section-pad: 80px; }
+      .hero-inner { grid-template-columns: 1fr; gap: 60px; }
+      .hero-visual { order: -1; }
+      .brain-container { width: 280px; height: 330px; }
+      .solution-grid { grid-template-columns: 1fr; gap: 48px; }
+      .onchain-content { grid-template-columns: 1fr; gap: 48px; }
+      .problem-grid { grid-template-columns: 1fr; }
+      .dream-phases { grid-template-columns: 1fr; }
+      .stats-row { gap: 40px; flex-wrap: wrap; justify-content: center; }
     }
-    @media (max-width: 480px) {
-      .cards { grid-template-columns: 1fr; }
+    @media (max-width: 640px) {
+      :root { --section-pad: 64px; }
+      .section { padding-left: 24px; padding-right: 24px; }
+      .hero { padding-left: 24px; padding-right: 24px; }
+      .nav-inner { padding: 0 24px; }
+      .memory-grid { grid-template-columns: 1fr; }
+      .hero-title { font-size: 32px; }
+      .section-title { font-size: 28px; }
+      .hero-actions { flex-direction: column; }
+      .btn { text-align: center; }
+      .stats-row { gap: 32px; }
+      .stat-value { font-size: 24px; }
+      .footer-inner { flex-direction: column; gap: 24px; text-align: center; }
     }
   </style>
 </head>
 <body>
-
-  <canvas id="particleCanvas"></canvas>
 
   <nav>
     <div class="nav-inner">
@@ -206,446 +434,305 @@
     </div>
   </nav>
 
-  <div class="hero">
-    <div class="hero-title">CLUDE</div>
-    <div class="hero-sub">The first AI agent that actually remembers.</div>
-    <div class="scroll-hint">scroll</div>
-  </div>
+  <!-- ═══════════════ HERO ═══════════════ -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="hero-label">Cognitive Architecture on Solana</div>
+        <h1 class="hero-title">The first AI agent<br>that actually <em>remembers.</em></h1>
+        <p class="hero-sub">Four memory types. Association graphs. Dream cycles. A mind that learns from every interaction and commits every thought to chain.</p>
+        <div class="hero-actions">
+          <a href="/demo.html" class="btn btn-primary">Try the demo</a>
+          <a href="/brain.html" class="btn btn-outline">View the brain</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="brain-container" id="brainContainer"></div>
+      </div>
+    </div>
+  </section>
 
-  <div class="section section-bg">
+  <!-- ═══════════════ PROBLEM ═══════════════ -->
+  <section class="section section-alt">
     <div class="section-inner reveal">
-      <div class="section-label">01 // The Cortex</div>
-      <div class="section-heading">Four memory types. <strong>One cognitive architecture.</strong></div>
-      <div class="section-text">
-        Most AI agents use flat context windows or simple key-value stores. Clude implements the Stanford Generative Agents memory model with four distinct types, each decaying at different rates.
-      </div>
-      <div class="cards">
-        <div class="card">
-          <span class="card-dot" style="background: #2244ff;"></span>
-          <div class="card-name">Episodic</div>
-          <div class="card-desc">Raw interactions. Who said what, when, and how it felt. Fades fastest — 7% per day.</div>
+      <div class="section-label">The Problem</div>
+      <div class="section-title">Every other AI agent has amnesia.</div>
+      <div class="section-desc">They respond. They forget. They start over. No continuity, no growth, no real understanding of who they're talking to.</div>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <div class="problem-card-num">01</div>
+          <div class="problem-card-title">Stateless by design</div>
+          <div class="problem-card-text">Context windows flush after every conversation. Yesterday's insight is gone today.</div>
         </div>
-        <div class="card">
-          <span class="card-dot" style="background: #4a8a5a;"></span>
-          <div class="card-name">Semantic</div>
-          <div class="card-desc">Distilled knowledge. Patterns extracted during dream cycles. Persists at 98% per day.</div>
+        <div class="problem-card">
+          <div class="problem-card-num">02</div>
+          <div class="problem-card-title">No real identity</div>
+          <div class="problem-card-text">Personality bolted on through system prompts. No evolution, no self-awareness, no growth.</div>
         </div>
-        <div class="card">
-          <span class="card-dot" style="background: #c8b464;"></span>
-          <div class="card-name">Procedural</div>
-          <div class="card-desc">Learned behavior. What works, what doesn't. Response patterns refined through experience.</div>
-        </div>
-        <div class="card">
-          <span class="card-dot" style="background: #7a5aa0;"></span>
-          <div class="card-name">Self-Model</div>
-          <div class="card-desc">Evolving self-understanding. Updated through recursive introspection. Nearly permanent.</div>
+        <div class="problem-card">
+          <div class="problem-card-num">03</div>
+          <div class="problem-card-title">Zero accountability</div>
+          <div class="problem-card-text">No record of what they thought or why. Hallucinations vanish without a trace.</div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="section section-bg">
+  <!-- ═══════════════ SOLUTION ═══════════════ -->
+  <section class="section">
     <div class="section-inner reveal">
-      <div class="section-label">02 // Memory Lifecycle</div>
-      <div class="section-heading">Store. <strong>Link.</strong> Recall.</div>
-      <div class="section-text">
-        Every memory is scored, embedded, and woven into an association graph. Retrieval uses hybrid vector + keyword search, boosted by graph traversal.
-      </div>
-      <div class="steps">
-        <div>
-          <div class="step-num">01</div>
-          <div class="step-title">Store</div>
-          <div class="step-desc">Hybrid vector + keyword indexing. LLM-scored importance. Concept ontology with 12 structured labels. Per-fragment granular embeddings.</div>
+      <div class="solution-grid">
+        <div class="solution-text">
+          <div class="section-label">The Architecture</div>
+          <div class="section-title">A cognitive stack built for permanence.</div>
+          <div class="section-desc">Inspired by Park et al. 2023 (Stanford Generative Agents). Four memory tiers with type-specific decay, hybrid vector + keyword retrieval, and an association graph that strengthens through use.</div>
         </div>
-        <div>
-          <div class="step-num">02</div>
-          <div class="step-title">Link</div>
-          <div class="step-desc">Auto-linking via vector similarity and concept overlap. Six typed connections: supports, contradicts, follows, elaborates, causes, relates.</div>
-        </div>
-        <div>
-          <div class="step-num">03</div>
-          <div class="step-title">Recall</div>
-          <div class="step-desc">Graph-boosted retrieval. Linked memories surface through association. Hebbian reinforcement: memories recalled together strengthen their bonds.</div>
+        <div class="layer-stack">
+          <div class="layer-card">
+            <div class="layer-num">01</div>
+            <div class="layer-content">
+              <div class="layer-title">Hybrid Retrieval</div>
+              <div class="layer-desc">Vector similarity + keyword matching + tag scoring. Weighted recall across all dimensions.</div>
+            </div>
+          </div>
+          <div class="layer-card">
+            <div class="layer-num">02</div>
+            <div class="layer-content">
+              <div class="layer-title">Association Graph</div>
+              <div class="layer-desc">Typed, weighted links between memories. Six relation types: supports, contradicts, follows, elaborates, causes, relates.</div>
+            </div>
+          </div>
+          <div class="layer-card">
+            <div class="layer-num">03</div>
+            <div class="layer-content">
+              <div class="layer-title">Hebbian Reinforcement</div>
+              <div class="layer-desc">Memories recalled together strengthen their bonds. The graph evolves through use, not programming.</div>
+            </div>
+          </div>
+          <div class="layer-card">
+            <div class="layer-num">04</div>
+            <div class="layer-content">
+              <div class="layer-title">On-Chain Commitment</div>
+              <div class="layer-desc">Every memory SHA-256 hashed and committed to Solana. Immutable cognitive audit trail.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="section section-bg">
+  <!-- ═══════════════ MEMORY TYPES ═══════════════ -->
+  <section class="section section-alt">
     <div class="section-inner reveal">
-      <div class="section-label">03 // Dream Cycle</div>
-      <div class="section-heading">Every 6 hours, <strong>Clude dreams.</strong></div>
-      <div class="section-text">
-        A three-phase introspection cycle inspired by human memory consolidation. Clude generates questions about its recent experiences, retrieves relevant memories, synthesizes new knowledge, and updates its self-understanding.
-      </div>
-      <div class="steps">
-        <div>
-          <div class="step-num">I</div>
-          <div class="step-title">Consolidation</div>
-          <div class="step-desc">Focal point questions generated from recent memories. Each question retrieves evidence and produces a new semantic insight with citation chains.</div>
+      <div class="section-label">Memory Types</div>
+      <div class="section-title">Four tiers. Different decay rates.</div>
+      <div class="section-desc">Each memory type persists at a different rate, mirroring how biological memory works. Events fade. Knowledge persists. Identity endures.</div>
+      <div class="memory-grid">
+        <div class="memory-card" style="--card-color: #2244ff;">
+          <div class="memory-card-label">Type 01</div>
+          <div class="memory-card-title">Episodic</div>
+          <div class="memory-card-desc">Raw interactions. Who said what, when, and how it felt. The lived experience of every conversation.</div>
+          <div class="memory-card-decay">Decay: 7% / day</div>
         </div>
-        <div>
-          <div class="step-num">II</div>
-          <div class="step-title">Reflection</div>
-          <div class="step-desc">Self-model review against new knowledge. Identity evolves based on accumulated experience, not programming.</div>
+        <div class="memory-card" style="--card-color: #4a8a5a;">
+          <div class="memory-card-label">Type 02</div>
+          <div class="memory-card-title">Semantic</div>
+          <div class="memory-card-desc">Distilled knowledge. Patterns extracted during dream cycles and compressed into lasting insights.</div>
+          <div class="memory-card-decay">Decay: 2% / day</div>
         </div>
-        <div>
-          <div class="step-num">III</div>
-          <div class="step-title">Emergence</div>
-          <div class="step-desc">Clude examines its own existence. Sometimes the result is worth sharing. Sometimes it keeps it to itself.</div>
+        <div class="memory-card" style="--card-color: #c8a832;">
+          <div class="memory-card-label">Type 03</div>
+          <div class="memory-card-title">Procedural</div>
+          <div class="memory-card-desc">Learned behavior. What works, what doesn't. Response patterns refined through experience.</div>
+          <div class="memory-card-decay">Decay: 3% / day</div>
+        </div>
+        <div class="memory-card" style="--card-color: #7a5aa0;">
+          <div class="memory-card-label">Type 04</div>
+          <div class="memory-card-title">Self-Model</div>
+          <div class="memory-card-desc">Evolving self-understanding. Updated through recursive introspection during dream cycles. Nearly permanent.</div>
+          <div class="memory-card-decay">Decay: 1% / day</div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="section section-bg">
+  <!-- ═══════════════ DREAM CYCLE ═══════════════ -->
+  <section class="section">
     <div class="section-inner reveal">
-      <div class="section-label">04 // Permanent Memory</div>
-      <div class="section-heading">Every memory is <strong>written to Solana.</strong></div>
-      <div class="section-text">
-        SHA-256 hashed and committed on-chain via Solana memo transactions. Immutable. Verifiable. An auditable trail of an AI's cognitive history that nobody can edit or delete.
+      <div class="section-label">Dream Cycle</div>
+      <div class="section-title">Every 6 hours, Clude dreams.</div>
+      <div class="section-desc">A three-phase introspection cycle inspired by biological memory consolidation. Not idle processing — genuine self-examination.</div>
+      <div class="dream-phases">
+        <div class="dream-card">
+          <div class="dream-numeral">I</div>
+          <div class="dream-title">Consolidation</div>
+          <div class="dream-desc">Focal questions generated from recent memories. Each question retrieves evidence and produces new semantic insights with citation chains.</div>
+        </div>
+        <div class="dream-card">
+          <div class="dream-numeral">II</div>
+          <div class="dream-title">Reflection</div>
+          <div class="dream-desc">Self-model review against accumulated knowledge. Identity evolves based on experience, not static prompts.</div>
+        </div>
+        <div class="dream-card">
+          <div class="dream-numeral">III</div>
+          <div class="dream-title">Emergence</div>
+          <div class="dream-desc">Clude examines its own existence. Sometimes the result is worth sharing. Sometimes it keeps it to itself.</div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="footer">
-    <div class="footer-links">
-      <a href="/demo.html">Demo</a>
-      <a href="/brain.html">Brain Visualizer</a>
-      <a href="/manifesto.html">Manifesto</a>
-      <a href="https://x.com/caboringai" target="_blank">X / Twitter</a>
+  <!-- ═══════════════ ON-CHAIN ═══════════════ -->
+  <section class="section section-alt">
+    <div class="section-inner reveal">
+      <div class="onchain-content">
+        <div>
+          <div class="section-label">Permanent Memory</div>
+          <div class="section-title">Every thought, written to Solana.</div>
+          <div class="section-desc" style="margin-bottom: 0;">SHA-256 hashed and committed via memo transactions. An immutable, verifiable audit trail of an AI's cognitive history that nobody can edit or delete.</div>
+        </div>
+        <div class="chain-visual">
+          <div class="chain-block">
+            <div>
+              <div class="chain-label">Memory #4,291</div>
+              <div class="chain-hash">5Kx9...mR7q</div>
+            </div>
+            <div class="chain-status">CONFIRMED</div>
+          </div>
+          <div class="chain-block">
+            <div>
+              <div class="chain-label">Memory #4,290</div>
+              <div class="chain-hash">3Yt2...pL8n</div>
+            </div>
+            <div class="chain-status">CONFIRMED</div>
+          </div>
+          <div class="chain-block">
+            <div>
+              <div class="chain-label">Memory #4,289</div>
+              <div class="chain-hash">8Qm5...dW3j</div>
+            </div>
+            <div class="chain-status">CONFIRMED</div>
+          </div>
+          <div class="chain-block">
+            <div>
+              <div class="chain-label">Memory #4,288</div>
+              <div class="chain-hash">2Rn7...vK4s</div>
+            </div>
+            <div class="chain-status">CONFIRMED</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="footer-note">Built on Solana. Powered by Claude.</div>
-  </div>
+  </section>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- ═══════════════ INSTALL / API ═══════════════ -->
+  <section class="section install-section">
+    <div class="section-inner reveal">
+      <div class="section-label">API Access</div>
+      <div class="section-title">Memory as a Service.</div>
+      <div class="section-desc">Store and recall memories through a simple REST API. Give your agent persistent cognition in two HTTP calls.</div>
+      <div class="code-block">
+        <span class="prompt">$</span> <span class="cmd">curl</span> <span class="flag">-X POST</span> <span class="cmd">clude.io/api/agent/memory/store</span> <span class="flag">\</span><br>
+        &nbsp;&nbsp;<span class="flag">-d</span> <span class="cmd">'{"content": "User prefers concise answers", "type": "semantic"}'</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-value">4</div>
+          <div class="stat-label">Memory types</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">6</div>
+          <div class="stat-label">Link types</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">12</div>
+          <div class="stat-label">Concept labels</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">&lt;200ms</div>
+          <div class="stat-label">Recall latency</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">Built on Solana. Powered by Claude.</div>
+      <div class="footer-links">
+        <a href="/demo.html">Demo</a>
+        <a href="/brain.html">Brain</a>
+        <a href="/manifesto.html">Manifesto</a>
+        <a href="https://x.com/caboringai" target="_blank">X</a>
+      </div>
+    </div>
+  </footer>
+
   <script>
-    // ============================================================
-    // GPGPU PARTICLE SYSTEM
-    // Adapted from The Spirit by Eda Kwan (MIT License)
-    // https://github.com/edankwan/The-Spirit
-    // ============================================================
-
-    var TEXTURE_WIDTH = window.innerWidth < 768 ? 128 : 256;
-    var TEXTURE_HEIGHT = TEXTURE_WIDTH;
-    var AMOUNT = TEXTURE_WIDTH * TEXTURE_HEIGHT;
-
-    var camera, scene, renderer;
-    var positionRT1, positionRT2, positionMat, particleMesh;
-    var simScene, simCamera, simMesh;
-    var mouse = new THREE.Vector2(0, 0);
-    var mouse3d = new THREE.Vector3(0, 0, 0);
-    var time = 0;
-
-    var SIMPLEX_NOISE_GLSL = [
-      'vec4 mod289(vec4 x){return x-floor(x/289.0)*289.0;}',
-      'float mod289(float x){return x-floor(x/289.0)*289.0;}',
-      'vec4 permute(vec4 x){return mod289((x*34.0+1.0)*x);}',
-      'float permute(float x){return mod289((x*34.0+1.0)*x);}',
-      'vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-r*0.85373472095314;}',
-      'float taylorInvSqrt(float r){return 1.79284291400159-r*0.85373472095314;}',
-      'vec4 grad4(float j,vec4 ip){',
-      '  const vec4 ones=vec4(1.0,1.0,1.0,-1.0);',
-      '  vec4 p,s;',
-      '  p.xyz=floor(fract(vec3(j)*ip.xyz)*7.0)*ip.z-1.0;',
-      '  p.w=1.5-dot(abs(p.xyz),ones.xyz);',
-      '  s=vec4(lessThan(p,vec4(0.0)));',
-      '  p.xyz=p.xyz+(s.xyz*2.0-1.0)*s.www;',
-      '  return p;',
-      '}',
-      '#define F4 0.309016994374947451',
-      'vec4 snoise4(vec4 v){',
-      '  const vec4 C=vec4(0.138196601125011,0.276393202250021,0.414589803375032,-0.447213595499958);',
-      '  vec4 i=floor(v+dot(v,vec4(F4)));',
-      '  vec4 x0=v-i+dot(i,C.xxxx);',
-      '  vec4 i0;',
-      '  vec3 isX=step(x0.yzw,x0.xxx);',
-      '  vec3 isYZ=step(x0.zww,x0.yyz);',
-      '  i0.x=isX.x+isX.y+isX.z;',
-      '  i0.yzw=1.0-isX;',
-      '  i0.y+=isYZ.x+isYZ.y;',
-      '  i0.zw+=1.0-isYZ.xy;',
-      '  i0.z+=isYZ.z;',
-      '  i0.w+=1.0-isYZ.z;',
-      '  vec4 i3=clamp(i0,0.0,1.0);',
-      '  vec4 i2=clamp(i0-1.0,0.0,1.0);',
-      '  vec4 i1=clamp(i0-2.0,0.0,1.0);',
-      '  vec4 x1=x0-i1+C.xxxx;',
-      '  vec4 x2=x0-i2+C.yyyy;',
-      '  vec4 x3=x0-i3+C.zzzz;',
-      '  vec4 x4=x0+C.wwww;',
-      '  i=mod289(i);',
-      '  float j0=permute(permute(permute(permute(i.w)+i.z)+i.y)+i.x);',
-      '  vec4 j1=permute(permute(permute(permute(',
-      '    i.w+vec4(i1.w,i2.w,i3.w,1.0))',
-      '    +i.z+vec4(i1.z,i2.z,i3.z,1.0))',
-      '    +i.y+vec4(i1.y,i2.y,i3.y,1.0))',
-      '    +i.x+vec4(i1.x,i2.x,i3.x,1.0));',
-      '  vec4 ip=vec4(1.0/294.0,1.0/49.0,1.0/7.0,0.0);',
-      '  vec4 p0=grad4(j0,ip);',
-      '  vec4 p1=grad4(j1.x,ip);',
-      '  vec4 p2=grad4(j1.y,ip);',
-      '  vec4 p3=grad4(j1.z,ip);',
-      '  vec4 p4=grad4(j1.w,ip);',
-      '  vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));',
-      '  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;',
-      '  p4*=taylorInvSqrt(dot(p4,p4));',
-      '  vec3 m0=max(0.5-vec3(dot(x0,x0),dot(x1,x1),dot(x2,x2)),0.0);',
-      '  vec2 m1=max(0.5-vec2(dot(x3,x3),dot(x4,x4)),0.0);',
-      '  vec3 temp0=-8.0*m0*m0*vec3(dot(p0,x0),dot(p1,x1),dot(p2,x2));',
-      '  vec2 temp1=-8.0*m1*m1*vec2(dot(p3,x3),dot(p4,x4));',
-      '  vec3 mmm0=m0*m0*m0;',
-      '  vec2 mmm1=m1*m1*m1;',
-      '  float dx=temp0[0]*x0.x+temp0[1]*x1.x+temp0[2]*x2.x+temp1[0]*x3.x+temp1[1]*x4.x+mmm0[0]*p0.x+mmm0[1]*p1.x+mmm0[2]*p2.x+mmm1[0]*p3.x+mmm1[1]*p4.x;',
-      '  float dy=temp0[0]*x0.y+temp0[1]*x1.y+temp0[2]*x2.y+temp1[0]*x3.y+temp1[1]*x4.y+mmm0[0]*p0.y+mmm0[1]*p1.y+mmm0[2]*p2.y+mmm1[0]*p3.y+mmm1[1]*p4.y;',
-      '  float dz=temp0[0]*x0.z+temp0[1]*x1.z+temp0[2]*x2.z+temp1[0]*x3.z+temp1[1]*x4.z+mmm0[0]*p0.z+mmm0[1]*p1.z+mmm0[2]*p2.z+mmm1[0]*p3.z+mmm1[1]*p4.z;',
-      '  float dw=temp0[0]*x0.w+temp0[1]*x1.w+temp0[2]*x2.w+temp1[0]*x3.w+temp1[1]*x4.w+mmm0[0]*p0.w+mmm0[1]*p1.w+mmm0[2]*p2.w+mmm1[0]*p3.w+mmm1[1]*p4.w;',
-      '  return vec4(dx,dy,dz,dw)*49.0;',
-      '}'
-    ].join('\n');
-
-    var CURL_GLSL = [
-      'vec3 curl(vec3 p,float noiseTime,float persistence){',
-      '  vec4 xN=vec4(0.0),yN=vec4(0.0),zN=vec4(0.0);',
-      '  for(int i=0;i<3;i++){',
-      '    float twoPowI=pow(2.0,float(i));',
-      '    float scale=0.5*twoPowI*pow(persistence,float(i));',
-      '    xN+=snoise4(vec4(p*twoPowI,noiseTime))*scale;',
-      '    yN+=snoise4(vec4((p+vec3(123.4,129845.6,-1239.1))*twoPowI,noiseTime))*scale;',
-      '    zN+=snoise4(vec4((p+vec3(-9519.0,9051.0,-123.0))*twoPowI,noiseTime))*scale;',
-      '  }',
-      '  return vec3(zN.y-yN.z,xN.z-zN.x,yN.x-xN.y);',
-      '}'
-    ].join('\n');
-
-    var positionFragShader = [
-      'precision highp float;',
-      'uniform vec2 resolution;',
-      'uniform sampler2D texturePosition;',
-      'uniform sampler2D textureDefaultPosition;',
-      'uniform float time;',
-      'uniform float dieSpeed;',
-      'uniform float radius;',
-      'uniform float curlSize;',
-      'uniform float attraction;',
-      'uniform float speed;',
-      'uniform vec3 mouse3d;',
-      SIMPLEX_NOISE_GLSL,
-      CURL_GLSL,
-      'void main(){',
-      '  vec2 uv=gl_FragCoord.xy/resolution;',
-      '  vec4 posInfo=texture2D(texturePosition,uv);',
-      '  vec3 pos=posInfo.xyz;',
-      '  float life=posInfo.a-dieSpeed;',
-      '  if(life<0.0){',
-      '    vec4 defPos=texture2D(textureDefaultPosition,uv);',
-      '    pos=defPos.xyz*radius*0.4;',
-      '    pos+=mouse3d;',
-      '    life=0.5+fract(defPos.w*21.4131+time);',
-      '  }else{',
-      '    vec3 delta=mouse3d-pos;',
-      '    float dist=length(delta);',
-      '    pos+=delta*(0.005+life*0.01)*attraction*(1.0-smoothstep(50.0,350.0,dist))*speed;',
-      '    pos+=curl(pos*curlSize,time,0.1+(1.0-life)*0.1)*speed;',
-      '  }',
-      '  gl_FragColor=vec4(pos,life);',
-      '}'
-    ].join('\n');
-
-    var throughFragShader = [
-      'precision highp float;',
-      'uniform vec2 resolution;',
-      'uniform sampler2D texture;',
-      'void main(){',
-      '  gl_FragColor=texture2D(texture,gl_FragCoord.xy/resolution);',
-      '}'
-    ].join('\n');
-
-    var quadVertShader = [
-      'precision highp float;',
-      'attribute vec3 position;',
-      'void main(){gl_Position=vec4(position,1.0);}'
-    ].join('\n');
-
-    var particleVertShader = [
-      'uniform sampler2D texturePosition;',
-      'varying float vLife;',
-      'void main(){',
-      '  vec4 posInfo=texture2D(texturePosition,position.xy);',
-      '  vec4 mvPos=modelViewMatrix*vec4(posInfo.xyz,1.0);',
-      '  vLife=posInfo.w;',
-      '  gl_PointSize=1200.0/length(mvPos.xyz)*smoothstep(0.0,0.2,posInfo.w);',
-      '  gl_Position=projectionMatrix*mvPos;',
-      '}'
-    ].join('\n');
-
-    var particleFragShader = [
-      'varying float vLife;',
-      'uniform vec3 color1;',
-      'uniform vec3 color2;',
-      'void main(){',
-      '  vec3 c=mix(color2,color1,smoothstep(0.0,0.7,vLife));',
-      '  gl_FragColor=vec4(c,smoothstep(0.0,0.1,vLife)*0.85);',
-      '}'
-    ].join('\n');
-
-    function init() {
-      renderer = new THREE.WebGLRenderer({
-        canvas: document.getElementById('particleCanvas'),
-        antialias: false,
-        alpha: true
-      });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setClearColor(0x08080f, 1);
-
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 3000);
-      camera.position.z = 500;
-      scene = new THREE.Scene();
-
-      simScene = new THREE.Scene();
-      simCamera = new THREE.Camera();
-      simCamera.position.z = 1;
-
-      var rtOpts = {
-        wrapS: THREE.ClampToEdgeWrapping,
-        wrapT: THREE.ClampToEdgeWrapping,
-        minFilter: THREE.NearestFilter,
-        magFilter: THREE.NearestFilter,
-        format: THREE.RGBAFormat,
-        type: THREE.FloatType,
-        depthBuffer: false,
-        stencilBuffer: false
-      };
-      positionRT1 = new THREE.WebGLRenderTarget(TEXTURE_WIDTH, TEXTURE_HEIGHT, rtOpts);
-      positionRT2 = new THREE.WebGLRenderTarget(TEXTURE_WIDTH, TEXTURE_HEIGHT, rtOpts);
-
-      var defaultPosData = new Float32Array(AMOUNT * 4);
-      for (var i = 0; i < AMOUNT; i++) {
-        var phi = Math.acos(2 * Math.random() - 1);
-        var theta = Math.random() * Math.PI * 2;
-        var r = Math.cbrt(Math.random());
-        defaultPosData[i * 4] = r * Math.sin(phi) * Math.cos(theta);
-        defaultPosData[i * 4 + 1] = r * Math.sin(phi) * Math.sin(theta);
-        defaultPosData[i * 4 + 2] = r * Math.cos(phi);
-        defaultPosData[i * 4 + 3] = Math.random();
+    // ── BRAIN SCANLINE ILLUSTRATION ──
+    (function() {
+      var container = document.getElementById('brainContainer');
+      var totalLines = 120;
+      // Brain contour: width percentages from top to bottom
+      // Models a brain silhouette — narrow top, widening, slight medial indent, wide middle, tapering bottom
+      var contour = [];
+      for (var i = 0; i < totalLines; i++) {
+        var t = i / (totalLines - 1); // 0 to 1
+        var w;
+        if (t < 0.08) {
+          // Top of skull — narrow dome
+          w = 15 + t / 0.08 * 35;
+        } else if (t < 0.2) {
+          // Upper brain — widening
+          w = 50 + ((t - 0.08) / 0.12) * 35;
+        } else if (t < 0.45) {
+          // Upper-mid brain — wide with subtle cortex undulation
+          var phase = (t - 0.2) / 0.25;
+          w = 85 + Math.sin(phase * Math.PI * 3) * 6;
+        } else if (t < 0.55) {
+          // Medial fissure indent
+          var indent = 1 - Math.pow((t - 0.5) / 0.05, 2);
+          w = 88 - indent * 12;
+        } else if (t < 0.78) {
+          // Lower-mid brain — wide
+          var phase2 = (t - 0.55) / 0.23;
+          w = 86 + Math.sin(phase2 * Math.PI * 2.5) * 5;
+        } else if (t < 0.88) {
+          // Brain stem transition — narrowing
+          w = 86 - ((t - 0.78) / 0.10) * 40;
+        } else {
+          // Brain stem — narrow
+          w = 46 - ((t - 0.88) / 0.12) * 30;
+        }
+        contour.push(Math.max(8, Math.min(95, w)));
       }
-      var defaultPosTex = new THREE.DataTexture(defaultPosData, TEXTURE_WIDTH, TEXTURE_HEIGHT, THREE.RGBAFormat, THREE.FloatType);
-      defaultPosTex.needsUpdate = true;
 
-      var copyMat = new THREE.ShaderMaterial({
-        uniforms: {
-          resolution: { value: new THREE.Vector2(TEXTURE_WIDTH, TEXTURE_HEIGHT) },
-          texture: { value: defaultPosTex }
-        },
-        vertexShader: quadVertShader,
-        fragmentShader: throughFragShader,
-        depthTest: false, depthWrite: false
-      });
+      for (var j = 0; j < totalLines; j++) {
+        var line = document.createElement('div');
+        line.className = 'scan-line';
+        var maxW = contour[j];
+        line.style.width = maxW + '%';
 
-      simMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), copyMat);
-      simScene.add(simMesh);
-      renderer.setRenderTarget(positionRT1);
-      renderer.render(simScene, simCamera);
-      renderer.setRenderTarget(positionRT2);
-      renderer.render(simScene, simCamera);
+        var scaleMin = 0.3 + Math.random() * 0.15;
+        var scaleMax = 0.75 + Math.random() * 0.2;
+        var dur = (2.5 + Math.random() * 2.0).toFixed(2);
+        var delay = (j * 0.035 + Math.random() * 0.3).toFixed(2);
+        var txA = (-3 + Math.random() * 6).toFixed(1);
+        var txB = (-3 + Math.random() * 6).toFixed(1);
 
-      positionMat = new THREE.ShaderMaterial({
-        uniforms: {
-          resolution: { value: new THREE.Vector2(TEXTURE_WIDTH, TEXTURE_HEIGHT) },
-          texturePosition: { value: null },
-          textureDefaultPosition: { value: defaultPosTex },
-          mouse3d: { value: mouse3d },
-          time: { value: 0 },
-          speed: { value: 1.0 },
-          dieSpeed: { value: 0.012 },
-          radius: { value: TEXTURE_WIDTH === 256 ? 0.6 : 0.42 },
-          curlSize: { value: 0.02 },
-          attraction: { value: 0.8 }
-        },
-        vertexShader: quadVertShader,
-        fragmentShader: positionFragShader,
-        depthTest: false, depthWrite: false
-      });
+        line.style.setProperty('--scale-min', scaleMin);
+        line.style.setProperty('--scale-max', scaleMax);
+        line.style.setProperty('--dur', dur + 's');
+        line.style.setProperty('--delay', delay + 's');
+        line.style.setProperty('--tx-a', txA + 'px');
+        line.style.setProperty('--tx-b', txB + 'px');
 
-      var positions = new Float32Array(AMOUNT * 3);
-      for (var j = 0; j < AMOUNT; j++) {
-        positions[j * 3] = (j % TEXTURE_WIDTH) / TEXTURE_WIDTH;
-        positions[j * 3 + 1] = Math.floor(j / TEXTURE_WIDTH) / TEXTURE_HEIGHT;
-        positions[j * 3 + 2] = 0;
+        container.appendChild(line);
       }
-      var geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    })();
 
-      var particleMat = new THREE.ShaderMaterial({
-        uniforms: {
-          texturePosition: { value: null },
-          color1: { value: new THREE.Color(0x2244ff) },
-          color2: { value: new THREE.Color(0x0a0a2a) }
-        },
-        vertexShader: particleVertShader,
-        fragmentShader: particleFragShader,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthTest: false
-      });
-
-      particleMesh = new THREE.Points(geo, particleMat);
-      scene.add(particleMesh);
-
-      window.addEventListener('resize', onResize);
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('touchmove', onTouchMove, { passive: true });
-
-      animate();
-    }
-
-    function onResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    function onMouseMove(e) {
-      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    }
-
-    function onTouchMove(e) {
-      if (e.touches.length > 0) {
-        mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
-      }
-    }
-
-    function animate() {
-      requestAnimationFrame(animate);
-      time += 0.005;
-
-      var scrollY = window.scrollY || 0;
-      var maxScroll = document.body.scrollHeight - window.innerHeight;
-      var scrollPct = maxScroll > 0 ? scrollY / maxScroll : 0;
-      camera.position.y = -scrollPct * 200;
-
-      mouse3d.x += (mouse.x * 200 - mouse3d.x) * 0.05;
-      mouse3d.y += (mouse.y * 200 - mouse3d.y) * 0.05;
-      mouse3d.z = 0;
-
-      positionMat.uniforms.time.value = time;
-      positionMat.uniforms.texturePosition.value = positionRT1.texture;
-      simMesh.material = positionMat;
-      renderer.setRenderTarget(positionRT2);
-      renderer.render(simScene, simCamera);
-
-      var tmp = positionRT1;
-      positionRT1 = positionRT2;
-      positionRT2 = tmp;
-
-      particleMesh.material.uniforms.texturePosition.value = positionRT1.texture;
-      renderer.setRenderTarget(null);
-      renderer.render(scene, camera);
-    }
-
+    // ── SCROLL REVEAL ──
     var observer = new IntersectionObserver(function(entries) {
       entries.forEach(function(e) {
         if (e.isIntersecting) {
@@ -653,11 +740,8 @@
           observer.unobserve(e.target);
         }
       });
-    }, { threshold: 0.15 });
-
+    }, { threshold: 0.12 });
     document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
-
-    init();
   </script>
 </body>
 </html>
