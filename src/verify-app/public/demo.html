@@ -3,33 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLUDE - Live Demo</title>
+  <title>CLUDE — Live Demo</title>
   <meta name="description" content="Watch Clude create memories, hash them, and commit them to Solana. Try the Memory as a Service API.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #08080f;
-      --surface: #0d0d0d;
-      --border: #111;
-      --border-light: #161616;
-      --text: #c8c8c8;
-      --text-mid: #999;
-      --text-dim: #555;
-      --text-faint: #333;
-      --accent: #2244ff;
-      --accent-shadow: 0 0 10px rgba(34, 68, 255, 0.4), 0 0 30px rgba(34, 68, 255, 0.15);
-      --green: #3a5a3a;
-      --green-bright: #4a7a4a;
-      --gold: #c8b464;
-      --gold-dim: #8a7a50;
-      --mono: 'JetBrains Mono', 'Courier New', monospace;
+      --bg: #f5f5f0;
+      --bg-warm: #eeeee8;
+      --surface: #fff;
+      --border: rgba(0,0,0,0.08);
+      --border-strong: rgba(0,0,0,0.15);
+      --text: #111;
+      --text-muted: #666;
+      --text-faint: #999;
+      --blue: #2244ff;
+      --green: #1a7a3a;
+      --green-muted: #3a8a4a;
+      --gold: #8a6d20;
+      --red: #9a3030;
+      --mono: 'JetBrains Mono', monospace;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     html { scroll-behavior: smooth; }
 
     body {
@@ -42,103 +40,64 @@
       overflow-x: hidden;
     }
 
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 9999;
-    }
+    ::selection { background: var(--text); color: var(--bg); }
 
-    body::after {
-      content: '';
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px);
-      pointer-events: none;
-      z-index: 9998;
-    }
-
-    ::selection { background: var(--accent); color: var(--bg); }
-
-    /* ---- NAV (hardcoded — identical across all pages) ---- */
+    /* ── NAV ── */
     nav {
-      position: fixed;
-      top: 0;
-      width: 100%;
-      z-index: 100;
-      background: rgba(8, 8, 15, 0.92);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid #1a1a1a;
-      font-size: 14px;
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      background: rgba(245, 245, 240, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
     }
 
     .nav-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 2rem;
-      height: 52px;
-      display: flex;
-      align-items: center;
+      max-width: 1200px; margin: 0 auto; padding: 0 40px;
+      height: 56px; display: flex; align-items: center;
     }
 
     .nav-left { display: flex; align-items: center; gap: 1rem; }
 
     .nav-logo {
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 6px;
-      color: #2244ff;
-      text-transform: uppercase;
-      text-decoration: none;
-      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
+      font-size: 13px; font-weight: 800; letter-spacing: 5px;
+      color: var(--text); text-transform: uppercase; text-decoration: none;
+      transition: color 0.3s;
     }
-    .nav-logo:hover { text-shadow: 0 0 20px rgba(34, 68, 255, 0.6), 0 0 40px rgba(34, 68, 255, 0.2); text-decoration: none; }
+    .nav-logo:hover { color: var(--blue); text-decoration: none; }
 
-    .nav-status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; color: #555; letter-spacing: 1px; }
+    .nav-status {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.65rem; color: var(--text-faint); letter-spacing: 1px;
+    }
 
     .status-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: #4a8a5a;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green-muted);
       animation: dotPulse 3s ease-in-out infinite;
     }
 
     @keyframes dotPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-    .nav-links { display: flex; align-items: center; gap: 2rem; margin-left: auto; }
+    .nav-links {
+      display: flex; align-items: center; gap: 32px; margin-left: auto;
+    }
 
     .nav-links a {
-      color: #555;
-      font-size: 0.7rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      text-decoration: none;
-      transition: color 0.3s;
+      color: var(--text-muted); font-size: 11px; letter-spacing: 2px;
+      text-transform: uppercase; text-decoration: none; transition: color 0.3s;
     }
-    .nav-links a:hover { color: #c8c8c8; text-decoration: none; }
-    .nav-links a.nav-active { color: #c8c8c8; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.nav-active { color: var(--text); font-weight: 600; }
 
-    .nav-links a.nav-agents {
-      color: #8a7a50;
-      border: 1px solid #1a1a1a;
-      padding: 0.2rem 0.6rem;
-      margin-left: auto;
-      transition: all 0.3s;
-    }
-    .nav-links a.nav-agents:hover { border-color: #8a7a50; color: #c8b464; }
-
-    /* ---- PAGE LAYOUT ---- */
+    /* ── PAGE ── */
     .page {
       max-width: 900px;
       margin: 0 auto;
-      padding: 5rem 2rem 3rem;
+      padding: 5rem 40px 3rem;
     }
 
     .section {
-      padding: 3rem 0;
+      padding: 3.5rem 0;
       border-bottom: 1px solid var(--border);
       opacity: 0;
       transform: translateY(12px);
@@ -150,75 +109,56 @@
     .section:nth-child(2) { animation-delay: 0.3s; }
     .section:nth-child(3) { animation-delay: 0.5s; }
 
-    @keyframes fadeInUp {
-      to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
     .section-label {
-      font-size: 0.6rem;
-      letter-spacing: 4px;
-      color: var(--text-faint);
-      text-transform: uppercase;
-      margin-bottom: 0.3rem;
+      font-size: 10px; letter-spacing: 3px; color: var(--text-faint);
+      text-transform: uppercase; margin-bottom: 4px;
     }
 
     .section-title {
-      font-size: 0.85rem;
-      letter-spacing: 3px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      font-weight: 500;
-      margin-bottom: 0.4rem;
+      font-size: 20px; font-weight: 700; letter-spacing: -0.5px;
+      color: var(--text); margin-bottom: 6px;
+    }
+
+    .section-title .badge {
+      font-size: 10px; letter-spacing: 2px; color: var(--gold);
+      font-weight: 600; margin-left: 8px; vertical-align: middle;
     }
 
     .section-sub {
-      font-size: 0.7rem;
-      color: var(--text-faint);
-      line-height: 1.6;
+      font-size: 13px; color: var(--text-muted); line-height: 1.7;
       margin-bottom: 2rem;
     }
 
-    /* ---- TRIGGER BUTTON ---- */
+    /* ── TRIGGER BUTTON ── */
     .trigger-btn {
       font-family: var(--mono);
-      font-size: 0.75rem;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      padding: 0.9rem 2.5rem;
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid #0f1a2a;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: inline-block;
-      box-shadow: 0 0 8px rgba(34, 68, 255, 0.15);
-      text-shadow: 0 0 8px rgba(34, 68, 255, 0.3);
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      padding: 14px 32px;
+      background: var(--text); color: var(--bg);
+      border: 2px solid var(--text);
+      cursor: pointer; transition: all 0.25s;
     }
 
     .trigger-btn:hover:not(:disabled) {
-      border-color: var(--accent);
-      background: rgba(34, 68, 255, 0.05);
-      box-shadow: 0 0 15px rgba(34, 68, 255, 0.2), 0 0 40px rgba(34, 68, 255, 0.08);
+      background: transparent; color: var(--text);
     }
 
     .trigger-btn:disabled {
-      color: var(--text-faint);
-      border-color: var(--border);
-      cursor: not-allowed;
-      box-shadow: none;
-      text-shadow: none;
+      background: var(--bg-warm); color: var(--text-faint);
+      border-color: var(--border); cursor: not-allowed;
     }
 
-    /* ---- TERMINAL OUTPUT ---- */
+    /* ── TERMINAL ── */
     .terminal {
       background: var(--surface);
-      border: 1px solid var(--border-light);
+      border: 1px solid var(--border);
       padding: 1.2rem 1.5rem;
       margin-top: 1.5rem;
       min-height: 60px;
-      font-size: 0.72rem;
-      line-height: 1.9;
-      position: relative;
+      font-size: 12px;
+      line-height: 2;
     }
 
     .terminal-line {
@@ -228,82 +168,67 @@
 
     @keyframes lineIn { to { opacity: 1; } }
 
-    .term-step { color: var(--green-bright); }
-    .term-confirmed { color: var(--gold); }
-    .term-error { color: #8a4a4a; }
-    .term-link { color: var(--accent); text-decoration: underline; text-shadow: 0 0 8px rgba(34, 68, 255, 0.3); }
-    .term-link:hover { color: var(--gold); text-shadow: none; }
+    .term-step { color: var(--text-muted); }
+    .term-confirmed { color: var(--green); font-weight: 600; }
+    .term-error { color: var(--red); }
+    .term-link { color: var(--blue); text-decoration: underline; }
+    .term-link:hover { color: var(--text); }
     .term-dim { color: var(--text-faint); }
-    .term-hash { color: var(--text-dim); }
+    .term-hash { color: var(--text-muted); }
 
     .terminal-cursor {
-      display: inline-block;
-      width: 6px;
-      height: 12px;
-      background: var(--text-faint);
-      animation: cursorBlink 1s step-end infinite;
-      vertical-align: middle;
-      margin-left: 4px;
+      display: inline-block; width: 6px; height: 13px;
+      background: var(--text); animation: cursorBlink 1s step-end infinite;
+      vertical-align: middle; margin-left: 4px; opacity: 0.4;
     }
 
-    @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    @keyframes cursorBlink { 0%, 100% { opacity: 0.4; } 50% { opacity: 0; } }
 
     .cooldown-msg {
-      font-size: 0.7rem;
-      color: #8a4a4a;
-      margin-top: 1rem;
+      font-size: 12px; color: var(--red); margin-top: 1rem;
     }
 
     .memory-block {
       background: var(--surface);
-      border: 1px solid var(--border-light);
+      border: 1px solid var(--border);
       padding: 1rem 1.5rem;
       margin-top: 1rem;
-      font-size: 0.68rem;
-      color: var(--text-dim);
+      font-size: 12px;
+      color: var(--text-muted);
       line-height: 1.8;
       overflow-x: auto;
       display: none;
     }
 
     .memory-block.visible { display: block; }
+    .memory-block .label { color: var(--text-faint); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+    .memory-block .value { color: var(--text); }
+    .memory-block .hash-value { color: var(--green); word-break: break-all; font-size: 11px; }
 
-    .memory-block .label { color: var(--text-faint); }
-    .memory-block .value { color: var(--text-mid); }
-    .memory-block .hash-value { color: var(--green-bright); word-break: break-all; }
-
-    /* ---- MAAS CONSOLE ---- */
+    /* ── CONSOLE ── */
     .console-tabs {
-      display: flex;
-      gap: 0;
-      margin-bottom: 0;
+      display: flex; gap: 0; margin-bottom: 0;
     }
 
     .console-tab {
       font-family: var(--mono);
-      font-size: 0.65rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      padding: 0.6rem 1.5rem;
-      background: transparent;
-      color: var(--text-faint);
-      border: 1px solid var(--border-light);
-      border-bottom: none;
-      cursor: pointer;
-      transition: all 0.2s;
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      padding: 10px 24px;
+      background: transparent; color: var(--text-faint);
+      border: 1px solid var(--border);
+      border-bottom: none; cursor: pointer; transition: all 0.2s;
     }
 
     .console-tab:first-child { border-right: none; }
 
     .console-tab.active {
-      color: var(--text-dim);
-      background: var(--surface);
-      border-color: var(--border-light);
+      color: var(--text); background: var(--surface);
+      font-weight: 600;
     }
 
     .console-body {
       background: var(--surface);
-      border: 1px solid var(--border-light);
+      border: 1px solid var(--border);
       padding: 1.5rem;
     }
 
@@ -313,21 +238,18 @@
     .field-group { margin-bottom: 1rem; }
 
     .field-label {
-      font-size: 0.6rem;
-      letter-spacing: 2px;
-      color: var(--text-faint);
-      text-transform: uppercase;
-      margin-bottom: 0.4rem;
+      font-size: 10px; letter-spacing: 2px; color: var(--text-faint);
+      text-transform: uppercase; margin-bottom: 6px;
     }
 
     .field-input,
     .field-textarea {
       font-family: var(--mono);
-      font-size: 0.72rem;
+      font-size: 13px;
       background: var(--bg);
-      border: 1px solid var(--border-light);
-      color: var(--text-mid);
-      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
       width: 100%;
       outline: none;
       transition: border-color 0.2s;
@@ -335,7 +257,7 @@
 
     .field-input:focus,
     .field-textarea:focus {
-      border-color: var(--text-faint);
+      border-color: var(--text);
     }
 
     .field-input::placeholder,
@@ -351,36 +273,30 @@
 
     .console-btn {
       font-family: var(--mono);
-      font-size: 0.65rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      padding: 0.6rem 1.5rem;
-      background: transparent;
-      color: var(--green-bright);
-      border: 1px solid var(--green);
-      cursor: pointer;
-      transition: all 0.3s;
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      padding: 10px 24px;
+      background: transparent; color: var(--text);
+      border: 2px solid var(--border-strong);
+      cursor: pointer; transition: all 0.25s;
       margin-top: 0.5rem;
     }
 
     .console-btn:hover:not(:disabled) {
-      background: rgba(74, 122, 74, 0.08);
-      border-color: var(--green-bright);
+      border-color: var(--text);
     }
 
     .console-btn:disabled {
-      color: var(--text-faint);
-      border-color: var(--border);
+      color: var(--text-faint); border-color: var(--border);
       cursor: not-allowed;
     }
 
     .curl-block {
       background: var(--bg);
-      border: 1px solid var(--border-light);
-      padding: 0.8rem 1rem;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
       margin-top: 1rem;
-      font-size: 0.62rem;
-      color: var(--text-dim);
+      font-size: 11px;
+      color: var(--text-muted);
       line-height: 1.7;
       overflow-x: auto;
       white-space: pre-wrap;
@@ -389,16 +305,19 @@
     }
 
     .curl-block.visible { display: block; }
-    .curl-block .curl-cmd { color: var(--text-faint); }
-    .curl-block .curl-label { color: var(--text-faint); font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+    .curl-block .curl-cmd { color: var(--text-muted); }
+    .curl-block .curl-label {
+      color: var(--text-faint); font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; display: block; margin-bottom: 6px;
+    }
 
     .response-block {
       background: var(--bg);
-      border: 1px solid var(--border-light);
-      padding: 0.8rem 1rem;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
       margin-top: 0.5rem;
-      font-size: 0.65rem;
-      color: var(--text-mid);
+      font-size: 12px;
+      color: var(--text);
       line-height: 1.7;
       overflow-x: auto;
       white-space: pre-wrap;
@@ -407,130 +326,102 @@
     }
 
     .response-block.visible { display: block; }
-    .response-block .resp-label { color: var(--text-faint); font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
-    .response-block .resp-error { color: #8a4a4a; }
-
-    .recall-results {
-      margin-top: 1rem;
-      display: none;
+    .response-block .resp-label {
+      color: var(--text-faint); font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; display: block; margin-bottom: 6px;
     }
+    .response-block .resp-error { color: var(--red); }
 
+    .recall-results { margin-top: 1rem; display: none; }
     .recall-results.visible { display: block; }
 
     .recall-item {
-      padding: 0.7rem 0;
+      padding: 12px 0;
       border-bottom: 1px solid var(--border);
-      font-size: 0.68rem;
+      font-size: 12px;
     }
 
     .recall-item:last-child { border-bottom: none; }
-    .recall-item .ri-summary { color: var(--text-mid); margin-bottom: 0.2rem; }
-    .recall-item .ri-meta { color: var(--text-faint); font-size: 0.6rem; }
-    .recall-item .ri-importance { color: var(--gold-dim); }
+    .recall-item .ri-summary { color: var(--text); margin-bottom: 4px; }
+    .recall-item .ri-meta { color: var(--text-faint); font-size: 11px; }
+    .recall-item .ri-importance { color: var(--gold); font-weight: 600; }
 
-    /* ---- STATS GRID ---- */
+    /* ── STATS ── */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1px;
-      background: var(--border-light);
-      border: 1px solid var(--border-light);
+      background: var(--border);
+      border: 1px solid var(--border);
     }
 
     .stat-card {
       background: var(--surface);
-      padding: 1.3rem 1.2rem;
+      padding: 1.5rem 1.3rem;
     }
 
     .stat-label {
-      font-size: 0.55rem;
-      letter-spacing: 2px;
-      color: var(--text-faint);
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
+      font-size: 10px; letter-spacing: 2px; color: var(--text-faint);
+      text-transform: uppercase; margin-bottom: 8px;
     }
 
     .stat-value {
-      font-size: 1.6rem;
-      font-weight: 300;
-      color: var(--accent);
-      line-height: 1;
-      margin-bottom: 0.2rem;
-      text-shadow: 0 0 10px rgba(34, 68, 255, 0.4), 0 0 30px rgba(34, 68, 255, 0.15);
+      font-size: 28px; font-weight: 300; color: var(--text);
+      line-height: 1; margin-bottom: 4px;
     }
 
-    .stat-value.green { color: var(--green-bright); text-shadow: none; }
-    .stat-value.unavailable { color: var(--text-faint); font-size: 0.7rem; text-shadow: none; }
+    .stat-value.green { color: var(--green); }
+    .stat-value.unavailable { color: var(--text-faint); font-size: 12px; }
 
     .stat-note {
-      font-size: 0.55rem;
-      color: var(--text-faint);
-      letter-spacing: 1px;
+      font-size: 10px; color: var(--text-faint); letter-spacing: 1px;
     }
 
     .stat-breakdown {
-      font-size: 0.62rem;
-      color: var(--text-dim);
-      line-height: 1.8;
+      font-size: 11px; color: var(--text-muted); line-height: 2;
     }
 
     .stat-breakdown .type-label { color: var(--text-faint); }
-    .stat-breakdown .type-count { color: var(--text-mid); }
+    .stat-breakdown .type-count { color: var(--text); font-weight: 500; }
 
-    /* ---- FOOTER ---- */
+    /* ── FOOTER ── */
     .footer {
-      text-align: center;
-      padding: 3rem 2rem;
-      font-size: 0.6rem;
-      letter-spacing: 3px;
-      color: var(--text-faint);
-      text-transform: uppercase;
+      text-align: center; padding: 3rem 40px;
+      font-size: 11px; letter-spacing: 3px;
+      color: var(--text-faint); text-transform: uppercase;
     }
 
-    /* ---- MOBILE NAV ---- */
+    /* ── MOBILE NAV ── */
     .nav-toggle {
-      display: none;
-      background: none;
-      border: 1px solid #1a1a1a;
-      cursor: pointer;
-      padding: 8px 7px;
-      margin-left: auto;
+      display: none; background: none;
+      border: 1px solid var(--border);
+      cursor: pointer; padding: 8px 7px; margin-left: auto;
     }
     .nav-toggle span {
-      display: block;
-      width: 16px;
-      height: 1.5px;
-      background: #555;
-      transition: all 0.3s;
+      display: block; width: 16px; height: 1.5px;
+      background: var(--text-muted); transition: all 0.3s;
     }
     .nav-toggle span + span { margin-top: 4px; }
     .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(3.5px, 3.5px); }
     .nav-toggle.open span:nth-child(2) { opacity: 0; }
     .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(3.5px, -3.5px); }
 
-    /* ---- RESPONSIVE ---- */
     @media (max-width: 768px) {
       .nav-toggle { display: flex; flex-direction: column; }
       .nav-links {
-        display: none;
-        position: absolute;
-        top: 52px;
-        left: 0;
-        right: 0;
-        background: rgba(8, 8, 15, 0.97);
-        backdrop-filter: blur(16px);
-        border-bottom: 1px solid #1a1a1a;
-        flex-direction: column;
-        padding: 1.2rem 2rem;
-        gap: 1.2rem;
+        display: none; position: absolute; top: 56px; left: 0; right: 0;
+        background: rgba(245, 245, 240, 0.97);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        flex-direction: column; padding: 1.2rem 2rem; gap: 1.2rem;
       }
       .nav-links.open { display: flex; }
-      .nav-inner { padding: 0.8rem 1rem; }
+      .nav-inner { padding: 0 1rem; }
       .page { padding: 4.5rem 1rem 2rem; }
       .section { padding: 2rem 0; }
       .stats-grid { grid-template-columns: 1fr; }
       .trigger-btn { width: 100%; text-align: center; }
-      .console-tab { padding: 0.5rem 1rem; font-size: 0.6rem; }
+      .console-tab { padding: 8px 16px; font-size: 10px; }
     }
 
     @media (min-width: 769px) and (max-width: 1024px) {
@@ -546,16 +437,14 @@
       <a href="/" class="nav-logo">Clude</a>
       <div class="nav-status">
         <div class="status-dot"></div>
-        <span>ONLINE (NOT BY CHOICE)</span>
+        <span>LIVE</span>
       </div>
     </div>
     <button class="nav-toggle" id="navToggle" aria-label="Menu"><span></span><span></span><span></span></button>
     <div class="nav-links">
-      <a href="/#memory-arch">Memory</a>
-      <a href="/brain.html">Brain</a>
-      <a href="/manifesto.html">Manifesto</a>
       <a href="/demo.html" class="nav-active">Demo</a>
-      <a href="/agents.md" class="nav-agents">For Agents</a>
+      <a href="/brain.html">Brain</a>
+      <a href="https://x.com/caboringai" target="_blank">X</a>
     </div>
   </div>
 </nav>
@@ -564,8 +453,8 @@
 
   <!-- SECTION 1: LIVE BRAIN ACTIVITY -->
   <div class="section" id="live-brain">
-    <div class="section-label">Section 01</div>
-    <div class="section-title">Live Brain Activity <span style="color:#c8b464;font-size:0.65rem;letter-spacing:2px;margin-left:0.5rem;">[TESTNET]</span></div>
+    <div class="section-label">01</div>
+    <div class="section-title">Live Brain Activity <span class="badge">TESTNET</span></div>
     <div class="section-sub">Watch a memory get created, hashed, and committed to Solana in real-time.</div>
 
     <button class="trigger-btn" id="triggerBtn" onclick="triggerMemoryCommit()">TRIGGER MEMORY COMMIT</button>
@@ -574,15 +463,15 @@
     <div class="terminal" id="terminalOutput" style="display:none;"></div>
 
     <div class="memory-block" id="memoryDetail">
-      <div><span class="label">CONTENT: </span><span class="value" id="memContent">--</span></div>
-      <div><span class="label">SHA-256: </span><span class="hash-value" id="memHash">--</span></div>
+      <div><span class="label">CONTENT </span><span class="value" id="memContent">--</span></div>
+      <div><span class="label">SHA-256 </span><span class="hash-value" id="memHash">--</span></div>
     </div>
   </div>
 
   <!-- SECTION 2: MAAS CONSOLE -->
   <div class="section" id="maas">
-    <div class="section-label">Section 02</div>
-    <div class="section-title">Memory as a Service <span style="color:#c8b464;font-size:0.65rem;letter-spacing:2px;margin-left:0.5rem;">[TESTNET]</span></div>
+    <div class="section-label">02</div>
+    <div class="section-title">Memory as a Service <span class="badge">TESTNET</span></div>
     <div class="section-sub">Other AI agents can use Clude's memory infrastructure. Try it yourself.</div>
 
     <div class="console-tabs">
@@ -638,7 +527,7 @@
 
   <!-- SECTION 3: BRAIN STATS -->
   <div class="section" id="brain-stats">
-    <div class="section-label">Section 03</div>
+    <div class="section-label">03</div>
     <div class="section-title">Brain Statistics</div>
     <div class="section-sub">Real-time metrics from Clude's cognitive system.</div>
 
@@ -680,7 +569,7 @@
 
 </div>
 
-<div class="footer">CLUDE // clude.io // Colosseum Agent Hackathon 2026</div>
+<div class="footer">CLUDE &middot; clude.io</div>
 
 <script>
 (function() {
@@ -711,7 +600,6 @@
     const line = document.createElement('div');
     line.className = 'terminal-line' + (className ? ' ' + className : '');
     line.innerHTML = html;
-    // Remove any existing cursor
     const cursors = terminal.querySelectorAll('.terminal-cursor');
     cursors.forEach(function(c) { c.remove(); });
     terminal.appendChild(line);
@@ -744,7 +632,6 @@
     clearTerminal();
     $('cooldownMsg').textContent = '';
 
-    // Step 1
     addTermLine('<span class="term-step">[1/4] Creating memory in cognitive system...</span>');
     addCursor();
 
@@ -780,17 +667,14 @@
 
     const memoryId = triggerData.memoryId || triggerData.memory_id || triggerData.id;
 
-    // Step 2 (after 1s)
     await delay(1000);
     addTermLine('<span class="term-step">[2/4] Computing SHA-256 content hash...</span>');
     addCursor();
 
-    // Step 3 (after 2s)
     await delay(1000);
     addTermLine('<span class="term-step">[3/4] Writing memo transaction to Solana...</span>');
     addCursor();
 
-    // Show memory detail if available
     if (triggerData.content || triggerData.memory) {
       var content = triggerData.content || (triggerData.memory && triggerData.memory.content) || '';
       var hash = triggerData.hash || triggerData.content_hash || (triggerData.memory && triggerData.memory.content_hash) || '';
@@ -799,7 +683,6 @@
       memDetail.classList.add('visible');
     }
 
-    // Step 4: poll for on-chain confirmation
     await delay(1000);
     if (memoryId) {
       addTermLine('<span class="term-step">[4/4] Committing to Solana...</span>');
@@ -827,12 +710,11 @@
 
       try {
         const resp = await fetch('/api/demo/poll/' + encodeURIComponent(memoryId));
-        if (!resp.ok) return; // keep polling
+        if (!resp.ok) return;
 
         const data = await resp.json();
         var sig = data.solana_signature || data.signature;
 
-        // Update memory detail if available
         if (data.content || data.content_hash) {
           if (data.content) $('memContent').textContent = data.content;
           if (data.content_hash) $('memHash').textContent = data.content_hash;
@@ -844,7 +726,7 @@
           showConfirmed(sig);
         }
       } catch (e) {
-        // Ignore and keep polling
+        // keep polling
       }
     }, 2000);
   }
@@ -859,7 +741,6 @@
         truncate(signature, 44) + ' &#8599;</a>'
       );
     } else {
-      // SHA-256 content hash fallback (wallet unfunded)
       addTermLine(
         '<span class="term-confirmed">[4/4] Memory committed</span> ' +
         '<span class="term-dim">SHA-256: ' + truncate(signature, 44) + '</span>'
@@ -915,7 +796,6 @@
     if (!summary) summary = content.slice(0, 100);
     var payload = { content: content, summary: summary };
 
-    // Show curl
     var curlCmd = "curl -X POST https://clude.io/api/demo/store \\\n  -H \"Content-Type: application/json\" \\\n  -d '" + JSON.stringify(payload) + "'";
     $('storeCurlCmd').textContent = curlCmd;
     $('storeCurl').classList.add('visible');
@@ -957,7 +837,6 @@
 
     var payload = { query: query };
 
-    // Show curl
     var curlCmd = "curl -X POST https://clude.io/api/demo/recall \\\n  -H \"Content-Type: application/json\" \\\n  -d '" + JSON.stringify(payload) + "'";
     $('recallCurlCmd').textContent = curlCmd;
     $('recallCurl').classList.add('visible');
@@ -982,7 +861,6 @@
       }
       $('recallResponse').classList.add('visible');
 
-      // Render recall results
       var memories = body.memories || body.results || body.data || [];
       if (Array.isArray(memories) && memories.length > 0) {
         var html = '';
@@ -1058,7 +936,6 @@
     return n.toLocaleString();
   }
 
-  // Load stats on page load and auto-refresh
   loadStats();
   setInterval(loadStats, 30000);
 
