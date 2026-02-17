@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { config } from './config';
 import { initDatabase } from './core/database';
 import { startPriceOracle, stopPriceOracle } from './core/price-oracle';

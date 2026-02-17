@@ -1,13 +1,51 @@
 {
   "name": "clude-bot",
   "version": "1.0.0",
-  "description": "Clude — a dysfunctional AI meme token bot on Solana",
+  "description": "Autonomous AI agent with persistent memory on Solana — Stanford Generative Agents architecture",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "clude-bot": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "src/verify-app/public",
+    "supabase-schema.sql",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "prepublishOnly": "npm run build",
     "mcp": "MCP_MODE=1 tsx src/mcp/server.ts"
+  },
+  "keywords": [
+    "ai-agent",
+    "solana",
+    "memory",
+    "cognitive-architecture",
+    "generative-agents",
+    "twitter-bot",
+    "meme-token",
+    "anthropic",
+    "claude",
+    "supabase",
+    "pgvector"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebbsssss/cludebot.git"
+  },
+  "homepage": "https://clude.io",
+  "bugs": {
+    "url": "https://github.com/sebbsssss/cludebot/issues"
+  },
+  "author": "sebbsssss",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -17,7 +55,6 @@
     "@supabase/supabase-js": "^2.95.3",
     "bs58": "^6.0.0",
     "dotenv": "^16.4.0",
-    "ethers": "^6.16.0",
     "express": "^4.21.0",
     "express-rate-limit": "^8.2.1",
     "helius-sdk": "^2.1.0",
