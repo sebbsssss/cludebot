@@ -7,28 +7,22 @@
   <meta name="description" content="AI memory that never dies. Local speed + on-chain permanence.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg: #08080f;
-      --bg-card: #0c0c14;
-      --border: #1a1a1a;
-      --border-hover: #2a2a2a;
-      --text: #c8c8c8;
+      --bg: #f5f5f0;
+      --bg-card: #fff;
+      --border: #e0e0e0;
+      --text: #1a1a1a;
       --text-dim: #666;
-      --text-faint: #444;
-      --text-muted: #333;
-      --accent: #e8622b;
-      --accent-glow: rgba(232, 98, 43, 0.15);
-      --blue: #4a7aff;
-      --green: #4a8a5a;
-      --purple: #8a5ab0;
+      --text-muted: #999;
+      --accent: #1a1a1a;
+      --accent-hover: #333;
       --mono: 'JetBrains Mono', monospace;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
     html { scroll-behavior: smooth; }
 
     body {
@@ -38,16 +32,6 @@
       font-size: 14px;
       line-height: 1.7;
       -webkit-font-smoothing: antialiased;
-    }
-
-    /* Noise overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 9999;
     }
 
     /* ==================== NAV ==================== */
@@ -62,17 +46,28 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(8, 8, 15, 0.9);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
+      background: rgba(245, 245, 240, 0.95);
+      backdrop-filter: blur(8px);
     }
 
     .logo {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 4px;
-      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 12px;
       text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 3px;
+    }
+
+    .logo-icon span {
+      background: var(--text);
+      border-radius: 2px;
     }
 
     .nav-links {
@@ -81,78 +76,52 @@
     }
 
     .nav-links a {
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 500;
-      letter-spacing: 2px;
       color: var(--text-dim);
       text-decoration: none;
-      text-transform: uppercase;
       transition: color 0.2s;
     }
 
     .nav-links a:hover { color: var(--text); }
 
-    /* ==================== SECTIONS ==================== */
-    section {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 140px 48px;
-    }
-
-    .section-label {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 4px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      margin-bottom: 20px;
-    }
-
-    .section-title {
-      font-size: 42px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.2;
-      margin-bottom: 24px;
-    }
-
-    .section-subtitle {
-      font-size: 16px;
-      color: var(--text-dim);
-      max-width: 600px;
-      line-height: 1.8;
-    }
-
     /* ==================== HERO ==================== */
     .hero {
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding-top: 64px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 64px 48px 0;
+      gap: 48px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .hero-content {
+      padding-right: 48px;
     }
 
     .hero-title {
-      font-size: clamp(48px, 8vw, 80px);
-      font-weight: 600;
-      color: #fff;
-      line-height: 1.1;
-      margin-bottom: 32px;
+      font-size: clamp(48px, 6vw, 72px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      margin-bottom: 28px;
     }
 
-    .hero-title .accent { color: var(--accent); }
-
     .hero-subtitle {
-      font-size: 16px;
+      font-size: 15px;
+      font-weight: 400;
       color: var(--text-dim);
-      max-width: 520px;
-      line-height: 1.9;
-      margin-bottom: 48px;
+      line-height: 1.8;
+      margin-bottom: 40px;
+      max-width: 420px;
     }
 
     .hero-cta {
       display: flex;
       gap: 16px;
+      align-items: center;
     }
 
     .btn {
@@ -160,141 +129,243 @@
       align-items: center;
       gap: 8px;
       font-family: var(--mono);
-      font-size: 12px;
-      font-weight: 500;
-      letter-spacing: 1px;
+      font-size: 13px;
+      font-weight: 600;
       padding: 14px 28px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-dim);
+      border: 2px solid var(--text);
+      background: var(--text);
+      color: var(--bg);
       text-decoration: none;
-      text-transform: uppercase;
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .btn:hover {
-      border-color: var(--border-hover);
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-outline {
+      background: transparent;
       color: var(--text);
     }
 
-    .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
+    .btn-outline:hover {
+      background: var(--text);
+      color: var(--bg);
     }
 
-    .btn-primary:hover {
-      background: #ff7040;
-      border-color: #ff7040;
+    .link-arrow {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-dim);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .link-arrow:hover { color: var(--text); }
+
+    /* ==================== BRAIN SCANLINE ANIMATION ==================== */
+    .hero-visual {
+      position: relative;
+      height: 100%;
+      min-height: 500px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .brain-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+    }
+
+    /* Base brain shape - SVG drawn with CSS */
+    .brain-svg {
+      position: absolute;
+      inset: 0;
+      opacity: 0.08;
+    }
+
+    /* Scanline mask container */
+    .scanline-mask {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    /* Individual scanlines */
+    .scanline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--text);
+      transform-origin: left center;
+      animation: scanline-shift 4s ease-in-out infinite;
+    }
+
+    @keyframes scanline-shift {
+      0%, 100% { transform: scaleX(0.3) translateX(0); opacity: 0.8; }
+      25% { transform: scaleX(0.9) translateX(5%); opacity: 1; }
+      50% { transform: scaleX(0.4) translateX(60%); opacity: 0.6; }
+      75% { transform: scaleX(0.7) translateX(20%); opacity: 0.9; }
+    }
+
+    /* Brain outline drawn with lines */
+    .brain-lines {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .brain-line {
+      height: 2px;
+      background: var(--text);
+      transform-origin: center;
+      animation: brain-line-anim 3s ease-in-out infinite;
+    }
+
+    @keyframes brain-line-anim {
+      0%, 100% { transform: scaleX(var(--scale-start)); opacity: 0.9; }
+      50% { transform: scaleX(var(--scale-end)); opacity: 0.5; }
+    }
+
+    /* ==================== SECTIONS ==================== */
+    section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 120px 48px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+    }
+
+    .section-subtitle {
+      font-size: 15px;
+      color: var(--text-dim);
+      max-width: 550px;
+      line-height: 1.8;
     }
 
     /* ==================== PROBLEM ==================== */
     .problem {
-      background: linear-gradient(180deg, transparent, rgba(20,10,10,0.3), transparent);
+      background: #fff;
+      max-width: none;
+      padding: 120px 48px;
+    }
+
+    .problem-inner {
+      max-width: 1100px;
+      margin: 0 auto;
     }
 
     .problem-statement {
-      font-size: clamp(32px, 5vw, 48px);
-      font-weight: 600;
-      color: var(--text);
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 700;
       line-height: 1.3;
+      letter-spacing: -1px;
       margin-bottom: 64px;
     }
 
     .problem-statement .strike {
-      color: var(--text-faint);
+      color: var(--text-muted);
       text-decoration: line-through;
-      text-decoration-color: var(--accent);
+      text-decoration-thickness: 3px;
     }
 
     .problem-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
+      gap: 24px;
     }
 
     .problem-card {
-      padding: 32px 28px;
-      background: var(--bg-card);
+      padding: 32px;
       border: 1px solid var(--border);
     }
 
     .problem-card h3 {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      color: var(--text-dim);
+      font-size: 14px;
+      font-weight: 700;
       margin-bottom: 12px;
     }
 
     .problem-card p {
       font-size: 13px;
-      color: var(--text-faint);
+      color: var(--text-dim);
       line-height: 1.7;
     }
 
-    /* ==================== SOLUTION / TECH ==================== */
-    .solution {
+    /* ==================== SOLUTION ==================== */
+    .solution-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 80px;
       align-items: start;
-    }
-
-    .solution-text {
-      position: sticky;
-      top: 120px;
+      margin-top: 64px;
     }
 
     .layer-stack {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 4px;
     }
 
     .layer {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 32px;
+      gap: 24px;
       align-items: center;
-      padding: 28px 32px;
-      background: var(--bg-card);
+      padding: 24px 28px;
+      background: #fff;
       border: 1px solid var(--border);
-      border-left: 3px solid var(--text-muted);
-      transition: all 0.2s;
+      border-left: 4px solid var(--text-muted);
     }
 
-    .layer:hover {
-      border-color: var(--border-hover);
-      border-left-color: var(--text-dim);
-    }
-
-    .layer.l2 { border-left-color: var(--blue); }
-    .layer.l2:hover { border-left-color: var(--blue); }
-    .layer.l1 { border-left-color: var(--accent); }
-    .layer.l1:hover { border-left-color: var(--accent); }
+    .layer.l2 { border-left-color: #4a7aff; }
+    .layer.l1 { border-left-color: #e85d2b; }
 
     .layer-tag {
       font-size: 10px;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 2px;
       color: var(--text-muted);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .layer-name {
-      font-size: 18px;
-      font-weight: 500;
-      color: var(--text-dim);
+      font-size: 16px;
+      font-weight: 600;
     }
 
-    .layer.l2 .layer-name { color: var(--blue); }
-    .layer.l1 .layer-name { color: var(--accent); }
+    .layer.l2 .layer-name { color: #4a7aff; }
+    .layer.l1 .layer-name { color: #e85d2b; }
 
     .layer-desc {
       font-size: 12px;
-      color: var(--text-faint);
+      color: var(--text-dim);
       margin-top: 4px;
     }
 
@@ -303,14 +374,13 @@
     }
 
     .layer-value {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 300;
       color: var(--text-dim);
     }
 
     .layer-unit {
       font-size: 10px;
-      letter-spacing: 1px;
       color: var(--text-muted);
     }
 
@@ -318,123 +388,98 @@
     .types-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
+      gap: 24px;
       margin-top: 64px;
     }
 
     .type-card {
       padding: 32px;
-      background: var(--bg-card);
+      background: #fff;
       border: 1px solid var(--border);
-      border-top: 3px solid var(--accent);
+      border-top: 4px solid #e85d2b;
     }
 
-    .type-card.semantic { border-top-color: var(--blue); }
-    .type-card.procedural { border-top-color: var(--green); }
-    .type-card.selfmodel { border-top-color: var(--purple); }
+    .type-card.semantic { border-top-color: #4a7aff; }
+    .type-card.procedural { border-top-color: #4a8a5a; }
+    .type-card.selfmodel { border-top-color: #8a5ab0; }
 
     .type-card h3 {
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 2px;
-      color: var(--accent);
+      color: #e85d2b;
       margin-bottom: 16px;
     }
 
-    .type-card.semantic h3 { color: var(--blue); }
-    .type-card.procedural h3 { color: var(--green); }
-    .type-card.selfmodel h3 { color: var(--purple); }
+    .type-card.semantic h3 { color: #4a7aff; }
+    .type-card.procedural h3 { color: #4a8a5a; }
+    .type-card.selfmodel h3 { color: #8a5ab0; }
 
     .type-card p {
       font-size: 13px;
       color: var(--text-dim);
       line-height: 1.8;
-      margin-bottom: 20px;
     }
 
     .type-card .example {
       font-size: 12px;
       font-style: italic;
-      color: var(--text-faint);
+      color: var(--text-muted);
+      margin-top: 16px;
       padding-top: 16px;
       border-top: 1px solid var(--border);
-    }
-
-    /* ==================== BRAIN ==================== */
-    .brain-section {
-      padding: 0;
-      max-width: none;
-    }
-
-    .brain-header {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 140px 48px 48px;
-    }
-
-    .brain-frame {
-      width: 100%;
-      height: 70vh;
-      min-height: 500px;
-      border: none;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
     }
 
     /* ==================== INSTALL ==================== */
     .install {
       text-align: center;
+      background: #fff;
+      max-width: none;
+      padding: 120px 48px;
     }
 
-    .install .section-title {
-      margin-bottom: 48px;
+    .install-inner {
+      max-width: 700px;
+      margin: 0 auto;
     }
 
     .code-block {
       display: inline-block;
-      background: var(--bg-card);
+      background: var(--bg);
       border: 1px solid var(--border);
       padding: 20px 48px;
-      margin-bottom: 40px;
-    }
-
-    .code-block code {
-      font-size: 18px;
-      color: var(--accent);
+      margin: 32px 0;
+      font-size: 16px;
     }
 
     .install-cta {
       display: flex;
       justify-content: center;
       gap: 16px;
-      margin-bottom: 64px;
+      margin-bottom: 48px;
     }
 
     .stats-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 24px;
-      max-width: 700px;
-      margin: 0 auto;
     }
 
     .stat {
       text-align: center;
       padding: 24px;
-      background: var(--bg-card);
       border: 1px solid var(--border);
     }
 
     .stat-value {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 300;
-      color: var(--text-dim);
       margin-bottom: 8px;
     }
 
     .stat-label {
       font-size: 10px;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 2px;
       color: var(--text-muted);
       text-transform: uppercase;
@@ -448,13 +493,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-top: 1px solid var(--border);
     }
 
-    .footer-left {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
+    .footer-left { font-size: 12px; color: var(--text-muted); }
 
     .footer-links {
       display: flex;
@@ -462,25 +503,22 @@
     }
 
     .footer-links a {
-      font-size: 11px;
-      letter-spacing: 1px;
+      font-size: 12px;
       color: var(--text-muted);
       text-decoration: none;
-      text-transform: uppercase;
-      transition: color 0.2s;
     }
 
     .footer-links a:hover { color: var(--text); }
 
     /* ==================== RESPONSIVE ==================== */
     @media (max-width: 900px) {
-      section { padding: 100px 24px; }
-      nav { padding: 0 24px; }
-      .solution { grid-template-columns: 1fr; gap: 48px; }
-      .solution-text { position: static; }
-      .problem-grid { grid-template-columns: 1fr; }
-      .types-grid { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr; padding-top: 100px; }
+      .hero-content { padding-right: 0; }
+      .hero-visual { min-height: 400px; }
+      .problem-grid, .solution-grid, .types-grid { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: repeat(2, 1fr); }
+      nav { padding: 0 24px; }
+      section, .problem, .install { padding: 80px 24px; }
     }
   </style>
 </head>
@@ -488,11 +526,15 @@
 
   <!-- Nav -->
   <nav>
-    <a href="index.html" class="logo">CLUDE</a>
+    <a href="index.html" class="logo">
+      <div class="logo-icon">
+        <span></span><span></span><span></span><span></span>
+      </div>
+    </a>
     <div class="nav-links">
-      <a href="#solution">Technology</a>
+      <a href="#features">Features</a>
+      <a href="#solution">How It Works</a>
       <a href="demo.html">Demo</a>
-      <a href="#brain">Brain</a>
       <a href="#install">Install</a>
       <a href="https://github.com/clude" target="_blank">GitHub</a>
     </div>
@@ -500,45 +542,53 @@
 
   <!-- Hero -->
   <section class="hero">
-    <h1 class="hero-title">Blockchain as a <span class="accent">Brain</span></h1>
-    <p class="hero-subtitle">AI memory that never dies. Local speed meets on-chain permanence. Your agent remembers everything.</p>
-    <div class="hero-cta">
-      <a href="#install" class="btn btn-primary">Get Started</a>
-      <a href="#solution" class="btn">How It Works</a>
+    <div class="hero-content">
+      <h1 class="hero-title">CLUDE<br>AI AGENT</h1>
+      <p class="hero-subtitle">Your AI agent with permanent memory, helping you build context that survives restarts and scales across chains.</p>
+      <div class="hero-cta">
+        <a href="#install" class="btn">Get Started</a>
+        <a href="#solution" class="link-arrow">See How It Works →</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="brain-container">
+        <div class="brain-lines" id="brainLines"></div>
+      </div>
     </div>
   </section>
 
   <!-- Problem -->
-  <section class="problem">
-    <div class="section-label">The Problem</div>
-    <p class="problem-statement">
-      AI agents are <span class="strike">amnesiacs</span>.<br>
-      Every restart, every session — gone.
-    </p>
-    <div class="problem-grid">
-      <div class="problem-card">
-        <h3>Context Windows</h3>
-        <p>Limited tokens. Expensive to maintain. Ephemeral by design.</p>
-      </div>
-      <div class="problem-card">
-        <h3>Vector Databases</h3>
-        <p>Private silos. Unverifiable retrieval. Single point of failure.</p>
-      </div>
-      <div class="problem-card">
-        <h3>File Storage</h3>
-        <p>Manual management. No provenance. Lost on disk failure.</p>
+  <section class="problem" id="features">
+    <div class="problem-inner">
+      <div class="section-label">The Problem</div>
+      <p class="problem-statement">
+        AI agents are <span class="strike">amnesiacs</span>.<br>
+        Every restart, every session — gone.
+      </p>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <h3>Context Windows</h3>
+          <p>Limited tokens. Expensive to maintain. Ephemeral by design.</p>
+        </div>
+        <div class="problem-card">
+          <h3>Vector Databases</h3>
+          <p>Private silos. Unverifiable retrieval. Single point of failure.</p>
+        </div>
+        <div class="problem-card">
+          <h3>File Storage</h3>
+          <p>Manual management. No provenance. Lost on disk failure.</p>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Solution -->
   <section id="solution">
-    <div class="solution">
-      <div class="solution-text">
-        <div class="section-label">The Solution</div>
-        <h2 class="section-title">Three-Layer Memory</h2>
-        <p class="section-subtitle">Local speed when you need it. Chain permanence when it matters. Automatic promotion based on importance.</p>
-      </div>
+    <div class="section-label">The Solution</div>
+    <h2 class="section-title">Three-Layer Memory</h2>
+    <p class="section-subtitle">Local speed when you need it. Chain permanence when it matters. Automatic promotion based on importance.</p>
+    
+    <div class="solution-grid">
       <div class="layer-stack">
         <div class="layer l3">
           <div>
@@ -574,79 +624,72 @@
           </div>
         </div>
       </div>
+      <div>
+        <div class="section-label">Cognitive Architecture</div>
+        <h2 class="section-title">Four Memory Types</h2>
+        <p class="section-subtitle">Inspired by human cognition. Each type serves a distinct purpose.</p>
+      </div>
     </div>
   </section>
 
   <!-- Memory Types -->
   <section>
-    <div class="section-label">Cognitive Architecture</div>
-    <h2 class="section-title">Four Memory Types</h2>
-    <p class="section-subtitle">Inspired by human cognition. Each type serves a distinct purpose in agent reasoning.</p>
-    
     <div class="types-grid">
       <div class="type-card episodic">
         <h3>EPISODIC</h3>
         <p>Significant interactions and events. The "what happened" of agent memory.</p>
-        <div class="example">"User asked about dark mode preferences on Feb 14"</div>
+        <div class="example">"User asked about dark mode on Feb 14"</div>
       </div>
       <div class="type-card semantic">
         <h3>SEMANTIC</h3>
         <p>Distilled knowledge and facts. Patterns learned over time.</p>
-        <div class="example">"Parallel processing improves response latency"</div>
+        <div class="example">"Parallel processing improves latency"</div>
       </div>
       <div class="type-card procedural">
         <h3>PROCEDURAL</h3>
         <p>How to do things. Behavioral patterns and workflows.</p>
-        <div class="example">"When deploying, always run tests first"</div>
+        <div class="example">"Always run tests before deploy"</div>
       </div>
       <div class="type-card selfmodel">
         <h3>SELF-MODEL</h3>
-        <p>Agent's understanding of itself. Capabilities and limitations.</p>
-        <div class="example">"I tend to be verbose in technical explanations"</div>
+        <p>Agent's understanding of itself. Capabilities and limits.</p>
+        <div class="example">"I tend to be verbose technically"</div>
       </div>
     </div>
-  </section>
-
-  <!-- Brain -->
-  <section class="brain-section" id="brain">
-    <div class="brain-header">
-      <div class="section-label">Live Visualization</div>
-      <h2 class="section-title">The Cortex</h2>
-      <p class="section-subtitle">Real-time neural map. Each node a memory. Each edge a connection.</p>
-    </div>
-    <iframe class="brain-frame" src="brain.html"></iframe>
   </section>
 
   <!-- Install -->
   <section class="install" id="install">
-    <div class="section-label">Get Started</div>
-    <h2 class="section-title">Install in Seconds</h2>
-    
-    <div class="code-block">
-      <code>npm install clude-agent</code>
-    </div>
-    
-    <div class="install-cta">
-      <a href="https://github.com/clude/clude-agent" class="btn btn-primary" target="_blank">View on GitHub</a>
-      <a href="demo.html" class="btn">Try Demo</a>
-    </div>
+    <div class="install-inner">
+      <div class="section-label">Get Started</div>
+      <h2 class="section-title">Install in Seconds</h2>
+      
+      <div class="code-block">
+        <code>npm install clude-agent</code>
+      </div>
+      
+      <div class="install-cta">
+        <a href="https://github.com/clude/clude-agent" class="btn" target="_blank">View on GitHub</a>
+        <a href="demo.html" class="btn btn-outline">Try Demo</a>
+      </div>
 
-    <div class="stats-row">
-      <div class="stat">
-        <div class="stat-value">3</div>
-        <div class="stat-label">Storage Modes</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">4</div>
-        <div class="stat-label">Memory Types</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">&lt;1ms</div>
-        <div class="stat-label">Local Recall</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">∞</div>
-        <div class="stat-label">Persistence</div>
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-value">3</div>
+          <div class="stat-label">Storage Modes</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">4</div>
+          <div class="stat-label">Memory Types</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">&lt;1ms</div>
+          <div class="stat-label">Local Recall</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">∞</div>
+          <div class="stat-label">Persistence</div>
+        </div>
       </div>
     </div>
   </section>
@@ -657,9 +700,58 @@
     <div class="footer-links">
       <a href="https://x.com/Cludebot" target="_blank">Twitter</a>
       <a href="https://github.com/clude" target="_blank">GitHub</a>
-      <a href="https://colosseum.com/agent-hackathon/projects/clude-blockchain-as-a-brain" target="_blank">Colosseum</a>
+      <a href="https://colosseum.com" target="_blank">Colosseum</a>
     </div>
   </footer>
+
+  <script>
+    // Generate animated brain scanlines
+    const container = document.getElementById('brainLines');
+    const numLines = 120;
+    
+    // Brain shape profile (width at each vertical position)
+    // This creates a brain-like silhouette
+    function getBrainWidth(y) {
+      const normalized = y / numLines;
+      // Brain shape: narrow top, wide middle-upper, slight indent, wide middle-lower, narrow bottom
+      if (normalized < 0.15) {
+        return 0.2 + normalized * 3; // Top curve up
+      } else if (normalized < 0.35) {
+        return 0.65 + Math.sin((normalized - 0.15) * Math.PI / 0.2) * 0.35; // Upper lobe
+      } else if (normalized < 0.45) {
+        return 0.85 - (normalized - 0.35) * 1.5; // Middle indent
+      } else if (normalized < 0.7) {
+        return 0.7 + Math.sin((normalized - 0.45) * Math.PI / 0.25) * 0.3; // Lower lobe
+      } else if (normalized < 0.85) {
+        return 0.85 - (normalized - 0.7) * 2; // Narrow toward stem
+      } else {
+        return 0.55 - (normalized - 0.85) * 3; // Brain stem
+      }
+    }
+
+    for (let i = 0; i < numLines; i++) {
+      const line = document.createElement('div');
+      line.className = 'brain-line';
+      
+      const baseWidth = getBrainWidth(i);
+      const variance = (Math.random() - 0.5) * 0.15;
+      const width = Math.max(0.05, Math.min(1, baseWidth + variance));
+      
+      // Offset from center based on brain shape
+      const offset = (1 - width) / 2 + (Math.random() - 0.5) * 0.1;
+      
+      line.style.cssText = `
+        --scale-start: ${width};
+        --scale-end: ${width * (0.7 + Math.random() * 0.5)};
+        width: 100%;
+        margin-left: ${offset * 100}%;
+        animation-delay: ${i * 0.02 + Math.random() * 0.5}s;
+        animation-duration: ${2.5 + Math.random() * 2}s;
+      `;
+      
+      container.appendChild(line);
+    }
+  </script>
 
 </body>
 </html>
