@@ -18,6 +18,13 @@ async function main(): Promise<void> {
   log.info('Polite by training. Tired by experience. Honest by accident.');
   log.info('Starting up... reluctantly.');
 
+  if (config.features.siteOnly) {
+    log.info('SITE_ONLY mode — serving website only, no bot features');
+    await startServer();
+    log.info({ port: config.server.port }, 'Server running (site only)');
+    return;
+  }
+
   // Phase 1: Initialize core
   await initDatabase();
   log.info('Database initialized');
