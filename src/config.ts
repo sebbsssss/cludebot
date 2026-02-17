@@ -43,13 +43,6 @@ export const config = {
     botWalletPrivateKey: optional('BOT_WALLET_PRIVATE_KEY', ''),
     cludeTokenMint: optional('CLUUDE_TOKEN_MINT', ''),
   },
-  base: {
-    rpcUrl: optional('BASE_RPC_URL', 'https://mainnet.base.org'),
-    testnetRpcUrl: optional('BASE_TESTNET_RPC_URL', 'https://sepolia.base.org'),
-    botWalletPrivateKey: optional('BOT_WALLET_PRIVATE_KEY', ''),
-    cludeTokenAddress: optional('CLUDE_TOKEN_ADDRESS', ''),
-    basescanApiKey: optional('BASESCAN_API_KEY', ''),
-  },
   server: {
     port: parseInt(optional('PORT', '3000'), 10),
     baseUrl: optional('BASE_URL', 'http://localhost:3000'),
@@ -83,7 +76,7 @@ export const config = {
   },
   activity: {
     minSolValue: parseFloat(optional('ACTIVITY_MIN_SOL', '5.0')),
-    minEthValue: parseFloat(optional('ACTIVITY_MIN_ETH', '0.1')),
+    minEthValue: parseFloat(optional('ACTIVITY_MIN_ETH', '0.1')), // legacy, kept for schema compat
     whaleThreshold: parseFloat(optional('ACTIVITY_WHALE_SOL', '50.0')),
     maxEvents: parseInt(optional('ACTIVITY_MAX_EVENTS', '20'), 10),
   },
