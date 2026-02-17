@@ -55,6 +55,20 @@ let lastReflectionTime = Date.now();
 let reflectionInProgress = false;
 const REFLECTION_TIMEOUT_MS = 10 * 60 * 1000; // 10 min max per reflection cycle
 
+// ---- SDK ESCAPE HATCHES ---- //
+
+let _emergenceHandler: ((text: string) => Promise<void>) | null = null;
+
+/** @internal SDK escape hatch — allows Cortex to intercept emergence output instead of posting to X. */
+export function setEmergenceHandler(handler: ((text: string) => Promise<void>) | null): void {
+  _emergenceHandler = handler;
+}
+
+/** @internal SDK entry point for running a single dream cycle. */
+export async function runDreamCycleOnce(): Promise<void> {
+  await triggerReflection();
+}
+
 /**
  * Called via event bus when an episodic memory is stored.
  * Accumulates importance and triggers reflection when threshold is exceeded.
@@ -516,16 +530,25 @@ async function runEmergence(): Promise<void> {
   // - Rate limited to 1 per 12 hours
   // - Must fit in a tweet
   const hasDepth = selfModel.length >= 5;
-  const canPost = await checkRateLimit('global:emergence-tweet', 1, 720);
-  if (hasDepth && canPost && response.length <= 270) {
+  if (_emergenceHandler) {
     try {
-      await postTweet(response);
-      log.info('Emergence thought posted to X');
+      await _emergenceHandler(response);
+      log.info('Emergence thought sent to SDK handler');
     } catch (err) {
-      log.error({ err }, 'Failed to post emergence thought');
+      log.error({ err }, 'SDK emergence handler failed');
     }
-  } else if (!hasDepth) {
-    log.debug({ selfModelCount: selfModel.length }, 'Emergence not deep enough to post — skipping tweet');
+  } else {
+    const canPost = await checkRateLimit('global:emergence-tweet', 1, 720);
+    if (hasDepth && canPost && response.length <= 270) {
+      try {
+        await postTweet(response);
+        log.info('Emergence thought posted to X');
+      } catch (err) {
+        log.error({ err }, 'Failed to post emergence thought');
+      }
+    } else if (!hasDepth) {
+      log.debug({ selfModelCount: selfModel.length }, 'Emergence not deep enough to post — skipping tweet');
+    }
   }
 
   log.info('Emergence complete');

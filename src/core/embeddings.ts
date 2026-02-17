@@ -35,13 +35,25 @@ const PROVIDERS: Record<string, ProviderConfig> = {
 };
 
 let _enabled: boolean | null = null;
+let _overrideConfig: { provider: string; apiKey: string; model?: string; dimensions?: number } | null = null;
+
+/** @internal SDK escape hatch — allows Cortex to override embedding config. */
+export function _configureEmbeddings(opts: { provider: string; apiKey: string; model?: string; dimensions?: number }): void {
+  _overrideConfig = opts;
+  _enabled = null; // reset cached check
+}
+
+function getEmbeddingConfig() {
+  if (_overrideConfig) return _overrideConfig;
+  return config.embedding;
+}
 
 export function isEmbeddingEnabled(): boolean {
   if (_enabled !== null) return _enabled;
-  const provider = config.embedding.provider;
-  _enabled = !!provider && !!config.embedding.apiKey && provider in PROVIDERS;
+  const cfg = getEmbeddingConfig();
+  _enabled = !!cfg.provider && !!cfg.apiKey && cfg.provider in PROVIDERS;
   if (_enabled) {
-    log.info({ provider }, 'Embedding system enabled');
+    log.info({ provider: cfg.provider }, 'Embedding system enabled');
   }
   return _enabled;
 }
@@ -53,23 +65,23 @@ export function isEmbeddingEnabled(): boolean {
 export async function generateEmbedding(text: string): Promise<number[] | null> {
   if (!isEmbeddingEnabled()) return null;
 
-  const provider = config.embedding.provider;
-  if (!provider || !(provider in PROVIDERS)) return null;
+  const cfg = getEmbeddingConfig();
+  if (!cfg.provider || !(cfg.provider in PROVIDERS)) return null;
 
-  const providerConfig = PROVIDERS[provider];
-  const model = config.embedding.model || providerConfig.defaultModel;
+  const providerConfig = PROVIDERS[cfg.provider];
+  const model = cfg.model || providerConfig.defaultModel;
 
   try {
     const res = await fetch(providerConfig.url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': providerConfig.authHeader(config.embedding.apiKey),
+        'Authorization': providerConfig.authHeader(cfg.apiKey),
       },
       body: JSON.stringify({
         input: text.slice(0, 8000),
         model,
-        ...(provider === 'openai' ? { dimensions: config.embedding.dimensions } : {}),
+        ...(cfg.provider === 'openai' ? { dimensions: cfg.dimensions } : {}),
       }),
     });
 
@@ -95,23 +107,23 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
 export async function generateEmbeddings(texts: string[]): Promise<(number[] | null)[]> {
   if (!isEmbeddingEnabled() || texts.length === 0) return texts.map(() => null);
 
-  const provider = config.embedding.provider;
-  if (!provider || !(provider in PROVIDERS)) return texts.map(() => null);
+  const cfg = getEmbeddingConfig();
+  if (!cfg.provider || !(cfg.provider in PROVIDERS)) return texts.map(() => null);
 
-  const providerConfig = PROVIDERS[provider];
-  const model = config.embedding.model || providerConfig.defaultModel;
+  const providerConfig = PROVIDERS[cfg.provider];
+  const model = cfg.model || providerConfig.defaultModel;
 
   try {
     const res = await fetch(providerConfig.url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': providerConfig.authHeader(config.embedding.apiKey),
+        'Authorization': providerConfig.authHeader(cfg.apiKey),
       },
       body: JSON.stringify({
         input: texts.map(t => t.slice(0, 8000)),
         model,
-        ...(provider === 'openai' ? { dimensions: config.embedding.dimensions } : {}),
+        ...(cfg.provider === 'openai' ? { dimensions: cfg.dimensions } : {}),
       }),
     });
 

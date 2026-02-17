@@ -1,15 +1,21 @@
 {
   "name": "clude-bot",
-  "version": "1.0.0",
-  "description": "Autonomous AI agent with persistent memory on Solana — Stanford Generative Agents architecture",
+  "version": "2.0.0",
+  "description": "Persistent memory SDK for AI agents — Stanford Generative Agents architecture on Supabase + pgvector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./schema": "./supabase-schema.sql"
+  },
   "bin": {
     "clude-bot": "dist/index.js"
   },
   "files": [
     "dist",
-    "src/verify-app/public",
     "supabase-schema.sql",
     "README.md",
     "LICENSE"
@@ -23,16 +29,17 @@
   },
   "keywords": [
     "ai-agent",
-    "solana",
     "memory",
     "cognitive-architecture",
     "generative-agents",
-    "twitter-bot",
-    "meme-token",
+    "solana",
+    "supabase",
+    "pgvector",
     "anthropic",
     "claude",
-    "supabase",
-    "pgvector"
+    "embeddings",
+    "dream-cycle",
+    "sdk"
   ],
   "repository": {
     "type": "git",
