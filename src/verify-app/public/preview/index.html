@@ -4,22 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLUDE — Blockchain as a Brain</title>
-  <meta name="description" content="AI memory that never dies. Local speed + on-chain permanence.">
+  <meta name="description" content="Blockchain as a Brain — AI memory on Solana">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=VT323&display=swap" rel="stylesheet">
   
   <style>
     :root {
       --bg: #f5f5f0;
-      --bg-card: #fff;
-      --border: #e0e0e0;
       --text: #1a1a1a;
       --text-dim: #666;
       --text-muted: #999;
-      --accent: #1a1a1a;
-      --accent-hover: #333;
       --mono: 'JetBrains Mono', monospace;
+      --retro: 'VT323', monospace;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -31,15 +28,12 @@
       color: var(--text);
       font-size: 14px;
       line-height: 1.7;
-      -webkit-font-smoothing: antialiased;
     }
 
     /* ==================== NAV ==================== */
     nav {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       z-index: 100;
       padding: 0 48px;
       height: 64px;
@@ -51,28 +45,16 @@
     }
 
     .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text);
       text-decoration: none;
-    }
-
-    .logo-icon {
-      width: 28px;
-      height: 28px;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 3px;
-    }
-
-    .logo-icon span {
-      background: var(--text);
-      border-radius: 2px;
     }
 
     .nav-links {
       display: flex;
-      gap: 36px;
+      gap: 32px;
     }
 
     .nav-links a {
@@ -80,7 +62,6 @@
       font-weight: 500;
       color: var(--text-dim);
       text-decoration: none;
-      transition: color 0.2s;
     }
 
     .nav-links a:hover { color: var(--text); }
@@ -92,42 +73,33 @@
       grid-template-columns: 1fr 1fr;
       align-items: center;
       padding: 64px 48px 0;
-      gap: 48px;
+      gap: 64px;
       max-width: 1400px;
       margin: 0 auto;
     }
 
-    .hero-content {
-      padding-right: 48px;
-    }
-
-    .hero-title {
-      font-size: clamp(48px, 6vw, 72px);
+    .hero-content h1 {
+      font-size: clamp(42px, 5vw, 64px);
       font-weight: 800;
-      line-height: 1.05;
+      line-height: 1.1;
       letter-spacing: -2px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
-    .hero-subtitle {
+    .hero-content p {
       font-size: 15px;
-      font-weight: 400;
       color: var(--text-dim);
       line-height: 1.8;
-      margin-bottom: 40px;
+      margin-bottom: 32px;
       max-width: 420px;
     }
 
     .hero-cta {
       display: flex;
       gap: 16px;
-      align-items: center;
     }
 
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
       font-family: var(--mono);
       font-size: 13px;
       font-weight: 600;
@@ -137,13 +109,9 @@
       color: var(--bg);
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.2s;
     }
 
-    .btn:hover {
-      background: var(--accent-hover);
-      border-color: var(--accent-hover);
-    }
+    .btn:hover { background: #333; border-color: #333; }
 
     .btn-outline {
       background: transparent;
@@ -155,88 +123,162 @@
       color: var(--bg);
     }
 
-    .link-arrow {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-dim);
-      text-decoration: none;
+    /* ==================== DEFRAG ANIMATION ==================== */
+    .defrag-container {
+      background: #000;
+      border: 3px solid #333;
+      padding: 0;
+      font-family: var(--retro);
+      box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
+    }
+
+    .defrag-titlebar {
+      background: linear-gradient(90deg, #000080, #1084d0);
+      color: white;
+      padding: 4px 8px;
+      font-size: 14px;
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 6px;
     }
 
-    .link-arrow:hover { color: var(--text); }
-
-    /* ==================== BRAIN SCANLINE ANIMATION ==================== */
-    .hero-visual {
-      position: relative;
-      height: 100%;
-      min-height: 500px;
+    .defrag-titlebar-buttons {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .brain-container {
-      position: relative;
-      width: 100%;
-      max-width: 500px;
-      aspect-ratio: 1;
-    }
-
-    /* Base brain shape - SVG drawn with CSS */
-    .brain-svg {
-      position: absolute;
-      inset: 0;
-      opacity: 0.08;
-    }
-
-    /* Scanline mask container */
-    .scanline-mask {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-    }
-
-    /* Individual scanlines */
-    .scanline {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--text);
-      transform-origin: left center;
-      animation: scanline-shift 4s ease-in-out infinite;
-    }
-
-    @keyframes scanline-shift {
-      0%, 100% { transform: scaleX(0.3) translateX(0); opacity: 0.8; }
-      25% { transform: scaleX(0.9) translateX(5%); opacity: 1; }
-      50% { transform: scaleX(0.4) translateX(60%); opacity: 0.6; }
-      75% { transform: scaleX(0.7) translateX(20%); opacity: 0.9; }
-    }
-
-    /* Brain outline drawn with lines */
-    .brain-lines {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
       gap: 2px;
     }
 
-    .brain-line {
-      height: 2px;
-      background: var(--text);
-      transform-origin: center;
-      animation: brain-line-anim 3s ease-in-out infinite;
+    .defrag-titlebar-buttons span {
+      width: 16px;
+      height: 14px;
+      background: #c0c0c0;
+      border: 1px outset #fff;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
     }
 
-    @keyframes brain-line-anim {
-      0%, 100% { transform: scaleX(var(--scale-start)); opacity: 0.9; }
-      50% { transform: scaleX(var(--scale-end)); opacity: 0.5; }
+    .defrag-body {
+      padding: 12px;
+      background: #c0c0c0;
+    }
+
+    .defrag-status {
+      background: #fff;
+      border: 2px inset #888;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 16px;
+      color: #000;
+    }
+
+    .defrag-grid-container {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 12px;
+    }
+
+    .defrag-grid {
+      background: #000;
+      border: 2px inset #888;
+      padding: 4px;
+      display: grid;
+      grid-template-columns: repeat(24, 1fr);
+      grid-template-rows: repeat(16, 1fr);
+      gap: 1px;
+      aspect-ratio: 1.5;
+    }
+
+    .defrag-block {
+      aspect-ratio: 1;
+      transition: background-color 0.1s;
+    }
+
+    .defrag-block.empty { background: #000; }
+    .defrag-block.l3 { background: #00ff00; } /* Working memory - green */
+    .defrag-block.l2 { background: #ffff00; } /* Local cache - yellow */
+    .defrag-block.l1 { background: #ff0000; } /* Chain - red */
+    .defrag-block.reading { background: #fff; }
+    .defrag-block.writing { background: #00ffff; }
+    .defrag-block.optimized { background: #0000ff; } /* Committed - blue */
+
+    .defrag-legend {
+      background: #c0c0c0;
+      padding: 8px;
+      font-size: 14px;
+      color: #000;
+      border: 2px inset #888;
+    }
+
+    .defrag-legend-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #888;
+      padding-bottom: 4px;
+    }
+
+    .defrag-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 6px 0;
+      font-size: 13px;
+    }
+
+    .defrag-legend-color {
+      width: 16px;
+      height: 12px;
+      border: 1px solid #000;
+    }
+
+    .defrag-progress-container {
+      margin-top: 12px;
+    }
+
+    .defrag-progress-label {
+      font-size: 14px;
+      color: #000;
+      margin-bottom: 4px;
+    }
+
+    .defrag-progress {
+      background: #fff;
+      border: 2px inset #888;
+      height: 20px;
+      position: relative;
+    }
+
+    .defrag-progress-bar {
+      height: 100%;
+      background: #000080;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .defrag-progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+      color: #000;
+      mix-blend-mode: difference;
+    }
+
+    .defrag-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #000;
+    }
+
+    .defrag-stat {
+      background: #fff;
+      border: 1px inset #888;
+      padding: 4px 8px;
     }
 
     /* ==================== SECTIONS ==================== */
@@ -285,14 +327,12 @@
       font-size: clamp(28px, 4vw, 42px);
       font-weight: 700;
       line-height: 1.3;
-      letter-spacing: -1px;
-      margin-bottom: 64px;
+      margin-bottom: 48px;
     }
 
     .problem-statement .strike {
       color: var(--text-muted);
       text-decoration: line-through;
-      text-decoration-thickness: 3px;
     }
 
     .problem-grid {
@@ -302,8 +342,8 @@
     }
 
     .problem-card {
-      padding: 32px;
-      border: 1px solid var(--border);
+      padding: 28px;
+      border: 1px solid #e0e0e0;
     }
 
     .problem-card h3 {
@@ -315,16 +355,14 @@
     .problem-card p {
       font-size: 13px;
       color: var(--text-dim);
-      line-height: 1.7;
     }
 
     /* ==================== SOLUTION ==================== */
     .solution-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 80px;
-      align-items: start;
-      margin-top: 64px;
+      gap: 64px;
+      margin-top: 48px;
     }
 
     .layer-stack {
@@ -337,40 +375,35 @@
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 24px;
-      align-items: center;
-      padding: 24px 28px;
+      padding: 24px;
       background: #fff;
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--text-muted);
+      border: 1px solid #e0e0e0;
+      border-left: 4px solid #999;
     }
 
-    .layer.l2 { border-left-color: #4a7aff; }
-    .layer.l1 { border-left-color: #e85d2b; }
+    .layer.l2 { border-left-color: #f0c000; }
+    .layer.l1 { border-left-color: #e04020; }
 
     .layer-tag {
       font-size: 10px;
       font-weight: 600;
       letter-spacing: 2px;
       color: var(--text-muted);
-      margin-bottom: 4px;
     }
 
     .layer-name {
       font-size: 16px;
       font-weight: 600;
+      margin-top: 4px;
     }
 
-    .layer.l2 .layer-name { color: #4a7aff; }
-    .layer.l1 .layer-name { color: #e85d2b; }
+    .layer.l2 .layer-name { color: #c09000; }
+    .layer.l1 .layer-name { color: #c03010; }
 
     .layer-desc {
       font-size: 12px;
       color: var(--text-dim);
       margin-top: 4px;
-    }
-
-    .layer-metric {
-      text-align: right;
     }
 
     .layer-value {
@@ -384,50 +417,40 @@
       color: var(--text-muted);
     }
 
-    /* ==================== MEMORY TYPES ==================== */
+    /* ==================== TYPES ==================== */
     .types-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 24px;
-      margin-top: 64px;
+      margin-top: 48px;
     }
 
     .type-card {
-      padding: 32px;
+      padding: 28px;
       background: #fff;
-      border: 1px solid var(--border);
-      border-top: 4px solid #e85d2b;
+      border: 1px solid #e0e0e0;
+      border-top: 4px solid #e04020;
     }
 
-    .type-card.semantic { border-top-color: #4a7aff; }
-    .type-card.procedural { border-top-color: #4a8a5a; }
-    .type-card.selfmodel { border-top-color: #8a5ab0; }
+    .type-card.semantic { border-top-color: #4080ff; }
+    .type-card.procedural { border-top-color: #40a050; }
+    .type-card.selfmodel { border-top-color: #8050b0; }
 
     .type-card h3 {
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 2px;
-      color: #e85d2b;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
+      color: #c03010;
     }
 
-    .type-card.semantic h3 { color: #4a7aff; }
-    .type-card.procedural h3 { color: #4a8a5a; }
-    .type-card.selfmodel h3 { color: #8a5ab0; }
+    .type-card.semantic h3 { color: #3060c0; }
+    .type-card.procedural h3 { color: #308040; }
+    .type-card.selfmodel h3 { color: #6040a0; }
 
     .type-card p {
       font-size: 13px;
       color: var(--text-dim);
-      line-height: 1.8;
-    }
-
-    .type-card .example {
-      font-size: 12px;
-      font-style: italic;
-      color: var(--text-muted);
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
     }
 
     /* ==================== INSTALL ==================== */
@@ -439,50 +462,23 @@
     }
 
     .install-inner {
-      max-width: 700px;
+      max-width: 600px;
       margin: 0 auto;
     }
 
     .code-block {
       display: inline-block;
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: #1a1a1a;
       padding: 20px 48px;
-      margin: 32px 0;
+      margin: 24px 0 32px;
       font-size: 16px;
+      color: #4ade80;
     }
 
     .install-cta {
       display: flex;
       justify-content: center;
       gap: 16px;
-      margin-bottom: 48px;
-    }
-
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 24px;
-    }
-
-    .stat {
-      text-align: center;
-      padding: 24px;
-      border: 1px solid var(--border);
-    }
-
-    .stat-value {
-      font-size: 28px;
-      font-weight: 300;
-      margin-bottom: 8px;
-    }
-
-    .stat-label {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 2px;
-      color: var(--text-muted);
-      text-transform: uppercase;
     }
 
     /* ==================== FOOTER ==================== */
@@ -492,47 +488,27 @@
       padding: 48px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
     }
 
     .footer-left { font-size: 12px; color: var(--text-muted); }
-
-    .footer-links {
-      display: flex;
-      gap: 32px;
-    }
-
-    .footer-links a {
-      font-size: 12px;
-      color: var(--text-muted);
-      text-decoration: none;
-    }
-
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 12px; color: var(--text-muted); text-decoration: none; }
     .footer-links a:hover { color: var(--text); }
 
     /* ==================== RESPONSIVE ==================== */
     @media (max-width: 900px) {
       .hero { grid-template-columns: 1fr; padding-top: 100px; }
-      .hero-content { padding-right: 0; }
-      .hero-visual { min-height: 400px; }
       .problem-grid, .solution-grid, .types-grid { grid-template-columns: 1fr; }
-      .stats-row { grid-template-columns: repeat(2, 1fr); }
-      nav { padding: 0 24px; }
-      section, .problem, .install { padding: 80px 24px; }
+      .defrag-grid-container { grid-template-columns: 1fr; }
+      .defrag-legend { display: none; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Nav -->
   <nav>
-    <a href="index.html" class="logo">
-      <div class="logo-icon">
-        <span></span><span></span><span></span><span></span>
-      </div>
-    </a>
+    <a href="index.html" class="logo">CLUDE</a>
     <div class="nav-links">
-      <a href="#features">Features</a>
       <a href="#solution">How It Works</a>
       <a href="demo.html">Demo</a>
       <a href="#install">Install</a>
@@ -540,25 +516,80 @@
     </div>
   </nav>
 
-  <!-- Hero -->
+  <!-- Hero with Defrag Animation -->
   <section class="hero">
     <div class="hero-content">
-      <h1 class="hero-title">CLUDE<br>AI AGENT</h1>
-      <p class="hero-subtitle">Your AI agent with permanent memory, helping you build context that survives restarts and scales across chains.</p>
+      <h1>Blockchain<br>as a Brain</h1>
+      <p>AI memory that lives on Solana. Local speed meets on-chain permanence. Watch your agent's thoughts get optimized and committed to chain.</p>
       <div class="hero-cta">
         <a href="#install" class="btn">Get Started</a>
-        <a href="#solution" class="link-arrow">See How It Works →</a>
+        <a href="#solution" class="btn btn-outline">How It Works</a>
       </div>
     </div>
-    <div class="hero-visual">
-      <div class="brain-container">
-        <div class="brain-lines" id="brainLines"></div>
+
+    <div class="defrag-container">
+      <div class="defrag-titlebar">
+        <span>🧠 Clude Memory Optimizer</span>
+        <div class="defrag-titlebar-buttons">
+          <span>_</span>
+          <span>□</span>
+          <span>×</span>
+        </div>
+      </div>
+      <div class="defrag-body">
+        <div class="defrag-status" id="defragStatus">Analyzing memory blocks...</div>
+        
+        <div class="defrag-grid-container">
+          <div class="defrag-grid" id="defragGrid"></div>
+          <div class="defrag-legend">
+            <div class="defrag-legend-title">MEMORY MAP</div>
+            <div class="defrag-legend-item">
+              <div class="defrag-legend-color" style="background:#00ff00"></div>
+              L3 Working
+            </div>
+            <div class="defrag-legend-item">
+              <div class="defrag-legend-color" style="background:#ffff00"></div>
+              L2 Local
+            </div>
+            <div class="defrag-legend-item">
+              <div class="defrag-legend-color" style="background:#ff0000"></div>
+              L1 Pending
+            </div>
+            <div class="defrag-legend-item">
+              <div class="defrag-legend-color" style="background:#0000ff"></div>
+              Committed
+            </div>
+            <div class="defrag-legend-item">
+              <div class="defrag-legend-color" style="background:#fff"></div>
+              Reading
+            </div>
+            <div class="defrag-legend-item">
+              <div class="defrag-legend-color" style="background:#00ffff"></div>
+              Writing
+            </div>
+          </div>
+        </div>
+
+        <div class="defrag-progress-container">
+          <div class="defrag-progress-label">Optimizing memory:</div>
+          <div class="defrag-progress">
+            <div class="defrag-progress-bar" id="progressBar"></div>
+            <div class="defrag-progress-text" id="progressText">0%</div>
+          </div>
+        </div>
+
+        <div class="defrag-stats">
+          <div class="defrag-stat">Episodic: <span id="statEpisodic">0</span></div>
+          <div class="defrag-stat">Semantic: <span id="statSemantic">0</span></div>
+          <div class="defrag-stat">Procedural: <span id="statProcedural">0</span></div>
+          <div class="defrag-stat">On-chain: <span id="statChain">0</span></div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Problem -->
-  <section class="problem" id="features">
+  <section class="problem">
     <div class="problem-inner">
       <div class="section-label">The Problem</div>
       <p class="problem-statement">
@@ -572,7 +603,7 @@
         </div>
         <div class="problem-card">
           <h3>Vector Databases</h3>
-          <p>Private silos. Unverifiable retrieval. Single point of failure.</p>
+          <p>Private silos. Unverifiable. Single point of failure.</p>
         </div>
         <div class="problem-card">
           <h3>File Storage</h3>
@@ -586,7 +617,7 @@
   <section id="solution">
     <div class="section-label">The Solution</div>
     <h2 class="section-title">Three-Layer Memory</h2>
-    <p class="section-subtitle">Local speed when you need it. Chain permanence when it matters. Automatic promotion based on importance.</p>
+    <p class="section-subtitle">Local speed when you need it. Chain permanence when it matters.</p>
     
     <div class="solution-grid">
       <div class="layer-stack">
@@ -605,7 +636,7 @@
           <div>
             <div class="layer-tag">L2 — LOCAL</div>
             <div class="layer-name">SQLite + FTS5</div>
-            <div class="layer-desc">Instant recall. Semantic search. Private.</div>
+            <div class="layer-desc">Instant recall. Semantic search.</div>
           </div>
           <div class="layer-metric">
             <div class="layer-value">&lt;1</div>
@@ -627,7 +658,7 @@
       <div>
         <div class="section-label">Cognitive Architecture</div>
         <h2 class="section-title">Four Memory Types</h2>
-        <p class="section-subtitle">Inspired by human cognition. Each type serves a distinct purpose.</p>
+        <p class="section-subtitle">Inspired by human cognition. Each serves a distinct purpose.</p>
       </div>
     </div>
   </section>
@@ -637,23 +668,19 @@
     <div class="types-grid">
       <div class="type-card episodic">
         <h3>EPISODIC</h3>
-        <p>Significant interactions and events. The "what happened" of agent memory.</p>
-        <div class="example">"User asked about dark mode on Feb 14"</div>
+        <p>Significant events. The "what happened" of agent memory.</p>
       </div>
       <div class="type-card semantic">
         <h3>SEMANTIC</h3>
-        <p>Distilled knowledge and facts. Patterns learned over time.</p>
-        <div class="example">"Parallel processing improves latency"</div>
+        <p>Distilled knowledge. Patterns learned over time.</p>
       </div>
       <div class="type-card procedural">
         <h3>PROCEDURAL</h3>
-        <p>How to do things. Behavioral patterns and workflows.</p>
-        <div class="example">"Always run tests before deploy"</div>
+        <p>How to do things. Behavioral patterns.</p>
       </div>
       <div class="type-card selfmodel">
         <h3>SELF-MODEL</h3>
-        <p>Agent's understanding of itself. Capabilities and limits.</p>
-        <div class="example">"I tend to be verbose technically"</div>
+        <p>Agent's understanding of itself.</p>
       </div>
     </div>
   </section>
@@ -663,96 +690,160 @@
     <div class="install-inner">
       <div class="section-label">Get Started</div>
       <h2 class="section-title">Install in Seconds</h2>
-      
-      <div class="code-block">
-        <code>npm install clude-agent</code>
-      </div>
-      
+      <div class="code-block">npm install clude-agent</div>
       <div class="install-cta">
-        <a href="https://github.com/clude/clude-agent" class="btn" target="_blank">View on GitHub</a>
-        <a href="demo.html" class="btn btn-outline">Try Demo</a>
-      </div>
-
-      <div class="stats-row">
-        <div class="stat">
-          <div class="stat-value">3</div>
-          <div class="stat-label">Storage Modes</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">4</div>
-          <div class="stat-label">Memory Types</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">&lt;1ms</div>
-          <div class="stat-label">Local Recall</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">∞</div>
-          <div class="stat-label">Persistence</div>
-        </div>
+        <a href="https://github.com/clude" class="btn" target="_blank">GitHub</a>
+        <a href="demo.html" class="btn btn-outline">Demo</a>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
   <footer>
     <div class="footer-left">© 2026 CLUDE</div>
     <div class="footer-links">
-      <a href="https://x.com/Cludebot" target="_blank">Twitter</a>
-      <a href="https://github.com/clude" target="_blank">GitHub</a>
-      <a href="https://colosseum.com" target="_blank">Colosseum</a>
+      <a href="https://x.com/Cludebot">Twitter</a>
+      <a href="https://github.com/clude">GitHub</a>
     </div>
   </footer>
 
   <script>
-    // Generate animated brain scanlines
-    const container = document.getElementById('brainLines');
-    const numLines = 120;
+    // Defrag Animation
+    const grid = document.getElementById('defragGrid');
+    const statusEl = document.getElementById('defragStatus');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const statEpisodic = document.getElementById('statEpisodic');
+    const statSemantic = document.getElementById('statSemantic');
+    const statProcedural = document.getElementById('statProcedural');
+    const statChain = document.getElementById('statChain');
+
+    const COLS = 24;
+    const ROWS = 16;
+    const TOTAL = COLS * ROWS;
     
-    // Brain shape profile (width at each vertical position)
-    // This creates a brain-like silhouette
-    function getBrainWidth(y) {
-      const normalized = y / numLines;
-      // Brain shape: narrow top, wide middle-upper, slight indent, wide middle-lower, narrow bottom
-      if (normalized < 0.15) {
-        return 0.2 + normalized * 3; // Top curve up
-      } else if (normalized < 0.35) {
-        return 0.65 + Math.sin((normalized - 0.15) * Math.PI / 0.2) * 0.35; // Upper lobe
-      } else if (normalized < 0.45) {
-        return 0.85 - (normalized - 0.35) * 1.5; // Middle indent
-      } else if (normalized < 0.7) {
-        return 0.7 + Math.sin((normalized - 0.45) * Math.PI / 0.25) * 0.3; // Lower lobe
-      } else if (normalized < 0.85) {
-        return 0.85 - (normalized - 0.7) * 2; // Narrow toward stem
-      } else {
-        return 0.55 - (normalized - 0.85) * 3; // Brain stem
+    let blocks = [];
+    let phase = 0;
+    let progress = 0;
+    let stats = { episodic: 0, semantic: 0, procedural: 0, chain: 0 };
+
+    const statuses = [
+      'Analyzing memory blocks...',
+      'Reading L3 working memory...',
+      'Consolidating to L2 cache...',
+      'Evaluating importance scores...',
+      'Committing to Solana...',
+      'Optimizing memory layout...',
+      'Verifying chain commits...',
+      'Memory optimization complete!'
+    ];
+
+    // Initialize grid
+    function initGrid() {
+      grid.innerHTML = '';
+      blocks = [];
+      
+      for (let i = 0; i < TOTAL; i++) {
+        const block = document.createElement('div');
+        block.className = 'defrag-block empty';
+        grid.appendChild(block);
+        blocks.push({ el: block, state: 'empty' });
+      }
+
+      // Scatter initial memory blocks
+      for (let i = 0; i < TOTAL * 0.6; i++) {
+        const idx = Math.floor(Math.random() * TOTAL);
+        const types = ['l3', 'l3', 'l3', 'l2', 'l2', 'l1'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        blocks[idx].state = type;
+        blocks[idx].el.className = 'defrag-block ' + type;
       }
     }
 
-    for (let i = 0; i < numLines; i++) {
-      const line = document.createElement('div');
-      line.className = 'brain-line';
+    // Animation step
+    function animateStep() {
+      // Pick random blocks to animate
+      const numActions = 3 + Math.floor(Math.random() * 5);
       
-      const baseWidth = getBrainWidth(i);
-      const variance = (Math.random() - 0.5) * 0.15;
-      const width = Math.max(0.05, Math.min(1, baseWidth + variance));
+      for (let i = 0; i < numActions; i++) {
+        const idx = Math.floor(Math.random() * TOTAL);
+        const block = blocks[idx];
+        
+        if (progress < 30) {
+          // Phase 1: Reading
+          if (block.state !== 'empty') {
+            block.el.className = 'defrag-block reading';
+            setTimeout(() => {
+              block.el.className = 'defrag-block ' + block.state;
+            }, 100);
+          }
+        } else if (progress < 60) {
+          // Phase 2: Consolidating L3 -> L2
+          if (block.state === 'l3') {
+            block.state = 'l2';
+            block.el.className = 'defrag-block writing';
+            setTimeout(() => {
+              block.el.className = 'defrag-block l2';
+            }, 150);
+          }
+        } else if (progress < 85) {
+          // Phase 3: Committing important ones to chain
+          if (block.state === 'l2' && Math.random() > 0.7) {
+            block.state = 'l1';
+            block.el.className = 'defrag-block l1';
+          }
+          if (block.state === 'l1' && Math.random() > 0.5) {
+            block.state = 'optimized';
+            block.el.className = 'defrag-block optimized';
+            stats.chain++;
+          }
+        } else {
+          // Phase 4: Final optimization
+          if (block.state === 'l1') {
+            block.state = 'optimized';
+            block.el.className = 'defrag-block writing';
+            setTimeout(() => {
+              block.el.className = 'defrag-block optimized';
+            }, 100);
+            stats.chain++;
+          }
+        }
+      }
+
+      // Update progress
+      progress += 0.3 + Math.random() * 0.5;
+      if (progress > 100) progress = 100;
       
-      // Offset from center based on brain shape
-      const offset = (1 - width) / 2 + (Math.random() - 0.5) * 0.1;
+      progressBar.style.width = progress + '%';
+      progressText.textContent = Math.floor(progress) + '%';
+
+      // Update status
+      const statusIdx = Math.min(Math.floor(progress / 14), statuses.length - 1);
+      statusEl.textContent = statuses[statusIdx];
+
+      // Update stats
+      stats.episodic = blocks.filter(b => b.state === 'l3').length;
+      stats.semantic = blocks.filter(b => b.state === 'l2').length;
+      stats.procedural = blocks.filter(b => b.state === 'l1').length;
       
-      line.style.cssText = `
-        --scale-start: ${width};
-        --scale-end: ${width * (0.7 + Math.random() * 0.5)};
-        width: 100%;
-        margin-left: ${offset * 100}%;
-        animation-delay: ${i * 0.02 + Math.random() * 0.5}s;
-        animation-duration: ${2.5 + Math.random() * 2}s;
-      `;
-      
-      container.appendChild(line);
+      statEpisodic.textContent = stats.episodic;
+      statSemantic.textContent = stats.semantic;
+      statProcedural.textContent = stats.procedural;
+      statChain.textContent = stats.chain;
+
+      // Loop or restart
+      if (progress >= 100) {
+        setTimeout(() => {
+          progress = 0;
+          stats = { episodic: 0, semantic: 0, procedural: 0, chain: 0 };
+          initGrid();
+        }, 3000);
+      }
     }
+
+    // Start animation
+    initGrid();
+    setInterval(animateStep, 80);
   </script>
 
 </body>
 </html>
-<!-- Deployed: 2026-02-17T06:31:31Z -->
