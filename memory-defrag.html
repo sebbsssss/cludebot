@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clude — Memory Sync</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #0a0a0f;
+      color: #fff;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: 600;
+      color: #3355ff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #3355ff, #6688ff);
+      border-radius: 8px;
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #00ff88;
+      font-size: 14px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #00ff88;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 10px #00ff88; }
+      50% { opacity: 0.5; box-shadow: 0 0 20px #00ff88; }
+    }
+    
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 40px;
+    }
+    
+    .memory-grid-container {
+      background: linear-gradient(180deg, rgba(51,85,255,0.05) 0%, transparent 100%);
+      border: 1px solid rgba(51,85,255,0.2);
+      border-radius: 16px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .memory-grid-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #3355ff, transparent);
+    }
+    
+    .grid-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    
+    .grid-title {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .sync-progress {
+      font-size: 14px;
+      color: #3355ff;
+    }
+    
+    .memory-grid {
+      display: grid;
+      grid-template-columns: repeat(32, 1fr);
+      grid-template-rows: repeat(16, 1fr);
+      gap: 3px;
+      height: calc(100% - 60px);
+    }
+    
+    .memory-block {
+      border-radius: 2px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .memory-block.empty {
+      background: rgba(255,255,255,0.03);
+    }
+    
+    .memory-block.working {
+      background: linear-gradient(135deg, #ff6644, #ff8866);
+      box-shadow: 0 0 8px rgba(255,102,68,0.4);
+    }
+    
+    .memory-block.episodic {
+      background: linear-gradient(135deg, #ffaa00, #ffcc44);
+      box-shadow: 0 0 8px rgba(255,170,0,0.4);
+    }
+    
+    .memory-block.semantic {
+      background: linear-gradient(135deg, #00cc88, #44ddaa);
+      box-shadow: 0 0 8px rgba(0,204,136,0.4);
+    }
+    
+    .memory-block.onchain {
+      background: linear-gradient(135deg, #3355ff, #6688ff);
+      box-shadow: 0 0 10px rgba(51,85,255,0.6);
+    }
+    
+    .memory-block.syncing {
+      animation: syncPulse 0.5s ease-in-out;
+    }
+    
+    @keyframes syncPulse {
+      0% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.2); filter: brightness(1.5); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+    
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    
+    .stats-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    
+    .stats-card h3 {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 16px;
+    }
+    
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+    
+    .stat-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+    }
+    
+    .stat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+    }
+    
+    .stat-dot.working { background: linear-gradient(135deg, #ff6644, #ff8866); }
+    .stat-dot.episodic { background: linear-gradient(135deg, #ffaa00, #ffcc44); }
+    .stat-dot.semantic { background: linear-gradient(135deg, #00cc88, #44ddaa); }
+    .stat-dot.onchain { background: linear-gradient(135deg, #3355ff, #6688ff); }
+    
+    .stat-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+    }
+    
+    .stat-value span {
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+      margin-left: 4px;
+    }
+    
+    .progress-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+    
+    .progress-fill.onchain {
+      background: linear-gradient(90deg, #3355ff, #6688ff);
+    }
+    
+    .activity-feed {
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .activity-item {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .activity-item .type {
+      color: #3355ff;
+    }
+    
+    .activity-item .hash {
+      color: rgba(255,255,255,0.3);
+      font-family: monospace;
+    }
+    
+    .blockchain-indicator {
+      background: linear-gradient(135deg, rgba(51,85,255,0.1), rgba(51,85,255,0.05));
+      border: 1px solid rgba(51,85,255,0.3);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .blockchain-indicator h4 {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 12px;
+    }
+    
+    .chain-stats {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+    }
+    
+    .chain-stat {
+      text-align: center;
+    }
+    
+    .chain-stat .value {
+      font-size: 24px;
+      font-weight: 600;
+      color: #3355ff;
+    }
+    
+    .chain-stat .label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 4px;
+    }
+    
+    /* Scan line effect */
+    .scanline {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(51,85,255,0.3), transparent);
+      animation: scan 4s linear infinite;
+      pointer-events: none;
+      z-index: 100;
+    }
+    
+    @keyframes scan {
+      0% { top: 0; opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { top: 100vh; opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon"></div>
+        CLUDE
+      </div>
+      <div class="status">
+        <div class="status-dot"></div>
+        SYNCING TO SOLANA
+      </div>
+    </div>
+    
+    <div class="main">
+      <div class="memory-grid-container">
+        <div class="grid-header">
+          <div class="grid-title">Memory Blocks</div>
+          <div class="sync-progress" id="syncProgress">0% synchronized</div>
+        </div>
+        <div class="memory-grid" id="memoryGrid"></div>
+      </div>
+      
+      <div class="sidebar">
+        <div class="stats-card">
+          <h3>Memory Distribution</h3>
+          <div class="stat-row">
+            <div class="stat-label">
+              <div class="stat-dot working"></div>
+              Working Memory
+            </div>
+            <div class="stat-value" id="workingCount">0<span>blocks</span></div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">
+              <div class="stat-dot episodic"></div>
+              Episodic
+            </div>
+            <div class="stat-value" id="episodicCount">0<span>blocks</span></div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">
+              <div class="stat-dot semantic"></div>
+              Semantic
+            </div>
+            <div class="stat-value" id="semanticCount">0<span>blocks</span></div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">
+              <div class="stat-dot onchain"></div>
+              On-Chain
+            </div>
+            <div class="stat-value" id="onchainCount">0<span>blocks</span></div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill onchain" id="onchainProgress" style="width: 0%"></div>
+          </div>
+        </div>
+        
+        <div class="blockchain-indicator">
+          <h4>Solana Mainnet</h4>
+          <div class="chain-stats">
+            <div class="chain-stat">
+              <div class="value" id="txCount">0</div>
+              <div class="label">Transactions</div>
+            </div>
+            <div class="chain-stat">
+              <div class="value" id="blockHeight">—</div>
+              <div class="label">Block</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="stats-card activity-feed">
+          <h3>Activity</h3>
+          <div class="activity-list" id="activityList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GRID_SIZE = 32 * 16; // 512 blocks
+    const grid = document.getElementById('memoryGrid');
+    const blocks = [];
+    const types = ['empty', 'working', 'episodic', 'semantic', 'onchain'];
+    
+    let stats = {
+      working: 0,
+      episodic: 0,
+      semantic: 0,
+      onchain: 0,
+      empty: GRID_SIZE
+    };
+    
+    let txCount = 0;
+    let blockHeight = 312847651;
+    
+    // Initialize grid
+    for (let i = 0; i < GRID_SIZE; i++) {
+      const block = document.createElement('div');
+      block.className = 'memory-block empty';
+      block.dataset.type = 'empty';
+      block.dataset.index = i;
+      grid.appendChild(block);
+      blocks.push(block);
+    }
+    
+    function updateStats() {
+      document.getElementById('workingCount').innerHTML = stats.working + '<span>blocks</span>';
+      document.getElementById('episodicCount').innerHTML = stats.episodic + '<span>blocks</span>';
+      document.getElementById('semanticCount').innerHTML = stats.semantic + '<span>blocks</span>';
+      document.getElementById('onchainCount').innerHTML = stats.onchain + '<span>blocks</span>';
+      
+      const total = GRID_SIZE - stats.empty;
+      const onchainPercent = total > 0 ? Math.round((stats.onchain / total) * 100) : 0;
+      document.getElementById('onchainProgress').style.width = onchainPercent + '%';
+      document.getElementById('syncProgress').textContent = onchainPercent + '% synchronized';
+      
+      document.getElementById('txCount').textContent = txCount;
+      document.getElementById('blockHeight').textContent = blockHeight.toLocaleString();
+    }
+    
+    function setBlockType(index, newType) {
+      const block = blocks[index];
+      const oldType = block.dataset.type;
+      
+      if (oldType === newType) return;
+      
+      stats[oldType]--;
+      stats[newType]++;
+      
+      block.classList.remove(oldType);
+      block.classList.add(newType, 'syncing');
+      block.dataset.type = newType;
+      
+      setTimeout(() => block.classList.remove('syncing'), 500);
+      
+      if (newType === 'onchain') {
+        txCount++;
+        blockHeight++;
+        addActivity('STORE', generateHash());
+      }
+      
+      updateStats();
+    }
+    
+    function generateHash() {
+      return Array.from({length: 8}, () => 
+        Math.floor(Math.random() * 16).toString(16)
+      ).join('');
+    }
+    
+    function addActivity(type, hash) {
+      const list = document.getElementById('activityList');
+      const item = document.createElement('div');
+      item.className = 'activity-item';
+      item.innerHTML = `<span class="type">${type}</span><span class="hash">${hash}...</span>`;
+      list.insertBefore(item, list.firstChild);
+      
+      if (list.children.length > 15) {
+        list.removeChild(list.lastChild);
+      }
+    }
+    
+    // Simulation
+    function simulate() {
+      // Phase 1: Fill with working memory
+      const emptyBlocks = blocks.filter(b => b.dataset.type === 'empty');
+      if (emptyBlocks.length > GRID_SIZE * 0.3 && Math.random() > 0.3) {
+        const block = emptyBlocks[Math.floor(Math.random() * emptyBlocks.length)];
+        setBlockType(parseInt(block.dataset.index), 'working');
+      }
+      
+      // Phase 2: Working → Episodic
+      const workingBlocks = blocks.filter(b => b.dataset.type === 'working');
+      if (workingBlocks.length > 10 && Math.random() > 0.5) {
+        const block = workingBlocks[Math.floor(Math.random() * workingBlocks.length)];
+        setBlockType(parseInt(block.dataset.index), 'episodic');
+      }
+      
+      // Phase 3: Episodic → Semantic
+      const episodicBlocks = blocks.filter(b => b.dataset.type === 'episodic');
+      if (episodicBlocks.length > 20 && Math.random() > 0.6) {
+        const block = episodicBlocks[Math.floor(Math.random() * episodicBlocks.length)];
+        setBlockType(parseInt(block.dataset.index), 'semantic');
+      }
+      
+      // Phase 4: Semantic → On-chain
+      const semanticBlocks = blocks.filter(b => b.dataset.type === 'semantic');
+      if (semanticBlocks.length > 15 && Math.random() > 0.7) {
+        const block = semanticBlocks[Math.floor(Math.random() * semanticBlocks.length)];
+        setBlockType(parseInt(block.dataset.index), 'onchain');
+      }
+    }
+    
+    // Run simulation
+    setInterval(simulate, 100);
+    
+    // Initial population burst
+    for (let i = 0; i < 50; i++) {
+      setTimeout(() => {
+        const idx = Math.floor(Math.random() * GRID_SIZE);
+        setBlockType(idx, 'working');
+      }, i * 50);
+    }
+  </script>
+</body>
+</html>
