@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 // SDK exports — available when imported as a library: import { Cortex } from 'clude-bot'
 export { Cortex } from './sdk';
 export type {
