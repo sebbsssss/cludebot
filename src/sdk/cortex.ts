@@ -1,3 +1,4 @@
+import './sdk-mode'; // Must be FIRST — sets global flag before config.ts evaluates
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import type {

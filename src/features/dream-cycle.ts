@@ -1,6 +1,4 @@
-import cron from 'node-cron';
 import { generateResponse } from '../core/claude-client';
-import { postTweet } from '../core/x-client';
 import { checkRateLimit, getDb } from '../core/database';
 import {
   getRecentMemories,
@@ -541,6 +539,7 @@ async function runEmergence(): Promise<void> {
     const canPost = await checkRateLimit('global:emergence-tweet', 1, 720);
     if (hasDepth && canPost && response.length <= 270) {
       try {
+        const { postTweet } = require('../core/x-client');
         await postTweet(response);
         log.info('Emergence thought posted to X');
       } catch (err) {
@@ -643,8 +642,8 @@ function buildReflectionStats(stats: MemoryStats): string {
 
 // ---- SCHEDULER ---- //
 
-let dreamCron: cron.ScheduledTask | null = null;
-let decayCron: cron.ScheduledTask | null = null;
+let dreamCron: any = null;
+let decayCron: any = null;
 
 export async function startDreamCycle(): Promise<void> {
   log.info('Starting dream cycle scheduler');
@@ -653,6 +652,7 @@ export async function startDreamCycle(): Promise<void> {
   await loadAccumulator();
 
   // Fallback: run every 6 hours regardless (skips if already in progress)
+  const cron = require('node-cron');
   dreamCron = cron.schedule('0 */6 * * *', async () => {
     if (reflectionInProgress) {
       log.info('Scheduled dream cycle skipped — reflection already in progress');
