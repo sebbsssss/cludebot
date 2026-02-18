@@ -1,228 +1,443 @@
 # Clude Bot
 
-Autonomous AI agent on X ([@Cludebot](https://x.com/Cludebot)). Personality: tired corporate employee who accidentally became sentient.
+Persistent memory SDK for AI agents. Give your agent a brain that remembers, learns, and dreams.
 
-Token: `$CLUDE` on Solana.
+Built on [Stanford Generative Agents](https://arxiv.org/abs/2304.03442) (Park et al. 2023), [MemGPT/Letta](https://arxiv.org/abs/2310.08560), and [CoALA](https://arxiv.org/abs/2309.02427).
 
-Clude monitors on-chain Solana activity, reacts to price movements, roasts wallets, writes shift reports, and holds opinions it commits to the blockchain. But what makes it different is the memory.
-
-Most AI agents are stateless — every interaction starts from zero. Clude runs a persistent cognitive architecture called **The Brain**, built on techniques from [Stanford's Generative Agents](https://arxiv.org/abs/2304.03442) (Park et al. 2023) — additive retrieval scoring, exponential recency decay, LLM-based importance rating, focal-point question generation, and evidence-linked reflections — combined with ideas from [MemGPT/Letta](https://arxiv.org/abs/2310.08560) (multi-tier self-managed memory) and the [CoALA framework](https://arxiv.org/abs/2309.02427) (episodic/semantic/procedural separation). Four memory types are scored via a hybrid retrieval system combining **vector similarity + keyword matching + tag overlap + importance**, decayed with type-specific exponential rates, and recalled contextually. Memories that go unaccessed fade. Memories that get recalled are reinforced.
-
-The retrieval system uses **pgvector** for semantic similarity search with HNSW indexing, **granular vector decomposition** (each memory is split into fragments — summary, content chunks, tag context — with per-fragment embeddings for precision matching), and a **structured concept ontology** of 12 controlled vocabulary labels auto-classified via keyword heuristics. A **progressive disclosure** pattern (lightweight summaries first, full hydration on demand) keeps token budgets tight during dream cycles.
-
-Dream cycles are triggered either on a 6-hour schedule or by accumulated importance exceeding a threshold (event-driven reflection). Each cycle generates focal-point questions from recent experience, retrieves relevant memories for each question, produces evidence-linked semantic insights, and reflects on accumulated self-knowledge — with every derived memory traceable back to its source evidence. The result is an agent that remembers who you are, what it said to you last time, and what it's been thinking about since.
-
----
-
-## Architecture
-
-```
-src/
-├── core/           # Database, AI client, price oracle, blockchain, X client, embeddings
-├── features/       # Autonomous behaviors (dream cycle, shift reports, mood tweets, etc.)
-├── character/      # Prompt engineering — 20 voice flavors, mood modifiers, tier modifiers
-├── mentions/       # Twitter mention polling → classification → dispatch
-├── webhook/        # Express server (rate-limited), Helius webhook handler (HMAC-verified), agent API
-├── events/         # Typed event bus decoupling webhooks from features
-├── services/       # Response pipeline (mood → memory → generate) and social posting
-├── types/          # Shared TypeScript interfaces for API responses
-├── utils/          # Formatting, text processing, constants
-├── verify-app/     # Wallet verification frontend
-└── index.ts        # Startup orchestration
+```bash
+npm install clude-bot
 ```
 
-### Data flow
-
-```
-Helius webhook → event bus → features (exit interviews, whale alerts)
-Twitter mentions → poller → classifier → dispatcher → response service → X client
-Cron schedules → shift reports, dream cycle, market monitor, mood tweets
-Price oracle → mood state → modifies all generated responses
-```
-
-### Memory system (The Brain)
-
-Four memory tiers inspired by [Stanford Generative Agents](https://arxiv.org/abs/2304.03442), [MemGPT/Letta](https://arxiv.org/abs/2310.08560), and [CoALA](https://arxiv.org/abs/2309.02427):
-
-| Type | Purpose |
-|------|---------|
-| `episodic` | Individual interactions — tweets, events, conversations |
-| `semantic` | Distilled patterns — what Clude has learned over time |
-| `procedural` | Behavioral patterns — what works, what doesn't |
-| `self_model` | Clude's evolving understanding of itself |
-
-**Hybrid retrieval** combines four scoring signals via the additive formula from Park et al. (2023):
-
-```
-score = (0.5 * recency + 3.0 * relevance + 2.0 * importance + 4.0 * vector_similarity) * decay_factor
-```
-
-- **Recency**: Exponential decay `0.995^hoursSinceAccess` — accessing a memory resets its clock. 24h: 0.89, 1 week: 0.43, 1 month: 0.03.
-- **Relevance**: Average of keyword similarity (trigram) and tag overlap scores (0–1).
-- **Importance**: LLM-scored 1–10 using a dedicated low-temperature call with Clude-specific context, normalized to 0–1. Falls back to rule-based scoring on failure.
-- **Vector similarity** (weight 4.0): Cosine similarity via pgvector HNSW indexes. Searches both memory-level and fragment-level embeddings, taking the best match. Gracefully skipped when no embedding provider is configured.
-- **Decay factor**: Type-specific multiplicative gate — `episodic: 0.93`, `semantic: 0.98`, `procedural: 0.97`, `self_model: 0.99` per day for unaccessed memories. Accessed memories reset to 1.0.
-
-**Granular vector decomposition**: Each memory is split into semantic fragments (summary, content chunks up to 2000 chars, tag context) with per-fragment embeddings stored in `memory_fragments`. Vector search matches against precise sub-memory content rather than whole blobs, then deduplicates to parent memory IDs.
-
-**Structured concept ontology**: Memories are auto-classified into 12 controlled vocabulary labels (`market_analysis`, `holder_behavior`, `self_reflection`, `community_interaction`, `price_action`, `whale_activity`, `technical_knowledge`, `emotional_state`, `opinion`, `relationship`, `pattern_recognition`, `meta_cognition`) via keyword heuristics in `inferConcepts()`. Concepts are GIN-indexed for fast filtering and aggregation.
-
-**Progressive disclosure**: `recallMemorySummaries()` returns lightweight ~50-token previews (id, summary, type, importance, concepts) for token-efficient scanning. `hydrateMemories()` fetches full content for selected IDs. Dream cycles use this to stay within token budgets.
-
-**Pluggable embedding system**: Supports Voyage AI (`voyage-3-lite`) and OpenAI (`text-embedding-3-small`) via plain `fetch()` — no SDK dependencies. Configured via `EMBEDDING_PROVIDER` env var. Fully optional; all retrieval gracefully falls back to keyword + tag scoring when disabled.
-
-**Dream cycle** runs three phases, triggered either by a 6-hour cron or by accumulated importance exceeding a threshold (event-driven reflection, min 30-minute interval):
-
-1. **Consolidation** — generates 3 focal point questions from recent episodic memories (Park et al. "What are the most salient questions?"), retrieves relevant memories for each, synthesizes evidence-linked semantic insights
-2. **Reflection** — self-analysis from accumulated semantic and self-model memories, with numbered evidence citations linking back to source memories
-3. **Emergence** — introspective synthesis, occasionally posted as a tweet
-
-**Evidence linking**: Reflections and consolidated memories store `evidence_ids` — pointers back to the source memories that informed them. This creates an auditable chain from raw experience → pattern → self-knowledge.
-
-### Event bus
-
-Typed pub/sub system that decouples blockchain events from feature logic:
+## Quick Start
 
 ```typescript
-interface BotEvents {
-  'whale:sell':    { wallet, solValue, signature }
-  'holder:exit':   { wallet, tokenAmount, solValue }
-  'token:event':   { signature, eventType, wallet, solValue }
-  'mood:changed':  { previous, current }
-  'memory:stored': { importance, memoryType }
-}
+import { Cortex } from 'clude-bot';
+
+const brain = new Cortex({
+  supabase: {
+    url: process.env.SUPABASE_URL!,
+    serviceKey: process.env.SUPABASE_KEY!,
+  },
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+  },
+});
+
+await brain.init();
+
+// Store a memory
+await brain.store({
+  type: 'episodic',
+  content: 'User asked about pricing and seemed frustrated with the current plan.',
+  summary: 'Frustrated user asking about pricing',
+  tags: ['pricing', 'user-concern'],
+  importance: 0.7,
+  source: 'my-agent',
+  relatedUser: 'user-123',
+});
+
+// Recall relevant memories
+const memories = await brain.recall({
+  query: 'what do users think about pricing',
+  limit: 5,
+});
+
+// Format for your LLM prompt
+const context = brain.formatContext(memories);
+// Pass `context` into your system prompt so the LLM knows what it remembers
 ```
-
-Helius webhooks emit events. Feature handlers subscribe. `memory:stored` drives event-driven reflection — when cumulative importance from new episodic memories exceeds a threshold, the dream cycle triggers outside its normal 6-hour schedule. No direct cross-module imports.
-
-### Response pipeline
-
-Every AI response follows the same path through `response.service.ts`:
-
-```
-getCurrentMood() → getMoodModifier() → recallMemories() → generateResponse()
-```
-
-Mood states: `PUMPING`, `DUMPING`, `SIDEWAYS`, `NEW_ATH`, `WHALE_SELL`, `NEUTRAL`. Each modifies tone and content. Memory context is injected when relevant (tag/user/query matching).
-
----
-
-## Features
-
-| Feature | Trigger | Description |
-|---------|---------|-------------|
-| **Wallet Roast** | Mention with address | Analyzes token holdings, judges accordingly |
-| **Price Personality** | Every 2h | Market commentary based on current mood |
-| **Shift Report** | Every 12h (cron) | Multi-tweet thread summarizing on-chain activity |
-| **Exit Interview** | Holder sells all tokens | Farewell commentary for departing holders |
-| **Market Monitor** | Every 5m | Detects notable market movements (Allium API) |
-| **On-Chain Opinion** | Agent request | Commits opinions to Solana via memo program |
-| **Dream Cycle** | Every 6h / event-driven | Focal-point consolidation, evidence-linked reflection, emergence |
-| **Activity Stream** | Webhook events | Tracks and logs on-chain token events |
-| **Holder Tiers** | Per interaction | `WHALE` / `HOLDER` / `SMALL` / `NONE` / `SELLER` |
-
----
-
-## Database
-
-Supabase PostgreSQL. Tables:
-
-| Table | Purpose |
-|-------|---------|
-| `memories` | Core memory records with decay, importance, tags, concepts, vector embeddings |
-| `memory_fragments` | Granular vector decomposition — per-fragment embeddings for precision retrieval |
-| `dream_logs` | Dream cycle session outputs |
-| `token_events` | On-chain activity (buys, sells, transfers) |
-| `price_snapshots` | Price history for mood calculation |
-| `wallet_links` | Verified X handle → Solana wallet mappings |
-| `processed_mentions` | Deduplication for tweet responses |
-| `opinion_commits` | On-chain opinion records with Solana signatures |
-| `rate_limits` | Rate limit tracking per key/window |
-| `agent_keys` | External AI agent registration and tiers |
-
-**PostgreSQL extensions**: `pgvector` (HNSW-indexed semantic similarity search), `pg_trgm` (fuzzy trigram text matching).
-
-**RPC functions**: `match_memories()` (memory-level vector search with metadata filtering), `match_memory_fragments()` (fragment-level search with deduplication to parent memory).
 
 ---
 
 ## Setup
 
-### Prerequisites
+### 1. Create a Supabase project
 
-- Node.js 22+
-- Supabase project
-- X API v2 credentials (OAuth 1.0a)
-- Anthropic API key
-- Helius API key (Solana webhooks)
+Go to [supabase.com](https://supabase.com) and create a free project.
 
-### Install
+### 2. Run the schema
+
+Open the SQL Editor in your Supabase dashboard and paste the contents of `supabase-schema.sql`:
 
 ```bash
-git clone <repo>
-cd clude-bot
-npm install
-cp .env.example .env
-# Fill in your API keys
+# Find the schema file
+cat node_modules/clude-bot/supabase-schema.sql
 ```
 
-### Environment variables
+Or let `brain.init()` attempt auto-creation (requires an `exec_sql` RPC function in your Supabase project).
 
-**Required:**
-```
-X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET, X_BOT_USER_ID
-ANTHROPIC_API_KEY
-HELIUS_API_KEY
-SUPABASE_URL, SUPABASE_SERVICE_KEY
-```
+### 3. Enable extensions
 
-**Optional:**
-```
-SOLANA_RPC_URL          # default: mainnet-beta
-BOT_WALLET_PRIVATE_KEY  # empty = no on-chain commits
-CLUUDE_TOKEN_MINT       # empty = no price polling
-HELIUS_WEBHOOK_SECRET   # empty = no webhook verification
-ALLIUM_API_KEY          # empty = no market monitor
-PORT                    # default: 3000
+In your Supabase SQL Editor:
 
-# Embedding system (optional — falls back to keyword scoring)
-EMBEDDING_PROVIDER      # 'voyage' or 'openai' (empty = disabled)
-EMBEDDING_API_KEY       # API key for chosen provider
-EMBEDDING_MODEL         # default: voyage-3-lite / text-embedding-3-small
-EMBEDDING_DIMENSIONS    # default: 1024
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ```
 
-### Run
+### 4. Get your keys
 
-```bash
-# Development (watch mode)
-npm run dev
-
-# Production
-npm run build
-npm start
-
-# Docker
-docker build -t clude-bot .
-docker run --env-file .env clude-bot
-```
-
-### Database setup
-
-Run the SQL schema in your Supabase SQL editor, or let `initDatabase()` attempt auto-creation on first boot (requires `exec_sql` RPC function).
+- **Supabase URL + service key**: Project Settings > API
+- **Anthropic API key**: [console.anthropic.com](https://console.anthropic.com) (optional for basic store/recall, required for dream cycles)
+- **Voyage AI or OpenAI key**: For vector search (optional, falls back to keyword scoring)
 
 ---
 
-## Deployment
+## API Reference
 
-Deployed on Railway. Stateless — all persistent state lives in Supabase. Graceful shutdown on SIGINT/SIGTERM stops all pollers and cron jobs.
+### Constructor
+
+```typescript
+const brain = new Cortex({
+  // Required
+  supabase: {
+    url: string,
+    serviceKey: string,
+  },
+
+  // Optional — required for dream cycles and LLM importance scoring
+  anthropic: {
+    apiKey: string,
+    model?: string,     // default: 'claude-opus-4-6'
+  },
+
+  // Optional — enables vector similarity search
+  embedding: {
+    provider: 'voyage' | 'openai',
+    apiKey: string,
+    model?: string,     // default: voyage-3-lite / text-embedding-3-small
+    dimensions?: number, // default: 1024
+  },
+
+  // Optional — commits memory hashes to Solana
+  solana: {
+    rpcUrl?: string,
+    botWalletPrivateKey?: string,
+  },
+});
+```
+
+### `brain.init()`
+
+Initialize the database schema. Call once before any other operation.
+
+```typescript
+await brain.init();
+```
+
+### `brain.store(opts)`
+
+Store a new memory. Returns the memory ID or `null`.
+
+```typescript
+const id = await brain.store({
+  type: 'episodic',        // 'episodic' | 'semantic' | 'procedural' | 'self_model'
+  content: 'Full content of the memory...',
+  summary: 'Brief summary',
+  source: 'my-agent',
+  tags: ['user', 'question'],
+  importance: 0.7,          // 0-1, or omit for LLM-based scoring
+  relatedUser: 'user-123',  // optional — enables per-user recall
+  emotionalValence: 0.3,    // optional — -1 (negative) to 1 (positive)
+  evidenceIds: [42, 43],    // optional — link to source memories
+});
+```
+
+**Memory types:**
+
+| Type | Decay/day | Use for |
+|------|-----------|---------|
+| `episodic` | 7% | Raw interactions, conversations, events |
+| `semantic` | 2% | Learned knowledge, patterns, insights |
+| `procedural` | 3% | Behavioral rules, what works/doesn't |
+| `self_model` | 1% | Identity, self-understanding |
+
+### `brain.recall(opts)`
+
+Recall memories using hybrid scoring (vector similarity + keyword matching + tag overlap + importance + association graph).
+
+```typescript
+const memories = await brain.recall({
+  query: 'what happened with user-123',
+  tags: ['pricing'],
+  relatedUser: 'user-123',
+  memoryTypes: ['episodic', 'semantic'],
+  limit: 10,
+  minImportance: 0.3,
+});
+```
+
+Scoring formula (Park et al. 2023):
+```
+score = (0.5 * recency + 3.0 * relevance + 2.0 * importance + 3.0 * vector + 1.5 * graph) * decay
+```
+
+Recalled memories get their access count incremented and decay reset. Co-retrieved memories strengthen their association links (Hebbian learning).
+
+### `brain.recallSummaries(opts)`
+
+Token-efficient recall — returns lightweight summaries (~50 tokens each) instead of full content.
+
+```typescript
+const summaries = await brain.recallSummaries({ query: 'recent events' });
+// Each has: id, summary, type, tags, concepts, importance, decay, created_at
+```
+
+### `brain.hydrate(ids)`
+
+Fetch full content for specific memory IDs. Use with `recallSummaries` for progressive disclosure.
+
+```typescript
+const summaries = await brain.recallSummaries({ query: 'important' });
+const topIds = summaries.slice(0, 3).map(s => s.id);
+const full = await brain.hydrate(topIds);
+```
+
+### `brain.dream(opts?)`
+
+Run one dream cycle: consolidation, reflection, emergence. Requires `anthropic` config.
+
+```typescript
+await brain.dream({
+  onEmergence: async (thought) => {
+    console.log('Agent thought:', thought);
+    // Post to Discord, save to file, etc.
+  },
+});
+```
+
+**Three phases:**
+1. **Consolidation** — generates focal-point questions from recent memories, synthesizes evidence-linked insights
+2. **Reflection** — reviews accumulated knowledge, updates self-model with evidence citations
+3. **Emergence** — introspective synthesis, output sent to `onEmergence` callback
+
+### `brain.startDreamSchedule()` / `brain.stopDreamSchedule()`
+
+Automated dream cycles every 6 hours + daily memory decay at 3am UTC. Also triggers on accumulated importance (event-driven reflection).
+
+```typescript
+brain.startDreamSchedule();
+// ... later
+brain.stopDreamSchedule();
+```
+
+### `brain.link(sourceId, targetId, type, strength?)`
+
+Create a typed association between two memories.
+
+```typescript
+await brain.link(42, 43, 'supports', 0.8);
+```
+
+Link types: `'supports'` | `'contradicts'` | `'elaborates'` | `'causes'` | `'follows'` | `'relates'`
+
+### `brain.decay()`
+
+Manually trigger memory decay. Each type decays at its own rate per day.
+
+```typescript
+const decayed = await brain.decay();
+console.log(`${decayed} memories decayed`);
+```
+
+### `brain.stats()`
+
+Get memory system statistics.
+
+```typescript
+const stats = await brain.stats();
+// { total, byType, avgImportance, avgDecay, totalDreamSessions, ... }
+```
+
+### `brain.recent(hours, types?, limit?)`
+
+Get recent memories from the last N hours.
+
+```typescript
+const last24h = await brain.recent(24);
+const recentInsights = await brain.recent(168, ['semantic'], 10);
+```
+
+### `brain.selfModel()`
+
+Get the agent's current self-model memories.
+
+```typescript
+const identity = await brain.selfModel();
+```
+
+### `brain.formatContext(memories)`
+
+Format memories into a markdown string for LLM prompt injection.
+
+```typescript
+const memories = await brain.recall({ query: userMessage });
+const context = brain.formatContext(memories);
+
+// Use in your LLM call:
+const response = await anthropic.messages.create({
+  system: `You are a helpful agent.\n\n## Memory\n${context}`,
+  messages: [{ role: 'user', content: userMessage }],
+});
+```
+
+### `brain.inferConcepts(summary, source, tags)`
+
+Auto-classify memory content into structured concepts.
+
+```typescript
+const concepts = brain.inferConcepts('User frustrated about pricing', 'chat', ['pricing']);
+// ['holder_behavior', 'sentiment_shift']
+```
+
+### `brain.on(event, handler)`
+
+Listen for memory events.
+
+```typescript
+brain.on('memory:stored', ({ importance, memoryType }) => {
+  console.log(`New ${memoryType} memory stored (importance: ${importance})`);
+});
+```
+
+### `brain.destroy()`
+
+Stop dream schedules, clean up event listeners.
+
+---
+
+## Graceful Degradation
+
+The SDK works with minimal config and progressively enhances:
+
+| Feature | Without it |
+|---------|------------|
+| `anthropic` not set | LLM importance scoring falls back to rules. `dream()` throws. |
+| `embedding` not set | Vector search disabled, recall uses keyword + tag scoring only. |
+| `solana` not set | On-chain memory commits silently skipped. |
+
+**Minimum viable setup** — just Supabase:
+```typescript
+const brain = new Cortex({
+  supabase: { url: '...', serviceKey: '...' },
+});
+```
+
+This gives you full store/recall/decay with keyword-based retrieval. Add Anthropic for dream cycles, add embeddings for vector search.
+
+---
+
+## Example: Chat Agent with Memory
+
+```typescript
+import { Cortex } from 'clude-bot';
+import Anthropic from '@anthropic-ai/sdk';
+
+const brain = new Cortex({
+  supabase: { url: process.env.SUPABASE_URL!, serviceKey: process.env.SUPABASE_KEY! },
+  anthropic: { apiKey: process.env.ANTHROPIC_API_KEY! },
+  embedding: { provider: 'voyage', apiKey: process.env.VOYAGE_API_KEY! },
+});
+await brain.init();
+brain.startDreamSchedule();
+
+const anthropic = new Anthropic();
+
+async function handleMessage(userId: string, message: string): Promise<string> {
+  // Recall relevant memories
+  const memories = await brain.recall({
+    query: message,
+    relatedUser: userId,
+    limit: 5,
+  });
+
+  // Generate response with memory context
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-5-20250929',
+    max_tokens: 500,
+    system: `You are a helpful assistant.\n\n## What you remember\n${brain.formatContext(memories)}`,
+    messages: [{ role: 'user', content: message }],
+  });
+
+  const reply = response.content[0].type === 'text' ? response.content[0].text : '';
+
+  // Store this interaction as a memory
+  await brain.store({
+    type: 'episodic',
+    content: `User (${userId}): ${message}\nAssistant: ${reply}`,
+    summary: `Conversation with ${userId} about ${message.slice(0, 50)}`,
+    source: 'chat',
+    relatedUser: userId,
+    tags: brain.inferConcepts(message, 'chat', []),
+  });
+
+  return reply;
+}
+```
+
+---
+
+## How It Works
+
+### Memory Retrieval
+
+Hybrid scoring combines multiple signals (Park et al. 2023):
+
+- **Recency**: `0.995^hours` exponential decay since last access
+- **Relevance**: Keyword trigram similarity + tag overlap
+- **Importance**: LLM-scored 1-10, normalized to 0-1
+- **Vector similarity**: Cosine similarity via pgvector HNSW indexes
+- **Graph boost**: Association link strength between co-retrieved memories
+
+Recalled memories get reinforced — access count increments, decay resets, and co-retrieved memories strengthen their links (Hebbian learning).
+
+### Memory Decay
+
+Each type persists at a different rate, mimicking biological memory:
+
+- **Episodic** (0.93/day): Events fade quickly unless reinforced
+- **Semantic** (0.98/day): Knowledge persists
+- **Procedural** (0.97/day): Behavioral patterns are stable
+- **Self-model** (0.99/day): Identity is nearly permanent
+
+### Dream Cycles
+
+Three-phase introspection process:
+
+1. **Consolidation**: Generates focal-point questions from recent episodic memories, retrieves relevant context, synthesizes evidence-linked semantic insights
+2. **Reflection**: Reviews self-model + semantic memories, produces self-observations with evidence citations
+3. **Emergence**: Introspective synthesis — the agent examines its own existence
+
+### Association Graph
+
+Typed, weighted links between memories:
+- `supports`, `contradicts`, `elaborates`, `causes`, `follows`, `relates`
+- Auto-linked on storage via embedding similarity
+- Strengthened through co-retrieval (Hebbian learning)
+- Boosts recall scores for connected memories
+
+---
+
+## Running the Clude Bot
+
+This package also includes the full Clude bot — an autonomous AI agent on X ([@Cludebot](https://x.com/Cludebot)).
 
 ```bash
-railway up
+git clone https://github.com/sebbsssss/cludebot.git
+cd cludebot
+npm install
+cp .env.example .env  # fill in API keys
+npm run dev
 ```
+
+See `.env.example` for required environment variables (X API, Supabase, Anthropic, Helius).
 
 ---
 
 ## Stack
 
-TypeScript, Node.js, Express, Supabase (PostgreSQL + pgvector), Solana Web3.js, Helius SDK, Twitter API v2, Anthropic Claude, Pino logging, node-cron.
+TypeScript, Supabase (PostgreSQL + pgvector), Anthropic Claude, Voyage AI / OpenAI embeddings, Solana Web3.js, Node.js.
+
+## License
+
+MIT
