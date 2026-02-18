@@ -3,14 +3,19 @@ dotenv.config();
 
 const siteOnly = process.env.SITE_ONLY === 'true';
 
+function isSDK(): boolean {
+  return !!(globalThis as any).__CLUDE_SDK_MODE;
+}
+
 function required(key: string): string {
+  if (isSDK()) return process.env[key] || '';
   const val = process.env[key];
   if (!val) throw new Error(`Missing required env var: ${key}`);
   return val;
 }
 
 function requiredUnlessSiteOnly(key: string): string {
-  if (siteOnly) return process.env[key] || '';
+  if (isSDK() || siteOnly) return process.env[key] || '';
   return required(key);
 }
 

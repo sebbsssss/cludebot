@@ -9,6 +9,8 @@ interface InitConfig {
   anthropicKey: string;
   embeddingProvider: string;
   embeddingKey: string;
+  solanaRpc: string;
+  walletKey: string;
 }
 
 function createPrompt(): readline.Interface {
@@ -109,12 +111,21 @@ function generateEnvFile(config: InitConfig): string {
   env += `# Anthropic (optional — enables dream cycles + LLM importance scoring)\n`;
   env += `ANTHROPIC_API_KEY=${config.anthropicKey || ''}\n\n`;
 
+  env += `# Solana (optional — on-chain memory commits)\n`;
+  env += `SOLANA_RPC_URL=${config.solanaRpc || 'https://api.mainnet-beta.solana.com'}\n`;
+  env += `BOT_WALLET_PRIVATE_KEY=${config.walletKey || ''}\n\n`;
+
   env += `# Embeddings (optional — enables vector similarity search)\n`;
-  env += `# EMBEDDING_PROVIDER=${config.embeddingProvider || 'voyage'}\n`;
-  if (config.embeddingProvider === 'openai') {
-    env += `# OPENAI_API_KEY=${config.embeddingKey || ''}\n`;
+  if (config.embeddingProvider) {
+    env += `EMBEDDING_PROVIDER=${config.embeddingProvider}\n`;
+    if (config.embeddingProvider === 'openai') {
+      env += `OPENAI_API_KEY=${config.embeddingKey || ''}\n`;
+    } else {
+      env += `VOYAGE_API_KEY=${config.embeddingKey || ''}\n`;
+    }
   } else {
-    env += `# VOYAGE_API_KEY=${config.embeddingKey || ''}\n`;
+    env += `# EMBEDDING_PROVIDER=voyage\n`;
+    env += `# VOYAGE_API_KEY=\n`;
   }
 
   return env;
@@ -131,6 +142,17 @@ function generateCodeSnippet(config: InitConfig): string {
   if (config.anthropicKey) {
     snippet += `  anthropic: {\n`;
     snippet += `    apiKey: process.env.ANTHROPIC_API_KEY,\n`;
+    snippet += `  },\n`;
+  }
+
+  if (config.walletKey || config.solanaRpc) {
+    snippet += `  solana: {\n`;
+    if (config.solanaRpc) {
+      snippet += `    rpcUrl: process.env.SOLANA_RPC_URL,\n`;
+    }
+    if (config.walletKey) {
+      snippet += `    botWalletPrivateKey: process.env.BOT_WALLET_PRIVATE_KEY,\n`;
+    }
     snippet += `  },\n`;
   }
 
@@ -169,10 +191,12 @@ export async function runInit(): Promise<void> {
     anthropicKey: '',
     embeddingProvider: '',
     embeddingKey: '',
+    solanaRpc: '',
+    walletKey: '',
   };
 
   // ─── Step 1: Supabase ───────────────────────────────────
-  printStep(1, 3, 'Supabase');
+  printStep(1, 4, 'Supabase');
   printInfo('Your memories live in Supabase (PostgreSQL + pgvector).');
   printInfo('Free project at https://supabase.com — or skip to configure later.\n');
 
@@ -218,7 +242,7 @@ export async function runInit(): Promise<void> {
   }
 
   // ─── Step 2: Anthropic ──────────────────────────────────
-  printStep(2, 3, 'Anthropic');
+  printStep(2, 4, 'Anthropic');
   printInfo('Enables dream cycles and LLM importance scoring.');
   printInfo('Not needed for basic store/recall.\n');
 
@@ -232,7 +256,28 @@ export async function runInit(): Promise<void> {
   }
 
   // ─── Step 3: Embeddings ─────────────────────────────────
-  printStep(3, 3, 'Embeddings');
+  printStep(3, 4, 'Solana');
+  printInfo('Commit memory hashes on-chain for verifiable agent history.');
+  printInfo('Requires an RPC endpoint and a wallet with SOL for fees.\n');
+
+  config.solanaRpc = await ask(rl, 'Solana RPC URL (Enter for mainnet default): ');
+  if (!config.solanaRpc) {
+    config.solanaRpc = '';
+  }
+
+  config.walletKey = await ask(rl, 'Wallet private key — base58 (Enter to skip): ');
+  console.log('');
+
+  if (config.walletKey) {
+    printSuccess('Solana wallet configured — on-chain memory commits enabled');
+  } else if (config.solanaRpc) {
+    printInfo('No wallet — read-only Solana access');
+  } else {
+    printInfo('Skipped — add SOLANA_RPC_URL and BOT_WALLET_PRIVATE_KEY to .env later');
+  }
+
+  // ─── Step 4: Embeddings ─────────────────────────────────
+  printStep(4, 4, 'Embeddings');
   printInfo('Enables vector similarity search. Without it, recall uses');
   printInfo('keyword + tag matching (still works fine).\n');
 
@@ -285,6 +330,7 @@ export async function runInit(): Promise<void> {
   // What's enabled
   const hasSupabase = !!(config.supabaseUrl && config.supabaseKey);
   const hasAnthropic = !!config.anthropicKey;
+  const hasSolana = !!config.walletKey;
   const hasEmbeddings = !!(config.embeddingProvider && config.embeddingKey);
 
   console.log(`  ${c.bold}Status:${c.reset}\n`);
@@ -296,6 +342,9 @@ export async function runInit(): Promise<void> {
   }
   if (hasAnthropic) {
     printSuccess('Dream cycles + LLM importance scoring');
+  }
+  if (hasSolana) {
+    printSuccess('On-chain memory commits (Solana)');
   }
   if (hasEmbeddings) {
     printSuccess('Vector similarity search');
