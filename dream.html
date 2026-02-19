@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLUDE — Dream Cycle</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f8f6;
+      --text: #0a0a0a;
+      --dim: #666;
+      --muted: #999;
+      --accent: #3366ff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 900px;
+      text-align: center;
+    }
+
+    .header {
+      margin-bottom: 24px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--dim);
+      letter-spacing: 1px;
+    }
+
+    .canvas-container {
+      position: relative;
+      width: 900px;
+      height: 450px;
+      border: 1.5px solid var(--text);
+      background: #fff;
+      margin-bottom: 24px;
+    }
+
+    #dreamCanvas {
+      display: block;
+    }
+
+    .phase-indicator {
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      text-align: left;
+    }
+
+    .phase-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .phase-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .phase-desc {
+      font-size: 11px;
+      color: var(--dim);
+      margin-top: 4px;
+      max-width: 200px;
+    }
+
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #eee;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--text);
+      transition: width 0.1s linear;
+    }
+
+    .phases-row {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+    }
+
+    .phase-box {
+      text-align: center;
+      opacity: 0.4;
+      transition: opacity 0.3s;
+    }
+
+    .phase-box.active {
+      opacity: 1;
+    }
+
+    .phase-num {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    .phase-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="title">Dream Cycle</h1>
+      <p class="subtitle">MEMORY CONSOLIDATION — EVERY 6 HOURS</p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="dreamCanvas" width="900" height="450"></canvas>
+      
+      <div class="phase-indicator">
+        <div class="phase-label">PHASE</div>
+        <div class="phase-name" id="phaseName">I — CONSOLIDATION</div>
+        <div class="phase-desc" id="phaseDesc">Clustering related memories</div>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <div class="phases-row">
+      <div class="phase-box active" id="phase1">
+        <div class="phase-num">PHASE I</div>
+        <div class="phase-title">Consolidation</div>
+      </div>
+      <div class="phase-box" id="phase2">
+        <div class="phase-num">PHASE II</div>
+        <div class="phase-title">Reflection</div>
+      </div>
+      <div class="phase-box" id="phase3">
+        <div class="phase-num">PHASE III</div>
+        <div class="phase-title">Emergence</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('dreamCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    
+    // Memory particles
+    const memories = [];
+    const NUM_MEMORIES = 60;
+    const clusters = [
+      { x: W * 0.25, y: H * 0.5, color: '#99ccff' },
+      { x: W * 0.5, y: H * 0.5, color: '#5599ff' },
+      { x: W * 0.75, y: H * 0.5, color: '#3366ff' }
+    ];
+    
+    // Initialize memories scattered
+    for (let i = 0; i < NUM_MEMORIES; i++) {
+      memories.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2,
+        radius: 4 + Math.random() * 4,
+        cluster: Math.floor(Math.random() * 3),
+        alpha: 0.6 + Math.random() * 0.4,
+        phase: 0
+      });
+    }
+    
+    // Insight particle (for phase 3)
+    let insight = { x: W/2, y: H/2, radius: 0, alpha: 0, pulse: 0 };
+    
+    let phase = 1;
+    let phaseTime = 0;
+    const PHASE_DURATION = 5000; // 5 seconds per phase
+    let startTime = null;
+    
+    function updatePhaseUI() {
+      document.getElementById('phase1').classList.toggle('active', phase === 1);
+      document.getElementById('phase2').classList.toggle('active', phase === 2);
+      document.getElementById('phase3').classList.toggle('active', phase === 3);
+      
+      const names = ['I — CONSOLIDATION', 'II — REFLECTION', 'III — EMERGENCE'];
+      const descs = [
+        'Clustering related memories',
+        'Reviewing against self-model',
+        'New insight crystallizes'
+      ];
+      
+      document.getElementById('phaseName').textContent = names[phase - 1];
+      document.getElementById('phaseDesc').textContent = descs[phase - 1];
+    }
+    
+    function animate(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      
+      phaseTime = elapsed % (PHASE_DURATION * 3);
+      phase = Math.floor(phaseTime / PHASE_DURATION) + 1;
+      const phaseProgress = (phaseTime % PHASE_DURATION) / PHASE_DURATION;
+      
+      // Update progress bar
+      const totalProgress = (phaseTime / (PHASE_DURATION * 3)) * 100;
+      document.getElementById('progressFill').style.width = totalProgress + '%';
+      
+      updatePhaseUI();
+      
+      // Clear
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, W, H);
+      
+      // Draw connections between nearby memories
+      ctx.strokeStyle = 'rgba(51, 102, 255, 0.1)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < memories.length; i++) {
+        for (let j = i + 1; j < memories.length; j++) {
+          const dx = memories[i].x - memories[j].x;
+          const dy = memories[i].y - memories[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 80) {
+            ctx.globalAlpha = (1 - dist / 80) * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(memories[i].x, memories[i].y);
+            ctx.lineTo(memories[j].x, memories[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+      
+      // Update and draw memories based on phase
+      memories.forEach((m, i) => {
+        if (phase === 1) {
+          // CONSOLIDATION: Move toward clusters
+          const target = clusters[m.cluster];
+          const dx = target.x - m.x;
+          const dy = target.y - m.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          // Ease toward cluster
+          m.vx += dx * 0.001;
+          m.vy += dy * 0.001;
+          m.vx *= 0.98;
+          m.vy *= 0.98;
+          
+          m.x += m.vx;
+          m.y += m.vy;
+          
+        } else if (phase === 2) {
+          // REFLECTION: Orbit around center, pulsing
+          const centerX = W / 2;
+          const centerY = H / 2;
+          const angle = Math.atan2(m.y - centerY, m.x - centerX);
+          const dist = Math.sqrt((m.x - centerX) ** 2 + (m.y - centerY) ** 2);
+          
+          // Slowly spiral inward while orbiting
+          const targetDist = 80 + (i % 3) * 40;
+          const newAngle = angle + 0.01;
+          const newDist = dist + (targetDist - dist) * 0.02;
+          
+          m.x = centerX + Math.cos(newAngle) * newDist;
+          m.y = centerY + Math.sin(newAngle) * newDist;
+          
+          // Pulse effect
+          m.radius = (4 + Math.random() * 4) * (1 + Math.sin(elapsed * 0.005 + i) * 0.2);
+          
+        } else if (phase === 3) {
+          // EMERGENCE: Collapse to center, then explode
+          const centerX = W / 2;
+          const centerY = H / 2;
+          
+          if (phaseProgress < 0.5) {
+            // Collapse
+            const dx = centerX - m.x;
+            const dy = centerY - m.y;
+            m.x += dx * 0.05;
+            m.y += dy * 0.05;
+            m.alpha = 0.6 + phaseProgress;
+          } else {
+            // Insight emerged - memories fade, insight grows
+            m.alpha = Math.max(0.1, 1 - (phaseProgress - 0.5) * 2);
+          }
+        }
+        
+        // Draw memory
+        const cluster = clusters[m.cluster];
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+        ctx.fillStyle = cluster.color;
+        ctx.globalAlpha = m.alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+      
+      // Draw insight in phase 3
+      if (phase === 3 && phaseProgress > 0.4) {
+        const insightProgress = (phaseProgress - 0.4) / 0.6;
+        insight.radius = insightProgress * 50;
+        insight.alpha = insightProgress;
+        insight.pulse = Math.sin(elapsed * 0.01) * 5;
+        
+        // Glow
+        const gradient = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, insight.radius + 30);
+        gradient.addColorStop(0, `rgba(51, 102, 255, ${insight.alpha * 0.8})`);
+        gradient.addColorStop(0.5, `rgba(51, 102, 255, ${insight.alpha * 0.3})`);
+        gradient.addColorStop(1, 'rgba(51, 102, 255, 0)');
+        
+        ctx.beginPath();
+        ctx.arc(W/2, H/2, insight.radius + 30 + insight.pulse, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // Core
+        ctx.beginPath();
+        ctx.arc(W/2, H/2, insight.radius + insight.pulse, 0, Math.PI * 2);
+        ctx.fillStyle = '#3366ff';
+        ctx.globalAlpha = insight.alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        
+        // Inner bright core
+        ctx.beginPath();
+        ctx.arc(W/2, H/2, insight.radius * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = insight.alpha * 0.8;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        
+        // Label
+        if (insightProgress > 0.5) {
+          ctx.fillStyle = '#0a0a0a';
+          ctx.font = '600 11px JetBrains Mono';
+          ctx.textAlign = 'center';
+          ctx.globalAlpha = (insightProgress - 0.5) * 2;
+          ctx.fillText('NEW INSIGHT', W/2, H/2 + insight.radius + 40);
+          ctx.globalAlpha = 1;
+        }
+      }
+      
+      // Reset for next cycle
+      if (phaseTime < 100 && elapsed > PHASE_DURATION * 3) {
+        memories.forEach((m, i) => {
+          m.x = Math.random() * W;
+          m.y = Math.random() * H;
+          m.vx = (Math.random() - 0.5) * 2;
+          m.vy = (Math.random() - 0.5) * 2;
+          m.alpha = 0.6 + Math.random() * 0.4;
+        });
+      }
+      
+      requestAnimationFrame(animate);
+    }
+    
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
