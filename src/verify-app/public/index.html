@@ -264,6 +264,78 @@
       letter-spacing: 1px;
     }
 
+    /* ── STORAGE MODES ── */
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .mode-card {
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.08);
+      padding: 28px;
+      text-align: left;
+    }
+    .mode-card.mode-featured {
+      border: 2px solid var(--text);
+      position: relative;
+    }
+    .mode-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .mode-name {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .mode-tag {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: rgba(0,0,0,0.04);
+      padding: 4px 10px;
+      border-radius: 2px;
+    }
+    .mode-featured .mode-tag {
+      background: var(--text);
+      color: var(--bg);
+    }
+    .mode-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+    .mode-matrix {
+      border-top: 1px solid rgba(0,0,0,0.06);
+      padding-top: 16px;
+    }
+    .matrix-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+    .matrix-row:last-child {
+      border-bottom: none;
+    }
+    .matrix-row span:first-child {
+      color: var(--text-muted);
+    }
+    .matrix-row .local {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .matrix-row .chain {
+      color: var(--text);
+      font-weight: 600;
+    }
+
     /* ── INSTALL / CODE BLOCK ── */
     .install-section {
       text-align: center;
@@ -413,6 +485,7 @@
       .onchain-content { grid-template-columns: 1fr; gap: 48px; }
       .problem-grid { grid-template-columns: 1fr; }
       .dream-phases { grid-template-columns: 1fr; }
+      .modes-grid { grid-template-columns: 1fr; }
       .stats-row { gap: 40px; flex-wrap: wrap; justify-content: center; }
     }
     @media (max-width: 640px) {
@@ -630,6 +703,56 @@
               <div class="chain-hash">2Rn7...vK4s</div>
             </div>
             <div class="chain-status">CONFIRMED</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ STORAGE MODES ═══════════════ -->
+  <section class="section">
+    <div class="section-inner reveal">
+      <div class="section-label">Storage Modes</div>
+      <div class="section-title">You control the tradeoff.</div>
+      <div class="section-desc">Not everything needs to be on-chain. Choose between speed, privacy, and permanence based on what matters for your agent.</div>
+      <div class="modes-grid">
+        <div class="mode-card">
+          <div class="mode-header">
+            <div class="mode-name">Local</div>
+            <div class="mode-tag">Fast & Private</div>
+          </div>
+          <div class="mode-desc">All memories stored locally. Zero gas fees. Works offline. Full privacy. Best for development and private agents.</div>
+          <div class="mode-matrix">
+            <div class="matrix-row"><span>Working</span><span class="local">Local</span></div>
+            <div class="matrix-row"><span>Episodic</span><span class="local">Local</span></div>
+            <div class="matrix-row"><span>Semantic</span><span class="local">Local</span></div>
+            <div class="matrix-row"><span>Self-Model</span><span class="local">Local</span></div>
+          </div>
+        </div>
+        <div class="mode-card mode-featured">
+          <div class="mode-header">
+            <div class="mode-name">Hybrid</div>
+            <div class="mode-tag">Recommended</div>
+          </div>
+          <div class="mode-desc">Local cache for speed, chain for permanence. Hot memories stay fast. Important knowledge gets committed.</div>
+          <div class="mode-matrix">
+            <div class="matrix-row"><span>Working</span><span class="local">Local</span></div>
+            <div class="matrix-row"><span>Episodic</span><span class="local">Local</span></div>
+            <div class="matrix-row"><span>Semantic</span><span class="chain">Chain</span></div>
+            <div class="matrix-row"><span>Self-Model</span><span class="chain">Chain</span></div>
+          </div>
+        </div>
+        <div class="mode-card">
+          <div class="mode-header">
+            <div class="mode-name">Chain</div>
+            <div class="mode-tag">Full Permanence</div>
+          </div>
+          <div class="mode-desc">Everything committed to Solana. Maximum verifiability. Public accountability. Complete cognitive audit trail.</div>
+          <div class="mode-matrix">
+            <div class="matrix-row"><span>Working</span><span class="local">Local</span></div>
+            <div class="matrix-row"><span>Episodic</span><span class="chain">Chain</span></div>
+            <div class="matrix-row"><span>Semantic</span><span class="chain">Chain</span></div>
+            <div class="matrix-row"><span>Self-Model</span><span class="chain">Chain</span></div>
           </div>
         </div>
       </div>
