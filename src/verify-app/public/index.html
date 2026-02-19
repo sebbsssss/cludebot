@@ -765,26 +765,8 @@
       <div class="section-label">Get Started</div>
       <div class="section-title">Three lines to a brain.</div>
       <div class="section-desc">Install the SDK, run the wizard, and give your agent persistent memory in under a minute.</div>
-      <div class="code-block">
-        <span class="prompt">$</span> <span class="cmd">npm install clude-bot</span><br>
-        <span class="prompt">$</span> <span class="cmd">npx clude-bot init</span>
-      </div>
-      <div class="code-block code-block-wide">
-        <span class="kw">import</span> { Cortex } <span class="kw">from</span> <span class="str">'clude-bot'</span>;<br><br>
-        <span class="kw">const</span> brain = <span class="kw">new</span> <span class="type">Cortex</span>({ supabase: { url, serviceKey } });<br>
-        <span class="kw">await</span> brain.<span class="fn">init</span>();<br><br>
-        <span class="cmt">// Store a memory</span><br>
-        <span class="kw">await</span> brain.<span class="fn">store</span>({<br>
-        &nbsp;&nbsp;type: <span class="str">'episodic'</span>,<br>
-        &nbsp;&nbsp;content: <span class="str">'User prefers concise answers'</span>,<br>
-        &nbsp;&nbsp;summary: <span class="str">'User communication preference'</span>,<br>
-        &nbsp;&nbsp;source: <span class="str">'my-agent'</span>,<br>
-        });<br><br>
-        <span class="cmt">// Recall with hybrid search</span><br>
-        <span class="kw">const</span> memories = <span class="kw">await</span> brain.<span class="fn">recall</span>({<br>
-        &nbsp;&nbsp;query: <span class="str">'what does the user prefer'</span>,<br>
-        });
-      </div>
+      <div class="code-block" style="margin-bottom: 16px;"><span class="prompt">$</span> <span class="cmd">npm install clude-bot</span><br><span class="prompt">$</span> <span class="cmd">npx clude-bot init</span></div>
+      <div class="code-block code-block-wide"><span class="kw">import</span> { Cortex } <span class="kw">from</span> <span class="str">'clude-bot'</span>;<br><br><span class="kw">const</span> brain = <span class="kw">new</span> <span class="type">Cortex</span>({ supabase: { url, serviceKey } });<br><span class="kw">await</span> brain.<span class="fn">init</span>();<br><br><span class="cmt">// Store a memory</span><br><span class="kw">await</span> brain.<span class="fn">store</span>({<br>&nbsp;&nbsp;type: <span class="str">'episodic'</span>,<br>&nbsp;&nbsp;content: <span class="str">'User prefers concise answers'</span>,<br>&nbsp;&nbsp;summary: <span class="str">'User communication preference'</span>,<br>&nbsp;&nbsp;source: <span class="str">'my-agent'</span>,<br>});<br><br><span class="cmt">// Recall with hybrid search</span><br><span class="kw">const</span> memories = <span class="kw">await</span> brain.<span class="fn">recall</span>({<br>&nbsp;&nbsp;query: <span class="str">'what does the user prefer'</span>,<br>});</div>
       <div style="margin-bottom: 56px; margin-top: 24px;">
         <a href="/docs.html" class="btn btn-primary">Read the docs</a>
       </div>
