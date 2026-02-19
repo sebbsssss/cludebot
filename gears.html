@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLUDE — Cognitive Engine</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f8f6;
+      --line: #0a0a0a;
+      --line-dim: rgba(0,0,0,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .blueprint {
+      position: relative;
+      width: 900px;
+      height: 650px;
+      background: 
+        linear-gradient(var(--line-dim) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line-dim) 1px, transparent 1px);
+      background-size: 32px 32px;
+      border: 2px solid var(--line);
+    }
+
+    .gear-system {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .gear {
+      position: absolute;
+      transform-origin: center center;
+    }
+
+    .gear svg {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 1.5;
+    }
+
+    /* Gear positions and animations - interlocking */
+    .gear-1 {
+      left: -80px;
+      top: -80px;
+      animation: spin-cw 6s linear infinite;
+    }
+
+    .gear-2 {
+      left: 50px;
+      top: -55px;
+      animation: spin-ccw 4s linear infinite;
+    }
+
+    .gear-3 {
+      left: -170px;
+      top: 40px;
+      animation: spin-ccw 4.5s linear infinite;
+    }
+
+    .gear-4 {
+      left: 140px;
+      top: 30px;
+      animation: spin-cw 3s linear infinite;
+    }
+
+    .gear-5 {
+      left: -60px;
+      top: 120px;
+      animation: spin-cw 5s linear infinite;
+    }
+
+    .gear-6 {
+      left: 60px;
+      top: 150px;
+      animation: spin-ccw 2.5s linear infinite;
+    }
+
+    @keyframes spin-cw {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes spin-ccw {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(-360deg); }
+    }
+
+    .label {
+      position: absolute;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--line);
+      text-transform: uppercase;
+    }
+
+    .label-1 { left: -60px; top: -150px; }
+    .label-2 { left: 85px; top: -115px; }
+    .label-3 { left: -260px; top: 55px; }
+    .label-4 { left: 210px; top: 50px; }
+    .label-5 { left: -130px; top: 200px; }
+    .label-6 { left: 100px; top: 220px; }
+
+    .title-block {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      text-align: right;
+      padding: 16px 20px;
+      border: 1.5px solid var(--line);
+      background: var(--bg);
+    }
+
+    .title-block h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      margin-bottom: 4px;
+    }
+
+    .title-block p {
+      font-size: 10px;
+      color: #666;
+      letter-spacing: 1px;
+    }
+
+    .corner-mark {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border: 1.5px solid var(--line);
+    }
+
+    .corner-mark.tl { top: 16px; left: 16px; border-right: none; border-bottom: none; }
+    .corner-mark.tr { top: 16px; right: 16px; border-left: none; border-bottom: none; }
+    .corner-mark.bl { bottom: 16px; left: 16px; border-right: none; border-top: none; }
+
+    .ref-text {
+      position: absolute;
+      font-size: 8px;
+      color: #999;
+      letter-spacing: 1px;
+    }
+
+    .ref-1 { top: 24px; left: 50px; }
+    .ref-2 { bottom: 24px; left: 50px; }
+  </style>
+</head>
+<body>
+  <div class="blueprint">
+    <div class="corner-mark tl"></div>
+    <div class="corner-mark tr"></div>
+    <div class="corner-mark bl"></div>
+    
+    <span class="ref-text ref-1">DWG-001 REV.A</span>
+    <span class="ref-text ref-2">SCALE 1:1</span>
+
+    <div class="gear-system">
+      <!-- Large central gear - 20 teeth -->
+      <div class="gear gear-1" id="g1"></div>
+      
+      <!-- Medium gear - 12 teeth -->
+      <div class="gear gear-2" id="g2"></div>
+      
+      <!-- Medium gear - 14 teeth -->
+      <div class="gear gear-3" id="g3"></div>
+      
+      <!-- Small gear - 8 teeth -->
+      <div class="gear gear-4" id="g4"></div>
+      
+      <!-- Medium gear - 16 teeth -->
+      <div class="gear gear-5" id="g5"></div>
+      
+      <!-- Small gear - 6 teeth -->
+      <div class="gear gear-6" id="g6"></div>
+
+      <!-- Labels -->
+      <span class="label label-1">EPISODIC</span>
+      <span class="label label-2">WORKING</span>
+      <span class="label label-3">SEMANTIC</span>
+      <span class="label label-4">RETRIEVAL</span>
+      <span class="label label-5">SELF-MODEL</span>
+      <span class="label label-6">COMMIT</span>
+    </div>
+
+    <div class="title-block">
+      <h1>CLUDE</h1>
+      <p>COGNITIVE ENGINE v1.0</p>
+    </div>
+  </div>
+
+  <script>
+    function createGear(teeth, outerR, innerR, holeR, toothDepth) {
+      const size = (outerR + toothDepth) * 2 + 4;
+      const cx = size / 2;
+      const cy = size / 2;
+      
+      let toothPath = '';
+      const toothWidth = Math.PI / teeth * 0.7;
+      
+      for (let i = 0; i < teeth; i++) {
+        const angle = (i / teeth) * Math.PI * 2;
+        const a1 = angle - toothWidth;
+        const a2 = angle + toothWidth;
+        
+        // Outer edge of tooth
+        const ox1 = cx + (outerR + toothDepth) * Math.cos(a1);
+        const oy1 = cy + (outerR + toothDepth) * Math.sin(a1);
+        const ox2 = cx + (outerR + toothDepth) * Math.cos(a2);
+        const oy2 = cy + (outerR + toothDepth) * Math.sin(a2);
+        
+        // Base of tooth
+        const bx1 = cx + outerR * Math.cos(a1);
+        const by1 = cy + outerR * Math.sin(a1);
+        const bx2 = cx + outerR * Math.cos(a2);
+        const by2 = cy + outerR * Math.sin(a2);
+        
+        toothPath += `M${bx1},${by1} L${ox1},${oy1} L${ox2},${oy2} L${bx2},${by2} `;
+      }
+      
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', size);
+      svg.setAttribute('height', size);
+      svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+      
+      svg.innerHTML = `
+        <circle cx="${cx}" cy="${cy}" r="${outerR}" />
+        <circle cx="${cx}" cy="${cy}" r="${innerR}" />
+        <circle cx="${cx}" cy="${cy}" r="${holeR}" fill="var(--line)" />
+        <path d="${toothPath}" />
+      `;
+      
+      return svg;
+    }
+
+    // Create gears with different sizes
+    document.getElementById('g1').appendChild(createGear(20, 70, 30, 5, 12));
+    document.getElementById('g2').appendChild(createGear(12, 45, 18, 4, 10));
+    document.getElementById('g3').appendChild(createGear(14, 52, 22, 4, 10));
+    document.getElementById('g4').appendChild(createGear(8, 30, 12, 3, 8));
+    document.getElementById('g5').appendChild(createGear(16, 55, 24, 4, 10));
+    document.getElementById('g6').appendChild(createGear(6, 22, 9, 3, 7));
+  </script>
+</body>
+</html>
