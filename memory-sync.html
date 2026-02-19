@@ -117,7 +117,6 @@
 
     .page-stat strong { color: var(--text); }
 
-    /* MEMORY GRID */
     .memory-panel {
       border: 1px solid var(--border);
       background: #fff;
@@ -126,18 +125,17 @@
 
     .memory-grid {
       display: grid;
-      grid-template-columns: repeat(40, 1fr);
+      grid-template-columns: repeat(32, 1fr);
       gap: 2px;
       padding: 20px;
       background: #fafaf8;
-      min-height: 280px;
+      min-height: 260px;
     }
 
     .memory-block {
       aspect-ratio: 1;
       border-radius: 1px;
-      transition: all 0.15s ease;
-      position: relative;
+      transition: all 0.12s ease;
     }
 
     .memory-block.empty { background: #eee; }
@@ -146,16 +144,13 @@
     .memory-block.semantic { background: var(--semantic); }
     .memory-block.onchain { background: var(--onchain); }
 
-    .memory-block.moving {
-      animation: blockMove 0.2s ease;
-    }
+    .memory-block.moving { animation: blockMove 0.15s ease; }
 
     @keyframes blockMove {
       0% { transform: scale(1.2); opacity: 0.7; }
       100% { transform: scale(1); opacity: 1; }
     }
 
-    /* BOTTOM CARDS */
     .bottom-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -248,7 +243,7 @@
     </a>
     <div class="nav-status">
       <div class="status-dot"></div>
-      <span id="statusText">Organizing Memory</span>
+      <span id="statusText">Loading Memories</span>
     </div>
   </nav>
 
@@ -287,11 +282,11 @@
         <div class="card-title">Solana Mainnet</div>
         <div class="chain-stats">
           <div>
-            <div class="chain-value" id="txCount">0</div>
-            <div class="chain-label">Transactions</div>
+            <div class="chain-value" id="txCount">4,291</div>
+            <div class="chain-label">Memories</div>
           </div>
           <div>
-            <div class="chain-value" id="blockHeight">—</div>
+            <div class="chain-value" id="blockHeight">312.8M</div>
             <div class="chain-label">Block</div>
           </div>
         </div>
@@ -305,171 +300,184 @@
   </div>
 
   <script>
-    const COLS = 40, ROWS = 14, GRID_SIZE = COLS * ROWS;
+    const COLS = 32, ROWS = 12, GRID_SIZE = COLS * ROWS;
     const grid = document.getElementById('memoryGrid');
     const blocks = [];
-    const types = ['working', 'episodic', 'semantic', 'onchain'];
     
-    let stats = { working: 0, episodic: 0, semantic: 0, onchain: 0, empty: GRID_SIZE };
-    let txCount = 0, blockHeight = 312847651;
-    let phase = 'scatter'; // scatter -> organize -> commit
+    // Fixed realistic counts
+    const TOTAL_MEMORIES = 128;
+    const WORKING_COUNT = 48;
+    const EPISODIC_COUNT = 44;
+    const SEMANTIC_COUNT = 36;
+    
+    let displayStats = { working: 0, episodic: 0, semantic: 0, onchain: 0 };
+    let baseMemories = 4291;
+    let organized = 0;
+    let phase = 'init';
 
-    // Create blocks
+    // Create grid
     for (let i = 0; i < GRID_SIZE; i++) {
       const block = document.createElement('div');
       block.className = 'memory-block empty';
       block.dataset.type = 'empty';
-      block.dataset.index = i;
       grid.appendChild(block);
       blocks.push(block);
     }
 
-    let targetTotal = 0; // track total memories for percentage calc
-    
     function updateUI() {
-      document.getElementById('workingCount').textContent = stats.working;
-      document.getElementById('episodicCount').textContent = stats.episodic;
-      document.getElementById('semanticCount').textContent = stats.semantic;
-      document.getElementById('onchainCount').textContent = stats.onchain;
-      document.getElementById('txCount').textContent = txCount;
-      document.getElementById('blockHeight').textContent = blockHeight.toLocaleString();
+      document.getElementById('workingCount').textContent = displayStats.working;
+      document.getElementById('episodicCount').textContent = displayStats.episodic;
+      document.getElementById('semanticCount').textContent = displayStats.semantic;
+      document.getElementById('onchainCount').textContent = displayStats.onchain;
       
-      // 0% during scatter, progress during commit, 100% when done
-      let pct = 0;
-      if (phase === 'scatter' || phase === 'organize') {
-        pct = 0;
-      } else if (phase === 'commit') {
-        pct = targetTotal > 0 ? Math.round((stats.onchain / targetTotal) * 100) : 0;
-      } else if (phase === 'done') {
-        pct = 100;
-      }
+      const pct = Math.round((organized / TOTAL_MEMORIES) * 100);
       document.getElementById('syncPercent').textContent = pct + '%';
+      
+      const totalMem = baseMemories + displayStats.onchain;
+      document.getElementById('txCount').textContent = totalMem.toLocaleString();
     }
 
-    function setBlock(index, type) {
+    function setBlock(index, type, silent = false) {
       const block = blocks[index];
-      const old = block.dataset.type;
-      if (old === type) return;
-      
-      stats[old]--;
-      stats[type]++;
-      
-      block.className = 'memory-block ' + type + ' moving';
+      block.className = 'memory-block ' + type + (silent ? '' : ' moving');
       block.dataset.type = type;
-      setTimeout(() => block.classList.remove('moving'), 150);
-      
-      if (type === 'onchain') {
-        txCount++;
-        blockHeight++;
-        addActivity('COMMIT');
-      }
-      updateUI();
+      if (!silent) setTimeout(() => block.classList.remove('moving'), 120);
     }
 
-    function addActivity(type) {
+    function addActivity(hash) {
       const list = document.getElementById('activityList');
-      const hash = Math.random().toString(16).slice(2, 10);
       const item = document.createElement('div');
       item.className = 'activity-item';
-      item.innerHTML = `<span class="activity-type">${type}</span><span>${hash}...</span>`;
+      item.innerHTML = `<span class="activity-type">COMMIT</span><span>${hash}...</span>`;
       list.insertBefore(item, list.firstChild);
-      if (list.children.length > 8) list.removeChild(list.lastChild);
+      if (list.children.length > 6) list.removeChild(list.lastChild);
     }
 
-    // PHASE 1: Scatter random memories across grid
+    function genHash() {
+      return Math.random().toString(16).slice(2, 10);
+    }
+
+    // PHASE 1: Scatter memories randomly
     function scatter() {
-      const indices = [];
-      while (indices.length < 180) {
-        const idx = Math.floor(Math.random() * GRID_SIZE);
-        if (!indices.includes(idx)) indices.push(idx);
+      phase = 'scatter';
+      document.getElementById('statusText').textContent = 'Loading Memories';
+      organized = 0;
+      
+      // Pick random positions for all memories
+      const positions = [];
+      while (positions.length < TOTAL_MEMORIES) {
+        const p = Math.floor(Math.random() * GRID_SIZE);
+        if (!positions.includes(p)) positions.push(p);
+      }
+      
+      // Assign types
+      const memTypes = [
+        ...Array(WORKING_COUNT).fill('working'),
+        ...Array(EPISODIC_COUNT).fill('episodic'),
+        ...Array(SEMANTIC_COUNT).fill('semantic')
+      ];
+      // Shuffle
+      for (let i = memTypes.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [memTypes[i], memTypes[j]] = [memTypes[j], memTypes[i]];
       }
       
       let i = 0;
       const interval = setInterval(() => {
-        if (i >= indices.length) {
+        if (i >= TOTAL_MEMORIES) {
           clearInterval(interval);
-          setTimeout(() => { phase = 'organize'; organize(); }, 300);
+          displayStats = { working: WORKING_COUNT, episodic: EPISODIC_COUNT, semantic: SEMANTIC_COUNT, onchain: 0 };
+          updateUI();
+          setTimeout(organize, 400);
           return;
         }
-        const type = types[Math.floor(Math.random() * 3)]; // working, episodic, semantic
-        setBlock(indices[i], type);
+        setBlock(positions[i], memTypes[i]);
+        // Update counts progressively
+        displayStats[memTypes[i]]++;
+        updateUI();
         i++;
+      }, 10);
+    }
+
+    // PHASE 2: Organize into clean rows
+    function organize() {
+      phase = 'organize';
+      document.getElementById('statusText').textContent = 'Organizing Memory';
+      
+      // Clear grid
+      blocks.forEach((b, i) => { b.className = 'memory-block empty'; b.dataset.type = 'empty'; });
+      
+      // Place in order: working row 1-2, episodic row 3-4, semantic row 5-6
+      let idx = 0;
+      const order = [
+        ...Array(WORKING_COUNT).fill('working'),
+        ...Array(EPISODIC_COUNT).fill('episodic'),
+        ...Array(SEMANTIC_COUNT).fill('semantic')
+      ];
+      
+      const interval = setInterval(() => {
+        if (idx >= TOTAL_MEMORIES) {
+          clearInterval(interval);
+          setTimeout(commit, 400);
+          return;
+        }
+        setBlock(idx, order[idx]);
+        idx++;
       }, 8);
     }
 
-    // PHASE 2: Organize - group by type into clean rows
-    function organize() {
-      document.getElementById('statusText').textContent = 'Organizing Memory';
-      
-      const allBlocks = blocks.map((b, i) => ({ idx: i, type: b.dataset.type }))
-        .filter(b => b.type !== 'empty');
-      
-      // Sort by type
-      const order = { working: 0, episodic: 1, semantic: 2 };
-      allBlocks.sort((a, b) => order[a.type] - order[b.type]);
-      
-      // Clear all first
-      blocks.forEach((b, i) => {
-        if (b.dataset.type !== 'empty') {
-          stats[b.dataset.type]--;
-          stats.empty++;
-          b.className = 'memory-block empty';
-          b.dataset.type = 'empty';
-        }
-      });
-      updateUI();
-      
-      // Place in organized rows
-      let i = 0;
-      const interval = setInterval(() => {
-        if (i >= allBlocks.length) {
-          clearInterval(interval);
-          setTimeout(() => { phase = 'commit'; commit(); }, 400);
-          return;
-        }
-        setBlock(i, allBlocks[i].type);
-        i++;
-      }, 6);
-    }
-
-    // PHASE 3: Commit ALL to chain
+    // PHASE 3: Commit to chain
     function commit() {
+      phase = 'commit';
       document.getElementById('statusText').textContent = 'Committing to Solana';
       
-      const allMemories = blocks.map((b, i) => ({ idx: i, type: b.dataset.type }))
-        .filter(b => b.type !== 'empty');
-      
-      targetTotal = allMemories.length;
-      
-      let i = 0;
+      let idx = 0;
       const interval = setInterval(() => {
-        if (i >= allMemories.length) {
+        if (idx >= TOTAL_MEMORIES) {
           clearInterval(interval);
           phase = 'done';
           document.getElementById('statusText').textContent = 'Sync Complete';
+          organized = TOTAL_MEMORIES;
+          displayStats = { working: 0, episodic: 0, semantic: 0, onchain: TOTAL_MEMORIES };
           updateUI();
-          setTimeout(restart, 1500);
+          setTimeout(restart, 2000);
           return;
         }
-        setBlock(allMemories[i].idx, 'onchain');
-        i++;
-      }, 12);
+        
+        setBlock(idx, 'onchain');
+        
+        // Update stats
+        if (idx < WORKING_COUNT) {
+          displayStats.working--;
+        } else if (idx < WORKING_COUNT + EPISODIC_COUNT) {
+          displayStats.episodic--;
+        } else {
+          displayStats.semantic--;
+        }
+        displayStats.onchain++;
+        organized++;
+        
+        if (idx % 4 === 0) addActivity(genHash());
+        
+        updateUI();
+        idx++;
+      }, 15);
     }
 
     function restart() {
-      // Clear everything
-      blocks.forEach((b, i) => {
-        b.className = 'memory-block empty';
-        b.dataset.type = 'empty';
-      });
-      stats = { working: 0, episodic: 0, semantic: 0, onchain: 0, empty: GRID_SIZE };
+      // Reset
+      blocks.forEach(b => { b.className = 'memory-block empty'; b.dataset.type = 'empty'; });
+      displayStats = { working: 0, episodic: 0, semantic: 0, onchain: 0 };
+      organized = 0;
+      baseMemories += TOTAL_MEMORIES; // Accumulate
       updateUI();
-      phase = 'scatter';
-      setTimeout(scatter, 500);
+      document.getElementById('activityList').innerHTML = '';
+      setTimeout(scatter, 600);
     }
 
     // Start
-    setTimeout(scatter, 400);
+    updateUI();
+    setTimeout(scatter, 500);
   </script>
 </body>
 </html>
