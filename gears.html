@@ -9,7 +9,7 @@
     :root {
       --bg: #f8f8f6;
       --line: #0a0a0a;
-      --line-dim: rgba(0,0,0,0.08);
+      --grid: rgba(0,0,0,0.06);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -28,175 +28,79 @@
       width: 900px;
       height: 650px;
       background: 
-        linear-gradient(var(--line-dim) 1px, transparent 1px),
-        linear-gradient(90deg, var(--line-dim) 1px, transparent 1px);
-      background-size: 32px 32px;
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 25px 25px;
       border: 2px solid var(--line);
     }
 
-    .gear-system {
+    #gearCanvas {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 0;
+      left: 0;
     }
-
-    .gear {
-      position: absolute;
-      transform-origin: center center;
-    }
-
-    .gear svg {
-      fill: none;
-      stroke: var(--line);
-      stroke-width: 1.5;
-    }
-
-    /* Gear positions and animations - interlocking */
-    .gear-1 {
-      left: -80px;
-      top: -80px;
-      animation: spin-cw 6s linear infinite;
-    }
-
-    .gear-2 {
-      left: 50px;
-      top: -55px;
-      animation: spin-ccw 4s linear infinite;
-    }
-
-    .gear-3 {
-      left: -170px;
-      top: 40px;
-      animation: spin-ccw 4.5s linear infinite;
-    }
-
-    .gear-4 {
-      left: 140px;
-      top: 30px;
-      animation: spin-cw 3s linear infinite;
-    }
-
-    .gear-5 {
-      left: -60px;
-      top: 120px;
-      animation: spin-cw 5s linear infinite;
-    }
-
-    .gear-6 {
-      left: 60px;
-      top: 150px;
-      animation: spin-ccw 2.5s linear infinite;
-    }
-
-    @keyframes spin-cw {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes spin-ccw {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(-360deg); }
-    }
-
-    .label {
-      position: absolute;
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 1.5px;
-      color: var(--line);
-      text-transform: uppercase;
-    }
-
-    .label-1 { left: -60px; top: -150px; }
-    .label-2 { left: 85px; top: -115px; }
-    .label-3 { left: -260px; top: 55px; }
-    .label-4 { left: 210px; top: 50px; }
-    .label-5 { left: -130px; top: 200px; }
-    .label-6 { left: 100px; top: 220px; }
 
     .title-block {
       position: absolute;
-      bottom: 24px;
-      right: 24px;
+      bottom: 20px;
+      right: 20px;
       text-align: right;
-      padding: 16px 20px;
+      padding: 14px 18px;
       border: 1.5px solid var(--line);
       background: var(--bg);
     }
 
     .title-block h1 {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       letter-spacing: 3px;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .title-block p {
-      font-size: 10px;
+      font-size: 9px;
       color: #666;
       letter-spacing: 1px;
     }
 
-    .corner-mark {
+    .corner {
       position: absolute;
-      width: 20px;
-      height: 20px;
+      width: 16px;
+      height: 16px;
       border: 1.5px solid var(--line);
     }
+    .corner.tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+    .corner.tr { top: 12px; right: 12px; border-left: none; border-bottom: none; }
+    .corner.bl { bottom: 12px; left: 12px; border-right: none; border-top: none; }
 
-    .corner-mark.tl { top: 16px; left: 16px; border-right: none; border-bottom: none; }
-    .corner-mark.tr { top: 16px; right: 16px; border-left: none; border-bottom: none; }
-    .corner-mark.bl { bottom: 16px; left: 16px; border-right: none; border-top: none; }
-
-    .ref-text {
+    .label {
       position: absolute;
       font-size: 8px;
-      color: #999;
-      letter-spacing: 1px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--line);
     }
 
-    .ref-1 { top: 24px; left: 50px; }
-    .ref-2 { bottom: 24px; left: 50px; }
+    .ref { 
+      position: absolute; 
+      font-size: 7px; 
+      color: #999; 
+      letter-spacing: 1px; 
+    }
+    .ref-1 { top: 18px; left: 40px; }
+    .ref-2 { bottom: 18px; left: 40px; }
   </style>
 </head>
 <body>
   <div class="blueprint">
-    <div class="corner-mark tl"></div>
-    <div class="corner-mark tr"></div>
-    <div class="corner-mark bl"></div>
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <span class="ref ref-1">DWG-001 REV.A</span>
+    <span class="ref ref-2">SCALE 1:1</span>
     
-    <span class="ref-text ref-1">DWG-001 REV.A</span>
-    <span class="ref-text ref-2">SCALE 1:1</span>
-
-    <div class="gear-system">
-      <!-- Large central gear - 20 teeth -->
-      <div class="gear gear-1" id="g1"></div>
-      
-      <!-- Medium gear - 12 teeth -->
-      <div class="gear gear-2" id="g2"></div>
-      
-      <!-- Medium gear - 14 teeth -->
-      <div class="gear gear-3" id="g3"></div>
-      
-      <!-- Small gear - 8 teeth -->
-      <div class="gear gear-4" id="g4"></div>
-      
-      <!-- Medium gear - 16 teeth -->
-      <div class="gear gear-5" id="g5"></div>
-      
-      <!-- Small gear - 6 teeth -->
-      <div class="gear gear-6" id="g6"></div>
-
-      <!-- Labels -->
-      <span class="label label-1">EPISODIC</span>
-      <span class="label label-2">WORKING</span>
-      <span class="label label-3">SEMANTIC</span>
-      <span class="label label-4">RETRIEVAL</span>
-      <span class="label label-5">SELF-MODEL</span>
-      <span class="label label-6">COMMIT</span>
-    </div>
-
+    <canvas id="gearCanvas" width="900" height="650"></canvas>
+    
     <div class="title-block">
       <h1>CLUDE</h1>
       <p>COGNITIVE ENGINE v1.0</p>
@@ -204,56 +108,220 @@
   </div>
 
   <script>
-    function createGear(teeth, outerR, innerR, holeR, toothDepth) {
-      const size = (outerR + toothDepth) * 2 + 4;
-      const cx = size / 2;
-      const cy = size / 2;
-      
-      let toothPath = '';
-      const toothWidth = Math.PI / teeth * 0.7;
-      
-      for (let i = 0; i < teeth; i++) {
-        const angle = (i / teeth) * Math.PI * 2;
-        const a1 = angle - toothWidth;
-        const a2 = angle + toothWidth;
+    const canvas = document.getElementById('gearCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const TWO_PI = Math.PI * 2;
+    const pressureAngle = 20 * Math.PI / 180; // 20 degrees
+    
+    // Gear class with involute tooth profile
+    class Gear {
+      constructor(x, y, teeth, module, rotation = 0, speed = 1) {
+        this.x = x;
+        this.y = y;
+        this.teeth = teeth;
+        this.module = module;
+        this.rotation = rotation;
+        this.speed = speed;
         
-        // Outer edge of tooth
-        const ox1 = cx + (outerR + toothDepth) * Math.cos(a1);
-        const oy1 = cy + (outerR + toothDepth) * Math.sin(a1);
-        const ox2 = cx + (outerR + toothDepth) * Math.cos(a2);
-        const oy2 = cy + (outerR + toothDepth) * Math.sin(a2);
+        // Calculate gear dimensions
+        this.pitchRadius = (teeth * module) / 2;
+        this.baseRadius = this.pitchRadius * Math.cos(pressureAngle);
+        this.addendum = module;
+        this.dedendum = module * 1.25;
+        this.outerRadius = this.pitchRadius + this.addendum;
+        this.rootRadius = this.pitchRadius - this.dedendum;
         
-        // Base of tooth
-        const bx1 = cx + outerR * Math.cos(a1);
-        const by1 = cy + outerR * Math.sin(a1);
-        const bx2 = cx + outerR * Math.cos(a2);
-        const by2 = cy + outerR * Math.sin(a2);
-        
-        toothPath += `M${bx1},${by1} L${ox1},${oy1} L${ox2},${oy2} L${bx2},${by2} `;
+        // Generate tooth profile
+        this.toothProfile = this.generateToothProfile();
       }
       
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('width', size);
-      svg.setAttribute('height', size);
-      svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+      generateToothProfile() {
+        const points = [];
+        const toothAngle = TWO_PI / this.teeth;
+        
+        // Generate one tooth profile using involute curve
+        for (let i = 0; i <= 20; i++) {
+          const t = i / 20;
+          const r = this.baseRadius + t * (this.outerRadius - this.baseRadius);
+          if (r >= this.baseRadius) {
+            const involuteAngle = Math.sqrt((r / this.baseRadius) ** 2 - 1);
+            points.push({ r, angle: involuteAngle });
+          }
+        }
+        
+        return points;
+      }
       
-      svg.innerHTML = `
-        <circle cx="${cx}" cy="${cy}" r="${outerR}" />
-        <circle cx="${cx}" cy="${cy}" r="${innerR}" />
-        <circle cx="${cx}" cy="${cy}" r="${holeR}" fill="var(--line)" />
-        <path d="${toothPath}" />
-      `;
-      
-      return svg;
+      draw(ctx, time) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation + time * this.speed);
+        
+        ctx.strokeStyle = '#0a0a0a';
+        ctx.lineWidth = 1.2;
+        ctx.fillStyle = 'transparent';
+        
+        const toothAngle = TWO_PI / this.teeth;
+        const toothWidth = toothAngle * 0.48;
+        
+        ctx.beginPath();
+        
+        for (let t = 0; t < this.teeth; t++) {
+          const baseAngle = t * toothAngle;
+          
+          // Root arc
+          const rootStart = baseAngle + toothWidth;
+          const rootEnd = baseAngle + toothAngle - toothWidth;
+          
+          if (t === 0) {
+            ctx.moveTo(
+              Math.cos(rootStart) * this.rootRadius,
+              Math.sin(rootStart) * this.rootRadius
+            );
+          }
+          
+          // Left flank (involute up)
+          const leftFlankPoints = 12;
+          for (let i = 0; i <= leftFlankPoints; i++) {
+            const frac = i / leftFlankPoints;
+            const r = this.rootRadius + frac * (this.outerRadius - this.rootRadius);
+            const offset = frac * toothWidth * 0.3;
+            const angle = baseAngle + toothWidth - offset;
+            ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+          }
+          
+          // Tooth tip arc
+          ctx.arc(0, 0, this.outerRadius, baseAngle + toothWidth * 0.7, baseAngle + toothAngle - toothWidth * 0.7, false);
+          
+          // Right flank (involute down)
+          for (let i = leftFlankPoints; i >= 0; i--) {
+            const frac = i / leftFlankPoints;
+            const r = this.rootRadius + frac * (this.outerRadius - this.rootRadius);
+            const offset = frac * toothWidth * 0.3;
+            const angle = baseAngle + toothAngle - toothWidth + offset;
+            ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+          }
+          
+          // Root arc to next tooth
+          ctx.arc(0, 0, this.rootRadius, rootEnd, rootStart + toothAngle, false);
+        }
+        
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Draw pitch circle (dashed)
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.pitchRadius, 0, TWO_PI);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Draw center
+        ctx.fillStyle = '#0a0a0a';
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, TWO_PI);
+        ctx.fill();
+        
+        // Draw center hole
+        ctx.strokeStyle = '#0a0a0a';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.pitchRadius * 0.25, 0, TWO_PI);
+        ctx.stroke();
+        
+        ctx.restore();
+      }
     }
-
-    // Create gears with different sizes
-    document.getElementById('g1').appendChild(createGear(20, 70, 30, 5, 12));
-    document.getElementById('g2').appendChild(createGear(12, 45, 18, 4, 10));
-    document.getElementById('g3').appendChild(createGear(14, 52, 22, 4, 10));
-    document.getElementById('g4').appendChild(createGear(8, 30, 12, 3, 8));
-    document.getElementById('g5').appendChild(createGear(16, 55, 24, 4, 10));
-    document.getElementById('g6').appendChild(createGear(6, 22, 9, 3, 7));
+    
+    // Create meshing gears
+    const module = 8;
+    const centerX = 420;
+    const centerY = 300;
+    
+    // Main gear (24 teeth)
+    const gear1 = new Gear(centerX, centerY, 24, module, 0, 0.3);
+    
+    // Meshing gear 2 (16 teeth) - positioned to mesh
+    const dist12 = (gear1.pitchRadius + (16 * module / 2));
+    const angle12 = -Math.PI * 0.3;
+    const gear2 = new Gear(
+      centerX + Math.cos(angle12) * dist12,
+      centerY + Math.sin(angle12) * dist12,
+      16, module,
+      Math.PI / 16, // Phase offset for meshing
+      -0.3 * (24 / 16) // Counter-rotate, ratio adjusted
+    );
+    
+    // Meshing gear 3 (12 teeth)
+    const dist23 = (gear2.pitchRadius + (12 * module / 2));
+    const angle23 = -Math.PI * 0.1;
+    const gear3 = new Gear(
+      gear2.x + Math.cos(angle23) * dist23,
+      gear2.y + Math.sin(angle23) * dist23,
+      12, module,
+      0,
+      0.3 * (24 / 12) // Same direction as gear1
+    );
+    
+    // Gear 4 (20 teeth) meshes with gear1
+    const dist14 = (gear1.pitchRadius + (20 * module / 2));
+    const angle14 = Math.PI * 0.55;
+    const gear4 = new Gear(
+      centerX + Math.cos(angle14) * dist14,
+      centerY + Math.sin(angle14) * dist14,
+      20, module,
+      Math.PI / 20,
+      -0.3 * (24 / 20)
+    );
+    
+    // Gear 5 (8 teeth) meshes with gear4
+    const dist45 = (gear4.pitchRadius + (8 * module / 2));
+    const angle45 = Math.PI * 0.85;
+    const gear5 = new Gear(
+      gear4.x + Math.cos(angle45) * dist45,
+      gear4.y + Math.sin(angle45) * dist45,
+      8, module,
+      0,
+      0.3 * (24 / 8)
+    );
+    
+    const gears = [gear1, gear2, gear3, gear4, gear5];
+    
+    // Labels
+    const labels = [
+      { text: 'EPISODIC', x: gear1.x, y: gear1.y - gear1.outerRadius - 15 },
+      { text: 'WORKING', x: gear2.x, y: gear2.y - gear2.outerRadius - 15 },
+      { text: 'SEMANTIC', x: gear3.x + 20, y: gear3.y - gear3.outerRadius - 10 },
+      { text: 'SELF-MODEL', x: gear4.x, y: gear4.y + gear4.outerRadius + 20 },
+      { text: 'COMMIT', x: gear5.x - 50, y: gear5.y + 5 },
+    ];
+    
+    let startTime = null;
+    
+    function animate(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const time = (timestamp - startTime) / 1000;
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw gears
+      gears.forEach(gear => gear.draw(ctx, time));
+      
+      // Draw labels
+      ctx.fillStyle = '#0a0a0a';
+      ctx.font = '600 9px JetBrains Mono';
+      ctx.textAlign = 'center';
+      labels.forEach(label => {
+        ctx.fillText(label.text, label.x, label.y);
+      });
+      
+      requestAnimationFrame(animate);
+    }
+    
+    requestAnimationFrame(animate);
   </script>
 </body>
 </html>
