@@ -34,7 +34,6 @@
       min-height: 100vh;
     }
 
-    /* NAV */
     nav {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -65,16 +64,9 @@
       gap: 2px;
     }
 
-    .logo-icon span {
-      background: var(--text);
-      border-radius: 1px;
-    }
+    .logo-icon span { background: var(--text); border-radius: 1px; }
 
-    .logo-text {
-      font-weight: 700;
-      font-size: 14px;
-      letter-spacing: 2px;
-    }
+    .logo-text { font-weight: 700; font-size: 14px; letter-spacing: 2px; }
 
     .nav-status {
       display: flex;
@@ -91,7 +83,7 @@
       height: 6px;
       background: #2a2;
       border-radius: 50%;
-      animation: pulse 2s infinite;
+      animation: pulse 1.5s infinite;
     }
 
     @keyframes pulse {
@@ -99,65 +91,37 @@
       50% { opacity: 0.4; }
     }
 
-    /* MAIN */
     .container {
-      max-width: 1200px;
+      max-width: 1000px;
       margin: 0 auto;
       padding: 80px 48px 48px;
     }
 
     .page-header {
-      margin-bottom: 48px;
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
     }
 
     .page-title {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 800;
       letter-spacing: -1px;
-      margin-bottom: 8px;
     }
 
-    .page-subtitle {
-      font-size: 13px;
-      color: var(--text-dim);
+    .page-stat {
+      font-size: 12px;
+      color: var(--text-muted);
     }
 
-    /* LAYOUT */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 280px;
-      gap: 32px;
-    }
+    .page-stat strong { color: var(--text); }
 
     /* MEMORY GRID */
     .memory-panel {
       border: 1px solid var(--border);
       background: #fff;
-    }
-
-    .panel-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .panel-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--text-dim);
-    }
-
-    .panel-stat {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .panel-stat strong {
-      color: var(--text);
+      margin-bottom: 24px;
     }
 
     .memory-grid {
@@ -166,57 +130,42 @@
       gap: 2px;
       padding: 20px;
       background: #fafaf8;
+      min-height: 280px;
     }
 
     .memory-block {
       aspect-ratio: 1;
       border-radius: 1px;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
+      position: relative;
     }
 
-    .memory-block.empty {
-      background: #eee;
+    .memory-block.empty { background: #eee; }
+    .memory-block.working { background: var(--working); }
+    .memory-block.episodic { background: var(--episodic); }
+    .memory-block.semantic { background: var(--semantic); }
+    .memory-block.onchain { background: var(--onchain); }
+
+    .memory-block.moving {
+      animation: blockMove 0.2s ease;
     }
 
-    .memory-block.working {
-      background: var(--working);
+    @keyframes blockMove {
+      0% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
-    .memory-block.episodic {
-      background: var(--episodic);
-    }
-
-    .memory-block.semantic {
-      background: var(--semantic);
-    }
-
-    .memory-block.onchain {
-      background: var(--onchain);
-    }
-
-    .memory-block.syncing {
-      animation: blockPulse 0.3s ease;
-    }
-
-    @keyframes blockPulse {
-      50% { transform: scale(1.3); }
-    }
-
-    /* SIDEBAR */
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
+    /* BOTTOM CARDS */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
     }
 
     .card {
       border: 1px solid var(--border);
       background: #fff;
-    }
-
-    .card-header {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
+      padding: 20px;
     }
 
     .card-title {
@@ -225,26 +174,17 @@
       text-transform: uppercase;
       letter-spacing: 1.5px;
       color: var(--text-dim);
+      margin-bottom: 16px;
     }
 
-    .card-body {
-      padding: 16px;
-    }
-
-    /* STATS */
-    .stat-row {
+    .type-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #f0f0f0;
+      padding: 6px 0;
     }
 
-    .stat-row:last-child {
-      border-bottom: none;
-    }
-
-    .stat-label {
+    .type-label {
       display: flex;
       align-items: center;
       gap: 8px;
@@ -252,246 +192,129 @@
       color: var(--text-dim);
     }
 
-    .stat-dot {
+    .type-dot {
       width: 8px;
       height: 8px;
       border-radius: 1px;
     }
 
-    .stat-dot.working { background: var(--working); }
-    .stat-dot.episodic { background: var(--episodic); }
-    .stat-dot.semantic { background: var(--semantic); }
-    .stat-dot.onchain { background: var(--onchain); }
+    .type-dot.working { background: var(--working); }
+    .type-dot.episodic { background: var(--episodic); }
+    .type-dot.semantic { background: var(--semantic); }
+    .type-dot.onchain { background: var(--onchain); }
 
-    .stat-value {
-      font-size: 13px;
-      font-weight: 600;
-    }
+    .type-value { font-size: 13px; font-weight: 600; }
 
-    /* PROGRESS */
-    .progress-section {
-      padding-top: 12px;
-      margin-top: 4px;
-    }
-
-    .progress-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .progress-bar {
-      height: 4px;
-      background: #eee;
-      border-radius: 2px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--onchain);
-      transition: width 0.3s ease;
-    }
-
-    /* CHAIN STATS */
     .chain-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .chain-stat {
+      display: flex;
+      justify-content: space-around;
       text-align: center;
-      padding: 12px 0;
     }
 
     .chain-value {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
     }
 
     .chain-label {
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 1px;
     }
 
-    /* ACTIVITY */
     .activity-list {
-      max-height: 200px;
-      overflow-y: auto;
+      font-size: 11px;
+      max-height: 120px;
+      overflow: hidden;
     }
 
     .activity-item {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid #f5f5f5;
-      font-size: 11px;
-      animation: slideIn 0.2s ease;
-    }
-
-    .activity-item:last-child {
-      border-bottom: none;
-    }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .activity-type {
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .activity-hash {
+      padding: 4px 0;
       color: var(--text-muted);
-      font-family: var(--mono);
     }
 
-    /* FOOTER NOTE */
-    .footer-note {
-      margin-top: 32px;
-      padding: 16px 20px;
-      border: 1px solid var(--border);
-      background: #fff;
-      font-size: 12px;
-      color: var(--text-dim);
-      line-height: 1.7;
-    }
-
-    .footer-note strong {
-      color: var(--text);
-    }
+    .activity-type { color: var(--text); font-weight: 500; }
   </style>
 </head>
 <body>
   <nav>
     <a href="https://clude.io" class="logo">
-      <div class="logo-icon">
-        <span></span><span></span><span></span><span></span>
-      </div>
+      <div class="logo-icon"><span></span><span></span><span></span><span></span></div>
       <span class="logo-text">CLUDE</span>
     </a>
     <div class="nav-status">
       <div class="status-dot"></div>
-      Syncing to Solana
+      <span id="statusText">Organizing Memory</span>
     </div>
   </nav>
 
   <div class="container">
     <div class="page-header">
       <h1 class="page-title">Memory Sync</h1>
-      <p class="page-subtitle">Real-time cognitive state visualization</p>
+      <span class="page-stat"><strong id="syncPercent">0%</strong> organized</span>
     </div>
 
-    <div class="main-grid">
-      <div class="memory-panel">
-        <div class="panel-header">
-          <span class="panel-title">Memory Blocks</span>
-          <span class="panel-stat"><strong id="syncPercent">0%</strong> committed to chain</span>
+    <div class="memory-panel">
+      <div class="memory-grid" id="memoryGrid"></div>
+    </div>
+
+    <div class="bottom-row">
+      <div class="card">
+        <div class="card-title">Memory Types</div>
+        <div class="type-row">
+          <div class="type-label"><div class="type-dot working"></div>Working</div>
+          <div class="type-value" id="workingCount">0</div>
         </div>
-        <div class="memory-grid" id="memoryGrid"></div>
+        <div class="type-row">
+          <div class="type-label"><div class="type-dot episodic"></div>Episodic</div>
+          <div class="type-value" id="episodicCount">0</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label"><div class="type-dot semantic"></div>Semantic</div>
+          <div class="type-value" id="semanticCount">0</div>
+        </div>
+        <div class="type-row">
+          <div class="type-label"><div class="type-dot onchain"></div>On-Chain</div>
+          <div class="type-value" id="onchainCount">0</div>
+        </div>
       </div>
 
-      <div class="sidebar">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Memory Types</span>
+      <div class="card">
+        <div class="card-title">Solana Mainnet</div>
+        <div class="chain-stats">
+          <div>
+            <div class="chain-value" id="txCount">0</div>
+            <div class="chain-label">Transactions</div>
           </div>
-          <div class="card-body">
-            <div class="stat-row">
-              <div class="stat-label">
-                <div class="stat-dot working"></div>
-                Working
-              </div>
-              <div class="stat-value" id="workingCount">0</div>
-            </div>
-            <div class="stat-row">
-              <div class="stat-label">
-                <div class="stat-dot episodic"></div>
-                Episodic
-              </div>
-              <div class="stat-value" id="episodicCount">0</div>
-            </div>
-            <div class="stat-row">
-              <div class="stat-label">
-                <div class="stat-dot semantic"></div>
-                Semantic
-              </div>
-              <div class="stat-value" id="semanticCount">0</div>
-            </div>
-            <div class="stat-row">
-              <div class="stat-label">
-                <div class="stat-dot onchain"></div>
-                On-Chain
-              </div>
-              <div class="stat-value" id="onchainCount">0</div>
-            </div>
-            <div class="progress-section">
-              <div class="progress-label">
-                <span>Chain Sync</span>
-                <span id="progressPercent">0%</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Solana Mainnet</span>
-          </div>
-          <div class="card-body">
-            <div class="chain-stats">
-              <div class="chain-stat">
-                <div class="chain-value" id="txCount">0</div>
-                <div class="chain-label">Transactions</div>
-              </div>
-              <div class="chain-stat">
-                <div class="chain-value" id="blockHeight">—</div>
-                <div class="chain-label">Block</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Activity</span>
-          </div>
-          <div class="card-body">
-            <div class="activity-list" id="activityList"></div>
+          <div>
+            <div class="chain-value" id="blockHeight">—</div>
+            <div class="chain-label">Block</div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="footer-note">
-      <strong>How it works:</strong> Memories flow from working (active processing) → episodic (experiences) → semantic (knowledge) → on-chain (permanent). Each transition represents cognitive consolidation, with final state committed to Solana as immutable proof.
+      <div class="card">
+        <div class="card-title">Activity</div>
+        <div class="activity-list" id="activityList"></div>
+      </div>
     </div>
   </div>
 
   <script>
-    const COLS = 40;
-    const ROWS = 16;
-    const GRID_SIZE = COLS * ROWS;
+    const COLS = 40, ROWS = 14, GRID_SIZE = COLS * ROWS;
     const grid = document.getElementById('memoryGrid');
     const blocks = [];
+    const types = ['working', 'episodic', 'semantic', 'onchain'];
     
     let stats = { working: 0, episodic: 0, semantic: 0, onchain: 0, empty: GRID_SIZE };
-    let txCount = 0;
-    let blockHeight = 312847651;
+    let txCount = 0, blockHeight = 312847651;
+    let phase = 'scatter'; // scatter -> organize -> commit
 
-    // Initialize grid
+    // Create blocks
     for (let i = 0; i < GRID_SIZE; i++) {
       const block = document.createElement('div');
       block.className = 'memory-block empty';
@@ -506,99 +329,135 @@
       document.getElementById('episodicCount').textContent = stats.episodic;
       document.getElementById('semanticCount').textContent = stats.semantic;
       document.getElementById('onchainCount').textContent = stats.onchain;
-      
-      const total = GRID_SIZE - stats.empty;
-      const pct = total > 0 ? Math.round((stats.onchain / total) * 100) : 0;
-      
-      document.getElementById('syncPercent').textContent = pct + '%';
-      document.getElementById('progressPercent').textContent = pct + '%';
-      document.getElementById('progressFill').style.width = pct + '%';
-      
       document.getElementById('txCount').textContent = txCount;
       document.getElementById('blockHeight').textContent = blockHeight.toLocaleString();
+      
+      const total = stats.working + stats.episodic + stats.semantic + stats.onchain;
+      const organized = stats.semantic + stats.onchain;
+      const pct = total > 0 ? Math.round((organized / total) * 100) : 0;
+      document.getElementById('syncPercent').textContent = pct + '%';
     }
 
-    function setBlockType(index, newType) {
+    function setBlock(index, type) {
       const block = blocks[index];
-      const oldType = block.dataset.type;
+      const old = block.dataset.type;
+      if (old === type) return;
       
-      if (oldType === newType) return;
+      stats[old]--;
+      stats[type]++;
       
-      stats[oldType]--;
-      stats[newType]++;
+      block.className = 'memory-block ' + type + ' moving';
+      block.dataset.type = type;
+      setTimeout(() => block.classList.remove('moving'), 150);
       
-      block.classList.remove(oldType);
-      block.classList.add(newType, 'syncing');
-      block.dataset.type = newType;
-      
-      setTimeout(() => block.classList.remove('syncing'), 300);
-      
-      if (newType === 'onchain') {
+      if (type === 'onchain') {
         txCount++;
         blockHeight++;
-        addActivity('COMMIT', generateHash());
+        addActivity('COMMIT');
       }
-      
       updateUI();
     }
 
-    function generateHash() {
-      return Array.from({length: 8}, () => 
-        Math.floor(Math.random() * 16).toString(16)
-      ).join('');
-    }
-
-    function addActivity(type, hash) {
+    function addActivity(type) {
       const list = document.getElementById('activityList');
+      const hash = Math.random().toString(16).slice(2, 10);
       const item = document.createElement('div');
       item.className = 'activity-item';
-      item.innerHTML = `<span class="activity-type">${type}</span><span class="activity-hash">${hash}...</span>`;
+      item.innerHTML = `<span class="activity-type">${type}</span><span>${hash}...</span>`;
       list.insertBefore(item, list.firstChild);
-      
-      if (list.children.length > 12) {
-        list.removeChild(list.lastChild);
-      }
+      if (list.children.length > 8) list.removeChild(list.lastChild);
     }
 
-    function simulate() {
-      // Working memory intake
-      const emptyBlocks = blocks.filter(b => b.dataset.type === 'empty');
-      if (emptyBlocks.length > GRID_SIZE * 0.25 && Math.random() > 0.3) {
-        const block = emptyBlocks[Math.floor(Math.random() * emptyBlocks.length)];
-        setBlockType(parseInt(block.dataset.index), 'working');
-      }
-      
-      // Working → Episodic
-      const workingBlocks = blocks.filter(b => b.dataset.type === 'working');
-      if (workingBlocks.length > 8 && Math.random() > 0.5) {
-        const block = workingBlocks[Math.floor(Math.random() * workingBlocks.length)];
-        setBlockType(parseInt(block.dataset.index), 'episodic');
-      }
-      
-      // Episodic → Semantic
-      const episodicBlocks = blocks.filter(b => b.dataset.type === 'episodic');
-      if (episodicBlocks.length > 15 && Math.random() > 0.6) {
-        const block = episodicBlocks[Math.floor(Math.random() * episodicBlocks.length)];
-        setBlockType(parseInt(block.dataset.index), 'semantic');
-      }
-      
-      // Semantic → On-chain
-      const semanticBlocks = blocks.filter(b => b.dataset.type === 'semantic');
-      if (semanticBlocks.length > 12 && Math.random() > 0.7) {
-        const block = semanticBlocks[Math.floor(Math.random() * semanticBlocks.length)];
-        setBlockType(parseInt(block.dataset.index), 'onchain');
-      }
-    }
-
-    // Initial burst
-    for (let i = 0; i < 40; i++) {
-      setTimeout(() => {
+    // PHASE 1: Scatter random memories across grid
+    function scatter() {
+      const indices = [];
+      while (indices.length < 180) {
         const idx = Math.floor(Math.random() * GRID_SIZE);
-        setBlockType(idx, 'working');
-      }, i * 40);
+        if (!indices.includes(idx)) indices.push(idx);
+      }
+      
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= indices.length) {
+          clearInterval(interval);
+          setTimeout(() => { phase = 'organize'; organize(); }, 300);
+          return;
+        }
+        const type = types[Math.floor(Math.random() * 3)]; // working, episodic, semantic
+        setBlock(indices[i], type);
+        i++;
+      }, 8);
     }
 
-    setInterval(simulate, 80);
+    // PHASE 2: Organize - group by type into clean rows
+    function organize() {
+      document.getElementById('statusText').textContent = 'Organizing Memory';
+      
+      const allBlocks = blocks.map((b, i) => ({ idx: i, type: b.dataset.type }))
+        .filter(b => b.type !== 'empty');
+      
+      // Sort by type
+      const order = { working: 0, episodic: 1, semantic: 2 };
+      allBlocks.sort((a, b) => order[a.type] - order[b.type]);
+      
+      // Clear all first
+      blocks.forEach((b, i) => {
+        if (b.dataset.type !== 'empty') {
+          stats[b.dataset.type]--;
+          stats.empty++;
+          b.className = 'memory-block empty';
+          b.dataset.type = 'empty';
+        }
+      });
+      updateUI();
+      
+      // Place in organized rows
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= allBlocks.length) {
+          clearInterval(interval);
+          setTimeout(() => { phase = 'commit'; commit(); }, 400);
+          return;
+        }
+        setBlock(i, allBlocks[i].type);
+        i++;
+      }, 6);
+    }
+
+    // PHASE 3: Commit semantics to chain
+    function commit() {
+      document.getElementById('statusText').textContent = 'Committing to Solana';
+      
+      const semanticBlocks = blocks.map((b, i) => ({ idx: i, type: b.dataset.type }))
+        .filter(b => b.type === 'semantic');
+      
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= semanticBlocks.length) {
+          clearInterval(interval);
+          document.getElementById('statusText').textContent = 'Sync Complete';
+          setTimeout(restart, 1500);
+          return;
+        }
+        setBlock(semanticBlocks[i].idx, 'onchain');
+        i++;
+      }, 25);
+    }
+
+    function restart() {
+      // Clear everything
+      blocks.forEach((b, i) => {
+        b.className = 'memory-block empty';
+        b.dataset.type = 'empty';
+      });
+      stats = { working: 0, episodic: 0, semantic: 0, onchain: 0, empty: GRID_SIZE };
+      updateUI();
+      phase = 'scatter';
+      setTimeout(scatter, 500);
+    }
+
+    // Start
+    setTimeout(scatter, 400);
   </script>
 </body>
 </html>
