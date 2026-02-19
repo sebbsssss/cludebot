@@ -289,6 +289,16 @@
     .code-block .prompt { color: #666; }
     .code-block .cmd { color: #e0e0e0; }
     .code-block .flag { color: #888; }
+    .code-block .kw { color: #c586c0; }
+    .code-block .str { color: #ce9178; }
+    .code-block .type { color: #4ec9b0; }
+    .code-block .fn { color: #dcdcaa; }
+    .code-block .cmt { color: #6a9955; }
+    .code-block-wide {
+      max-width: 560px;
+      margin-left: auto; margin-right: auto;
+      margin-top: 16px;
+    }
 
     .stats-row {
       display: flex; justify-content: center; gap: 80px;
@@ -427,6 +437,7 @@
     <div class="nav-inner">
       <a href="/" class="nav-logo">Clude</a>
       <div class="nav-links">
+        <a href="/docs.html">Docs</a>
         <a href="/demo.html">Demo</a>
         <a href="/brain.html">Brain</a>
         <a href="https://x.com/Cludebot" target="_blank">X</a>
@@ -625,15 +636,34 @@
     </div>
   </section>
 
-  <!-- ═══════════════ INSTALL / API ═══════════════ -->
+  <!-- ═══════════════ GET STARTED ═══════════════ -->
   <section class="section install-section">
     <div class="section-inner reveal">
-      <div class="section-label">API Access</div>
-      <div class="section-title">Memory as a Service.</div>
-      <div class="section-desc">Store and recall memories through a simple REST API. Give your agent persistent cognition in two HTTP calls.</div>
+      <div class="section-label">Get Started</div>
+      <div class="section-title">Three lines to a brain.</div>
+      <div class="section-desc">Install the SDK, run the wizard, and give your agent persistent memory in under a minute.</div>
       <div class="code-block">
-        <span class="prompt">$</span> <span class="cmd">curl</span> <span class="flag">-X POST</span> <span class="cmd">clude.io/api/agent/memory/store</span> <span class="flag">\</span><br>
-        &nbsp;&nbsp;<span class="flag">-d</span> <span class="cmd">'{"content": "User prefers concise answers", "type": "semantic"}'</span>
+        <span class="prompt">$</span> <span class="cmd">npm install clude-bot</span><br>
+        <span class="prompt">$</span> <span class="cmd">npx clude-bot init</span>
+      </div>
+      <div class="code-block code-block-wide">
+        <span class="kw">import</span> { Cortex } <span class="kw">from</span> <span class="str">'clude-bot'</span>;<br><br>
+        <span class="kw">const</span> brain = <span class="kw">new</span> <span class="type">Cortex</span>({ supabase: { url, serviceKey } });<br>
+        <span class="kw">await</span> brain.<span class="fn">init</span>();<br><br>
+        <span class="cmt">// Store a memory</span><br>
+        <span class="kw">await</span> brain.<span class="fn">store</span>({<br>
+        &nbsp;&nbsp;type: <span class="str">'episodic'</span>,<br>
+        &nbsp;&nbsp;content: <span class="str">'User prefers concise answers'</span>,<br>
+        &nbsp;&nbsp;summary: <span class="str">'User communication preference'</span>,<br>
+        &nbsp;&nbsp;source: <span class="str">'my-agent'</span>,<br>
+        });<br><br>
+        <span class="cmt">// Recall with hybrid search</span><br>
+        <span class="kw">const</span> memories = <span class="kw">await</span> brain.<span class="fn">recall</span>({<br>
+        &nbsp;&nbsp;query: <span class="str">'what does the user prefer'</span>,<br>
+        });
+      </div>
+      <div style="margin-bottom: 56px; margin-top: 24px;">
+        <a href="/docs.html" class="btn btn-primary">Read the docs</a>
       </div>
       <div class="stats-row">
         <div class="stat">
@@ -641,16 +671,16 @@
           <div class="stat-label">Memory types</div>
         </div>
         <div class="stat">
-          <div class="stat-value">6</div>
-          <div class="stat-label">Link types</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">12</div>
-          <div class="stat-label">Concept labels</div>
+          <div class="stat-value">81</div>
+          <div class="stat-label">Packages</div>
         </div>
         <div class="stat">
           <div class="stat-value">&lt;200ms</div>
           <div class="stat-label">Recall latency</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">MIT</div>
+          <div class="stat-label">License</div>
         </div>
       </div>
     </div>
@@ -661,6 +691,7 @@
     <div class="footer-inner">
       <div class="footer-left">Built on Solana. Powered by Claude.</div>
       <div class="footer-links">
+        <a href="/docs.html">Docs</a>
         <a href="/demo.html">Demo</a>
         <a href="/brain.html">Brain</a>
         <a href="https://x.com/Cludebot" target="_blank">X</a>
