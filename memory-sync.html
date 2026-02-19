@@ -324,6 +324,8 @@
       blocks.push(block);
     }
 
+    let targetTotal = 0; // track total memories for percentage calc
+    
     function updateUI() {
       document.getElementById('workingCount').textContent = stats.working;
       document.getElementById('episodicCount').textContent = stats.episodic;
@@ -332,9 +334,15 @@
       document.getElementById('txCount').textContent = txCount;
       document.getElementById('blockHeight').textContent = blockHeight.toLocaleString();
       
-      const total = stats.working + stats.episodic + stats.semantic + stats.onchain;
-      const organized = stats.semantic + stats.onchain;
-      const pct = total > 0 ? Math.round((organized / total) * 100) : 0;
+      // 0% during scatter, progress during commit, 100% when done
+      let pct = 0;
+      if (phase === 'scatter' || phase === 'organize') {
+        pct = 0;
+      } else if (phase === 'commit') {
+        pct = targetTotal > 0 ? Math.round((stats.onchain / targetTotal) * 100) : 0;
+      } else if (phase === 'done') {
+        pct = 100;
+      }
       document.getElementById('syncPercent').textContent = pct + '%';
     }
 
@@ -424,24 +432,28 @@
       }, 6);
     }
 
-    // PHASE 3: Commit semantics to chain
+    // PHASE 3: Commit ALL to chain
     function commit() {
       document.getElementById('statusText').textContent = 'Committing to Solana';
       
-      const semanticBlocks = blocks.map((b, i) => ({ idx: i, type: b.dataset.type }))
-        .filter(b => b.type === 'semantic');
+      const allMemories = blocks.map((b, i) => ({ idx: i, type: b.dataset.type }))
+        .filter(b => b.type !== 'empty');
+      
+      targetTotal = allMemories.length;
       
       let i = 0;
       const interval = setInterval(() => {
-        if (i >= semanticBlocks.length) {
+        if (i >= allMemories.length) {
           clearInterval(interval);
+          phase = 'done';
           document.getElementById('statusText').textContent = 'Sync Complete';
+          updateUI();
           setTimeout(restart, 1500);
           return;
         }
-        setBlock(semanticBlocks[i].idx, 'onchain');
+        setBlock(allMemories[i].idx, 'onchain');
         i++;
-      }, 25);
+      }, 12);
     }
 
     function restart() {
