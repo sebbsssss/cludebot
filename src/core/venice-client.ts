@@ -133,7 +133,7 @@ export async function generateVeniceResponse(opts: {
       throw new Error(`Venice API error: ${response.status} ${errorText}`);
     }
 
-    const data: VeniceResponse = await response.json();
+    const data = (await response.json()) as VeniceResponse;
     
     if (!data.choices?.[0]?.message?.content) {
       throw new Error('Invalid Venice response format');
@@ -197,7 +197,7 @@ export async function generateVeniceResponseWithSearch(opts: {
       throw new Error(`Venice API error: ${response.status} ${errorText}`);
     }
 
-    const data: VeniceResponse = await response.json();
+    const data = (await response.json()) as VeniceResponse;
     const content = data.choices[0]?.message?.content || '';
 
     // Extract citations if present (Venice includes them in the response)
