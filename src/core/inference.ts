@@ -96,10 +96,10 @@ export async function generate(opts: GenerateOptions): Promise<string> {
   throw lastError || new Error('All inference providers failed');
 }
 
-function getProviderOrder(provider: InferenceProvider): InferenceProvider[] {
+function getProviderOrder(provider: InferenceProvider): Array<'anthropic' | 'venice'> {
   if (provider === 'auto') {
     // Prefer Venice (decentralized) if available, fall back to Anthropic
-    const providers: InferenceProvider[] = [];
+    const providers: Array<'anthropic' | 'venice'> = [];
     if (isVeniceEnabled()) {
       providers.push('venice');
     }
@@ -107,9 +107,9 @@ function getProviderOrder(provider: InferenceProvider): InferenceProvider[] {
     return providers;
   }
   
-  const providers = [provider];
+  const providers: Array<'anthropic' | 'venice'> = [provider as 'anthropic' | 'venice'];
   if (inferenceConfig.fallback && inferenceConfig.fallback !== provider) {
-    providers.push(inferenceConfig.fallback);
+    providers.push(inferenceConfig.fallback as 'anthropic' | 'venice');
   }
   return providers;
 }
