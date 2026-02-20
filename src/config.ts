@@ -79,6 +79,16 @@ export const config = {
     model: optional('EMBEDDING_MODEL', ''),
     dimensions: parseInt(optional('EMBEDDING_DIMENSIONS', '1024'), 10),
   },
+  venice: {
+    apiKey: optional('VENICE_API_KEY', ''),
+    model: optional('VENICE_MODEL', 'llama-3.3-70b'),
+  },
+  inference: {
+    /** Primary provider: 'anthropic' | 'venice' | 'auto' (default: auto) */
+    primary: optional('INFERENCE_PRIMARY', 'auto') as 'anthropic' | 'venice' | 'auto',
+    /** Fallback provider if primary fails */
+    fallback: optional('INFERENCE_FALLBACK', 'anthropic') as 'anthropic' | 'venice',
+  },
   activity: {
     minSolValue: parseFloat(optional('ACTIVITY_MIN_SOL', '5.0')),
     minEthValue: parseFloat(optional('ACTIVITY_MIN_ETH', '0.1')), // legacy, kept for schema compat

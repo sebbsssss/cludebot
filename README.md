@@ -2,7 +2,7 @@
 
 Persistent memory SDK for AI agents. Give your agent a brain that remembers, learns, and dreams.
 
-Built on [Stanford Generative Agents](https://arxiv.org/abs/2304.03442) (Park et al. 2023), [MemGPT/Letta](https://arxiv.org/abs/2310.08560), and [CoALA](https://arxiv.org/abs/2309.02427).
+Built on [Stanford Generative Agents](https://arxiv.org/abs/2304.03442) (Park et al. 2023), [MemGPT/Letta](https://arxiv.org/abs/2310.08560), [CoALA](https://arxiv.org/abs/2309.02427), [Beads](https://github.com/steveyegge/beads) (compaction + hash IDs), and [Venice](https://venice.ai) (permissionless inference).
 
 ```bash
 npm install clude-bot
@@ -400,13 +400,66 @@ Each type persists at a different rate, mimicking biological memory:
 - **Procedural** (0.97/day): Behavioral patterns are stable
 - **Self-model** (0.99/day): Identity is nearly permanent
 
+### Hash-Based IDs (Beads-inspired)
+
+Every memory gets a collision-resistant ID like `clude-a1b2c3d4`:
+
+- **No merge conflicts**: Multiple agents can create memories simultaneously without ID collisions
+- **Stable references**: IDs survive database migrations and replication
+- **Human-readable**: Easy to reference in logs and debugging
+
+### Memory Compaction (Beads-inspired)
+
+Old, faded memories get summarized to save context window space:
+
+**Criteria for compaction:**
+- Memory is older than 7 days
+- Decay factor < 0.3 (faded from disuse)
+- Importance < 0.5 (not critical)
+- Only episodic memories (insights and self-model are preserved)
+
+**Process:**
+1. Group candidates by concept
+2. Generate semantic summary for each group
+3. Store summary with evidence links to originals
+4. Mark originals as compacted
+
+This mimics how human memory consolidates — details fade, patterns persist.
+
 ### Dream Cycles
 
-Three-phase introspection process:
+Four-phase introspection process:
 
 1. **Consolidation**: Generates focal-point questions from recent episodic memories, retrieves relevant context, synthesizes evidence-linked semantic insights
-2. **Reflection**: Reviews self-model + semantic memories, produces self-observations with evidence citations
-3. **Emergence**: Introspective synthesis — the agent examines its own existence
+2. **Compaction**: Summarizes old faded memories into dense semantic summaries (Beads-inspired)
+3. **Reflection**: Reviews self-model + semantic memories, produces self-observations with evidence citations
+4. **Emergence**: Introspective synthesis — the agent examines its own existence
+
+### Permissionless Inference (Venice)
+
+Clude supports [Venice](https://venice.ai) as a decentralized inference provider:
+
+```typescript
+const brain = new Cortex({
+  supabase: { ... },
+  venice: {
+    apiKey: process.env.VENICE_API_KEY,
+    model: 'llama-3.3-70b',  // or deepseek-r1, qwen, etc.
+  },
+  inference: {
+    primary: 'venice',     // Use Venice first
+    fallback: 'anthropic', // Fall back to Claude if needed
+  },
+});
+```
+
+**Why Venice?**
+- **Permissionless**: No approval process, no rate limits
+- **Private**: No data retention — your prompts stay yours
+- **Decentralized**: Matches Clude's on-chain memory philosophy
+- **Multi-model**: Access Claude, GPT, Llama, DeepSeek, and more
+
+Set `INFERENCE_PRIMARY=venice` and `VENICE_API_KEY` to use Venice by default.
 
 ### Association Graph
 
