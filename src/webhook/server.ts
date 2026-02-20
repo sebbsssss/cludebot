@@ -9,6 +9,7 @@ import { getDb, checkRateLimit } from '../core/database';
 import { writeMemo, solscanTxUrl } from '../core/solana-client';
 import { createHash, timingSafeEqual } from 'crypto';
 import { agentRoutes } from './agent-routes';
+import { graphRoutes } from './graph-routes';
 import { getRecentActivity } from '../features/activity-stream';
 import { createChildLogger } from '../core/logger';
 import rateLimit from 'express-rate-limit';
@@ -244,6 +245,9 @@ export function createServer(): express.Application {
 
   // Agent API (authenticated endpoints for other AI agents)
   app.use('/api/agent', agentRoutes());
+
+  // Knowledge Graph API (entity-centric memory visualization)
+  app.use('/api/graph', graphRoutes());
 
   // Activity stream (recent on-chain events)
   app.get('/api/activity', async (req, res) => {

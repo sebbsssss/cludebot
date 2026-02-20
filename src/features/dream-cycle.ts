@@ -10,6 +10,7 @@ import {
   recallMemories,
   recallMemorySummaries,
   createMemoryLink,
+  generateHashId,
   type Memory,
   type MemoryStats,
 } from '../core/memory';
@@ -99,6 +100,8 @@ async function triggerReflection(): Promise<void> {
     await Promise.race([
       (async () => {
         await runConsolidation();
+        await sleep(3000);
+        await runCompaction();    // NEW: Beads-inspired memory compaction
         await sleep(3000);
         await runReflection();
         await sleep(3000);
@@ -386,6 +389,134 @@ async function runDirectConsolidation(recentEpisodic: Memory[]): Promise<void> {
   );
 
   log.info({ observations: newIds.length, procedural: proceduralIds.length }, 'Direct consolidation complete');
+}
+
+// ---- COMPACTION (Beads-inspired) ---- //
+
+/**
+ * Semantic memory compaction — summarize and archive old, low-importance memories.
+ * Inspired by Beads' compaction logic that prevents context window bloat.
+ *
+ * Criteria for compaction:
+ * - Memory is older than 7 days
+ * - Memory decay_factor < 0.3 (faded)
+ * - Memory importance < 0.5 (not critical)
+ * - Not already compacted
+ * - Only episodic memories (semantic/procedural/self_model are preserved)
+ *
+ * Process:
+ * 1. Find compaction candidates (batch of ~20 old episodic memories)
+ * 2. Group by theme/concept
+ * 3. Generate summary for each group
+ * 4. Store as semantic memory with evidence links
+ * 5. Mark originals as compacted
+ */
+async function runCompaction(): Promise<void> {
+  log.info('Dream phase 1.5: COMPACTION starting');
+
+  const db = getDb();
+
+  // Find compaction candidates: old, faded, low-importance episodic memories
+  const { data: candidates, error } = await db
+    .from('memories')
+    .select('id, hash_id, memory_type, summary, tags, concepts, importance, decay_factor, created_at')
+    .eq('memory_type', 'episodic')
+    .eq('compacted', false)
+    .lt('decay_factor', 0.3)
+    .lt('importance', 0.5)
+    .lt('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // 7+ days old
+    .order('created_at', { ascending: true })
+    .limit(30);
+
+  if (error) {
+    log.error({ error: error.message }, 'Failed to fetch compaction candidates');
+    return;
+  }
+
+  if (!candidates || candidates.length < 5) {
+    log.debug({ count: candidates?.length || 0 }, 'Too few candidates for compaction');
+    return;
+  }
+
+  log.info({ count: candidates.length }, 'Found compaction candidates');
+
+  // Group candidates by primary concept (or 'general' if none)
+  const groups = new Map<string, typeof candidates>();
+  for (const mem of candidates) {
+    const concept = mem.concepts?.[0] || 'general';
+    if (!groups.has(concept)) groups.set(concept, []);
+    groups.get(concept)!.push(mem);
+  }
+
+  let compactedCount = 0;
+  const summaryIds: number[] = [];
+
+  for (const [concept, memories] of groups) {
+    if (memories.length < 3) continue; // Skip small groups
+
+    // Generate summary for this group
+    const memoryDump = memories.map((m, i) =>
+      `${i + 1}. ${m.summary}`
+    ).join('\n');
+
+    try {
+      const response = await generateResponse({
+        userMessage: `Summarize these ${memories.length} related memories into 1-2 key takeaways:`,
+        context: `MEMORIES (${concept}):\n${memoryDump}`,
+        featureInstruction:
+          'You are compacting old memories to save context space. ' +
+          'Distill these memories into their essential meaning — what was the overall pattern or lesson? ' +
+          'Be concise. One or two sentences max. Preserve the most important information.',
+        maxTokens: 150,
+      });
+
+      // Store as semantic memory
+      const hashId = generateHashId();
+      const summaryId = await storeMemory({
+        type: 'semantic',
+        content: `Compacted memory (${concept}, ${memories.length} sources): ${response}`,
+        summary: response.slice(0, 200),
+        tags: ['compacted', 'summary', concept],
+        concepts: [concept],
+        importance: 0.5,
+        emotionalValence: 0,
+        source: 'compaction',
+        evidenceIds: memories.map(m => m.id),
+      });
+
+      if (summaryId) {
+        summaryIds.push(summaryId);
+
+        // Mark original memories as compacted
+        const memoryIds = memories.map(m => m.id);
+        await db
+          .from('memories')
+          .update({ compacted: true, compacted_into: hashId })
+          .in('id', memoryIds);
+
+        // Link summary to originals
+        for (const mem of memories) {
+          createMemoryLink(summaryId, mem.id, 'elaborates', 0.8).catch(() => {});
+        }
+
+        compactedCount += memories.length;
+        log.debug({ concept, count: memories.length }, 'Memory group compacted');
+      }
+    } catch (err) {
+      log.warn({ err, concept }, 'Failed to compact memory group');
+    }
+  }
+
+  if (compactedCount > 0) {
+    await storeDreamLog(
+      'compaction',
+      candidates.map(m => m.id),
+      `Compacted ${compactedCount} old memories into ${summaryIds.length} summaries`,
+      summaryIds
+    );
+  }
+
+  log.info({ compacted: compactedCount, summaries: summaryIds.length }, 'Compaction complete');
 }
 
 // ---- REFLECTION ---- //

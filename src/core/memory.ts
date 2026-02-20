@@ -23,7 +23,35 @@ import { generateImportanceScore } from './claude-client';
 import { writeMemo } from './solana-client';
 import { generateEmbedding, generateEmbeddings, isEmbeddingEnabled } from './embeddings';
 import { eventBus } from '../events/event-bus';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
+import { extractAndLinkEntities } from './memory-graph';
+
+// ============================================================
+// HASH-BASED IDs (Beads-inspired)
+//
+// Generate short, collision-resistant IDs like "clude-a1b2c3d4"
+// instead of sequential integers. Benefits:
+// - No merge conflicts when multiple agents create memories
+// - IDs remain stable across database migrations
+// - Human-readable and URL-safe
+// ============================================================
+
+const HASH_ID_PREFIX = 'clude';
+
+/**
+ * Generate a collision-resistant hash ID for a memory.
+ * Format: clude-xxxxxxxx (8 hex chars = 4 bytes = 4 billion possibilities)
+ */
+export function generateHashId(): string {
+  return `${HASH_ID_PREFIX}-${randomBytes(4).toString('hex')}`;
+}
+
+/**
+ * Validate a hash ID format.
+ */
+export function isValidHashId(id: string): boolean {
+  return /^clude-[a-f0-9]{8}$/.test(id);
+}
 
 const log = createChildLogger('memory');
 
@@ -55,6 +83,7 @@ export type MemoryType = 'episodic' | 'semantic' | 'procedural' | 'self_model';
 
 export interface Memory {
   id: number;
+  hash_id: string;              // Collision-resistant ID like "clude-a1b2c3d4"
   memory_type: MemoryType;
   content: string;
   summary: string;
@@ -73,6 +102,9 @@ export interface Memory {
   decay_factor: number;
   evidence_ids: number[];
   solana_signature: string | null;
+  // Compaction fields
+  compacted: boolean;           // True if this memory has been compacted
+  compacted_into: string | null; // hash_id of the compacted summary memory
 }
 
 /** Lightweight memory summary for progressive disclosure (no content field). */
@@ -166,10 +198,14 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
   // Auto-classify concepts if not explicitly provided
   const concepts = opts.concepts || inferConcepts(opts.summary, opts.source, opts.tags || []);
 
+  // Generate collision-resistant hash ID (Beads-inspired)
+  const hashId = generateHashId();
+
   try {
     const { data, error } = await db
       .from('memories')
       .insert({
+        hash_id: hashId,
         memory_type: opts.type,
         content: opts.content.slice(0, MEMORY_MAX_CONTENT_LENGTH),
         summary: opts.summary.slice(0, MEMORY_MAX_SUMMARY_LENGTH),
@@ -183,8 +219,9 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
         related_wallet: opts.relatedWallet || null,
         metadata: opts.metadata || {},
         evidence_ids: opts.evidenceIds || [],
+        compacted: false,
       })
-      .select('id')
+      .select('id, hash_id')
       .single();
 
     if (error) {
@@ -194,6 +231,7 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
 
     log.debug({
       id: data.id,
+      hashId: data.hash_id,
       type: opts.type,
       summary: opts.summary.slice(0, 60),
       importance: opts.importance,
@@ -214,6 +252,9 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
 
     // Auto-link to related memories (fire-and-forget, runs after embedding is available)
     autoLinkMemory(data.id, opts).catch(err => log.warn({ err }, 'Auto-linking failed'));
+
+    // Extract entities and build knowledge graph (fire-and-forget)
+    extractAndLinkEntitiesForMemory(data.id, opts).catch(err => log.debug({ err }, 'Entity extraction failed'));
 
     return data.id;
   } catch (err) {
@@ -842,6 +883,20 @@ async function reinforceCoRetrievedLinks(ids: number[]): Promise<void> {
     log.debug({ error: error.message }, 'Link reinforcement RPC failed');
   } else if (data && data > 0) {
     log.debug({ boosted: data }, 'Co-retrieval link reinforcement applied');
+  }
+}
+
+// ---- ENTITY EXTRACTION ---- //
+
+/**
+ * Extract entities from a stored memory and link them to the knowledge graph.
+ * Called as fire-and-forget after storeMemory().
+ */
+async function extractAndLinkEntitiesForMemory(memoryId: number, opts: StoreMemoryOptions): Promise<void> {
+  try {
+    await extractAndLinkEntities(memoryId, opts.content, opts.summary, opts.relatedUser);
+  } catch (err) {
+    log.debug({ err, memoryId }, 'Entity extraction failed');
   }
 }
 
