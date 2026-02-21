@@ -124,6 +124,13 @@ export async function generateVeniceResponse(opts: {
         messages,
         max_tokens: maxTokens,
         temperature: opts.temperature ?? 0.7,
+        // Claude models on Venice require thinking config
+        ...(model.startsWith('claude') && {
+          thinking: {
+            type: 'enabled',
+            budget_tokens: 2048,
+          },
+        }),
       }),
     });
 
