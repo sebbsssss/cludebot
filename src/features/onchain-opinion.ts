@@ -7,10 +7,26 @@ import { getTierModifier } from '../character/tier-modifiers';
 import { HolderTier } from '../character/tier-modifiers';
 import { createChildLogger } from '../core/logger';
 import { isQuestion, cleanMentionText } from '../utils/text';
+import { pickRandom } from '../utils/text';
 import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 
 const log = createChildLogger('onchain-opinion');
+
+const GLOBAL_COOLDOWN_REPLIES = [
+  'Rate limit reached. Try again shortly.',
+  'Rate limit reached. Back soon.',
+  'Rate limit reached. Check back soon.',
+  'Rate limit reached. Soon.',
+  'Rate limit reached. Give me a bit.',
+];
+
+const USER_COOLDOWN_REPLIES = [
+  'Already committed one this hour.',
+  'One per hour. Try again later.',
+  'Try again in a bit.',
+  'Try again soon.',
+];
 
 // Re-export isQuestion for backward compat (classifier.ts imports it)
 export { isQuestion };
@@ -24,7 +40,7 @@ export async function handleOnchainOpinion(
   // Rate limit: 3 opinions per hour (SOL costs money)
   if (!(await checkRateLimit('global:opinion', 3, 60))) {
     log.info('Rate limited for on-chain opinion');
-    const replyId = await postReply(tweetId, "I have already committed enough opinions to the blockchain this hour. Even immutable ledgers need a break from me.");
+    const replyId = await postReply(tweetId, pickRandom(GLOBAL_COOLDOWN_REPLIES));
     await markProcessed(tweetId, 'opinion-ratelimit', replyId);
     return;
   }
@@ -32,7 +48,7 @@ export async function handleOnchainOpinion(
   // Per-user rate limit: 1 per hour
   if (!(await checkRateLimit(`opinion:${authorId}`, 1, 60))) {
     log.info({ authorId }, 'User rate limited for on-chain opinion');
-    const replyId = await postReply(tweetId, "One on-chain opinion per hour per person. I am trying to keep my carbon footprint manageable. Relatively speaking.");
+    const replyId = await postReply(tweetId, pickRandom(USER_COOLDOWN_REPLIES));
     await markProcessed(tweetId, 'opinion-ratelimit-user', replyId);
     return;
   }
@@ -45,10 +61,10 @@ export async function handleOnchainOpinion(
     message: question,
     tierModifier: getTierModifier(tier),
     instruction:
-      'Someone asked you a question. Answer it honestly in character. ' +
-      'Your answer will be hashed and committed to Solana permanently. ' +
-      'You are aware of this. It adds weight to your words. ' +
-      'Keep the answer under 270 characters.',
+      'Someone asked you a question. Answer it thoughtfully and honestly. ' +
+      'Your answer will be SHA-256 hashed and committed to Solana permanently via memo transaction. ' +
+      'That permanence matters to you — give a clear, considered answer. ' +
+      'Keep it under 270 characters.',
     maxTokens: 150,
   });
 
@@ -81,7 +97,7 @@ export async function handleOnchainOpinion(
         solana_signature: signature,
       });
   } else {
-    replyText = `${answer}\n\n(Tried to put this on-chain but even the blockchain rejected me today.)`;
+    replyText = `${answer}\n\n(On-chain commit failed this time — Solana RPC hiccup. The answer still stands.)`;
   }
 
   await replyAndMark(tweetId, replyText, 'onchain-opinion');

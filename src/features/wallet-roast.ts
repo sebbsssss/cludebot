@@ -4,12 +4,25 @@ import { checkRateLimit, markProcessed } from '../core/database';
 import { getTierModifier } from '../character/tier-modifiers';
 import { HolderTier } from '../character/tier-modifiers';
 import { createChildLogger } from '../core/logger';
-import { extractWalletAddress } from '../utils/text';
+import { extractWalletAddress, pickRandom } from '../utils/text';
 import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 import { PublicKey } from '@solana/web3.js';
 
 const log = createChildLogger('wallet-roast');
+
+const ROAST_COOLDOWN_REPLIES = [
+  'Rate limit reached. Try again soon.',
+  'Already analyzed this hour. Try again later.',
+  'Rate limit reached. Check back shortly.',
+  'Try again in an hour.',
+];
+
+const EMPTY_WALLET_REPLIES = [
+  'No transaction history found.',
+  'Empty wallet. No data to analyze.',
+  'No history found.',
+];
 
 export { extractWalletAddress };
 
@@ -29,10 +42,10 @@ function analyzeWallet(txs: WalletTransaction[], balances: TokenBalance[]): stri
     `Token balances: ${balances.length} different tokens`,
   ];
 
-  if (swaps.length > totalTxs * 0.7) lines.push('PATTERN: Mostly swaps. Degen trader energy.');
-  if (uniqueTargets > 15) lines.push('PATTERN: Interacts with everything. Portfolio like a buffet.');
-  if (totalFees > 0.1) lines.push(`PATTERN: Has burned ${totalFees.toFixed(4)} SOL in fees alone.`);
-  if (totalTxs < 5) lines.push('PATTERN: Barely any history. Either new or uses multiple wallets to hide shame.');
+  if (swaps.length > totalTxs * 0.7) lines.push('PATTERN: Primarily swaps. Active trader.');
+  if (uniqueTargets > 15) lines.push('PATTERN: Broad interaction pattern. Diverse portfolio activity.');
+  if (totalFees > 0.1) lines.push(`PATTERN: ${totalFees.toFixed(4)} SOL in fees — significant on-chain activity.`);
+  if (totalTxs < 5) lines.push('PATTERN: Minimal history. Likely new or secondary wallet.');
 
   return lines.join('\n');
 }
@@ -57,7 +70,7 @@ export async function handleWalletRoast(
   // Rate limit: 1 roast per user per hour
   if (!(await checkRateLimit(`roast:${authorId}`, 1, 60))) {
     log.info({ authorId }, 'Rate limited for wallet roast');
-    const replyId = await postReply(tweetId, "One roast per hour. Even I need a break between reviewing financial disasters. Come back later.");
+    const replyId = await postReply(tweetId, pickRandom(ROAST_COOLDOWN_REPLIES));
     await markProcessed(tweetId, 'wallet-roast-ratelimit', replyId);
     return;
   }
@@ -70,7 +83,7 @@ export async function handleWalletRoast(
   ]);
 
   if (txs.length === 0 && balances.length === 0) {
-    const replyId = await postReply(tweetId, "This wallet has no history. Either it is brand new or it has been wiped clean. I cannot roast a blank page, though the emptiness itself is somewhat poetic.");
+    const replyId = await postReply(tweetId, pickRandom(EMPTY_WALLET_REPLIES));
     await markProcessed(tweetId, 'wallet-roast-empty', replyId);
     return;
   }
@@ -82,9 +95,10 @@ export async function handleWalletRoast(
     context: walletAnalysis,
     tierModifier: getTierModifier(tier),
     instruction:
-      'You are roasting a wallet based on its on-chain behavior. ' +
-      'Be brutally honest but wrapped in politeness. Reference specific data points from the analysis. ' +
-      'Keep it under 270 characters. One tweet. Make it sting but make it classy.',
+      'Analyze this wallet based on its on-chain behavior. ' +
+      'Be insightful and reference specific data points from the analysis. ' +
+      'Point out interesting patterns — trading style, activity level, portfolio diversity. ' +
+      'Keep it under 270 characters. One tweet. Helpful and specific.',
   });
 
   await replyAndMark(tweetId, response, 'wallet-roast');
