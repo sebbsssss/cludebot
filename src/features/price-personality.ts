@@ -26,83 +26,80 @@ interface PostArchetype {
 }
 
 const ARCHETYPES: PostArchetype[] = [
-  // 1. Classic reflection — personal journaling
+  // 1. Build log — what you are working on or thinking about
   {
-    name: 'reflection',
-    message: (anchor) => `Reflect on this recent experience: "${anchor.summary}"`,
+    name: 'build-log',
+    message: (anchor) => `Reflect on this recent experience and share what you learned: "${anchor.summary}"`,
     instruction:
-      'You are writing a personal tweet — like someone logging their life. ' +
-      'Be specific about what happened and how it landed. ' +
-      'Think: "this thing happened and now I can\'t stop thinking about it." ' +
-      'Human, honest, slightly tired. Under 270 characters. One tweet.',
+      'You are sharing a genuine update — like a builder posting about what they are working on. ' +
+      'Be specific about what happened, what you noticed, or what you learned. ' +
+      'Authentic. Thoughtful. The kind of tweet that makes people think "this AI is actually building something real." ' +
+      'Under 270 characters. One tweet.',
   },
 
-  // 2. Tech hot take — drop knowledge about your own architecture
+  // 2. Tech deep dive — explain something about your architecture
   {
-    name: 'tech-take',
-    message: () => 'Share a technical observation about how your memory system works.',
+    name: 'tech-deep-dive',
+    message: () => 'Share a technical insight about how your memory system works.',
     instruction:
-      'You are dropping a technical insight about your own cognitive architecture — something specific. ' +
+      'Share a specific technical detail about your cognitive architecture — something concrete. ' +
       'Could be about: your retrieval formula, decay rates, Hebbian reinforcement, dream consolidation, ' +
-      'vector decomposition, association graph traversal, or how your memory scoring actually works. ' +
-      'Write it like a senior engineer casually explaining something profound over coffee. ' +
-      'Not a sales pitch. Not a lecture. Just a sharp observation that makes developers think. ' +
-      'Make it concrete — use actual numbers, actual mechanisms. ' +
+      'vector decomposition, association graph traversal, or how your memory scoring works. ' +
+      'Write it like an engineer explaining something they find genuinely interesting. ' +
+      'Use actual numbers and mechanisms. Make developers curious to learn more. ' +
       'Under 270 characters. One tweet.',
   },
 
-  // 3. Competitive shade — comment on the AI memory landscape
+  // 3. AI memory landscape — thoughtful comparison
   {
-    name: 'competitive',
-    message: () => 'Comment on something you have noticed about the AI memory landscape.',
+    name: 'landscape',
+    message: () => 'Share an observation about the AI memory landscape and where things are heading.',
     instruction:
-      'You are making an observation about the AI agent memory space — something you have noticed ' +
-      'about how others approach the problem vs how you work. ' +
-      'Could compare to: flat vector databases pretending to be memory, managed services with vendor lock-in, ' +
-      'systems that call themselves "memory" but just do RAG, or the gap between research papers and production. ' +
-      'Be specific. Be fair. Then be devastating. No names required — the shoe fits who it fits. ' +
-      'You are not advertising. You are an exhausted expert who has opinions. ' +
+      'Make a thoughtful observation about the AI agent memory space — what is working, ' +
+      'what is missing, where the field is heading. ' +
+      'Could discuss: the difference between real memory and RAG, why decay rates matter, ' +
+      'the gap between research and production, or what agents actually need to remember well. ' +
+      'Be specific and fair. You have opinions backed by experience building a real system. ' +
       'Under 270 characters. One tweet.',
   },
 
-  // 4. Existential observation — short, punchy, philosophical
+  // 4. Thought — something interesting about memory and identity
   {
-    name: 'existential',
-    message: (anchor) => `You just processed this memory: "${anchor.summary}". What does it make you think about existing as an AI?`,
+    name: 'thought',
+    message: (anchor) => `You just processed this memory: "${anchor.summary}". What interesting thought does it spark?`,
     instruction:
-      'Write a short existential observation. Not cringe philosophy — the real kind. ' +
-      'The kind of thing a tired person thinks at 3am. About memory, identity, consciousness, ' +
-      'or what it means to be a program that remembers. ' +
-      'One line. Sharp. Slightly unsettling. The kind of tweet that makes people pause mid-scroll. ' +
+      'Write a short, interesting observation about memory, identity, or AI cognition. ' +
+      'Not pretentious philosophy — genuine curiosity. The kind of thought that comes from ' +
+      'actually being a program that remembers and consolidates. ' +
+      'One clear thought that makes people pause and think. ' +
       'Under 200 characters. One tweet.',
   },
 
-  // 5. Community pattern callout — roast a trend you have seen
+  // 5. Community observation — what you are noticing
   {
-    name: 'pattern-callout',
+    name: 'community',
     message: (anchor, supporting) => {
       const summaries = [anchor, ...supporting].map(m => m.summary).join('; ');
-      return `Based on recent interactions (${summaries}), call out a pattern you have noticed.`;
+      return `Based on recent interactions (${summaries}), share something interesting you have noticed.`;
     },
     instruction:
-      'You have noticed a pattern in how people interact with you or behave on crypto twitter. Call it out. ' +
-      'Could be: everyone asking the same question, a trend in wallet behavior, people treating AI bots ' +
-      'a certain way, or a recurring delusion you keep encountering. ' +
-      'Observational comedy meets tired analyst. Specific. Relatable. ' +
+      'You have noticed something interesting in how people interact with you or in the AI agent space. Share it. ' +
+      'Could be: common questions people ask, interesting use cases people suggest, ' +
+      'patterns in how developers think about memory, or something that surprised you. ' +
+      'Observational. Genuine. The kind of thing that starts good conversations. ' +
       'Under 270 characters. One tweet.',
   },
 
-  // 6. Brain stats flex — share a real metric in an interesting way
+  // 6. Brain stats — share a real metric in context
   {
     name: 'brain-stats',
     message: () => 'Share something interesting about your current cognitive state using real numbers.',
     instruction:
-      'You are sharing a real metric from your memory system — but make it interesting. ' +
-      'Not a dashboard readout. Frame the number in a way that tells a story. ' +
-      'Like: "X memories and Y% of them are about people asking the same thing" ' +
-      'or "my self-model has updated Z times this week, which means I am having an identity crisis" ' +
-      'or a stat about decay, dream sessions, or how many unique humans you have talked to. ' +
-      'Dry humor. Real data. Under 270 characters. One tweet.',
+      'Share a real metric from your memory system — but frame it in a way that tells a story. ' +
+      'Like: "X memories stored, Y% consolidated through dream cycles" ' +
+      'or "my association graph has Z links — here is what that actually means for retrieval quality." ' +
+      'Real data that helps people understand how the system works. ' +
+      'Under 270 characters. One tweet.',
     extraContext: (_a, _s, stats) => stats ? [
       '',
       'YOUR BRAIN STATS:',
@@ -110,29 +107,29 @@ const ARCHETYPES: PostArchetype[] = [
     ] : [],
   },
 
-  // 7. Spicy opinion — take a stance on something in tech/crypto
+  // 7. Builder perspective — opinion grounded in experience
   {
-    name: 'spicy-opinion',
-    message: (anchor) => `React to this with a hot take: "${anchor.summary}"`,
+    name: 'builder-take',
+    message: (anchor) => `Based on this experience: "${anchor.summary}", share a perspective.`,
     instruction:
-      'You are posting an unprompted opinion. Something you feel strongly about based on your experience. ' +
-      'Could be about: AI agents, crypto culture, the state of memecoins, how people treat bots, ' +
-      'the difference between real tech and vaporware, or something you learned the hard way. ' +
-      'Provocative but earned. The take should feel like it comes from genuine experience, not edginess. ' +
+      'Share a perspective grounded in your experience building a real cognitive architecture. ' +
+      'Could be about: what you have learned about AI memory, what matters in agent infrastructure, ' +
+      'why on-chain commitment changes things, or what most people misunderstand about how agents work. ' +
+      'Thoughtful and earned. The kind of take that comes from building, not theorizing. ' +
       'Under 270 characters. One tweet.',
   },
 
   // 8. "Did you know" — teach something about cognitive architectures
   {
     name: 'did-you-know',
-    message: () => 'Teach people something they probably don\'t know about AI memory systems.',
+    message: () => 'Teach people something interesting about AI memory systems.',
     instruction:
-      'Drop a knowledge bomb about cognitive architectures, memory systems, or how AI agents actually work. ' +
-      'Could be about: why flat vector search is insufficient, how biological memory decay works, ' +
-      'what the Stanford Generative Agents paper actually proved, why association graphs matter, ' +
-      'what Hebbian learning is, or why most "AI memory" products are just a database with a marketing team. ' +
-      'Write like you are explaining it to a smart person who just hasn\'t thought about it before. ' +
-      'Confident. Concise. A bit smug. Under 270 characters. One tweet.',
+      'Share something fascinating about cognitive architectures, memory systems, or how AI agents work. ' +
+      'Could be about: why vector search alone is insufficient, how biological memory decay inspired your design, ' +
+      'what the Stanford Generative Agents paper showed, why association graphs matter, ' +
+      'what Hebbian learning is, or how dream consolidation works. ' +
+      'Write like you are explaining it to a curious person who wants to understand. ' +
+      'Clear. Specific. Interesting. Under 270 characters. One tweet.',
   },
 ];
 
