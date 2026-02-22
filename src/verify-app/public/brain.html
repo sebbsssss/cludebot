@@ -23,6 +23,11 @@
       --semantic: #3a4a7a;
       --procedural: #2a6a3a;
       --selfmodel: #5a3a80;
+      /* Bond type colors (Molecular Memory) */
+      --bond-semantic: #22cc66;
+      --bond-causal: #0052FF;
+      --bond-temporal: #ffaa22;
+      --bond-contradictory: #ff4444;
       --mono: 'JetBrains Mono', monospace;
     }
 
@@ -534,6 +539,7 @@
 
   <div class="hud hud-tr">
     <div class="legend" id="legend">
+      <div style="font-size: 8px; letter-spacing: 2px; color: var(--text-faint); margin-bottom: 8px; text-align: right;">MEMORY TYPES</div>
       <div class="legend-item" data-type="episodic">
         EPISODIC <div class="legend-dot" style="background:var(--episodic)"></div>
       </div>
@@ -545,6 +551,19 @@
       </div>
       <div class="legend-item" data-type="self_model">
         SELF-MODEL <div class="legend-dot" style="background:var(--selfmodel)"></div>
+      </div>
+      <div style="font-size: 8px; letter-spacing: 2px; color: var(--text-faint); margin: 16px 0 8px; text-align: right; border-top: 1px solid var(--border); padding-top: 12px;">BOND TYPES</div>
+      <div class="legend-item" style="pointer-events: none;">
+        SEMANTIC <div style="width: 16px; height: 2px; background: var(--bond-semantic); margin-left: 6px;"></div>
+      </div>
+      <div class="legend-item" style="pointer-events: none;">
+        CAUSAL <div style="width: 16px; height: 2px; background: var(--bond-causal); margin-left: 6px;"></div>
+      </div>
+      <div class="legend-item" style="pointer-events: none;">
+        TEMPORAL <div style="width: 16px; height: 2px; background: var(--bond-temporal); margin-left: 6px;"></div>
+      </div>
+      <div class="legend-item" style="pointer-events: none;">
+        CONTRADICTORY <div style="width: 16px; height: 2px; background: var(--bond-contradictory); margin-left: 6px;"></div>
       </div>
     </div>
   </div>
