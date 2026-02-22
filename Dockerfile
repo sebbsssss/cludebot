@@ -17,7 +17,7 @@ FROM node:22-slim
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 COPY --from=builder /app/dist/ ./dist/
 COPY src/verify-app/public/ ./dist/verify-app/public/
