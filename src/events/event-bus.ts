@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
-import type { Mood } from '../core/price-oracle';
+
+export type Mood = 'PUMPING' | 'DUMPING' | 'SIDEWAYS' | 'NEW_ATH' | 'WHALE_SELL' | 'NEUTRAL';
 
 /**
  * Typed event bus — decouples webhook handlers from feature logic.

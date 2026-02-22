@@ -27,6 +27,18 @@ if (require.main === module) {
   const { getBotWallet } = require('./core/solana-client');
   const { createChildLogger } = require('./core/logger');
   const { registerEventHandlers } = require('./events/handlers');
+  const { _setSystemPromptProvider, _setResponsePostProcessor } = require('./core/claude-client');
+  const { getBasePrompt, getRandomCloser } = require('./character/base-prompt');
+
+  // Wire bot personality into the LLM client
+  _setSystemPromptProvider(getBasePrompt);
+  _setResponsePostProcessor((text: string) => {
+    const closer = getRandomCloser();
+    if (closer && text.length + closer.length + 2 <= 270) {
+      return `${text} ${closer}`;
+    }
+    return text;
+  });
 
   const log = createChildLogger('main');
 

@@ -1,22 +1,18 @@
 {
   "name": "clude-bot",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "Persistent memory SDK for AI agents — Stanford Generative Agents architecture on Supabase + pgvector",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/sdk/index.js",
+  "types": "dist/sdk/index.d.ts",
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/sdk/index.js",
+      "types": "./dist/sdk/index.d.ts"
     },
     "./schema": "./supabase-schema.sql"
   },
-  "bin": {
-    "clude-bot": "dist/cli/index.js"
-  },
   "files": [
     "dist",
-    "scripts",
     "supabase-schema.sql",
     "README.md",
     "LICENSE"
@@ -24,8 +20,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "build:sdk": "tsc -p tsconfig.sdk.json",
     "start": "node dist/index.js",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run build:sdk",
     "mcp": "MCP_MODE=1 tsx src/mcp/server.ts"
   },
   "keywords": [
@@ -61,20 +58,20 @@
     "@supabase/supabase-js": "^2.95.3",
     "bs58": "^6.0.0",
     "dotenv": "^16.4.0",
-    "express": "^4.21.0",
-    "express-rate-limit": "^8.2.1",
-    "helius-sdk": "^2.1.0",
-    "node-cron": "^3.0.3",
     "pino": "^9.0.0",
-    "tweetnacl": "^1.0.3",
-    "twitter-api-v2": "^1.29.0"
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@types/express": "^4.17.0",
     "@types/node": "^22.0.0",
     "@types/node-cron": "^3.0.11",
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.2.1",
+    "helius-sdk": "^2.1.0",
+    "node-cron": "^3.0.3",
     "tsx": "^4.19.0",
+    "twitter-api-v2": "^1.29.0",
     "typescript": "^5.6.0"
   }
 }
