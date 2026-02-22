@@ -70,7 +70,7 @@ export const config = {
     rateLimitPerMin: parseInt(optional('AGENT_RATE_LIMIT', '10'), 10),
   },
   features: {
-    showTxLinksInTweets: optional('SHOW_TX_LINKS_IN_TWEETS', 'false') === 'true',
+    showTxLinksInTweets: optional('SHOW_TX_LINKS_IN_TWEETS', 'true') === 'true',
     siteOnly: optional('SITE_ONLY', 'false') === 'true',
   },
   embedding: {
