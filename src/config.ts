@@ -30,6 +30,7 @@ export const config = {
     accessToken: requiredUnlessSiteOnly('X_ACCESS_TOKEN'),
     accessSecret: requiredUnlessSiteOnly('X_ACCESS_SECRET'),
     botUserId: requiredUnlessSiteOnly('X_BOT_USER_ID'),
+    creatorUserId: optional('CREATOR_USER_ID', ''),
   },
   supabase: {
     url: requiredUnlessSiteOnly('SUPABASE_URL'),

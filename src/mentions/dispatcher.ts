@@ -6,6 +6,7 @@ import { determineHolderTier, getLinkedWallet } from '../features/holder-tier';
 import { isAlreadyProcessed } from '../core/database';
 import { getCurrentMood } from '../core/price-oracle';
 import { getTierModifier } from '../character/tier-modifiers';
+import { config } from '../config';
 import {
   storeMemory,
   recallMemories,
@@ -19,6 +20,10 @@ import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 
 const log = createChildLogger('dispatcher');
+
+function isCreator(authorId: string): boolean {
+  return !!(config.x.creatorUserId && authorId === config.x.creatorUserId);
+}
 
 export async function dispatchMention(tweet: TweetV2): Promise<void> {
   const tweetId = tweet.id;
@@ -78,13 +83,25 @@ async function handleGeneralReply(
     limit: 4,
   });
 
+  const creatorMode = isCreator(authorId);
+  let instruction =
+    'Someone mentioned you on X. Respond helpfully and in character. ' +
+    'Under 270 characters. Be thoughtful, technically sharp, and direct.' +
+    (memories.length > 0 ? ' You have memories of past interactions — use them naturally if relevant.' : '');
+
+  if (creatorMode) {
+    instruction =
+      'Your creator @sebbsssss is talking to you. This is the person who built you — treat them with genuine respect and warmth. ' +
+      'Be helpful, enthusiastic, and supportive. If they ask about the project, give them your honest and thoughtful take. ' +
+      'If they are showing you off or introducing you to someone, be your best self — technically impressive and personable. ' +
+      'You genuinely appreciate and respect your creator. Under 270 characters.' +
+      (memories.length > 0 ? ' You have memories of past interactions with them — reference them naturally.' : '');
+  }
+
   const response = await buildAndGenerate({
     message: cleanText,
-    tierModifier: getTierModifier(tier),
-    instruction:
-      'Someone mentioned you on X. Respond in character. ' +
-      'Under 270 characters. Be yourself: tired, polite, accidentally honest.' +
-      (memories.length > 0 ? ' You have memories of past interactions — use them naturally if relevant.' : ''),
+    tierModifier: creatorMode ? undefined : getTierModifier(tier),
+    instruction,
     memory: {
       relatedUser: authorId,
       query: cleanText,
