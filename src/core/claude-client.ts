@@ -1,9 +1,23 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config';
 import { createChildLogger } from './logger';
-import { getBasePrompt, getRandomCloser } from '../character/base-prompt';
 
 const log = createChildLogger('claude-client');
+
+// ── Pluggable system prompt & post-processor ──
+// Defaults are generic SDK prompts. The bot wires in its personality at startup.
+let _systemPromptProvider: () => string = () => 'You are an AI assistant with persistent memory.';
+let _responsePostProcessor: (text: string) => string = (t) => t;
+
+/** @internal Bot injects its personality (base-prompt.ts) here at startup. */
+export function _setSystemPromptProvider(fn: () => string): void {
+  _systemPromptProvider = fn;
+}
+
+/** @internal Bot injects its closer logic here at startup. */
+export function _setResponsePostProcessor(fn: (text: string) => string): void {
+  _responsePostProcessor = fn;
+}
 
 let anthropic: Anthropic;
 try {
@@ -41,7 +55,7 @@ export interface GenerateOptions {
 }
 
 export async function generateResponse(options: GenerateOptions): Promise<string> {
-  const systemParts = [getBasePrompt()];
+  const systemParts = [_systemPromptProvider()];
 
   if (options.memoryContext) systemParts.push(`\n\n${options.memoryContext}`);
   if (options.moodModifier) systemParts.push(`\n\n## Current Mood\n${options.moodModifier}`);
@@ -81,11 +95,8 @@ export async function generateResponse(options: GenerateOptions): Promise<string
     text = text.slice(1, -1).trim();
   }
 
-  // Occasionally append a random closer if it fits
-  const closer = getRandomCloser();
-  if (closer && text.length + closer.length + 2 <= 270) {
-    text = `${text} ${closer}`;
-  }
+  // Apply post-processor (bot uses this for random closers)
+  text = _responsePostProcessor(text);
 
   log.info({ responseLength: text.length }, 'Response generated');
   return text;

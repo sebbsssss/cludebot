@@ -1,7 +1,7 @@
 import { config } from '../config';
 import { getDb } from './database';
 import { createChildLogger } from './logger';
-import { eventBus } from '../events/event-bus';
+import { eventBus, type Mood } from '../events/event-bus';
 import { percentChange } from '../utils/format';
 import {
   JUPITER_PRICE_URL,
@@ -14,7 +14,8 @@ import type { JupiterPriceResponse } from '../types/api';
 
 const log = createChildLogger('price-oracle');
 
-export type Mood = 'PUMPING' | 'DUMPING' | 'SIDEWAYS' | 'NEW_ATH' | 'WHALE_SELL' | 'NEUTRAL';
+// Re-export Mood from event-bus (canonical source) for backwards compat
+export type { Mood } from '../events/event-bus';
 
 interface PriceState {
   currentPrice: number;
