@@ -29,6 +29,7 @@ if (require.main === module) {
   const { registerEventHandlers } = require('./events/handlers');
   const { _setSystemPromptProvider, _setResponsePostProcessor } = require('./core/claude-client');
   const { getBasePrompt, getRandomCloser } = require('./character/base-prompt');
+  const { setGuardrailBotAddress } = require('./core/guardrails');
 
   // Wire bot personality into the LLM client
   _setSystemPromptProvider(getBasePrompt);
@@ -65,7 +66,10 @@ if (require.main === module) {
     // Load bot wallet if configured
     const wallet = getBotWallet();
     if (wallet) {
-      log.info({ address: wallet.publicKey.toBase58() }, 'Bot wallet loaded');
+      const addr = wallet.publicKey.toBase58();
+      log.info({ address: addr }, 'Bot wallet loaded');
+      // Register bot address with guardrails so it's never leaked in replies
+      setGuardrailBotAddress(addr);
     } else {
       log.warn('No bot wallet configured — on-chain opinion commits will be disabled');
     }

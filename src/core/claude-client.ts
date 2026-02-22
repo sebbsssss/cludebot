@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config';
 import { createChildLogger } from './logger';
+import { checkOutput } from './guardrails';
 
 const log = createChildLogger('claude-client');
 
@@ -98,6 +99,14 @@ export async function generateResponse(options: GenerateOptions): Promise<string
   // Apply post-processor (bot uses this for random closers)
   text = _responsePostProcessor(text);
 
+  // Security guardrail — block dangerous output before it reaches the user
+  const guardrail = checkOutput(text);
+  if (!guardrail.safe) {
+    log.warn({ reason: guardrail.reason, textLength: text.length }, 'Response blocked by guardrail — regenerating');
+    // Return a safe generic response instead of the blocked one
+    text = 'Good question. Let me think about that and get back to you.';
+  }
+
   log.info({ responseLength: text.length }, 'Response generated');
   return text;
 }
@@ -108,20 +117,19 @@ export async function generateResponse(options: GenerateOptions): Promise<string
  * Uses low maxTokens and temperature 0 for deterministic, fast scoring.
  */
 export async function generateImportanceScore(description: string): Promise<string> {
+  const importancePrompt = process.env.CLUDE_IMPORTANCE_PROMPT ||
+    'You rate the importance of events for an AI agent. ' +
+    'Respond with ONLY a single integer from 1 to 10. ' +
+    '1 = purely mundane. 5 = moderately important. 10 = extremely significant.';
+
   const response = await getClient().messages.create({
     model: getModel(),
     max_tokens: 10,
     temperature: 0,
-    system:
-      'You rate the importance of events for an AI agent called Clude. ' +
-      'an AI agent with persistent memory. ' +
-      'Respond with ONLY a single integer from 1 to 10. ' +
-      '1 = purely mundane (a greeting, a generic question). ' +
-      '5 = moderately important (a returning user, a market opinion request). ' +
-      '10 = extremely significant (a whale selling everything, a deeply personal interaction, an existential realization).',
+    system: importancePrompt,
     messages: [{
       role: 'user',
-      content: `Rate the importance of this event for Clude:\n"${description.slice(0, 500)}"\nRating (1-10):`,
+      content: `Rate the importance of this event:\n"${description.slice(0, 500)}"\nRating (1-10):`,
     }],
   });
 

@@ -10,23 +10,17 @@ import { isQuestion, cleanMentionText } from '../utils/text';
 import { pickRandom } from '../utils/text';
 import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
+import { loadReplyPool, loadInstruction } from '../utils/env-persona';
 
 const log = createChildLogger('onchain-opinion');
 
-const GLOBAL_COOLDOWN_REPLIES = [
-  'Rate limit reached. Try again shortly.',
-  'Rate limit reached. Back soon.',
-  'Rate limit reached. Check back soon.',
-  'Rate limit reached. Soon.',
-  'Rate limit reached. Give me a bit.',
-];
+const GLOBAL_COOLDOWN_REPLIES = loadReplyPool('opinion_global', [
+  'On-chain commit limit reached for this hour. Try again shortly.',
+]);
 
-const USER_COOLDOWN_REPLIES = [
-  'Already committed one this hour.',
-  'One per hour. Try again later.',
-  'Try again in a bit.',
-  'Try again soon.',
-];
+const USER_COOLDOWN_REPLIES = loadReplyPool('opinion_user', [
+  'Already committed an opinion for you this hour. Try again later.',
+]);
 
 // Re-export isQuestion for backward compat (classifier.ts imports it)
 export { isQuestion };
@@ -56,28 +50,19 @@ export async function handleOnchainOpinion(
   const question = cleanMentionText(tweetText);
   log.info({ question, tweetId }, 'Processing on-chain opinion');
 
-  // Generate the opinion
   const answer = await buildAndGenerate({
     message: question,
     tierModifier: getTierModifier(tier),
-    instruction:
-      'Someone asked you a question. Answer it thoughtfully and honestly. ' +
-      'Your answer will be SHA-256 hashed and committed to Solana permanently via memo transaction. ' +
-      'That permanence matters to you — give a clear, considered answer. ' +
-      'Keep it under 270 characters.',
+    instruction: loadInstruction('opinion', 'Answer the question thoughtfully. Keep it under 270 characters.'),
     maxTokens: 150,
   });
 
-  // Hash the answer
   const answerHash = createHash('sha256').update(answer).digest('hex');
-
-  // Write memo to Solana
   const memoContent = `clude-opinion | q: ${question.slice(0, 100)} | hash: ${answerHash.slice(0, 16)}`;
   const signature = await writeMemo(memoContent);
 
   let replyText: string;
   if (signature) {
-    // Tx link in tweets is toggleable via SHOW_TX_LINKS_IN_TWEETS env var
     if (config.features.showTxLinksInTweets) {
       const txUrl = solscanTxUrl(signature);
       replyText = `${answer}\n\nOn-chain forever: ${txUrl}`;
@@ -85,7 +70,6 @@ export async function handleOnchainOpinion(
       replyText = answer;
     }
 
-    // Store in database (always keep the signature for the web UI)
     const db = getDb();
     await db
       .from('opinion_commits')

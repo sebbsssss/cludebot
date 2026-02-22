@@ -8,21 +8,17 @@ import { extractWalletAddress, pickRandom } from '../utils/text';
 import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 import { PublicKey } from '@solana/web3.js';
+import { loadReplyPool, loadInstruction } from '../utils/env-persona';
 
 const log = createChildLogger('wallet-roast');
 
-const ROAST_COOLDOWN_REPLIES = [
-  'Rate limit reached. Try again soon.',
-  'Already analyzed this hour. Try again later.',
-  'Rate limit reached. Check back shortly.',
-  'Try again in an hour.',
-];
+const ROAST_COOLDOWN_REPLIES = loadReplyPool('roast_cooldown', [
+  'Wallet analysis limit reached. Try again in an hour.',
+]);
 
-const EMPTY_WALLET_REPLIES = [
+const EMPTY_WALLET_REPLIES = loadReplyPool('roast_empty', [
   'No transaction history found.',
-  'Empty wallet. No data to analyze.',
-  'No history found.',
-];
+]);
 
 export { extractWalletAddress };
 
@@ -31,7 +27,7 @@ function analyzeWallet(txs: WalletTransaction[], balances: TokenBalance[]): stri
   const swaps = txs.filter(t => t.type === 'SWAP');
   const transfers = txs.filter(t => t.type === 'TRANSFER');
   const uniqueTargets = new Set(txs.flatMap(t => t.nativeTransfers.map(nt => nt.toUserAccount).filter(Boolean))).size;
-  const totalFees = txs.reduce((sum, t) => sum + t.fee, 0) / 1e9; // lamports to SOL
+  const totalFees = txs.reduce((sum, t) => sum + t.fee, 0) / 1e9;
 
   const lines = [
     `Total transactions (recent): ${totalTxs}`,
@@ -59,7 +55,6 @@ export async function handleWalletRoast(
   const address = extractWalletAddress(tweetText);
   if (!address) return;
 
-  // Validate that the extracted string is a real Solana address
   try {
     new PublicKey(address);
   } catch {
@@ -67,7 +62,6 @@ export async function handleWalletRoast(
     return;
   }
 
-  // Rate limit: 1 roast per user per hour
   if (!(await checkRateLimit(`roast:${authorId}`, 1, 60))) {
     log.info({ authorId }, 'Rate limited for wallet roast');
     const replyId = await postReply(tweetId, pickRandom(ROAST_COOLDOWN_REPLIES));
@@ -91,16 +85,12 @@ export async function handleWalletRoast(
   const walletAnalysis = analyzeWallet(txs, balances);
 
   const response = await buildAndGenerate({
-    message: `Roast this Solana wallet: ${address}`,
+    message: `Analyze this Solana wallet: ${address}`,
     context: walletAnalysis,
     tierModifier: getTierModifier(tier),
-    instruction:
-      'Analyze this wallet based on its on-chain behavior. ' +
-      'Be insightful and reference specific data points from the analysis. ' +
-      'Point out interesting patterns — trading style, activity level, portfolio diversity. ' +
-      'Keep it under 270 characters. One tweet. Helpful and specific.',
+    instruction: loadInstruction('roast', 'Analyze this wallet based on its on-chain behavior. Under 270 characters.'),
   });
 
   await replyAndMark(tweetId, response, 'wallet-roast');
-  log.info({ tweetId }, 'Wallet roast posted');
+  log.info({ tweetId }, 'Wallet analysis posted');
 }

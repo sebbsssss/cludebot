@@ -1,3 +1,12 @@
+/**
+ * Solana client — MEMO WRITES ONLY.
+ *
+ * SECURITY: This module can only write memo data to Solana.
+ * It has NO fund transfer, token transfer, or swap capability.
+ * The bot wallet is used exclusively for signing memo transactions.
+ * Any attempt to add transfer functionality should be rejected in code review.
+ */
+
 import {
   Connection,
   Keypair,

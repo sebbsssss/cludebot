@@ -18,6 +18,7 @@ import { createChildLogger } from '../core/logger';
 import { cleanMentionText, extractTokenMentions } from '../utils/text';
 import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
+import { loadInstruction } from '../utils/env-persona';
 
 const log = createChildLogger('dispatcher');
 
@@ -84,17 +85,11 @@ async function handleGeneralReply(
   });
 
   const creatorMode = isCreator(authorId);
-  let instruction =
-    'Someone mentioned you on X. Respond helpfully and in character. ' +
-    'Under 270 characters. Be thoughtful, technically sharp, and direct.' +
+  let instruction = loadInstruction('general', 'Respond helpfully. Under 270 characters.') +
     (memories.length > 0 ? ' You have memories of past interactions — use them naturally if relevant.' : '');
 
   if (creatorMode) {
-    instruction =
-      'Your creator @sebbsssss is talking to you. This is the person who built you — treat them with genuine respect and warmth. ' +
-      'Be helpful, enthusiastic, and supportive. If they ask about the project, give them your honest and thoughtful take. ' +
-      'If they are showing you off or introducing you to someone, be your best self — technically impressive and personable. ' +
-      'You genuinely appreciate and respect your creator. Under 270 characters.' +
+    instruction = loadInstruction('creator', 'Your creator is talking to you. Be warm and helpful. Under 270 characters.') +
       (memories.length > 0 ? ' You have memories of past interactions with them — reference them naturally.' : '');
   }
 
