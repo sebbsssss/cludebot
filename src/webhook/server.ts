@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import path from 'path';
 import { config } from '../config';
 import { handleHeliusWebhook } from './helius-handler';
@@ -70,7 +70,7 @@ export function createServer(): express.Application {
   app.use(express.json());
 
   // Health check with DB connectivity probe
-  app.get('/health', async (_req, res) => {
+  app.get('/health', async (_req: Request, res: Response) => {
     try {
       const db = getDb();
       const { error } = await db.from('memories').select('id').limit(1);
@@ -86,7 +86,7 @@ export function createServer(): express.Application {
   });
 
   // Helius webhook endpoint for token events (with signature verification + rate limiting)
-  app.post('/webhook/helius', webhookLimiter, verifyHeliusWebhook, async (req, res) => {
+  app.post('/webhook/helius', webhookLimiter, verifyHeliusWebhook, async (req: Request, res: Response) => {
     try {
       await handleHeliusWebhook(req.body);
       res.json({ ok: true });
@@ -100,7 +100,7 @@ export function createServer(): express.Application {
   app.use('/api', apiLimiter);
 
   // Memory stats API (for frontend cortex visualization)
-  app.get('/api/memory-stats', async (_req, res) => {
+  app.get('/api/memory-stats', async (_req: Request, res: Response) => {
     try {
       const stats = await getMemoryStats();
       res.json(stats);
@@ -111,7 +111,7 @@ export function createServer(): express.Application {
   });
 
   // Recent memories API (for timeline visualization)
-  app.get('/api/memories', async (req, res) => {
+  app.get('/api/memories', async (req: Request, res: Response) => {
     try {
       const hours = Math.min(parseInt(req.query.hours as string) || 168, 720); // Default 1 week, max 30 days
       const limit = Math.min(parseInt(req.query.limit as string) || 30, 50);
@@ -141,7 +141,7 @@ export function createServer(): express.Application {
   });
 
   // Brain visualization API (full graph data for neural network viz)
-  app.get('/api/brain', async (req, res) => {
+  app.get('/api/brain', async (req: Request, res: Response) => {
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 300, 500);
       const memories = await getRecentMemories(8760, undefined, limit); // 1 year window
@@ -172,7 +172,7 @@ export function createServer(): express.Application {
   });
 
   // Consciousness stream API (self-model, emergence, procedural insights)
-  app.get('/api/brain/consciousness', async (req, res) => {
+  app.get('/api/brain/consciousness', async (req: Request, res: Response) => {
     try {
       const [selfModel, emergence, procedural, recentEpisodic, stats] = await Promise.all([
         getRecentMemories(8760, ['self_model'], 10),
@@ -233,7 +233,7 @@ export function createServer(): express.Application {
   });
 
   // Market data API (Allium-powered)
-  app.get('/api/market-data', async (_req, res) => {
+  app.get('/api/market-data', async (_req: Request, res: Response) => {
     try {
       const snapshot = await getMarketSnapshot();
       res.json(snapshot);
@@ -250,7 +250,7 @@ export function createServer(): express.Application {
   app.use('/api/graph', graphRoutes());
 
   // Activity stream (recent on-chain events)
-  app.get('/api/activity', async (req, res) => {
+  app.get('/api/activity', async (req: Request, res: Response) => {
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
       const events = await getRecentActivity(limit);
@@ -262,7 +262,7 @@ export function createServer(): express.Application {
   });
 
   // Docs view counter (tracks agents.md views)
-  app.get('/api/docs-views', async (_req, res) => {
+  app.get('/api/docs-views', async (_req: Request, res: Response) => {
     try {
       const db = getDb();
       const { data } = await db
@@ -276,7 +276,7 @@ export function createServer(): express.Application {
     }
   });
 
-  app.post('/api/docs-views', async (_req, res) => {
+  app.post('/api/docs-views', async (_req: Request, res: Response) => {
     try {
       const db = getDb();
       const { data: existing } = await db
@@ -304,7 +304,7 @@ export function createServer(): express.Application {
   // ---- DEMO ENDPOINTS ---- //
 
   // Trigger a live memory creation + on-chain commit
-  app.post('/api/demo/trigger', async (req, res) => {
+  app.post('/api/demo/trigger', async (req: Request, res: Response) => {
     try {
       const ip = req.ip || req.socket.remoteAddress || 'unknown';
       const allowed = await checkRateLimit(`demo:trigger:${ip}`, 1, 1);
@@ -357,7 +357,7 @@ export function createServer(): express.Application {
   });
 
   // Poll for on-chain confirmation
-  app.get('/api/demo/poll/:id', async (req, res) => {
+  app.get('/api/demo/poll/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) { res.status(400).json({ error: 'Invalid ID' }); return; }
@@ -386,7 +386,7 @@ export function createServer(): express.Application {
   });
 
   // Extended stats for demo dashboard
-  app.get('/api/demo/stats', async (_req, res) => {
+  app.get('/api/demo/stats', async (_req: Request, res: Response) => {
     try {
       const db = getDb();
       const { data: memories } = await db
@@ -433,7 +433,7 @@ export function createServer(): express.Application {
   });
 
   // Sandboxed MaaS store (demo namespace, no auth)
-  app.post('/api/demo/store', async (req, res) => {
+  app.post('/api/demo/store', async (req: Request, res: Response) => {
     try {
       const ip = req.ip || req.socket.remoteAddress || 'unknown';
       const allowed = await checkRateLimit(`demo:store:${ip}`, 3, 1);
@@ -476,7 +476,7 @@ export function createServer(): express.Application {
   });
 
   // Sandboxed MaaS recall (demo namespace, no auth)
-  app.post('/api/demo/recall', async (req, res) => {
+  app.post('/api/demo/recall', async (req: Request, res: Response) => {
     try {
       const ip = req.ip || req.socket.remoteAddress || 'unknown';
       const allowed = await checkRateLimit(`demo:recall:${ip}`, 5, 1);
