@@ -140,6 +140,7 @@ export interface RecallOptions {
   query?: string;
   tags?: string[];
   relatedUser?: string;
+  relatedWallet?: string;
   memoryTypes?: MemoryType[];
   limit?: number;
   minImportance?: number;
@@ -444,6 +445,9 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     if (opts.relatedUser) {
       query = query.eq('related_user', opts.relatedUser);
     }
+    if (opts.relatedWallet) {
+      query = query.eq('related_wallet', opts.relatedWallet);
+    }
     if (opts.minImportance) {
       query = query.gte('importance', opts.minImportance);
     }
@@ -654,6 +658,9 @@ export async function recallMemorySummaries(opts: RecallOptions): Promise<Memory
     }
     if (opts.relatedUser) {
       query = query.eq('related_user', opts.relatedUser);
+    }
+    if (opts.relatedWallet) {
+      query = query.eq('related_wallet', opts.relatedWallet);
     }
     if (opts.minImportance) {
       query = query.gte('importance', opts.minImportance);

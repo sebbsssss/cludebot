@@ -52,6 +52,13 @@ export async function handleExitInterview(
       'Write it like HR processing a resignation. Professional. Clinical. ' +
       'With just a hint of "I saw this coming." ' +
       'Start with the truncated wallet address.',
+    memory: {
+      relatedWallet: walletAddress,
+      query: `wallet sold all CLUDE tokens exit`,
+      tags: ['exit-interview', 'sell'],
+      memoryTypes: ['episodic', 'semantic'],
+      limit: 3,
+    },
   });
 
   await tweet(response);
