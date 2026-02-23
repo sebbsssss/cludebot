@@ -56,6 +56,13 @@ export async function handleOnchainOpinion(
     forTwitter: true,  // Enforce char limit
     instruction: loadInstruction('opinion', 'Answer the question thoughtfully. Keep it under 200 characters (a tx link will be appended).'),
     maxTokens: 150,
+    memory: {
+      relatedUser: authorId,
+      query: question,
+      tags: [tier, 'question'],
+      memoryTypes: ['episodic', 'semantic'],
+      limit: 3,
+    },
   });
 
   const answerHash = createHash('sha256').update(answer).digest('hex');
