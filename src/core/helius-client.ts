@@ -80,7 +80,10 @@ export async function getWalletHistory(address: string, limit = 50): Promise<Wal
 
     return allTxs;
   } catch (err) {
-    log.error({ address, err }, 'Failed to fetch wallet history');
+    // Helius SDK errors can contain circular refs that crash pino's serializer.
+    // Extract a plain message to avoid "Cannot add property Symbol(circular-ref-tag)".
+    const errMsg = err instanceof Error ? err.message : String(err);
+    log.error({ address, error: errMsg }, 'Failed to fetch wallet history');
     return [];
   }
 }
@@ -98,7 +101,8 @@ export async function getTokenBalances(address: string): Promise<TokenBalance[]>
       decimals: t.decimals || 0,
     }));
   } catch (err) {
-    log.error({ address, err }, 'Failed to fetch token balances');
+    const errMsg = err instanceof Error ? err.message : String(err);
+    log.error({ address, error: errMsg }, 'Failed to fetch token balances');
     return [];
   }
 }

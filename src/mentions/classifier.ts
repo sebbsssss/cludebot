@@ -6,10 +6,10 @@ export function classifyMention(text: string): MentionType {
   // Strip @ mentions for classification
   const cleaned = cleanMentionText(text);
 
-  // Check for wallet address first (highest priority)
-  if (extractWalletAddress(cleaned)) {
-    return 'wallet-roast';
-  }
+  // Wallet roast disabled for now — treat wallet mentions as general replies
+  // if (extractWalletAddress(cleaned)) {
+  //   return 'wallet-roast';
+  // }
 
   // Check for question
   if (isQuestion(cleaned)) {

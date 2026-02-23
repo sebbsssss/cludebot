@@ -5,6 +5,12 @@ import type { AlliumTokenData, AlliumSolStats } from '../types/api';
 
 const log = createChildLogger('allium-client');
 
+// Circuit breaker: stop hammering Allium after repeated 403s
+let consecutive403s = 0;
+let circuitOpenUntil = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 3;    // 3 consecutive 403s → open circuit
+const CIRCUIT_BREAKER_COOLDOWN = 3_600_000; // 1 hour backoff
+
 export interface MarketMover {
   token: string;
   symbol: string;
@@ -43,6 +49,11 @@ async function alliumFetch<T>(endpoint: string, method: 'GET' | 'POST' = 'GET', 
     return null;
   }
 
+  // Circuit breaker: skip requests while open
+  if (circuitOpenUntil > Date.now()) {
+    return null;
+  }
+
   const url = `${ALLIUM_BASE_URL}${endpoint}`;
   const options: RequestInit = {
     method,
@@ -60,12 +71,24 @@ async function alliumFetch<T>(endpoint: string, method: 'GET' | 'POST' = 'GET', 
     const res = await fetch(url, options);
     if (!res.ok) {
       const text = await res.text();
-      log.error({ status: res.status, body: text, endpoint }, 'Allium API error');
+      if (res.status === 403) {
+        consecutive403s++;
+        if (consecutive403s >= CIRCUIT_BREAKER_THRESHOLD) {
+          circuitOpenUntil = Date.now() + CIRCUIT_BREAKER_COOLDOWN;
+          log.warn('Allium API credits exhausted — circuit breaker open, pausing for 1 hour');
+        }
+      }
+      // Log at info level, not error — 403s are expected when credits run out
+      log.info({ status: res.status, endpoint }, 'Allium API error');
       return null;
     }
+    // Success — reset circuit breaker
+    consecutive403s = 0;
+    circuitOpenUntil = 0;
     return await res.json() as T;
   } catch (err) {
-    log.error({ err, endpoint }, 'Allium fetch failed');
+    const errMsg = err instanceof Error ? err.message : String(err);
+    log.error({ error: errMsg, endpoint }, 'Allium fetch failed');
     return null;
   }
 }

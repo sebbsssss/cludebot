@@ -3,7 +3,7 @@ import { classifyMention } from './classifier';
 import { handleWalletRoast } from '../features/wallet-roast';
 import { handleOnchainOpinion } from '../features/onchain-opinion';
 import { determineHolderTier, getLinkedWallet } from '../features/holder-tier';
-import { isAlreadyProcessed } from '../core/database';
+import { isAlreadyProcessed, markProcessed } from '../core/database';
 import { getCurrentMood } from '../core/price-oracle';
 import { getTierModifier } from '../character/tier-modifiers';
 import { getTweetWithContext } from '../core/x-client';
@@ -62,8 +62,8 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
     );
   } catch (err) {
     log.error({ tweetId, err }, 'Failed to dispatch mention');
-    // Mark as processed to avoid retrying bad tweets forever
-    await replyAndMark(tweetId, '', 'error').catch(markErr => log.warn({ markErr }, 'Failed to mark errored tweet'));
+    // Mark as processed to avoid retrying bad tweets forever — but don't post an empty reply
+    await markProcessed(tweetId, 'error').catch(markErr => log.warn({ markErr }, 'Failed to mark errored tweet'));
   }
 }
 
