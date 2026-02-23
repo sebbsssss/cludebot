@@ -153,6 +153,7 @@ export async function maybePostMoodTweet(): Promise<void> {
     message: archetype.message(anchor, supporting),
     context: memoryContext.join('\n'),
     instruction: archetype.instruction,
+    forTwitter: true,  // Enforce 270 char limit
     skipMood: true,
   });
 

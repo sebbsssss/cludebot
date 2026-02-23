@@ -82,10 +82,11 @@ export async function generateEventCommentary(event: ActivityEvent): Promise<str
 
     const commentary = await buildAndGenerate({
       message: `A wallet ${action} ${event.solValue.toFixed(4)} SOL worth of tokens.`,
+      forTwitter: true,  // Enforce char limit
       instruction:
         `A ${event.isWhale ? 'whale' : 'notable'} ${action} just happened. ` +
         `Wallet ${event.wallet} ${action} ${event.solValue.toFixed(4)} SOL worth. ` +
-        'Give a one-liner reaction. Under 140 characters. Be sharp.',
+        'Give a one-liner reaction. Be sharp.',
       maxTokens: 60,
     });
 

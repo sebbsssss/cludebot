@@ -24,6 +24,8 @@ export interface ContextOptions {
   maxTokens?: number;
   memory?: RecallOptions;
   skipMood?: boolean;
+  /** If true, adds instruction to keep response under 270 chars for Twitter */
+  forTwitter?: boolean;
 }
 
 export async function buildAndGenerate(opts: ContextOptions): Promise<string> {
@@ -56,5 +58,6 @@ async function buildGenerateOptions(opts: ContextOptions): Promise<GenerateOptio
     featureInstruction: opts.instruction,
     memoryContext,
     maxTokens: opts.maxTokens,
+    forTwitter: opts.forTwitter,
   };
 }

@@ -45,12 +45,13 @@ export async function handleExitInterview(
   const response = await buildAndGenerate({
     message: 'A holder just sold all their tokens. Conduct their exit interview.',
     context,
+    forTwitter: true,  // Enforce 270 char limit
     instruction:
       'A wallet just sold ALL of their $CLUDE tokens. This is an exit interview. ' +
       'Reference the specific data: how long they held, what they sold for. ' +
       'Write it like HR processing a resignation. Professional. Clinical. ' +
       'With just a hint of "I saw this coming." ' +
-      'Start with the truncated wallet address. Under 270 characters.',
+      'Start with the truncated wallet address.',
   });
 
   await tweet(response);

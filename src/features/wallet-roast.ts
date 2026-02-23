@@ -88,6 +88,7 @@ export async function handleWalletRoast(
     message: `Analyze this Solana wallet: ${address}`,
     context: walletAnalysis,
     tierModifier: getTierModifier(tier),
+    forTwitter: true,  // Enforce char limit
     instruction: loadInstruction('roast', 'Analyze this wallet based on its on-chain behavior. Under 270 characters.'),
   });
 

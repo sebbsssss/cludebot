@@ -53,6 +53,7 @@ export async function handleOnchainOpinion(
   const answer = await buildAndGenerate({
     message: question,
     tierModifier: getTierModifier(tier),
+    forTwitter: true,  // Enforce char limit
     instruction: loadInstruction('opinion', 'Answer the question thoughtfully. Keep it under 200 characters (a tx link will be appended).'),
     maxTokens: 150,
   });

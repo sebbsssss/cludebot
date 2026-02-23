@@ -123,6 +123,7 @@ async function handleGeneralReply(
     context: contextParts.length > 0 ? contextParts.join('\n') : undefined,
     tierModifier: creatorMode ? undefined : getTierModifier(tier),
     instruction,
+    forTwitter: true,  // Enforce 270 char limit
     memory: {
       relatedUser: authorId,
       query: cleanText,

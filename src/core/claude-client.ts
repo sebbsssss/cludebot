@@ -53,6 +53,8 @@ export interface GenerateOptions {
   featureInstruction?: string;
   memoryContext?: string;
   maxTokens?: number;
+  /** If true, adds instruction to keep response under 270 chars for Twitter */
+  forTwitter?: boolean;
 }
 
 export async function generateResponse(options: GenerateOptions): Promise<string> {
@@ -63,6 +65,11 @@ export async function generateResponse(options: GenerateOptions): Promise<string
   if (options.tierModifier) systemParts.push(`\n\n## User Context\n${options.tierModifier}`);
   if (options.agentModifier) systemParts.push(`\n\n## Agent Context\n${options.agentModifier}`);
   if (options.featureInstruction) systemParts.push(`\n\n## Task\n${options.featureInstruction}`);
+  
+  // Twitter-specific: enforce character limit when posting to X
+  if (options.forTwitter) {
+    systemParts.push(`\n\n## CRITICAL: Character Limit\nYou are posting to Twitter/X. Your response MUST be under 270 characters total. Be concise — every character counts. Cut fluff ruthlessly.`);
+  }
 
   const systemPrompt = systemParts.join('');
 

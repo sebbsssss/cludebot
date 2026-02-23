@@ -13,16 +13,39 @@ const client = new TwitterApi({
 
 const rwClient = client.readWrite;
 
+const MAX_TWEET_LENGTH = 280;
+
+/**
+ * Smart truncate text to fit within limit, respecting word boundaries.
+ * Adds ellipsis if truncated.
+ */
+function smartTruncate(text: string, maxLength: number = MAX_TWEET_LENGTH): string {
+  if (text.length <= maxLength) return text;
+  
+  // Reserve space for ellipsis
+  const truncateAt = maxLength - 3;
+  
+  // Find last space before truncation point
+  let lastSpace = text.lastIndexOf(' ', truncateAt);
+  
+  // If no space found or it's too early, just cut (for very long words)
+  if (lastSpace < truncateAt * 0.5) {
+    lastSpace = truncateAt;
+  }
+  
+  return text.slice(0, lastSpace).trimEnd() + '...';
+}
+
 export async function postReply(tweetId: string, text: string): Promise<string> {
-  const truncated = text.slice(0, 280);
-  log.info({ tweetId, length: truncated.length }, 'Posting reply');
+  const truncated = smartTruncate(text);
+  log.info({ tweetId, originalLength: text.length, length: truncated.length }, 'Posting reply');
   const result = await rwClient.v2.reply(truncated, tweetId);
   return result.data.id;
 }
 
 export async function postTweet(text: string): Promise<string> {
-  const truncated = text.slice(0, 280);
-  log.info({ length: truncated.length }, 'Posting tweet');
+  const truncated = smartTruncate(text);
+  log.info({ originalLength: text.length, length: truncated.length }, 'Posting tweet');
   const result = await rwClient.v2.tweet(truncated);
   return result.data.id;
 }
@@ -33,7 +56,7 @@ export async function postThread(texts: string[]): Promise<string[]> {
 
   let previousId: string | undefined;
   for (const text of texts) {
-    const truncated = text.slice(0, 280);
+    const truncated = smartTruncate(text);
     if (!previousId) {
       const result = await rwClient.v2.tweet(truncated);
       previousId = result.data.id;
@@ -45,6 +68,52 @@ export async function postThread(texts: string[]): Promise<string[]> {
   }
 
   return tweetIds;
+}
+
+/**
+ * Split a long text into multiple tweets for threading.
+ * Useful for responses that exceed 280 chars.
+ */
+export function splitForThread(text: string, maxLength: number = MAX_TWEET_LENGTH): string[] {
+  if (text.length <= maxLength) return [text];
+  
+  const tweets: string[] = [];
+  let remaining = text;
+  
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLength) {
+      tweets.push(remaining);
+      break;
+    }
+    
+    // Reserve space for thread indicator (e.g., "1/3")
+    const effectiveMax = maxLength - 5;
+    
+    // Find a good break point (sentence end, then word boundary)
+    let breakPoint = -1;
+    
+    // Try to break at sentence end
+    const sentenceEnders = ['. ', '! ', '? ', '.\n', '!\n', '?\n'];
+    for (const ender of sentenceEnders) {
+      const idx = remaining.lastIndexOf(ender, effectiveMax);
+      if (idx > effectiveMax * 0.4 && idx > breakPoint) {
+        breakPoint = idx + ender.length - 1;
+      }
+    }
+    
+    // Fall back to word boundary
+    if (breakPoint === -1) {
+      breakPoint = remaining.lastIndexOf(' ', effectiveMax);
+      if (breakPoint < effectiveMax * 0.4) {
+        breakPoint = effectiveMax;
+      }
+    }
+    
+    tweets.push(remaining.slice(0, breakPoint).trimEnd());
+    remaining = remaining.slice(breakPoint).trimStart();
+  }
+  
+  return tweets;
 }
 
 export async function getMentions(sinceId?: string): Promise<TweetV2[]> {
