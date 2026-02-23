@@ -31,16 +31,16 @@ export async function handleOnchainOpinion(
   authorId: string,
   tier: HolderTier
 ): Promise<void> {
-  // Rate limit: 3 opinions per hour (SOL costs money)
-  if (!(await checkRateLimit('global:opinion', 3, 60))) {
+  // Rate limit: 10 opinions per hour
+  if (!(await checkRateLimit('global:opinion', 10, 60))) {
     log.info('Rate limited for on-chain opinion');
     const replyId = await postReply(tweetId, pickRandom(GLOBAL_COOLDOWN_REPLIES));
     await markProcessed(tweetId, 'opinion-ratelimit', replyId);
     return;
   }
 
-  // Per-user rate limit: 1 per hour
-  if (!(await checkRateLimit(`opinion:${authorId}`, 1, 60))) {
+  // Per-user rate limit: 3 per hour
+  if (!(await checkRateLimit(`opinion:${authorId}`, 3, 60))) {
     log.info({ authorId }, 'User rate limited for on-chain opinion');
     const replyId = await postReply(tweetId, pickRandom(USER_COOLDOWN_REPLIES));
     await markProcessed(tweetId, 'opinion-ratelimit-user', replyId);
@@ -53,7 +53,7 @@ export async function handleOnchainOpinion(
   const answer = await buildAndGenerate({
     message: question,
     tierModifier: getTierModifier(tier),
-    instruction: loadInstruction('opinion', 'Answer the question thoughtfully. Keep it under 270 characters.'),
+    instruction: loadInstruction('opinion', 'Answer the question thoughtfully. Keep it under 200 characters (a tx link will be appended).'),
     maxTokens: 150,
   });
 

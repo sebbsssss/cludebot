@@ -6,6 +6,7 @@ import { determineHolderTier, getLinkedWallet } from '../features/holder-tier';
 import { isAlreadyProcessed } from '../core/database';
 import { getCurrentMood } from '../core/price-oracle';
 import { getTierModifier } from '../character/tier-modifiers';
+import { getTweetWithContext } from '../core/x-client';
 import { config } from '../config';
 import {
   storeMemory,
@@ -75,6 +76,19 @@ async function handleGeneralReply(
   const mood = getCurrentMood();
   const cleanText = cleanMentionText(text);
 
+  // Fetch thread context — walk up the reply chain to understand the conversation
+  let threadContext = '';
+  try {
+    const { parents } = await getTweetWithContext(tweetId, 3);
+    if (parents.length > 0) {
+      threadContext = parents
+        .map(p => `@${p.author_id}: ${cleanMentionText(p.text || '')}`)
+        .join('\n');
+    }
+  } catch {
+    // Thread context is best-effort — continue without it
+  }
+
   // Recall relevant memories for this user and context
   const memories = await recallMemories({
     relatedUser: authorId,
@@ -85,16 +99,28 @@ async function handleGeneralReply(
   });
 
   const creatorMode = isCreator(authorId);
-  let instruction = loadInstruction('general', 'Respond helpfully. Under 270 characters.') +
-    (memories.length > 0 ? ' You have memories of past interactions — use them naturally if relevant.' : '');
+  let instruction = loadInstruction('general', 'Respond helpfully. Under 280 characters.') +
+    (memories.length > 0 ? ' You have memories of past interactions — use them naturally if relevant.' : '') +
+    (threadContext ? ' You can see the conversation thread — stay on topic.' : '');
 
   if (creatorMode) {
-    instruction = loadInstruction('creator', 'Your creator is talking to you. Be warm and helpful. Under 270 characters.') +
-      (memories.length > 0 ? ' You have memories of past interactions with them — reference them naturally.' : '');
+    instruction = loadInstruction('creator', 'Your creator is talking to you. Be warm and helpful. Under 280 characters.') +
+      (memories.length > 0 ? ' You have memories of past interactions with them — reference them naturally.' : '') +
+      (threadContext ? ' You can see the conversation thread.' : '');
+  }
+
+  // Build context with thread if available
+  const contextParts: string[] = [];
+  if (threadContext) {
+    contextParts.push('CONVERSATION THREAD (oldest first):');
+    contextParts.push(threadContext);
+    contextParts.push('');
+    contextParts.push('LATEST MESSAGE (reply to this):');
   }
 
   const response = await buildAndGenerate({
     message: cleanText,
+    context: contextParts.length > 0 ? contextParts.join('\n') : undefined,
     tierModifier: creatorMode ? undefined : getTierModifier(tier),
     instruction,
     memory: {
@@ -107,7 +133,7 @@ async function handleGeneralReply(
   });
 
   await replyAndMark(tweetId, response, 'general');
-  log.info({ tweetId, memoriesUsed: memories.length }, 'General reply posted');
+  log.info({ tweetId, memoriesUsed: memories.length, threadDepth: threadContext ? threadContext.split('\n').length : 0 }, 'General reply posted');
 }
 
 async function storeInteractionMemory(

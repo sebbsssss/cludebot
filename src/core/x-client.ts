@@ -59,6 +59,47 @@ export async function getMentions(sinceId?: string): Promise<TweetV2[]> {
   return result.data?.data || [];
 }
 
+/**
+ * Fetch a single tweet by ID, optionally with conversation context.
+ * Returns the tweet and up to `depth` parent tweets in the thread.
+ */
+export async function getTweetWithContext(
+  tweetId: string,
+  depth: number = 3
+): Promise<{ tweet: TweetV2; parents: TweetV2[] }> {
+  const parents: TweetV2[] = [];
+
+  try {
+    const result = await rwClient.v2.singleTweet(tweetId, {
+      'tweet.fields': 'created_at,author_id,conversation_id,in_reply_to_user_id,referenced_tweets,text',
+    });
+
+    const tweet = result.data;
+    let currentTweet = tweet;
+
+    // Walk up the reply chain to get parent context
+    for (let i = 0; i < depth; i++) {
+      const replyTo = currentTweet.referenced_tweets?.find(r => r.type === 'replied_to');
+      if (!replyTo) break;
+
+      try {
+        const parentResult = await rwClient.v2.singleTweet(replyTo.id, {
+          'tweet.fields': 'created_at,author_id,conversation_id,referenced_tweets,text',
+        });
+        parents.unshift(parentResult.data); // oldest first
+        currentTweet = parentResult.data;
+      } catch {
+        break; // Parent might be deleted or protected
+      }
+    }
+
+    return { tweet, parents };
+  } catch (err) {
+    log.warn({ tweetId, err }, 'Failed to fetch tweet context');
+    return { tweet: { id: tweetId, text: '' } as TweetV2, parents: [] };
+  }
+}
+
 export async function getUserById(userId: string): Promise<UserV2 | null> {
   try {
     const result = await rwClient.v2.user(userId, {
