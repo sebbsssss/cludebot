@@ -2,6 +2,9 @@ import { generateResponse, generateThread, GenerateOptions } from '../core/claud
 import { getCurrentMood } from '../core/price-oracle';
 import { getMoodModifier } from '../character/mood-modifiers';
 import { recallMemories, formatMemoryContext, type RecallOptions } from '../core/memory';
+import { createChildLogger } from '../core/logger';
+
+const log = createChildLogger('response-service');
 
 /**
  * Response service — abstracts the repeated mood → modifier → memory → generate pattern.
@@ -44,9 +47,12 @@ async function buildGenerateOptions(opts: ContextOptions): Promise<GenerateOptio
 
   let memoryContext: string | undefined;
   if (opts.memory) {
+    const recallStart = Date.now();
     const memories = await recallMemories(opts.memory);
+    const recallMs = Date.now() - recallStart;
     const formatted = formatMemoryContext(memories);
     if (formatted) memoryContext = formatted;
+    log.info({ recallMs, memoriesFound: memories.length, user: opts.memory.relatedUser || opts.memory.relatedWallet || 'none' }, 'Memory recall completed');
   }
 
   return {
