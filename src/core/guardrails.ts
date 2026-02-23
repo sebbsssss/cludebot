@@ -10,10 +10,10 @@ const log = createChildLogger('guardrails');
 // Solana base58 address pattern (32-44 chars of base58 alphabet)
 const SOLANA_ADDRESS_RE = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g;
 
-// Common private key / seed phrase patterns
+// Common private key / seed phrase patterns (keyword-based only, no word-count heuristics)
 const SECRET_PATTERNS = [
-  /\b(?:private[\s_-]?key|secret[\s_-]?key|seed[\s_-]?phrase|mnemonic)\b/i,
-  /\b(?:\w+\s+){11,23}(?:\w+)\b/, // 12-24 word seed phrase
+  /\b(?:private[\s_-]?key|secret[\s_-]?key|seed[\s_-]?phrase|mnemonic|recovery[\s_-]?phrase)\b/i,
+  /\b(?:here(?:'s| is) (?:my|the|your) (?:private key|seed phrase|secret key|mnemonic))\b/i,
 ];
 
 // Fund transfer / transaction instruction patterns
