@@ -16,6 +16,15 @@ const rwClient = client.readWrite;
 const MAX_TWEET_LENGTH = 280;
 
 /**
+ * Strip em-dashes and replace with comma or period.
+ */
+function stripEmDashes(text: string): string {
+  return text
+    .replace(/ — /g, ', ')   // " — " → ", "
+    .replace(/—/g, ', ');     // "—" (no spaces) → ", "
+}
+
+/**
  * Smart truncate text to fit within limit, respecting word boundaries.
  * Adds ellipsis if truncated.
  */
@@ -37,14 +46,14 @@ function smartTruncate(text: string, maxLength: number = MAX_TWEET_LENGTH): stri
 }
 
 export async function postReply(tweetId: string, text: string): Promise<string> {
-  const truncated = smartTruncate(text);
+  const truncated = smartTruncate(stripEmDashes(text));
   log.info({ tweetId, originalLength: text.length, length: truncated.length }, 'Posting reply');
   const result = await rwClient.v2.reply(truncated, tweetId);
   return result.data.id;
 }
 
 export async function postTweet(text: string): Promise<string> {
-  const truncated = smartTruncate(text);
+  const truncated = smartTruncate(stripEmDashes(text));
   log.info({ originalLength: text.length, length: truncated.length }, 'Posting tweet');
   const result = await rwClient.v2.tweet(truncated);
   return result.data.id;
@@ -56,7 +65,7 @@ export async function postThread(texts: string[]): Promise<string[]> {
 
   let previousId: string | undefined;
   for (const text of texts) {
-    const truncated = smartTruncate(text);
+    const truncated = smartTruncate(stripEmDashes(text));
     if (!previousId) {
       const result = await rwClient.v2.tweet(truncated);
       previousId = result.data.id;
