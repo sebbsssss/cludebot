@@ -3,7 +3,7 @@ import { classifyMention } from './classifier';
 import { handleWalletRoast } from '../features/wallet-roast';
 import { handleOnchainOpinion } from '../features/onchain-opinion';
 import { determineHolderTier, getLinkedWallet } from '../features/holder-tier';
-import { isAlreadyProcessed, markProcessed } from '../core/database';
+import { claimForProcessing, markProcessed } from '../core/database';
 import { getCurrentMood } from '../core/price-oracle';
 import { getTierModifier } from '../character/tier-modifiers';
 import { getTweetWithContext } from '../core/x-client';
@@ -32,8 +32,12 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   const text = tweet.text || '';
   const authorId = tweet.author_id || '';
 
-  // Skip already processed
-  if (await isAlreadyProcessed(tweetId)) return;
+  // Atomically claim this tweet — if another process got it first, skip
+  const claimed = await claimForProcessing(tweetId);
+  if (!claimed) {
+    log.debug({ tweetId }, 'Tweet already claimed by another process');
+    return;
+  }
 
   log.info({ tweetId, text: text.slice(0, 100) }, 'Processing mention');
 

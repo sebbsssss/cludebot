@@ -218,6 +218,35 @@ export async function isAlreadyProcessed(tweetId: string): Promise<boolean> {
   return !!data;
 }
 
+/**
+ * Atomically claim a tweet for processing. Returns true if we got the lock,
+ * false if another process already claimed it.
+ * 
+ * This prevents race conditions where two processes see isAlreadyProcessed=false
+ * before either has a chance to mark it.
+ */
+export async function claimForProcessing(tweetId: string): Promise<boolean> {
+  const db = getDb();
+  
+  // Insert with onConflict=ignore — only succeeds if no row exists
+  const { error } = await db
+    .from('processed_mentions')
+    .insert({
+      tweet_id: tweetId,
+      feature: 'processing',
+      response_tweet_id: null,
+      processed_at: new Date().toISOString(),
+    });
+  
+  // If error is unique violation (code 23505), another process claimed it
+  if (error) {
+    // Any error means we didn't get the lock (already exists or DB issue)
+    return false;
+  }
+  
+  return true;
+}
+
 export async function markProcessed(tweetId: string, feature: string, responseTweetId?: string): Promise<void> {
   const db = getDb();
   await db
