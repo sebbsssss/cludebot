@@ -145,6 +145,29 @@ export async function initDatabase(): Promise<void> {
 
         -- Migration: on-chain memory commits
         ALTER TABLE memories ADD COLUMN IF NOT EXISTS solana_signature TEXT;
+
+        -- Migration: concept ontology
+        ALTER TABLE memories ADD COLUMN IF NOT EXISTS concepts TEXT[] DEFAULT '{}';
+        CREATE INDEX IF NOT EXISTS idx_memories_concepts ON memories USING GIN(concepts);
+
+        -- Migration: hash IDs and compaction tracking
+        ALTER TABLE memories ADD COLUMN IF NOT EXISTS hash_id TEXT;
+        ALTER TABLE memories ADD COLUMN IF NOT EXISTS compacted BOOLEAN DEFAULT FALSE;
+        ALTER TABLE memories ADD COLUMN IF NOT EXISTS compacted_into TEXT;
+
+        -- Backfill hash_ids for any existing memories that lack one
+        UPDATE memories
+        SET hash_id = 'clude-' || SUBSTRING(md5(id::text || created_at::text), 1, 8)
+        WHERE hash_id IS NULL;
+
+        CREATE INDEX IF NOT EXISTS idx_memories_compaction
+        ON memories(memory_type, compacted, decay_factor, importance, created_at)
+        WHERE memory_type = 'episodic' AND compacted = FALSE;
+
+        -- Migration: expand dream_logs session types for compaction/decay
+        ALTER TABLE dream_logs DROP CONSTRAINT IF EXISTS dream_logs_session_type_check;
+        ALTER TABLE dream_logs ADD CONSTRAINT dream_logs_session_type_check
+          CHECK (session_type IN ('consolidation', 'reflection', 'emergence', 'compaction', 'decay'));
       `
     });
 
