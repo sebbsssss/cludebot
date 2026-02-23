@@ -47,6 +47,10 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
         await handleWalletRoast(tweetId, text, authorId, tier);
         break;
 
+      case 'memory-recall':
+        await handleMemoryRecall(tweetId, text, authorId, tier);
+        break;
+
       case 'question':
         await handleOnchainOpinion(tweetId, text, authorId, tier);
         break;
@@ -137,6 +141,61 @@ async function handleGeneralReply(
   log.info({ tweetId, memoriesUsed: memories.length, threadDepth: threadContext ? threadContext.split('\n').length : 0 }, 'General reply posted');
 }
 
+async function handleMemoryRecall(
+  tweetId: string,
+  text: string,
+  authorId: string,
+  tier: Awaited<ReturnType<typeof determineHolderTier>>
+): Promise<void> {
+  const cleanText = cleanMentionText(text);
+
+  // Pull ALL memories for this user with timing
+  const recallStart = Date.now();
+  const memories = await recallMemories({
+    relatedUser: authorId,
+    memoryTypes: ['episodic', 'semantic'],
+    limit: 10,
+  });
+  const recallMs = Date.now() - recallStart;
+
+  log.info({ tweetId, authorId, memoriesFound: memories.length, recallMs }, 'Memory recall requested');
+
+  if (memories.length === 0) {
+    const response = `No memories of you yet — this is our first interaction. Memory retrieved in ${recallMs}ms. Let's make it count.`;
+    await replyAndMark(tweetId, response, 'memory-recall');
+    return;
+  }
+
+  // Build a summary of the memory history
+  const historyLines = memories.map(m => {
+    const age = Math.round((Date.now() - new Date(m.created_at).getTime()) / 3_600_000);
+    const ageStr = age < 1 ? 'just now' : age < 24 ? `${age}h ago` : `${Math.round(age / 24)}d ago`;
+    return `- ${ageStr}: "${m.summary.slice(0, 80)}" (importance: ${m.importance.toFixed(1)})`;
+  });
+
+  const memoryContext = [
+    `MEMORY RECALL for user ${authorId}:`,
+    `Found ${memories.length} memories, retrieved in ${recallMs}ms`,
+    '',
+    ...historyLines,
+  ].join('\n');
+
+  const response = await buildAndGenerate({
+    message: cleanText,
+    context: memoryContext,
+    tierModifier: getTierModifier(tier),
+    instruction:
+      `The user is asking if you remember them. You have ${memories.length} memories of past interactions. ` +
+      `Summarize what you remember about them naturally — reference specific past topics or questions. ` +
+      `Include how many memories you found and the retrieval time (${recallMs}ms). ` +
+      'Be warm but not robotic. Under 270 characters.',
+    forTwitter: true,
+  });
+
+  await replyAndMark(tweetId, response, 'memory-recall');
+  log.info({ tweetId, memoriesFound: memories.length, recallMs }, 'Memory recall reply posted');
+}
+
 async function storeInteractionMemory(
   tweetId: string,
   text: string,
@@ -144,6 +203,18 @@ async function storeInteractionMemory(
   feature: string,
   tier: Awaited<ReturnType<typeof determineHolderTier>>
 ): Promise<void> {
+  // Deduplicate: skip if we already stored a memory for this tweet
+  const { getDb } = await import('../core/database');
+  const { data: existing } = await getDb()
+    .from('memories')
+    .select('id')
+    .eq('source_id', tweetId)
+    .limit(1);
+  if (existing && existing.length > 0) {
+    log.debug({ tweetId }, 'Memory already stored for this tweet, skipping duplicate');
+    return;
+  }
+
   const mood = getCurrentMood();
   const cleanText = cleanMentionText(text);
 
