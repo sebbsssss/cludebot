@@ -31,21 +31,7 @@ export async function handleOnchainOpinion(
   authorId: string,
   tier: HolderTier
 ): Promise<void> {
-  // Rate limit: 10 opinions per hour
-  if (!(await checkRateLimit('global:opinion', 10, 60))) {
-    log.info('Rate limited for on-chain opinion');
-    const replyId = await postReply(tweetId, pickRandom(GLOBAL_COOLDOWN_REPLIES));
-    await markProcessed(tweetId, 'opinion-ratelimit', replyId);
-    return;
-  }
-
-  // Per-user rate limit: 3 per hour
-  if (!(await checkRateLimit(`opinion:${authorId}`, 3, 60))) {
-    log.info({ authorId }, 'User rate limited for on-chain opinion');
-    const replyId = await postReply(tweetId, pickRandom(USER_COOLDOWN_REPLIES));
-    await markProcessed(tweetId, 'opinion-ratelimit-user', replyId);
-    return;
-  }
+  // Rate limits removed — Solana memo signing is unrestricted
 
   const question = cleanMentionText(tweetText);
   log.info({ question, tweetId }, 'Processing on-chain opinion');
