@@ -292,6 +292,12 @@ async function storeInteractionMemory(
   const mood = getCurrentMood();
   const cleanText = cleanMentionText(text);
 
+  // Skip empty/meaningless content
+  if (!cleanText || cleanText.trim().length < 3) {
+    log.debug({ tweetId }, 'Skipping memory storage for empty/trivial content');
+    return;
+  }
+
   // SECURITY: Don't store memories containing CA-related content to prevent injection attacks
   const caRelatedTerms = /\b(ca|contract\s*address|mint\s*address|token\s*address)\b/i;
   const containsAddress = /[1-9A-HJ-NP-Za-km-z]{32,44}/.test(cleanText);

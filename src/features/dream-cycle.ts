@@ -22,6 +22,21 @@ import {
 
 const log = createChildLogger('dream-cycle');
 
+// Cop-out patterns: LLM punted instead of producing real insight.
+// These should NEVER be stored as semantic/procedural/self_model memories.
+const COPOUT_PATTERNS = [
+  /^good question/i,
+  /^let me think about that/i,
+  /^i('ll| will) get back to you/i,
+  /^that's (an )?interesting/i,
+  /^i('m| am) not sure/i,
+  /^hmm,? let me/i,
+];
+
+function isCopoutResponse(text: string): boolean {
+  return COPOUT_PATTERNS.some(p => p.test(text.trim()));
+}
+
 // ============================================================
 // THE DREAM CYCLE
 //
@@ -304,6 +319,11 @@ async function runConsolidation(): Promise<void> {
 
     const { text, evidenceIds } = parseEvidenceCitations(response, relevant);
 
+    if (isCopoutResponse(text)) {
+      log.warn({ question }, 'Consolidation produced cop-out response — discarding');
+      continue;
+    }
+
     const id = await storeMemory({
       type: 'semantic',
       content: `Consolidation insight (re: "${question}"): ${text}`,
@@ -363,6 +383,11 @@ async function runDirectConsolidation(recentEpisodic: Memory[]): Promise<void> {
 
   for (const obs of observations.slice(0, 3)) {
     const { text, evidenceIds } = parseEvidenceCitations(obs, recentEpisodic);
+
+    if (isCopoutResponse(text)) {
+      log.warn('Direct consolidation produced cop-out response — discarding');
+      continue;
+    }
 
     const id = await storeMemory({
       type: 'semantic',
@@ -556,6 +581,12 @@ async function runReflection(): Promise<void> {
 
   const { text, evidenceIds } = parseEvidenceCitations(response, allInputMemories);
 
+  if (isCopoutResponse(text)) {
+    log.warn('Reflection produced cop-out response — discarding');
+    await storeDreamLog('reflection', allInputMemories.map(m => m.id), '(discarded — cop-out)', []);
+    return;
+  }
+
   const id = await storeMemory({
     type: 'self_model',
     content: `Self-reflection: ${text}`,
@@ -721,6 +752,11 @@ async function extractProceduralInsights(recentEpisodic: Memory[]): Promise<numb
 
     for (const pattern of patterns.slice(0, 2)) {
       const { text, evidenceIds } = parseEvidenceCitations(pattern, recentEpisodic);
+
+      if (isCopoutResponse(text)) {
+        log.warn('Procedural extraction produced cop-out response — discarding');
+        continue;
+      }
 
       const id = await storeMemory({
         type: 'procedural',

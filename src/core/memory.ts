@@ -435,6 +435,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
       .from('memories')
       .select('*')
       .gte('decay_factor', minDecay)
+      .not('source', 'in', '("demo","demo-maas")')
       .order('importance', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit * 3);
@@ -649,6 +650,7 @@ export async function recallMemorySummaries(opts: RecallOptions): Promise<Memory
       .from('memories')
       .select('id, memory_type, summary, tags, concepts, importance, decay_factor, created_at, source')
       .gte('decay_factor', minDecay)
+      .not('source', 'in', '("demo","demo-maas")')
       .order('importance', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit);
