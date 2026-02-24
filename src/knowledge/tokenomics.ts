@@ -88,13 +88,27 @@ export function isVestingQuestion(text: string): boolean {
  * Check if a message is asking for the contract address
  */
 export function isCAQuestion(text: string): boolean {
-  const keywords = [
-    'ca', 'contract address', 'contract', 'address', 'mint',
-    'token address', 'pump', 'pumpfun', 'pump.fun',
-    'where to buy', 'how to buy', 'dex', 'swap'
-  ];
   const lower = text.toLowerCase();
-  return keywords.some(kw => lower.includes(kw));
+  
+  // Exact patterns that indicate CA request (word boundaries matter)
+  const patterns = [
+    /\bca\b/,                    // "CA" as standalone word
+    /\bca\?/,                    // "CA?"
+    /contract\s*address/,        // "contract address"
+    /token\s*address/,           // "token address"
+    /mint\s*address/,            // "mint address"
+    /what'?s?\s+the\s+ca\b/,    // "what's the CA" / "whats the ca"
+    /drop\s+the\s+ca\b/,        // "drop the CA"
+    /send\s+ca\b/,              // "send CA"
+    /give\s+ca\b/,              // "give CA"
+    /\bca\s+pls\b/,             // "CA pls"
+    /\bca\s+please\b/,          // "CA please"
+    /where\s+(?:to\s+)?buy/,    // "where to buy" / "where buy"
+    /how\s+(?:to\s+)?buy/,      // "how to buy" / "how buy"
+    /pump\.?fun/,               // "pump.fun" or "pumpfun"
+  ];
+  
+  return patterns.some(p => p.test(lower));
 }
 
 /**
