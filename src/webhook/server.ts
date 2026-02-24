@@ -12,6 +12,7 @@ import { agentRoutes } from './agent-routes';
 import { graphRoutes } from './graph-routes';
 import { getRecentActivity } from '../features/activity-stream';
 import { createChildLogger } from '../core/logger';
+import { checkInputContent } from '../core/guardrails';
 import rateLimit from 'express-rate-limit';
 
 const log = createChildLogger('server');
@@ -450,6 +451,18 @@ export function createServer(): express.Application {
 
       const safeContent = String(content).slice(0, 1000);
       const safeSummary = String(summary).slice(0, 200);
+
+      // Content filter — block hate speech, slurs, violence, spam
+      const contentCheck = checkInputContent(safeContent);
+      if (!contentCheck.allowed) {
+        res.status(400).json({ error: 'Content rejected.', reason: contentCheck.reason });
+        return;
+      }
+      const summaryCheck = checkInputContent(safeSummary);
+      if (!summaryCheck.allowed) {
+        res.status(400).json({ error: 'Content rejected.', reason: summaryCheck.reason });
+        return;
+      }
 
       const memoryId = await storeMemory({
         type: 'episodic',

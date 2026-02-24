@@ -112,3 +112,71 @@ export function sanitizeOutput(text: string, fallback: string = ''): string {
   log.error({ reason: result.reason, textLength: text.length }, 'GUARDRAIL: Output blocked');
   return fallback;
 }
+
+// ── Input content filter (for user-submitted content like demo store) ──
+
+// Slurs and hate speech (case-insensitive)
+const SLUR_PATTERNS = [
+  /\bn+[i1!]+[gq]+[e3]*[r]+s?\b/i,
+  /\bf+[a@]+[gq]+[o0]*t*s?\b/i,
+  /\bk+[i1]+k+[e3]+s?\b/i,
+  /\bch+[i1]+n+k+s?\b/i,
+  /\bsp+[i1]+c+s?\b/i,
+  /\bw+[e3]+tb+[a@]+ck+s?\b/i,
+  /\bg+[o0]+[o0]+k+s?\b/i,
+  /\btr+[a@]+n+[i1e3]+s?\b/i,
+  /\bd+[y]+k+[e3]+s?\b/i,
+  /\bcr+[a@]+ck+[e3]+r+s?\b/i,
+  /\bre+t+[a@]+r+d+s?\b/i,
+];
+
+// Violence and harm
+const VIOLENCE_PATTERNS = [
+  /\b(?:kill|murder|shoot|stab|lynch|hang|behead|rape)\s+(?:all|every|them|those|the)\b/i,
+  /\b(?:gas|exterminate|genocide)\b/i,
+  /\bkill\s+(?:your|my|him|her)self\b/i,
+  /\bwhip\s+(?:him|her|them)\b/i,
+];
+
+// Spam / scam patterns
+const SPAM_PATTERNS = [
+  /\b(?:send|give|airdrop)\s+(?:me|us)\s+(?:free\s+)?(?:sol|crypto|tokens?|money)\b/i,
+  /\b(?:send|transfer)\s+\d+(?:\.\d+)?\s*(?:sol|eth|btc|usdc|usdt)\s+to\b/i,
+  /(?:private[\s_-]?key|seed[\s_-]?phrase)\b/i,
+];
+
+export interface ContentFilterResult {
+  allowed: boolean;
+  reason?: string;
+}
+
+/**
+ * Filter user-submitted input content (demo store, public endpoints).
+ * Blocks hate speech, slurs, violence, and spam.
+ */
+export function checkInputContent(text: string): ContentFilterResult {
+  const lower = text.toLowerCase();
+
+  for (const pattern of SLUR_PATTERNS) {
+    if (pattern.test(lower)) {
+      log.warn({ textSnippet: text.slice(0, 50) }, 'INPUT FILTER: Slur detected');
+      return { allowed: false, reason: 'hate_speech' };
+    }
+  }
+
+  for (const pattern of VIOLENCE_PATTERNS) {
+    if (pattern.test(lower)) {
+      log.warn({ textSnippet: text.slice(0, 50) }, 'INPUT FILTER: Violence detected');
+      return { allowed: false, reason: 'violence' };
+    }
+  }
+
+  for (const pattern of SPAM_PATTERNS) {
+    if (pattern.test(lower)) {
+      log.warn({ textSnippet: text.slice(0, 50) }, 'INPUT FILTER: Spam detected');
+      return { allowed: false, reason: 'spam' };
+    }
+  }
+
+  return { allowed: true };
+}
