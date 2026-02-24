@@ -30,6 +30,15 @@ if (require.main === module) {
   const { _setSystemPromptProvider, _setResponsePostProcessor } = require('./core/claude-client');
   const { getBasePrompt, getRandomCloser } = require('./character/base-prompt');
   const { setGuardrailBotAddress } = require('./core/guardrails');
+  const { initVenice } = require('./core/venice-client');
+
+  // Initialize Venice if API key is configured
+  if (config.venice.apiKey) {
+    initVenice({
+      apiKey: config.venice.apiKey,
+      model: config.venice.model,
+    });
+  }
 
   // Wire bot personality into the LLM client
   _setSystemPromptProvider(getBasePrompt);

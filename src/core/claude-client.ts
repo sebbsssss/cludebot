@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config';
 import { createChildLogger } from './logger';
 import { checkOutput } from './guardrails';
+import { isVeniceEnabled, generateVeniceResponse } from './venice-client';
 
 const log = createChildLogger('claude-client');
 
@@ -90,21 +91,34 @@ export async function generateResponse(options: GenerateOptions): Promise<string
     userContent = '(Someone mentioned you with no specific message. React to being summoned for nothing.)';
   }
 
-  log.debug({ systemLength: systemPrompt.length, userLength: userContent.length }, 'Generating response');
+  log.debug({ systemLength: systemPrompt.length, userLength: userContent.length, provider: isVeniceEnabled() ? 'venice' : 'anthropic' }, 'Generating response');
 
-  const response = await getClient().messages.create({
-    model: getModel(),
-    max_tokens: options.maxTokens || 300,
-    temperature: 0.9,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userContent }],
-  });
+  let text: string;
 
-  let text = response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map(block => block.text)
-    .join('')
-    .trim();
+  if (isVeniceEnabled()) {
+    // Route through Venice (OpenAI-compatible API, supports Claude models)
+    text = await generateVeniceResponse({
+      messages: [{ role: 'user', content: userContent }],
+      systemPrompt,
+      maxTokens: options.maxTokens || 300,
+      temperature: 0.9,
+    });
+  } else {
+    // Direct Anthropic API
+    const response = await getClient().messages.create({
+      model: getModel(),
+      max_tokens: options.maxTokens || 300,
+      temperature: 0.9,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userContent }],
+    });
+
+    text = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map(block => block.text)
+      .join('')
+      .trim();
+  }
 
   // Strip any quotes the model may wrap the response in
   if (text.startsWith('"') && text.endsWith('"')) {
