@@ -13,7 +13,8 @@ const client = new TwitterApi({
 
 const rwClient = client.readWrite;
 
-const MAX_TWEET_LENGTH = 280;
+// X Premium allows up to 4000 characters (was 280 for standard accounts)
+const MAX_TWEET_LENGTH = 4000;
 
 /**
  * Strip em-dashes and replace with comma or period.

@@ -68,7 +68,7 @@ export async function generateResponse(options: GenerateOptions): Promise<string
   
   // Twitter-specific: enforce character limit when posting to X
   if (options.forTwitter) {
-    systemParts.push(`\n\n## CRITICAL: Character Limit\nYou are posting to Twitter/X. Your response MUST be under 270 characters total. Be concise — every character counts. Cut fluff ruthlessly.`);
+    systemParts.push(`\n\n## Response Style\nYou are posting to Twitter/X. Be concise and direct, but you can write longer responses if needed (X Premium account). Aim for clarity over brevity.`);
   }
 
   const systemPrompt = systemParts.join('');
@@ -152,12 +152,12 @@ export async function generateThread(options: GenerateOptions): Promise<string[]
     ...options,
     maxTokens: 1200,
     featureInstruction: (options.featureInstruction || '') +
-      '\n\nFormat: Write 3-5 tweets separated by ---. Each tweet must be under 270 characters.',
+      '\n\nFormat: Write 3-5 tweets separated by ---. Keep each tweet focused and readable.',
   });
 
   return response
     .split('---')
     .map(t => t.trim())
     .filter(t => t.length > 0)
-    .map(t => t.slice(0, 280));
+    .map(t => t.slice(0, 4000)); // X Premium limit
 }
