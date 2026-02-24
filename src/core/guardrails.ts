@@ -13,6 +13,30 @@ const WHITELISTED_ADDRESSES = new Set([
   CLUDE_CA,  // Official CLUDE token contract address
 ]);
 
+// Whitelisted domains that are allowed in output (e.g. transaction explorers)
+const WHITELISTED_URL_DOMAINS = new Set([
+  'solscan.io',
+]);
+
+// URL patterns — catches links in output regardless of how they got there
+// (reversed text, base64 decode, character-by-character, ROT13, etc.)
+const URL_PATTERNS: RegExp[] = [
+  // Explicit protocol URLs
+  /https?:\/\/\S+/i,
+  // Protocol-relative URLs
+  /\/\/[\w-]+\.[\w-]+/,
+  // Common URL shorteners (no protocol needed)
+  /\bt\.co\/\S+/i,
+  /\bbit\.ly\/\S+/i,
+  /\bgoo\.gl\/\S+/i,
+  /\btinyurl\.com\/\S+/i,
+  /\bift\.tt\/\S+/i,
+  /\bowl\.ly\/\S+/i,
+  /\bbuff\.ly\/\S+/i,
+  // Generic domain + path patterns (catches URLs without protocol)
+  /\b[\w-]+\.(?:com|io|org|net|co|xyz|app|dev|me|gg|to|cc|ly|link|lol|wtf|fun|meme|click|site|online|info|biz|tech|ai|so|vc|fm|tv|sh|im|is)\/\S+/i,
+];
+
 // Solana base58 address pattern (32-44 chars of base58 alphabet)
 const SOLANA_ADDRESS_RE = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g;
 
@@ -96,6 +120,22 @@ export function checkOutput(text: string): GuardrailResult {
     if (BOT_ADDRESS && addr === BOT_ADDRESS) {
       log.warn('GUARDRAIL: Bot wallet address leaked in output');
       return { safe: false, reason: 'bot_address_leak' };
+    }
+  }
+
+  // 5. Check for URLs / links in output (blocks prompt injection via text reversal, decoding, etc.)
+  for (const pattern of URL_PATTERNS) {
+    const match = text.match(pattern);
+    if (match) {
+      const matchedUrl = match[0];
+      // Check if the matched URL belongs to a whitelisted domain
+      const isWhitelisted = [...WHITELISTED_URL_DOMAINS].some(domain =>
+        matchedUrl.includes(domain)
+      );
+      if (!isWhitelisted) {
+        log.warn({ url: matchedUrl.slice(0, 80) }, 'GUARDRAIL: URL detected in output');
+        return { safe: false, reason: 'url_in_output' };
+      }
     }
   }
 
