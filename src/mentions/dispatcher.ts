@@ -21,6 +21,7 @@ import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 import { loadInstruction } from '../utils/env-persona';
 import { getVestingInfo, getCAResponse, CLUDE_CA, getTokenStatus } from '../knowledge/tokenomics';
+import { checkInput, getCASpoofResponse } from '../core/input-guardrails';
 
 const log = createChildLogger('dispatcher');
 
@@ -41,6 +42,20 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   }
 
   log.info({ tweetId, text: text.slice(0, 100) }, 'Processing mention');
+
+  // Check for manipulation attempts (CA spoofing, prompt injection)
+  const inputCheck = checkInput(text);
+  if (!inputCheck.safe) {
+    if (inputCheck.isCASpoofAttempt) {
+      log.warn({ tweetId, spoofedAddress: inputCheck.spoofedAddress }, 'CA spoof attempt blocked');
+      await replyAndMark(tweetId, getCASpoofResponse(), 'ca-spoof-blocked');
+      return;
+    }
+    // Other unsafe input types can be handled here
+    log.warn({ tweetId, reason: inputCheck.reason }, 'Unsafe input blocked');
+    await markProcessed(tweetId, 'input-blocked');
+    return;
+  }
 
   try {
     // Determine holder tier for all interactions
@@ -276,6 +291,14 @@ async function storeInteractionMemory(
 
   const mood = getCurrentMood();
   const cleanText = cleanMentionText(text);
+
+  // SECURITY: Don't store memories containing CA-related content to prevent injection attacks
+  const caRelatedTerms = /\b(ca|contract\s*address|mint\s*address|token\s*address)\b/i;
+  const containsAddress = /[1-9A-HJ-NP-Za-km-z]{32,44}/.test(cleanText);
+  if (caRelatedTerms.test(cleanText) && containsAddress) {
+    log.debug({ tweetId }, 'Skipping memory storage for CA-related content (security)');
+    return;
+  }
 
   // Get wallet address if linked
   const walletLink = await getLinkedWallet(authorId);
