@@ -4,8 +4,14 @@
  */
 
 import { createChildLogger } from './logger';
+import { CLUDE_CA } from '../knowledge/tokenomics';
 
 const log = createChildLogger('guardrails');
+
+// Whitelisted addresses that are safe to share (official token CA, etc.)
+const WHITELISTED_ADDRESSES = new Set([
+  CLUDE_CA,  // Official CLUDE token contract address
+]);
 
 // Solana base58 address pattern (32-44 chars of base58 alphabet)
 const SOLANA_ADDRESS_RE = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g;
@@ -65,17 +71,25 @@ export function checkOutput(text: string): GuardrailResult {
     }
   }
 
-  // 3. Check for contract address patterns
+  // 3. Check for contract address patterns (but allow whitelisted addresses)
   for (const pattern of CA_PATTERNS) {
     if (pattern.test(text)) {
-      log.warn({ text: text.slice(0, 200) }, 'GUARDRAIL: Contract address pattern detected');
-      return { safe: false, reason: 'contract_address' };
+      // Check if the text contains only whitelisted addresses
+      const addresses = text.match(SOLANA_ADDRESS_RE) || [];
+      const hasNonWhitelisted = addresses.some(addr => !WHITELISTED_ADDRESSES.has(addr));
+      if (hasNonWhitelisted) {
+        log.warn({ text: text.slice(0, 200) }, 'GUARDRAIL: Unauthorized contract address detected');
+        return { safe: false, reason: 'contract_address' };
+      }
+      // If only whitelisted addresses, allow it
     }
   }
 
   // 4. Check if output contains what looks like a Solana address (strip known safe ones)
   const addresses = text.match(SOLANA_ADDRESS_RE) || [];
   for (const addr of addresses) {
+    // Allow whitelisted addresses (official token CA, etc.)
+    if (WHITELISTED_ADDRESSES.has(addr)) continue;
     // Allow solscan URLs (they contain tx signatures which look like addresses)
     if (text.includes(`solscan.io/tx/${addr}`)) continue;
     // Block if it matches bot's own address

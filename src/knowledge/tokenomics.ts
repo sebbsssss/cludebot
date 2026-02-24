@@ -36,7 +36,7 @@ export const TOKENOMICS = {
   
   // Contract details
   contracts: {
-    token: 'AWGCD...Upump',
+    token: 'AWGCDT2gd8JadbYbYyZy1iKxfWokPNgrEQoU24zUpump',
     vestingSender: 'CA1HY...9oQZb',
     vestingRecipient: '81MVT...XiqFu',
     vestingPlatform: 'Streamflow (audited by 4 major auditors)',
@@ -44,6 +44,9 @@ export const TOKENOMICS = {
     transferable: 'Only by recipient',
   },
 };
+
+// Official CLUDE token contract address
+export const CLUDE_CA = 'AWGCDT2gd8JadbYbYyZy1iKxfWokPNgrEQoU24zUpump';
 
 /**
  * Generate a response about vesting when asked
@@ -79,6 +82,26 @@ export function isVestingQuestion(text: string): boolean {
   ];
   const lower = text.toLowerCase();
   return keywords.some(kw => lower.includes(kw));
+}
+
+/**
+ * Check if a message is asking for the contract address
+ */
+export function isCAQuestion(text: string): boolean {
+  const keywords = [
+    'ca', 'contract address', 'contract', 'address', 'mint',
+    'token address', 'pump', 'pumpfun', 'pump.fun',
+    'where to buy', 'how to buy', 'dex', 'swap'
+  ];
+  const lower = text.toLowerCase();
+  return keywords.some(kw => lower.includes(kw));
+}
+
+/**
+ * Get the official contract address response
+ */
+export function getCAResponse(): string {
+  return CLUDE_CA;
 }
 
 export default TOKENOMICS;

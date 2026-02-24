@@ -20,7 +20,7 @@ import { cleanMentionText, extractTokenMentions } from '../utils/text';
 import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 import { loadInstruction } from '../utils/env-persona';
-import { getVestingInfo } from '../knowledge/tokenomics';
+import { getVestingInfo, getCAResponse, CLUDE_CA } from '../knowledge/tokenomics';
 
 const log = createChildLogger('dispatcher');
 
@@ -58,6 +58,10 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
 
       case 'vesting':
         await handleVestingQuestion(tweetId, text, authorId, tier);
+        break;
+
+      case 'ca':
+        await handleCAQuestion(tweetId, text, authorId, tier);
         break;
 
       case 'question':
@@ -105,6 +109,19 @@ Be concise and direct. Under 280 characters. If they ask about a specific aspect
 
   await replyAndMark(tweetId, response, 'vesting');
   log.info({ tweetId }, 'Vesting question answered');
+}
+
+async function handleCAQuestion(
+  tweetId: string,
+  _text: string,
+  _authorId: string,
+  _tier: Awaited<ReturnType<typeof determineHolderTier>>
+): Promise<void> {
+  // Direct response with CA - no LLM needed for simple CA requests
+  const response = `CA: ${CLUDE_CA}`;
+  
+  await replyAndMark(tweetId, response, 'ca');
+  log.info({ tweetId }, 'CA question answered');
 }
 
 async function handleGeneralReply(
