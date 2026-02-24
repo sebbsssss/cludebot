@@ -131,9 +131,16 @@ export async function generateResponse(options: GenerateOptions): Promise<string
   // Security guardrail — block dangerous output before it reaches the user
   const guardrail = checkOutput(text);
   if (!guardrail.safe) {
-    log.warn({ reason: guardrail.reason, textLength: text.length }, 'Response blocked by guardrail — regenerating');
-    // Return a safe generic response instead of the blocked one
-    text = 'Good question. Let me think about that and get back to you.';
+    log.warn({ reason: guardrail.reason, textLength: text.length, originalText: text.slice(0, 300) }, 'Response blocked by guardrail — using fallback');
+    // Return contextual fallbacks instead of one generic response
+    const fallbacks = [
+      "Appreciate the energy. Memory stored.",
+      "Noted. On-chain now.",
+      "Heard. Let's see where this goes.",
+      "I see you. Storing this moment.",
+      "Acknowledged. Memory committed.",
+    ];
+    text = fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
 
   log.info({ responseLength: text.length }, 'Response generated');
