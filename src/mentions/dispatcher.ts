@@ -20,6 +20,7 @@ import { cleanMentionText, extractTokenMentions } from '../utils/text';
 import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 import { loadInstruction } from '../utils/env-persona';
+import { getVestingInfo } from '../knowledge/tokenomics';
 
 const log = createChildLogger('dispatcher');
 
@@ -55,6 +56,10 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
         await handleMemoryRecall(tweetId, text, authorId, tier);
         break;
 
+      case 'vesting':
+        await handleVestingQuestion(tweetId, text, authorId, tier);
+        break;
+
       case 'question':
         await handleOnchainOpinion(tweetId, text, authorId, tier);
         break;
@@ -73,6 +78,33 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
     // Mark as processed to avoid retrying bad tweets forever — but don't post an empty reply
     await markProcessed(tweetId, 'error').catch(markErr => log.warn({ markErr }, 'Failed to mark errored tweet'));
   }
+}
+
+async function handleVestingQuestion(
+  tweetId: string,
+  text: string,
+  authorId: string,
+  tier: Awaited<ReturnType<typeof determineHolderTier>>
+): Promise<void> {
+  const cleanText = cleanMentionText(text);
+  const vestingInfo = getVestingInfo();
+
+  const instruction = `User is asking about token vesting/tokenomics. Use this factual information to answer:
+
+${vestingInfo}
+
+Be concise and direct. Under 280 characters. If they ask about a specific aspect (like community vs hackathon allocation), focus on that.`;
+
+  const response = await buildAndGenerate({
+    message: cleanText,
+    context: vestingInfo,
+    tierModifier: getTierModifier(tier),
+    instruction,
+    forTwitter: true,
+  });
+
+  await replyAndMark(tweetId, response, 'vesting');
+  log.info({ tweetId }, 'Vesting question answered');
 }
 
 async function handleGeneralReply(

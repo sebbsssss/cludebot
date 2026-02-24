@@ -1,6 +1,7 @@
 import { extractWalletAddress, isQuestion, cleanMentionText } from '../utils/text';
+import { isVestingQuestion } from '../knowledge/tokenomics';
 
-export type MentionType = 'wallet-roast' | 'question' | 'memory-recall' | 'general';
+export type MentionType = 'wallet-roast' | 'question' | 'memory-recall' | 'vesting' | 'general';
 
 const MEMORY_RECALL_PATTERNS = [
   /do you remember/i,
@@ -20,6 +21,11 @@ export function classifyMention(text: string): MentionType {
   // Check for memory recall requests first
   if (MEMORY_RECALL_PATTERNS.some(p => p.test(cleaned))) {
     return 'memory-recall';
+  }
+
+  // Check for vesting/tokenomics questions
+  if (isVestingQuestion(cleaned)) {
+    return 'vesting';
   }
 
   // Wallet roast disabled for now — treat wallet mentions as general replies
