@@ -48,6 +48,20 @@ export const TOKENOMICS = {
 // Official CLUDE token contract address
 export const CLUDE_CA = 'AWGCDT2gd8JadbYbYyZy1iKxfWokPNgrEQoU24zUpump';
 
+// Token launch status
+export const TOKEN_STATUS = {
+  isLive: true,
+  launchDate: '2026-02-24',
+  platform: 'pump.fun',
+};
+
+/**
+ * Get token status info for the bot to use
+ */
+export function getTokenStatus(): string {
+  return `The CLUDE token IS LIVE on pump.fun. CA: ${CLUDE_CA}`;
+}
+
 /**
  * Generate a response about vesting when asked
  */

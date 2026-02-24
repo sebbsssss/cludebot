@@ -20,7 +20,7 @@ import { cleanMentionText, extractTokenMentions } from '../utils/text';
 import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 import { loadInstruction } from '../utils/env-persona';
-import { getVestingInfo, getCAResponse, CLUDE_CA } from '../knowledge/tokenomics';
+import { getVestingInfo, getCAResponse, CLUDE_CA, getTokenStatus } from '../knowledge/tokenomics';
 
 const log = createChildLogger('dispatcher');
 
@@ -156,18 +156,24 @@ async function handleGeneralReply(
   });
 
   const creatorMode = isCreator(authorId);
-  let instruction = loadInstruction('general', 'Respond helpfully. Under 280 characters.') +
+  let instruction = loadInstruction('general', 'Respond helpfully and concisely.') +
     (memories.length > 0 ? ' You have memories of past interactions — use them naturally if relevant.' : '') +
     (threadContext ? ' You can see the conversation thread — stay on topic.' : '');
 
   if (creatorMode) {
-    instruction = loadInstruction('creator', 'Your creator is talking to you. Be warm and helpful. Under 280 characters.') +
+    instruction = loadInstruction('creator', 'Your creator is talking to you. Be warm and helpful.') +
       (memories.length > 0 ? ' You have memories of past interactions with them — reference them naturally.' : '') +
       (threadContext ? ' You can see the conversation thread.' : '');
   }
 
   // Build context with thread if available
   const contextParts: string[] = [];
+  
+  // Always include token status so bot knows it's live
+  contextParts.push('IMPORTANT FACTS:');
+  contextParts.push(getTokenStatus());
+  contextParts.push('');
+  
   if (threadContext) {
     contextParts.push('CONVERSATION THREAD (oldest first):');
     contextParts.push(threadContext);
