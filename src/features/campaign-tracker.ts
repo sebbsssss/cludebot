@@ -1,5 +1,6 @@
 import { searchHashtagTweets, refreshTweetMetrics } from '../core/x-client';
 import { getDb } from '../core/database';
+import { config } from '../config';
 import { createChildLogger } from '../core/logger';
 
 const log = createChildLogger('campaign-tracker');
@@ -10,16 +11,21 @@ let metricsRefreshInterval: ReturnType<typeof setInterval> | null = null;
 /**
  * Start background polling for campaign tweets.
  * Polls hashtag search every 5 minutes, refreshes metrics every 15 minutes.
+ * Auto-manages campaign_state (is_active, current_day) from dates.
  */
 export function startCampaignTracker(): void {
   log.info('Campaign tracker starting');
 
-  // Initial poll
-  pollCampaignTweets().catch(err => log.warn({ err }, 'Initial campaign tweet poll failed'));
+  // Sync state + initial poll
+  syncCampaignState()
+    .then(() => pollCampaignTweets())
+    .catch(err => log.warn({ err }, 'Initial campaign sync/poll failed'));
 
   // Poll for new tweets every 5 minutes
   tweetPollInterval = setInterval(() => {
-    pollCampaignTweets().catch(err => log.warn({ err }, 'Campaign tweet poll failed'));
+    syncCampaignState()
+      .then(() => pollCampaignTweets())
+      .catch(err => log.warn({ err }, 'Campaign tweet poll failed'));
   }, 5 * 60 * 1000);
 
   // Refresh engagement metrics every 15 minutes
@@ -39,11 +45,66 @@ export function stopCampaignTracker(): void {
 }
 
 /**
- * Calculate which campaign day a tweet belongs to based on its creation time.
+ * Auto-manage campaign_state: calculate current_day from dates,
+ * set is_active based on whether we're within the campaign window.
  */
-function calculateCampaignDay(tweetDate: Date, campaignStart: Date): number {
+async function syncCampaignState(): Promise<void> {
+  const db = getDb();
+  const { data: state } = await db
+    .from('campaign_state')
+    .select('*')
+    .eq('id', 1)
+    .single();
+
+  if (!state) {
+    log.warn('No campaign_state row found');
+    return;
+  }
+
+  // If CAMPAIGN_START env var is set, sync dates to DB
+  const envStart = config.campaign.startDate;
+  if (envStart) {
+    const envStartDate = new Date(envStart);
+    const envEndDate = new Date(envStartDate.getTime() + 10 * 24 * 60 * 60 * 1000); // 10 days
+    const dbStart = new Date(state.campaign_start);
+    if (Math.abs(envStartDate.getTime() - dbStart.getTime()) > 60000) {
+      await db
+        .from('campaign_state')
+        .update({
+          campaign_start: envStartDate.toISOString(),
+          campaign_end: envEndDate.toISOString(),
+        })
+        .eq('id', 1);
+      state.campaign_start = envStartDate.toISOString();
+      state.campaign_end = envEndDate.toISOString();
+      log.info({ start: envStartDate.toISOString(), end: envEndDate.toISOString() }, 'Campaign dates synced from env');
+    }
+  }
+
+  const now = new Date();
+  const start = new Date(state.campaign_start);
+  const end = new Date(state.campaign_end);
+
+  const isActive = now >= start && now <= end;
+  const currentDay = isActive ? calculateCampaignDay(now, start) : 0;
+  const clampedDay = Math.min(currentDay, 10);
+
+  // Only update if something changed
+  if (state.is_active !== isActive || state.current_day !== clampedDay) {
+    await db
+      .from('campaign_state')
+      .update({ is_active: isActive, current_day: clampedDay })
+      .eq('id', 1);
+    log.info({ isActive, currentDay: clampedDay, prev: state.current_day }, 'Campaign state synced');
+  }
+}
+
+/**
+ * Calculate which campaign day based on time elapsed since start.
+ */
+function calculateCampaignDay(date: Date, campaignStart: Date): number {
   const msPerDay = 24 * 60 * 60 * 1000;
-  const diffMs = tweetDate.getTime() - campaignStart.getTime();
+  const diffMs = date.getTime() - campaignStart.getTime();
   if (diffMs < 0) return 0;
   return Math.floor(diffMs / msPerDay) + 1;
 }
@@ -121,12 +182,11 @@ async function pollCampaignTweets(): Promise<void> {
 }
 
 /**
- * Refresh engagement metrics for all tweets in the current active day.
+ * Refresh engagement metrics for all tracked tweets (not just current day).
  */
 async function refreshAllMetrics(): Promise<void> {
   const db = getDb();
 
-  // Get current campaign day
   const { data: state } = await db
     .from('campaign_state')
     .select('current_day, is_active')
@@ -135,11 +195,10 @@ async function refreshAllMetrics(): Promise<void> {
 
   if (!state?.is_active || !state.current_day) return;
 
-  // Fetch all tweet IDs for the current day
+  // Refresh metrics for ALL tweets, not just current day
   const { data: tweets } = await db
     .from('campaign_tweets')
-    .select('tweet_id')
-    .eq('campaign_day', state.current_day);
+    .select('tweet_id');
 
   if (!tweets || tweets.length === 0) return;
 
@@ -169,5 +228,5 @@ async function refreshAllMetrics(): Promise<void> {
     if (!error) updated++;
   }
 
-  log.info({ day: state.current_day, total: tweetIds.length, updated }, 'Campaign metrics refresh complete');
+  log.info({ total: tweetIds.length, updated }, 'Campaign metrics refresh complete');
 }
