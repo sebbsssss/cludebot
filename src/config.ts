@@ -77,6 +77,7 @@ export const config = {
   },
   campaign: {
     startDate: optional('CAMPAIGN_START', ''),
+    password: optional('CAMPAIGN_PASSWORD', ''),
   },
   embedding: {
     provider: optional('EMBEDDING_PROVIDER', '') as '' | 'voyage' | 'openai',
