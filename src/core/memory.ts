@@ -12,6 +12,7 @@ import {
   RETRIEVAL_WEIGHT_IMPORTANCE,
   RETRIEVAL_WEIGHT_VECTOR,
   RETRIEVAL_WEIGHT_GRAPH,
+  VECTOR_MATCH_THRESHOLD,
   DECAY_RATES,
   EMBEDDING_FRAGMENT_MAX_LENGTH,
   LINK_SIMILARITY_THRESHOLD,
@@ -394,7 +395,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
           const [memoryMatches, fragmentMatches] = await Promise.all([
             db.rpc('match_memories', {
               query_embedding: JSON.stringify(queryEmbedding),
-              match_threshold: 0.3,
+              match_threshold: VECTOR_MATCH_THRESHOLD,
               match_count: limit * 3,
               filter_types: opts.memoryTypes || null,
               filter_user: opts.relatedUser || null,
@@ -402,7 +403,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
             }).then(r => r.data || []),
             db.rpc('match_memory_fragments', {
               query_embedding: JSON.stringify(queryEmbedding),
-              match_threshold: 0.3,
+              match_threshold: VECTOR_MATCH_THRESHOLD,
               match_count: limit * 3,
             }).then(r => r.data || []),
           ]);
@@ -568,6 +569,40 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
   }
 }
 
+// Stopwords to exclude from keyword matching — common words that cause false positives
+const STOPWORDS = new Set([
+  'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+  'of', 'with', 'by', 'from', 'is', 'it', 'its', 'are', 'was', 'were',
+  'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
+  'will', 'would', 'could', 'should', 'may', 'might', 'can', 'shall',
+  'not', 'no', 'nor', 'so', 'if', 'then', 'than', 'that', 'this',
+  'what', 'which', 'who', 'whom', 'how', 'when', 'where', 'why',
+  'all', 'each', 'every', 'both', 'few', 'more', 'most', 'some', 'any',
+  'about', 'into', 'through', 'just', 'also', 'very', 'much', 'like',
+  'get', 'got', 'your', 'you', 'my', 'me', 'his', 'her', 'our', 'their',
+]);
+
+/**
+ * Check if a word matches within text using word boundary logic.
+ * Avoids false positives like "sol" matching "solution".
+ */
+function wordBoundaryMatch(word: string, text: string): boolean {
+  // Escape regex special chars, then wrap with word boundaries
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`\\b${escaped}\\b`, 'i');
+  return re.test(text);
+}
+
+/**
+ * Extract meaningful query terms: lowercase, filter stopwords and short words.
+ */
+function extractQueryTerms(query: string): string[] {
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOPWORDS.has(w));
+}
+
 /**
  * Enhanced scoring function with optional vector similarity component.
  *
@@ -586,17 +621,26 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   const hoursSinceAccess = (now - new Date(mem.last_accessed).getTime()) / (1000 * 60 * 60);
   const recency = Math.pow(RECENCY_DECAY_BASE, hoursSinceAccess);
 
-  // Text similarity (keyword overlap)
+  // Text similarity (keyword overlap with word boundaries + stopword filtering)
   let textScore = 0.5;
   if (opts.query) {
-    const queryWords = opts.query.toLowerCase().split(/\s+/);
-    const summaryLower = mem.summary.toLowerCase();
-    const contentLower = mem.content?.toLowerCase() || '';
-    // Check both summary and content for keyword matches
-    const matches = queryWords.filter(w =>
-      w.length > 2 && (summaryLower.includes(w) || contentLower.includes(w))
-    ).length;
-    textScore = 0.3 + 0.7 * Math.min(matches / Math.max(queryWords.length, 1), 1);
+    const queryTerms = extractQueryTerms(opts.query);
+    if (queryTerms.length > 0) {
+      const summaryLower = mem.summary.toLowerCase();
+      // Summary matches are worth more than content matches
+      let summaryHits = 0;
+      let contentHits = 0;
+      for (const term of queryTerms) {
+        if (wordBoundaryMatch(term, summaryLower)) {
+          summaryHits++;
+        } else if (mem.content && wordBoundaryMatch(term, mem.content.toLowerCase())) {
+          contentHits++;
+        }
+      }
+      // Summary matches count full, content matches count half
+      const effectiveMatches = summaryHits + contentHits * 0.5;
+      textScore = 0.3 + 0.7 * Math.min(effectiveMatches / queryTerms.length, 1);
+    }
   }
 
   // Tag + concept overlap score
@@ -621,10 +665,8 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
 
   if (vectorSim > 0) {
     rawScore += RETRIEVAL_WEIGHT_VECTOR * vectorSim;
-    // Normalize: with vector, max raw = 0.5+3.0+2.0+3.0 = 8.5
     rawScore /= (RETRIEVAL_WEIGHT_RECENCY + RETRIEVAL_WEIGHT_RELEVANCE + RETRIEVAL_WEIGHT_IMPORTANCE + RETRIEVAL_WEIGHT_VECTOR);
   } else {
-    // Normalize: without vector, max raw = 0.5+3.0+2.0 = 5.5
     rawScore /= (RETRIEVAL_WEIGHT_RECENCY + RETRIEVAL_WEIGHT_RELEVANCE + RETRIEVAL_WEIGHT_IMPORTANCE);
   }
 

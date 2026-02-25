@@ -29,10 +29,13 @@ export const DECAY_RATES: Record<string, number> = {
 
 // Memory retrieval — additive scoring (Park et al. 2023, Generative Agents)
 export const RECENCY_DECAY_BASE = 0.995;               // Exponential: 0.995^hours since last access
-export const RETRIEVAL_WEIGHT_RECENCY = 0.5;            // Paper: recency has lowest weight
-export const RETRIEVAL_WEIGHT_RELEVANCE = 3.0;          // Paper: relevance dominates
-export const RETRIEVAL_WEIGHT_IMPORTANCE = 2.0;         // Paper: importance is second
-export const RETRIEVAL_WEIGHT_VECTOR = 3.0;             // Vector similarity (high but not dominant)
+export const RETRIEVAL_WEIGHT_RECENCY = 1.0;            // Boosted: recent memories matter more
+export const RETRIEVAL_WEIGHT_RELEVANCE = 2.0;          // Keyword relevance (lower when vector available)
+export const RETRIEVAL_WEIGHT_IMPORTANCE = 2.0;         // Importance stays the same
+export const RETRIEVAL_WEIGHT_VECTOR = 4.0;             // Vector similarity dominates when available
+
+// Vector search thresholds
+export const VECTOR_MATCH_THRESHOLD = 0.4;              // Min cosine similarity (was 0.3 — too permissive)
 
 // Structured concept ontology for cross-cutting knowledge classification
 // Replaces freeform tagging with a controlled vocabulary for precise retrieval.
