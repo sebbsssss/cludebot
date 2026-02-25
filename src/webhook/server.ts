@@ -534,8 +534,9 @@ export function createServer(): express.Application {
   const distPublicDir = path.join(process.cwd(), 'dist', 'verify-app', 'public');
 
   // Serve campaign page at /10days (hidden from nav, direct link only)
-  app.get('/10days', (_req: Request, res: Response) => {
-    res.sendFile(path.join(publicDir, 'campaign.html'));
+  app.get('/10days', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/campaign.html';
+    next();
   });
 
   app.use(express.static(publicDir));
