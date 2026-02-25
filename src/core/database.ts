@@ -226,14 +226,14 @@ export async function initDatabase(): Promise<void> {
         -- Campaign: global state (single row)
         CREATE TABLE IF NOT EXISTS campaign_state (
           id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-          campaign_start TIMESTAMPTZ NOT NULL DEFAULT '2026-02-13T00:00:00Z',
-          campaign_end TIMESTAMPTZ NOT NULL DEFAULT '2026-02-23T00:00:00Z',
+          campaign_start TIMESTAMPTZ NOT NULL DEFAULT '2026-02-25T00:00:00Z',
+          campaign_end TIMESTAMPTZ NOT NULL DEFAULT '2026-03-07T00:00:00Z',
           current_day INTEGER DEFAULT 0,
           total_tokens_distributed REAL DEFAULT 0,
           is_active BOOLEAN DEFAULT FALSE
         );
         INSERT INTO campaign_state (id, campaign_start, campaign_end)
-          VALUES (1, '2026-02-13T00:00:00Z', '2026-02-23T00:00:00Z') ON CONFLICT DO NOTHING;
+          VALUES (1, '2026-02-25T00:00:00Z', '2026-03-07T00:00:00Z') ON CONFLICT DO NOTHING;
       `
     });
 
