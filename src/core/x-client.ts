@@ -206,7 +206,8 @@ export async function searchHashtagTweets(
   log.info({ sinceId, maxResults }, 'Searching campaign tweets');
 
   try {
-    const query = '@cludebot #CludeHackathon -is:retweet';
+    // Broad match: direct mentions, hashtag, or $CLUDE with campaign keywords
+    const query = '(@cludebot OR #CludeHackathon OR ($CLUDE (hackathon OR "10 days" OR "growing a brain" OR "blockchain brain"))) -is:retweet';
     const params: Record<string, string> = {
       'tweet.fields': 'created_at,author_id,public_metrics',
       'expansions': 'author_id',
