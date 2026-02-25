@@ -63,36 +63,6 @@ function verifyHeliusWebhook(req: express.Request, res: express.Response, next: 
   next();
 }
 
-function getCampaignLoginPage(error?: string): string {
-  return `<!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>CLUDE — Access Required</title>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'JetBrains Mono',monospace;background:#f5f5f0;color:#111;display:flex;align-items:center;justify-content:center;min-height:100vh}
-.box{text-align:center;max-width:360px;padding:40px}
-.logo{font-size:24px;font-weight:700;letter-spacing:4px;margin-bottom:8px}
-.sub{font-size:11px;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:40px}
-input[type=password]{font-family:'JetBrains Mono',monospace;font-size:14px;padding:14px 18px;border:1px solid rgba(0,0,0,0.1);background:#fff;width:100%;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border-color 0.2s}
-input[type=password]:focus{border-color:#111}
-button{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:14px 32px;background:#111;color:#f5f5f0;border:none;cursor:pointer;width:100%;transition:opacity 0.2s}
-button:hover{opacity:0.8}
-.err{color:#d4473a;font-size:11px;margin-bottom:16px;letter-spacing:1px}
-</style></head><body>
-<div class="box">
-<div class="logo">CLUDE</div>
-<div class="sub">10 Days of Growing a Brain</div>
-${error ? `<div class="err">${error}</div>` : ''}
-<form method="POST" action="/10days">
-<input type="password" name="password" placeholder="Password" autofocus>
-<button type="submit">Enter</button>
-</form>
-</div></body></html>`;
-}
-
 export function createServer(): express.Application {
   const app = express();
 
@@ -563,49 +533,13 @@ export function createServer(): express.Application {
   const publicDir = path.join(process.cwd(), 'src', 'verify-app', 'public');
   const distPublicDir = path.join(process.cwd(), 'dist', 'verify-app', 'public');
 
-  // Password-protect campaign page at /10days
-  const campaignPassword = config.campaign.password;
-  const campaignAuthToken = campaignPassword
-    ? createHash('sha256').update(campaignPassword).digest('hex').slice(0, 32)
-    : '';
-
-  function getCookie(req: Request, name: string): string | undefined {
-    const raw = req.headers.cookie || '';
-    const match = raw.split(';').map(s => s.trim()).find(s => s.startsWith(name + '='));
-    return match ? match.split('=')[1] : undefined;
-  }
-
-  // Block direct access to campaign.html
+  // Serve campaign page at /10days (hidden from nav, direct link only)
   app.get('/campaign.html', (_req: Request, res: Response) => {
     res.redirect('/10days');
   });
-
-  // POST /10days — verify password
-  app.post('/10days', (req: Request, res: Response) => {
-    const submitted = req.body?.password || '';
-    if (!campaignPassword || submitted === campaignPassword) {
-      res.setHeader('Set-Cookie', `campaign_auth=${campaignAuthToken}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`);
-      res.redirect('/10days');
-    } else {
-      res.send(getCampaignLoginPage('Wrong password.'));
-    }
-  });
-
-  // GET /10days — check auth, serve page or login form
-  app.get('/10days', (req: Request, res: Response, next: express.NextFunction) => {
-    // If no password set, serve freely
-    if (!campaignPassword) {
-      req.url = '/campaign.html';
-      next();
-      return;
-    }
-    // Check cookie
-    if (getCookie(req, 'campaign_auth') === campaignAuthToken) {
-      req.url = '/campaign.html';
-      next();
-      return;
-    }
-    res.send(getCampaignLoginPage());
+  app.get('/10days', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/campaign.html';
+    next();
   });
 
   app.use(express.static(publicDir));
