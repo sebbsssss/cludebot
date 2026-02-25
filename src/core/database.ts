@@ -168,6 +168,72 @@ export async function initDatabase(): Promise<void> {
         ALTER TABLE dream_logs DROP CONSTRAINT IF EXISTS dream_logs_session_type_check;
         ALTER TABLE dream_logs ADD CONSTRAINT dream_logs_session_type_check
           CHECK (session_type IN ('consolidation', 'reflection', 'emergence', 'compaction', 'decay'));
+
+        -- Campaign: tweet tracking
+        CREATE TABLE IF NOT EXISTS campaign_tweets (
+          id BIGSERIAL PRIMARY KEY,
+          tweet_id TEXT UNIQUE NOT NULL,
+          author_id TEXT NOT NULL,
+          author_username TEXT,
+          text TEXT NOT NULL,
+          campaign_day INTEGER NOT NULL CHECK (campaign_day BETWEEN 1 AND 10),
+          content_type TEXT DEFAULT 'general',
+          likes INTEGER DEFAULT 0,
+          retweets INTEGER DEFAULT 0,
+          replies INTEGER DEFAULT 0,
+          quotes INTEGER DEFAULT 0,
+          engagement_score REAL DEFAULT 0,
+          is_holder BOOLEAN DEFAULT FALSE,
+          wallet_address TEXT,
+          is_eligible BOOLEAN DEFAULT TRUE,
+          tokens_awarded REAL DEFAULT 0,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          metrics_updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_campaign_tweets_day ON campaign_tweets(campaign_day);
+        CREATE INDEX IF NOT EXISTS idx_campaign_tweets_score ON campaign_tweets(engagement_score DESC);
+
+        -- Campaign: gacha spins
+        CREATE TABLE IF NOT EXISTS campaign_gacha (
+          id BIGSERIAL PRIMARY KEY,
+          campaign_day INTEGER NOT NULL CHECK (campaign_day IN (2, 8)),
+          wallet_address TEXT NOT NULL,
+          x_handle TEXT,
+          bet_amount REAL NOT NULL,
+          multiplier REAL NOT NULL,
+          win BOOLEAN NOT NULL,
+          payout REAL DEFAULT 0,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_campaign_gacha_day ON campaign_gacha(campaign_day);
+
+        -- Campaign: hackathon grants
+        CREATE TABLE IF NOT EXISTS campaign_grants (
+          id SERIAL PRIMARY KEY,
+          grant_number INTEGER UNIQUE NOT NULL CHECK (grant_number BETWEEN 1 AND 3),
+          reveal_day INTEGER NOT NULL,
+          project_name TEXT DEFAULT '',
+          project_url TEXT DEFAULT '',
+          pfp_image_url TEXT DEFAULT '',
+          description TEXT DEFAULT '',
+          amount REAL DEFAULT 10000000,
+          is_revealed BOOLEAN DEFAULT FALSE,
+          revealed_at TIMESTAMPTZ
+        );
+        INSERT INTO campaign_grants (grant_number, reveal_day)
+          VALUES (1, 4), (2, 6), (3, 9) ON CONFLICT DO NOTHING;
+
+        -- Campaign: global state (single row)
+        CREATE TABLE IF NOT EXISTS campaign_state (
+          id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+          campaign_start TIMESTAMPTZ NOT NULL DEFAULT '2026-03-01T00:00:00Z',
+          campaign_end TIMESTAMPTZ NOT NULL DEFAULT '2026-03-10T23:59:59Z',
+          current_day INTEGER DEFAULT 0,
+          total_tokens_distributed REAL DEFAULT 0,
+          is_active BOOLEAN DEFAULT FALSE
+        );
+        INSERT INTO campaign_state (id, campaign_start, campaign_end)
+          VALUES (1, '2026-03-01T00:00:00Z', '2026-03-10T23:59:59Z') ON CONFLICT DO NOTHING;
       `
     });
 

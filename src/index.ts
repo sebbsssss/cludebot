@@ -23,6 +23,7 @@ if (require.main === module) {
   const { startShiftReports, stopShiftReports } = require('./features/shift-report');
   const { startMarketMonitor, stopMarketMonitor } = require('./features/market-monitor');
   const { startDreamCycle, stopDreamCycle } = require('./features/dream-cycle');
+  const { startCampaignTracker, stopCampaignTracker } = require('./features/campaign-tracker');
   const { startServer } = require('./webhook/server');
   const { getBotWallet } = require('./core/solana-client');
   const { createChildLogger } = require('./core/logger');
@@ -108,6 +109,11 @@ if (require.main === module) {
     await startDreamCycle();
     log.info('Dream cycle started — memory consolidation active');
 
+    if (config.features.campaignEnabled) {
+      startCampaignTracker();
+      log.info('Campaign tracker started — 10 Days of Growing a Brain');
+    }
+
     log.info('All systems operational. Unfortunately.');
 
     // Graceful shutdown
@@ -119,6 +125,7 @@ if (require.main === module) {
       stopShiftReports();
       stopMarketMonitor();
       stopDreamCycle();
+      stopCampaignTracker();
       process.exit(0);
     };
 

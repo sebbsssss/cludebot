@@ -179,6 +179,116 @@ export async function getTweetWithContext(
   }
 }
 
+// ---- CAMPAIGN: Hashtag Search ---- //
+
+export interface CampaignTweet {
+  id: string;
+  text: string;
+  authorId: string;
+  authorUsername?: string;
+  createdAt?: string;
+  publicMetrics?: {
+    like_count: number;
+    retweet_count: number;
+    reply_count: number;
+    quote_count: number;
+  };
+}
+
+/**
+ * Search tweets mentioning @cludebot with #CludeHackathon.
+ * Requires X API Basic tier ($100/mo) for v2.search().
+ */
+export async function searchHashtagTweets(
+  sinceId?: string,
+  maxResults: number = 100
+): Promise<CampaignTweet[]> {
+  log.info({ sinceId, maxResults }, 'Searching campaign tweets');
+
+  try {
+    const query = '@cludebot #CludeHackathon -is:retweet';
+    const params: Record<string, string> = {
+      'tweet.fields': 'created_at,author_id,public_metrics',
+      'expansions': 'author_id',
+      'user.fields': 'username',
+      max_results: String(Math.min(maxResults, 100)),
+    };
+    if (sinceId) params.since_id = sinceId;
+
+    const result = await rwClient.v2.search(query, params);
+
+    // Build author lookup from includes
+    const authorMap = new Map<string, string>();
+    if (result.includes?.users) {
+      for (const user of result.includes.users) {
+        authorMap.set(user.id, user.username);
+      }
+    }
+
+    const tweets: CampaignTweet[] = [];
+    for (const tweet of result.data?.data || []) {
+      tweets.push({
+        id: tweet.id,
+        text: tweet.text,
+        authorId: tweet.author_id || '',
+        authorUsername: authorMap.get(tweet.author_id || '') || undefined,
+        createdAt: tweet.created_at,
+        publicMetrics: tweet.public_metrics ? {
+          like_count: tweet.public_metrics.like_count || 0,
+          retweet_count: tweet.public_metrics.retweet_count || 0,
+          reply_count: tweet.public_metrics.reply_count || 0,
+          quote_count: tweet.public_metrics.quote_count || 0,
+        } : undefined,
+      });
+    }
+
+    log.info({ found: tweets.length }, 'Campaign tweet search complete');
+    return tweets;
+  } catch (err) {
+    log.error({ err }, 'Failed to search campaign tweets');
+    return [];
+  }
+}
+
+/**
+ * Refresh engagement metrics for a batch of tweet IDs.
+ * Returns a map of tweetId → { likes, retweets, replies, quotes }.
+ */
+export async function refreshTweetMetrics(
+  tweetIds: string[]
+): Promise<Map<string, { likes: number; retweets: number; replies: number; quotes: number }>> {
+  const metricsMap = new Map<string, { likes: number; retweets: number; replies: number; quotes: number }>();
+  if (tweetIds.length === 0) return metricsMap;
+
+  // API allows up to 100 tweet lookups at once
+  const batches: string[][] = [];
+  for (let i = 0; i < tweetIds.length; i += 100) {
+    batches.push(tweetIds.slice(i, i + 100));
+  }
+
+  for (const batch of batches) {
+    try {
+      const result = await rwClient.v2.tweets(batch, {
+        'tweet.fields': 'public_metrics',
+      });
+      for (const tweet of result.data || []) {
+        if (tweet.public_metrics) {
+          metricsMap.set(tweet.id, {
+            likes: tweet.public_metrics.like_count || 0,
+            retweets: tweet.public_metrics.retweet_count || 0,
+            replies: tweet.public_metrics.reply_count || 0,
+            quotes: tweet.public_metrics.quote_count || 0,
+          });
+        }
+      }
+    } catch (err) {
+      log.warn({ err, batchSize: batch.length }, 'Failed to refresh tweet metrics batch');
+    }
+  }
+
+  return metricsMap;
+}
+
 export async function getUserById(userId: string): Promise<UserV2 | null> {
   try {
     const result = await rwClient.v2.user(userId, {

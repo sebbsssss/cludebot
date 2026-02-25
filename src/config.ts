@@ -73,6 +73,10 @@ export const config = {
   features: {
     showTxLinksInTweets: optional('SHOW_TX_LINKS_IN_TWEETS', 'true') === 'true',
     siteOnly: optional('SITE_ONLY', 'false') === 'true',
+    campaignEnabled: optional('CAMPAIGN_ENABLED', 'false') === 'true',
+  },
+  campaign: {
+    startDate: optional('CAMPAIGN_START', ''),
   },
   embedding: {
     provider: optional('EMBEDDING_PROVIDER', '') as '' | 'voyage' | 'openai',

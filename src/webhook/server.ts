@@ -10,6 +10,7 @@ import { writeMemo, solscanTxUrl } from '../core/solana-client';
 import { createHash, timingSafeEqual } from 'crypto';
 import { agentRoutes } from './agent-routes';
 import { graphRoutes } from './graph-routes';
+import { campaignRoutes } from './campaign-routes';
 import { getRecentActivity } from '../features/activity-stream';
 import { createChildLogger } from '../core/logger';
 import { checkInputContent } from '../core/guardrails';
@@ -249,6 +250,9 @@ export function createServer(): express.Application {
 
   // Knowledge Graph API (entity-centric memory visualization)
   app.use('/api/graph', graphRoutes());
+
+  // Campaign: 10 Days of Growing a Blockchain Brain
+  app.use('/api/campaign', apiLimiter, campaignRoutes());
 
   // Activity stream (recent on-chain events)
   app.get('/api/activity', async (req: Request, res: Response) => {
@@ -528,6 +532,12 @@ export function createServer(): express.Application {
   // Resolve public dir relative to project root (works in both dev and prod)
   const publicDir = path.join(process.cwd(), 'src', 'verify-app', 'public');
   const distPublicDir = path.join(process.cwd(), 'dist', 'verify-app', 'public');
+
+  // Serve campaign page at /10days (hidden from nav, direct link only)
+  app.get('/10days', (_req: Request, res: Response) => {
+    res.sendFile(path.join(publicDir, 'campaign.html'));
+  });
+
   app.use(express.static(publicDir));
   app.use(express.static(distPublicDir));
   app.use('/api', verifyRoutes());
