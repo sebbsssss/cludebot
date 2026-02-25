@@ -606,21 +606,49 @@
     }
 
     /* ══════════════════════════════════════════
-       LEADERBOARD
+       LEADERBOARD — STICKY SIDEBAR
     ══════════════════════════════════════════ */
+    .leaderboard-sidebar {
+      position: fixed;
+      top: 60px;
+      right: 0;
+      width: 300px;
+      height: calc(100vh - 60px);
+      overflow-y: auto;
+      background: var(--bg);
+      border-left: 1px solid rgba(0,0,0,0.06);
+      padding: 24px 16px;
+      z-index: 50;
+    }
+    .leaderboard-sidebar::-webkit-scrollbar { width: 3px; }
+    .leaderboard-sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }
+
+    .lb-sidebar-label {
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 8px;
+    }
+    .lb-sidebar-title {
+      font-size: 16px; font-weight: 700;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
     .leaderboard-tabs {
       display: flex; gap: 2px;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
     .leaderboard-tab {
       font-family: var(--mono);
-      font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
-      padding: 10px 20px;
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 6px 10px;
       background: white;
       border: 1px solid rgba(0,0,0,0.06);
       cursor: pointer;
       transition: all 0.25s ease;
       color: var(--text-muted);
+      flex: 1;
+      text-align: center;
     }
     .leaderboard-tab:hover { border-color: rgba(0,0,0,0.15); }
     .leaderboard-tab.active {
@@ -629,213 +657,105 @@
       border-color: var(--text);
     }
 
-    #leaderboardContent {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+    .lb-card {
+      background: white;
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 12px 14px;
+      margin-bottom: 4px;
+      transition: border-color 0.2s;
     }
-    .leaderboard-table {
-      width: 100%;
-      min-width: 600px;
-      border-collapse: collapse;
+    .lb-card:hover {
+      border-color: rgba(0,0,0,0.12);
     }
-    .leaderboard-table th {
-      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-      color: var(--text-faint);
-      text-align: left;
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(0,0,0,0.08);
-      font-weight: 400;
-    }
-    .leaderboard-table td {
-      font-size: 12px;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(0,0,0,0.04);
-    }
-    .leaderboard-table tr:hover td {
-      background: rgba(0,0,0,0.015);
+    .lb-card-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
     }
     .lb-rank {
       font-weight: 800; font-size: 14px;
-      min-width: 40px; display: inline-block;
+      min-width: 28px;
     }
     .lb-rank.gold { color: #c8a832; }
     .lb-rank.silver { color: #999; }
     .lb-rank.bronze { color: #a0724a; }
-    .lb-author { font-weight: 600; }
-    .lb-score { font-weight: 700; }
-    .lb-awarded {
-      font-size: 11px; font-weight: 700;
-      color: var(--green);
+    .lb-author {
+      font-weight: 600;
+      font-size: 12px;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
+    .lb-score {
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--blue);
+    }
+    .lb-card-metrics {
+      display: flex;
+      gap: 12px;
+      font-size: 10px;
+      color: var(--text-faint);
+      padding-left: 38px;
+    }
+    .lb-card-metrics span {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .lb-awarded {
+      font-size: 10px; font-weight: 700;
+      color: var(--green);
+      margin-left: auto;
+    }
+    .lb-link {
+      color: var(--blue);
+      text-decoration: none;
+      font-size: 10px;
+    }
+
     .lb-empty {
       text-align: center;
-      padding: 48px 20px;
+      padding: 40px 16px;
       color: var(--text-faint);
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1.8;
     }
 
+    /* offset main content so sidebar doesn't overlap */
+    .main-content {
+      margin-right: 300px;
+    }
+
     /* ══════════════════════════════════════════
-       GACHA MACHINE
+       GACHA / DOPAMINE RUSH — SIMPLIFIED
     ══════════════════════════════════════════ */
-    .gacha-container {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 48px;
-      align-items: start;
-    }
-    .gacha-machine {
-      max-width: 500px;
+    .gacha-preview {
       text-align: center;
+      max-width: 500px;
+      margin: 0 auto;
     }
-    .gacha-reels {
-      display: flex; justify-content: center; gap: 12px;
-      margin-bottom: 24px;
-    }
-    .gacha-reel {
-      width: 80px; height: 100px;
+    .gacha-mystery {
+      width: 120px; height: 150px;
       background: white;
       border: 2px solid rgba(0,0,0,0.08);
       display: flex; align-items: center; justify-content: center;
-      font-size: 36px; font-weight: 800;
-      transition: all 0.3s ease;
-      overflow: hidden;
-      position: relative;
+      font-size: 56px; font-weight: 800;
+      margin: 32px auto;
+      color: var(--gold);
+      animation: gachaPulse 2s ease-in-out infinite;
     }
-    .gacha-reel.spinning {
-      border-color: var(--blue);
+    @keyframes gachaPulse {
+      0%, 100% { border-color: rgba(0,0,0,0.08); }
+      50% { border-color: var(--gold); }
     }
-    .gacha-reel.win {
-      border-color: var(--green);
-      animation: reelWin 0.5s ease;
-    }
-    .gacha-reel.lose {
-      border-color: var(--red);
-      opacity: 0.5;
-    }
-    @keyframes reelWin {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-      100% { transform: scale(1); }
-    }
-
-    .gacha-odds {
-      font-size: 13px; color: var(--text-muted);
-      margin-bottom: 20px;
-    }
-    .gacha-odds strong {
-      color: var(--text); font-weight: 700;
-    }
-    .gacha-spin-btn {
-      font-family: var(--mono);
-      font-size: 14px; font-weight: 700;
-      letter-spacing: 3px; text-transform: uppercase;
-      padding: 18px 48px;
-      background: var(--text);
-      color: var(--bg);
-      border: 2px solid var(--text);
-      cursor: pointer;
-      transition: all 0.25s ease;
-    }
-    .gacha-spin-btn:hover {
-      background: transparent;
-      color: var(--text);
-    }
-    .gacha-spin-btn:disabled {
-      opacity: 0.3; cursor: not-allowed;
-    }
-    .gacha-spin-btn:disabled:hover {
-      background: var(--text); color: var(--bg);
-    }
-
-    .gacha-input-row {
-      display: flex; gap: 8px;
-      margin-bottom: 20px;
-      max-width: 400px;
-      margin-left: auto; margin-right: auto;
-    }
-    .gacha-input {
-      font-family: var(--mono);
+    .gacha-coming-soon {
       font-size: 12px;
-      padding: 10px 14px;
-      border: 1px solid rgba(0,0,0,0.1);
-      background: white;
-      flex: 1;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .gacha-input:focus {
-      border-color: var(--text);
-    }
-    .gacha-input::placeholder {
       color: var(--text-faint);
-    }
-
-    .gacha-result {
-      margin-top: 20px;
-      font-size: 14px; font-weight: 700;
-      min-height: 24px;
-    }
-    .gacha-result.win { color: var(--green); }
-    .gacha-result.lose { color: var(--text-faint); }
-
-    /* gacha history */
-    .gacha-history {
-      max-height: 480px;
-      overflow-y: auto;
-    }
-    .gacha-history::-webkit-scrollbar { width: 3px; }
-    .gacha-history::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }
-
-    .gacha-history-title {
-      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
-      color: var(--text-faint);
-      margin-bottom: 16px;
-    }
-    .gacha-spin-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(0,0,0,0.04);
-      font-size: 12px;
-    }
-    .gacha-spin-handle {
-      font-weight: 600; min-width: 100px;
-    }
-    .gacha-spin-result {
-      font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
-      font-weight: 700;
-      padding: 2px 8px;
-    }
-    .gacha-spin-result.win {
-      color: var(--green); background: rgba(74,138,90,0.08);
-    }
-    .gacha-spin-result.lose {
-      color: var(--text-faint); background: rgba(0,0,0,0.03);
-    }
-    .gacha-spin-payout {
-      margin-left: auto;
-      font-weight: 700;
-      color: var(--text-faint);
-    }
-    .gacha-spin-payout.win { color: var(--green); }
-
-    .gacha-stats {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 2px;
+      letter-spacing: 1px;
       margin-top: 24px;
-    }
-    .gacha-stat {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.06);
-      padding: 16px;
-      text-align: center;
-    }
-    .gacha-stat-value {
-      font-size: 20px; font-weight: 800;
-      margin-bottom: 2px;
-    }
-    .gacha-stat-label {
-      font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
-      color: var(--text-faint);
     }
 
     /* ══════════════════════════════════════════
@@ -889,12 +809,10 @@
     @media (max-width: 968px) {
       :root { --section-pad: 80px; }
       .grants-grid { grid-template-columns: 1fr 1fr; }
-      .gacha-container { grid-template-columns: 1fr; }
-      .gacha-machine { max-width: 100%; }
       .tweet-feed { grid-template-columns: 1fr 1fr; }
       .tracker-stats { grid-template-columns: repeat(3, 1fr); }
-      .leaderboard-table { font-size: 11px; }
-      .leaderboard-table th, .leaderboard-table td { padding: 10px 8px; }
+      .leaderboard-sidebar { display: none; }
+      .main-content { margin-right: 0; }
     }
 
     @media (max-width: 768px) {
@@ -937,12 +855,8 @@
       .grant-card-container { height: 360px; }
       .tweet-feed { grid-template-columns: 1fr; }
       .tracker-stats { grid-template-columns: 1fr; }
-      .gacha-stats { grid-template-columns: 1fr; }
-      .gacha-reels { gap: 8px; }
-      .gacha-reel { width: 64px; height: 80px; font-size: 28px; }
 
       .progress-categories { flex-direction: column; align-items: center; }
-      .leaderboard-tabs { flex-wrap: wrap; }
 
       .footer-inner { flex-direction: column; gap: 24px; text-align: center; }
     }
@@ -956,6 +870,25 @@
   </style>
 </head>
 <body>
+
+  <!-- ═══════════════ LEADERBOARD SIDEBAR ═══════════════ -->
+  <aside class="leaderboard-sidebar" id="leaderboardSidebar">
+    <div class="lb-sidebar-label">Leaderboard</div>
+    <div class="lb-sidebar-title">Top 10 by engagement</div>
+
+    <div class="leaderboard-tabs" id="leaderboardTabs">
+      <button class="leaderboard-tab active" data-day="1">Day 1</button>
+      <button class="leaderboard-tab" data-day="3">Day 3</button>
+      <button class="leaderboard-tab" data-day="5">Day 5</button>
+    </div>
+
+    <div id="leaderboardBody">
+      <div class="lb-empty">Pending — Campaign hasn't started yet. Check back soon.</div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+  <div class="main-content">
 
   <!-- ═══════════════ NAV ═══════════════ -->
   <nav>
@@ -1114,95 +1047,22 @@
     </div>
   </section>
 
-  <!-- ═══════════════ LEADERBOARD ═══════════════ -->
-  <section class="section section-alt">
-    <div class="section-inner reveal">
-      <div class="section-label">Leaderboard</div>
-      <div class="section-title">Top 10 by engagement.</div>
 
-      <div class="leaderboard-tabs" id="leaderboardTabs">
-        <button class="leaderboard-tab active" data-day="1">Day 1 — Spark</button>
-        <button class="leaderboard-tab" data-day="3">Day 3 — Core Memory</button>
-        <button class="leaderboard-tab" data-day="5">Day 5 — Visual Cortex</button>
-      </div>
-
-      <div id="leaderboardContent">
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Author</th>
-              <th>Score</th>
-              <th title="Likes">&#10084;</th>
-              <th title="Retweets">&#128257;</th>
-              <th title="Replies">&#128172;</th>
-              <th title="Link">&#128206;</th>
-              <th>Awarded</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboardBody">
-            <tr>
-              <td colspan="8" class="lb-empty">Pending — Campaign hasn't started yet. Check back soon.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════ GACHA MACHINE ═══════════════ -->
+  <!-- ═══════════════ DOPAMINE RUSH ═══════════════ -->
   <section class="section">
     <div class="section-inner reveal">
-      <div class="section-label">Gacha Machine</div>
-      <div class="section-title" id="gachaTitle">Dopamine Rush</div>
-      <div class="section-desc" id="gachaDesc">Test your luck. Win big or walk away. The tokens go somewhere either way.</div>
+      <div class="section-label">Days 2 & 8</div>
+      <div class="section-title">Dopamine Rush</div>
+      <div class="section-desc">Test your luck. Win big or walk away. The tokens go somewhere either way.</div>
 
-      <div class="gacha-container">
-        <div class="gacha-machine">
-          <div class="gacha-reels">
-            <div class="gacha-reel" id="reel1">?</div>
-            <div class="gacha-reel" id="reel2">?</div>
-            <div class="gacha-reel" id="reel3">?</div>
-          </div>
-
-          <div class="gacha-odds" id="gachaOdds">
-            <strong>50/50</strong> — Triple or nothing
-          </div>
-
-          <div class="gacha-input-row">
-            <input type="text" class="gacha-input" id="gachaWallet" placeholder="Wallet address">
-            <input type="text" class="gacha-input" id="gachaHandle" placeholder="@handle">
-          </div>
-
-          <button class="gacha-spin-btn" id="gachaSpinBtn" disabled>Spin</button>
-
-          <div class="gacha-result" id="gachaResult"></div>
-
-          <div class="gacha-stats" id="gachaStatsGrid">
-            <div class="gacha-stat">
-              <div class="gacha-stat-value" id="gsTotalSpins">0</div>
-              <div class="gacha-stat-label">Total Spins</div>
-            </div>
-            <div class="gacha-stat">
-              <div class="gacha-stat-value" id="gsWinRate">0%</div>
-              <div class="gacha-stat-label">Win Rate</div>
-            </div>
-            <div class="gacha-stat">
-              <div class="gacha-stat-value" id="gsTotalPaid">0</div>
-              <div class="gacha-stat-label">Total Paid Out</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="gacha-history">
-          <div class="gacha-history-title">Recent Spins</div>
-          <div id="gachaHistoryFeed">
-            <div class="data-unavailable">No spins yet</div>
-          </div>
-        </div>
+      <div class="gacha-preview">
+        <div class="gacha-mystery">?</div>
+        <div class="gacha-coming-soon">More details will be shared separately.</div>
       </div>
     </div>
   </section>
+
+  </div><!-- /.main-content -->
 
   <!-- ═══════════════ FOOTER ═══════════════ -->
   <footer class="footer">
@@ -1237,7 +1097,6 @@
       { day: 10, emoji: '\uD83E\uDDE0', name: 'PEAK INTELLIGENCE', subtitle: '10M Airdrop to Top 10 Holders', type: 'special', restriction: 'Top 10 Holders (Snapshot)', tokens: '10M', color: '#d4473a' },
     ];
 
-    var GACHA_CHARS = ['C', 'L', 'U', 'D', 'E', '$', '*', '+', 'x'];
     var CONTENT_DAYS = [1, 3, 5];
 
     /* ──────────────────────────────────────────
@@ -1250,7 +1109,6 @@
       tokensDistributed: 0,
       selectedDay: 1,
       leaderboardDay: 1,
-      gachaSpinning: false,
       grants: [
         { number: 1, revealed: false, name: null, description: null, pfp: null, revealDay: 4 },
         { number: 2, revealed: false, name: null, description: null, pfp: null, revealDay: 6 },
@@ -1258,8 +1116,6 @@
       ],
       tweets: [],
       leaderboardData: {},
-      gachaHistory: [],
-      gachaStats: { totalSpins: 0, winRate: 0, totalPaid: 0 },
     };
 
     /* ──────────────────────────────────────────
@@ -1628,15 +1484,15 @@
        LEADERBOARD
     ────────────────────────────────────────── */
     function renderLeaderboard() {
-      var tbody = $('leaderboardBody');
+      var container = $('leaderboardBody');
       var data = state.leaderboardData[state.leaderboardDay];
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="lb-empty">Pending — Campaign hasn\'t started yet. Check back soon.</td></tr>';
+        container.innerHTML = '<div class="lb-empty">Pending — Campaign hasn\'t started yet. Check back soon.</div>';
         return;
       }
 
-      tbody.innerHTML = '';
+      container.innerHTML = '';
       data.slice(0, 10).forEach(function(entry, i) {
         var rank = i + 1;
         var rankClass = '';
@@ -1647,22 +1503,27 @@
 
         var handle = entry.authorUsername || entry.author_handle || entry.username || 'anon';
         var score = entry.engagementScore || entry.score || ((entry.likes || 0) + (entry.retweets || 0) * 2 + (entry.replies || 0));
-        var awarded = (entry.tokensAwarded || entry.awarded) ? formatNumber(entry.tokensAwarded || entry.awarded) + ' $CLUDE' : '--';
+        var awarded = (entry.tokensAwarded || entry.awarded) ? formatNumber(entry.tokensAwarded || entry.awarded) : '';
         var tweetId = entry.tweetId || entry.tweet_id || '';
-        var link = tweetId ? 'https://x.com/i/status/' + tweetId : '#';
+        var link = tweetId ? 'https://x.com/i/status/' + tweetId : '';
 
-        var tr = document.createElement('tr');
-        tr.innerHTML =
-          '<td><span class="lb-rank ' + rankClass + '">' + rankDisplay + '</span></td>' +
-          '<td class="lb-author">@' + escapeHtml(handle.replace('@', '')) + '</td>' +
-          '<td class="lb-score">' + formatNumber(score) + '</td>' +
-          '<td>' + formatNumber(entry.likes || 0) + '</td>' +
-          '<td>' + formatNumber(entry.retweets || 0) + '</td>' +
-          '<td>' + formatNumber(entry.replies || 0) + '</td>' +
-          '<td><a href="' + link + '" target="_blank" style="color:var(--blue);text-decoration:none;">\u2197</a></td>' +
-          '<td class="lb-awarded">' + awarded + '</td>';
+        var card = document.createElement('div');
+        card.className = 'lb-card';
+        card.innerHTML =
+          '<div class="lb-card-top">' +
+            '<span class="lb-rank ' + rankClass + '">' + rankDisplay + '</span>' +
+            '<span class="lb-author">@' + escapeHtml(handle.replace('@', '')) + '</span>' +
+            '<span class="lb-score">' + formatNumber(score) + '</span>' +
+          '</div>' +
+          '<div class="lb-card-metrics">' +
+            '<span>\u2764 ' + formatNumber(entry.likes || 0) + '</span>' +
+            '<span>\uD83D\uDD01 ' + formatNumber(entry.retweets || 0) + '</span>' +
+            '<span>\uD83D\uDCAC ' + formatNumber(entry.replies || 0) + '</span>' +
+            (link ? '<a href="' + link + '" target="_blank" class="lb-link">\u2197</a>' : '') +
+            (awarded ? '<span class="lb-awarded">' + awarded + ' $CLUDE</span>' : '') +
+          '</div>';
 
-        tbody.appendChild(tr);
+        container.appendChild(card);
       });
     }
 
@@ -1681,156 +1542,6 @@
     /* ──────────────────────────────────────────
        GACHA MACHINE
     ────────────────────────────────────────── */
-    function updateGachaSection() {
-      // determine which gacha day is relevant
-      var gachaDay = null;
-      if (state.currentDay === 2) gachaDay = CAMPAIGN_DAYS[1];
-      else if (state.currentDay === 8) gachaDay = CAMPAIGN_DAYS[7];
-
-      if (gachaDay) {
-        $('gachaTitle').textContent = gachaDay.name;
-        $('gachaOdds').innerHTML = '<strong>' + gachaDay.odds + '</strong> — ' +
-          (gachaDay.multiplier === '3x' ? 'Triple or nothing' : '10x or bust');
-        $('gachaSpinBtn').disabled = false;
-      } else {
-        // show the next gacha
-        var nextGacha = state.currentDay < 2 ? CAMPAIGN_DAYS[1] : CAMPAIGN_DAYS[7];
-        $('gachaTitle').textContent = nextGacha.name;
-        $('gachaOdds').innerHTML = '<strong>' + nextGacha.odds + '</strong> — ' +
-          (nextGacha.multiplier === '3x' ? 'Triple or nothing' : '10x or bust');
-        $('gachaSpinBtn').disabled = true;
-      }
-    }
-
-    function initGacha() {
-      var spinBtn = $('gachaSpinBtn');
-      var walletInput = $('gachaWallet');
-      var handleInput = $('gachaHandle');
-
-      // enable spin button when inputs are filled and it's a gacha day
-      function checkInputs() {
-        var isGachaDay = state.currentDay === 2 || state.currentDay === 8;
-        spinBtn.disabled = !isGachaDay || !walletInput.value.trim() || !handleInput.value.trim() || state.gachaSpinning;
-      }
-      walletInput.addEventListener('input', checkInputs);
-      handleInput.addEventListener('input', checkInputs);
-
-      spinBtn.addEventListener('click', function() {
-        if (state.gachaSpinning) return;
-        var wallet = walletInput.value.trim();
-        var handle = handleInput.value.trim();
-        if (!wallet || !handle) return;
-
-        state.gachaSpinning = true;
-        spinBtn.disabled = true;
-        $('gachaResult').textContent = '';
-        $('gachaResult').className = 'gacha-result';
-
-        // start spinning animation
-        var reel1 = $('reel1'), reel2 = $('reel2'), reel3 = $('reel3');
-        reel1.className = 'gacha-reel spinning';
-        reel2.className = 'gacha-reel spinning';
-        reel3.className = 'gacha-reel spinning';
-
-        var spinIntervals = [];
-        [reel1, reel2, reel3].forEach(function(reel) {
-          var interval = setInterval(function() {
-            reel.textContent = GACHA_CHARS[Math.floor(Math.random() * GACHA_CHARS.length)];
-          }, 80);
-          spinIntervals.push(interval);
-        });
-
-        // fire the API call
-        safeFetch('/api/campaign/gacha/spin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            wallet_address: wallet,
-            x_handle: handle.replace('@', ''),
-            campaign_day: state.currentDay,
-          }),
-        }).then(function(result) {
-          stopReels(spinIntervals, result.won, result.payout || 0);
-        }).catch(function() {
-          // fallback: simulate a result client-side
-          var isDay2 = state.currentDay === 2;
-          var won = Math.random() < (isDay2 ? 0.5 : 0.15);
-          stopReels(spinIntervals, won, won ? (isDay2 ? 300000 : 1000000) : 0);
-        });
-      });
-    }
-
-    function stopReels(intervals, won, payout) {
-      var reels = [$('reel1'), $('reel2'), $('reel3')];
-
-      // stop reels one by one with 300ms stagger
-      reels.forEach(function(reel, i) {
-        setTimeout(function() {
-          clearInterval(intervals[i]);
-
-          if (won) {
-            reel.textContent = '$';
-            reel.className = 'gacha-reel win';
-          } else {
-            reel.textContent = GACHA_CHARS[Math.floor(Math.random() * (GACHA_CHARS.length - 1))]; // exclude $
-            reel.className = 'gacha-reel lose';
-          }
-
-          // after last reel stops, show result
-          if (i === 2) {
-            setTimeout(function() {
-              var result = $('gachaResult');
-              if (won) {
-                result.textContent = 'YOU WON ' + formatNumber(payout) + ' $CLUDE!';
-                result.className = 'gacha-result win';
-              } else {
-                result.textContent = 'No luck this time.';
-                result.className = 'gacha-result lose';
-              }
-              state.gachaSpinning = false;
-              // re-check inputs
-              var isGachaDay = state.currentDay === 2 || state.currentDay === 8;
-              $('gachaSpinBtn').disabled = !isGachaDay;
-
-              // refresh gacha history
-              fetchGachaHistory(state.currentDay);
-            }, 200);
-          }
-        }, (i + 1) * 300);
-      });
-    }
-
-    function renderGachaHistory() {
-      var container = $('gachaHistoryFeed');
-
-      if (!state.gachaHistory || state.gachaHistory.length === 0) {
-        container.innerHTML = '<div class="data-unavailable">No spins yet</div>';
-        return;
-      }
-
-      container.innerHTML = '';
-      state.gachaHistory.slice(0, 30).forEach(function(spin) {
-        var row = document.createElement('div');
-        row.className = 'gacha-spin-row';
-
-        var handle = spin.x_handle || spin.handle || 'anon';
-        var won = spin.won || spin.result === 'win';
-        var payout = spin.payout || 0;
-
-        row.innerHTML =
-          '<div class="gacha-spin-handle">@' + escapeHtml(handle.replace('@', '')) + '</div>' +
-          '<div class="gacha-spin-result ' + (won ? 'win' : 'lose') + '">' + (won ? 'WIN' : 'LOSE') + '</div>' +
-          '<div class="gacha-spin-payout ' + (won ? 'win' : '') + '">' + (won ? '+' + formatNumber(payout) : '0') + '</div>';
-
-        container.appendChild(row);
-      });
-    }
-
-    function updateGachaStats() {
-      $('gsTotalSpins').textContent = formatNumber(state.gachaStats.totalSpins);
-      $('gsWinRate').textContent = state.gachaStats.winRate + '%';
-      $('gsTotalPaid').textContent = formatNumber(state.gachaStats.totalPaid);
-    }
 
     /* ──────────────────────────────────────────
        API FETCHING
@@ -1890,22 +1601,6 @@
       });
     }
 
-    function fetchGachaHistory(day) {
-      if (!day) day = state.currentDay === 8 ? 8 : 2;
-      safeFetch('/api/campaign/gacha/history?day=' + day).then(function(data) {
-        state.gachaHistory = data.history || data.spins || [];
-        state.gachaStats = {
-          totalSpins: data.total_spins || data.stats?.total_spins || state.gachaHistory.length,
-          winRate: data.win_rate || data.stats?.win_rate || 0,
-          totalPaid: data.total_paid || data.stats?.total_paid || 0,
-        };
-        renderGachaHistory();
-        updateGachaStats();
-      }).catch(function() {
-        renderGachaHistory();
-        updateGachaStats();
-      });
-    }
 
     /* ──────────────────────────────────────────
        STATE APPLICATION
@@ -1924,7 +1619,6 @@
 
       renderTimeline();
       renderDayDetail();
-      updateGachaSection();
     }
 
     /* ──────────────────────────────────────────
@@ -1955,13 +1649,9 @@
       renderGrants();
       renderTweets();
       renderLeaderboard();
-      renderGachaHistory();
-      updateGachaStats();
-      updateGachaSection();
 
       // init interactive elements
       initLeaderboardTabs();
-      initGacha();
       initScrollReveal();
 
       // fetch data
@@ -1969,7 +1659,6 @@
       fetchTweets();
       fetchLeaderboard(1);
       fetchGrants();
-      fetchGachaHistory();
 
       // countdown timer every second
       setInterval(updateCountdown, 1000);
@@ -1977,8 +1666,9 @@
       // poll campaign state every 60s
       setInterval(fetchCampaignState, 60000);
 
-      // poll tweets every 5 minutes
+      // poll tweets + leaderboard every 5 minutes
       setInterval(fetchTweets, 300000);
+      setInterval(function() { fetchLeaderboard(state.leaderboardDay); }, 300000);
 
       // poll grants every 5 minutes
       setInterval(fetchGrants, 300000);
