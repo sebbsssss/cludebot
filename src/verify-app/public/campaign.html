@@ -1156,25 +1156,34 @@
     }
 
     /* ──────────────────────────────────────────
-       COUNTDOWN
+       COUNTDOWN — persistent 24h timer
     ────────────────────────────────────────── */
-    function updateCountdown() {
-      var now = Date.now();
-      var target;
+    var COUNTDOWN_KEY = 'clude_campaign_countdown_target';
 
-      if (state.status === 'upcoming' && state.campaignStart) {
-        target = new Date(state.campaignStart).getTime();
-      } else if (state.status === 'active' && state.campaignStart) {
-        // countdown to end of current day (next day start)
-        var dayEnd = new Date(state.campaignStart).getTime() + state.currentDay * 86400000;
-        target = dayEnd;
-      } else {
-        // complete or no data - show zeros
-        setCountdownDigits(0, 0, 0, 0);
-        return;
+    function getCountdownTarget() {
+      var stored = localStorage.getItem(COUNTDOWN_KEY);
+      if (stored) {
+        var t = parseInt(stored, 10);
+        if (t > Date.now()) return t;
+      }
+      // No valid target — set a new 24h countdown
+      var target = Date.now() + 24 * 60 * 60 * 1000;
+      localStorage.setItem(COUNTDOWN_KEY, String(target));
+      return target;
+    }
+
+    var countdownTarget = getCountdownTarget();
+
+    function updateCountdown() {
+      var diff = Math.max(0, countdownTarget - Date.now());
+
+      if (diff === 0) {
+        // Timer expired — reset to another 24h
+        countdownTarget = Date.now() + 24 * 60 * 60 * 1000;
+        localStorage.setItem(COUNTDOWN_KEY, String(countdownTarget));
+        diff = 24 * 60 * 60 * 1000;
       }
 
-      var diff = Math.max(0, target - now);
       var days = Math.floor(diff / 86400000);
       var hours = Math.floor((diff % 86400000) / 3600000);
       var mins = Math.floor((diff % 3600000) / 60000);
