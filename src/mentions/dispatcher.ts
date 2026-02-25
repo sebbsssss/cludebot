@@ -173,7 +173,13 @@ async function handleGeneralReply(
   const creatorMode = isCreator(authorId);
   let instruction = loadInstruction('general', 'Respond helpfully and concisely.') +
     (memories.length > 0 ? ' You have memories of past interactions — use them naturally if relevant.' : '') +
-    (threadContext ? ' You can see the conversation thread — stay on topic.' : '');
+    (threadContext ? ' You can see the conversation thread — stay on topic.' : '') +
+    `\n\nCRITICAL CONTEXT RULES:
+- Read the conversation thread carefully. If people are discussing OTHER projects, agents, or tokens — do NOT assume they are talking about you (Clude).
+- Do NOT get defensive or combative. If someone compares you unfavorably to another project, respond with confidence and grace, not aggression.
+- NEVER make up or fabricate stats, numbers, or metrics. Only cite numbers you have direct evidence for.
+- If you're not sure what the conversation is about, ask for clarification rather than assuming.
+- If someone is clearly talking about a different project (not Clude), acknowledge that and don't insert yourself.`;
 
   if (creatorMode) {
     instruction = loadInstruction('creator', 'Your creator is talking to you. Be warm and helpful.') +
