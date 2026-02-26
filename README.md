@@ -1,5 +1,9 @@
 # Clude Bot
 
+[![CI](https://github.com/sebbsssss/cludebot/actions/workflows/ci.yml/badge.svg)](https://github.com/sebbsssss/cludebot/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/clude-bot)](https://www.npmjs.com/package/clude-bot)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **Molecular Memory** for AI agents. Not just storage — synthesis.
 
 > *"From thought to proof. Where memories crystallize into knowledge."*
@@ -59,6 +63,20 @@ const memories = await brain.recall({
 // Format for your LLM prompt
 const context = brain.formatContext(memories);
 // Pass `context` into your system prompt so the LLM knows what it remembers
+```
+
+---
+
+## Examples
+
+See the [`examples/`](./examples) folder for runnable scripts:
+
+- **[basic-memory.ts](./examples/basic-memory.ts)** — Store and recall with just Supabase (no API keys needed)
+- **[chat-agent.ts](./examples/chat-agent.ts)** — Interactive chat agent with memory and dream cycles
+- **[progressive-disclosure.ts](./examples/progressive-disclosure.ts)** — Token-efficient retrieval with `recallSummaries()` + `hydrate()`
+
+```bash
+SUPABASE_URL=... SUPABASE_KEY=... npx tsx examples/basic-memory.ts
 ```
 
 ---
@@ -537,6 +555,10 @@ See `.env.example` for required environment variables (X API, Supabase, Anthropi
 ## Stack
 
 TypeScript, Supabase (PostgreSQL + pgvector), Anthropic Claude, Voyage AI / OpenAI embeddings, Solana Web3.js, Node.js.
+
+## Contributing
+
+Contributions welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup instructions and guidelines.
 
 ## License
 
