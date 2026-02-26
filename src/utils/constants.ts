@@ -61,7 +61,7 @@ export const LINK_SIMILARITY_THRESHOLD = 0.6;            // Min vector similarit
 export const MAX_AUTO_LINKS = 5;                         // Max links created per new memory
 export const LINK_CO_RETRIEVAL_BOOST = 0.05;             // Hebbian strength boost on co-retrieval
 
-export type MemoryLinkType = 'supports' | 'contradicts' | 'elaborates' | 'causes' | 'follows' | 'relates';
+export type MemoryLinkType = 'supports' | 'contradicts' | 'elaborates' | 'causes' | 'follows' | 'relates' | 'resolves';
 
 // Embedding system
 export const EMBEDDING_DIMENSIONS = 1024;

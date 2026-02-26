@@ -1203,7 +1203,7 @@ export async function getSelfModel(): Promise<Memory[]> {
 // ---- STORE DREAM LOG ---- //
 
 export async function storeDreamLog(
-  sessionType: 'consolidation' | 'reflection' | 'emergence' | 'compaction',
+  sessionType: 'consolidation' | 'reflection' | 'emergence' | 'compaction' | 'contradiction_resolution',
   inputMemoryIds: number[],
   output: string,
   newMemoryIds: number[]

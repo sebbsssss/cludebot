@@ -20,6 +20,7 @@ import {
   REFLECTION_MIN_INTERVAL_MS,
   TWEET_MAX_LENGTH,
 } from '../utils/constants';
+import { timeAgo } from '../utils/format';
 
 const log = createChildLogger('dream-cycle');
 
@@ -120,6 +121,8 @@ async function triggerReflection(): Promise<void> {
         await runCompaction();    // NEW: Beads-inspired memory compaction
         await sleep(3000);
         await runReflection();
+        await sleep(3000);
+        await runContradictionResolution();
         await sleep(3000);
         await runEmergence();
       })(),
@@ -620,6 +623,129 @@ async function runReflection(): Promise<void> {
   );
 
   log.info({ evidenceCount: evidenceIds.length }, 'Reflection complete (progressive disclosure enabled)');
+}
+
+// ---- CONTRADICTION RESOLUTION ---- //
+
+/**
+ * Resolve contradicting memory pairs identified by autoLinkMemory.
+ * For each unresolved contradiction, Claude analyzes which belief is more
+ * accurate or synthesizes a new understanding. The resolution is stored as
+ * a semantic memory with 'resolves' links to both originals.
+ */
+async function runContradictionResolution(): Promise<void> {
+  log.info('Dream phase 2.5: CONTRADICTION RESOLUTION starting');
+
+  const db = getDb();
+
+  // Find unresolved contradiction pairs (graceful if RPC doesn't exist yet)
+  let pairs: Array<{ link_id: number; source_id: number; target_id: number; strength: number }>;
+  try {
+    const { data, error } = await db.rpc('get_unresolved_contradictions', { max_pairs: 3 });
+    if (error || !data || data.length === 0) {
+      log.debug({ error: error?.message }, 'No unresolved contradictions found — skipping phase');
+      return;
+    }
+    pairs = data;
+  } catch (err) {
+    log.debug({ err }, 'Contradiction resolution skipped (RPC unavailable)');
+    return;
+  }
+
+  log.info({ pairCount: pairs.length }, 'Found unresolved contradictions');
+
+  // Collect all unique memory IDs and fetch them
+  const allIds = [...new Set(pairs.flatMap(p => [p.source_id, p.target_id]))];
+  const { data: memories } = await db
+    .from('memories')
+    .select('*')
+    .in('id', allIds);
+
+  if (!memories || memories.length === 0) {
+    log.warn('Could not fetch contradiction memories — skipping phase');
+    return;
+  }
+
+  const memoryMap = new Map(memories.map((m: Memory) => [m.id, m as Memory]));
+  const allInputIds: number[] = [];
+  const newMemoryIds: number[] = [];
+  const outputs: string[] = [];
+
+  for (const pair of pairs) {
+    const memA = memoryMap.get(pair.source_id);
+    const memB = memoryMap.get(pair.target_id);
+    if (!memA || !memB) continue;
+
+    allInputIds.push(memA.id, memB.id);
+
+    const sourceMemories = [memA, memB];
+    const numberedContext = sourceMemories.map((m, i) => {
+      const age = timeAgo(m.created_at);
+      return `[${i + 1}] (${m.memory_type}, ${age}, importance: ${m.importance.toFixed(2)}, concepts: ${(m.concepts || []).join(', ') || 'none'})\n${m.content}`;
+    }).join('\n\n');
+
+    const response = await generateResponse({
+      userMessage:
+        'These two memories contradict each other. Analyze both and produce a single resolved belief. ' +
+        'Which is more accurate now? Or can you synthesize both into a more nuanced understanding? ' +
+        'Cite the memories you drew from, e.g. (because of 1, 2).',
+      context: `CONTRADICTING MEMORIES:\n\n${numberedContext}`,
+      featureInstruction:
+        'You are Clude resolving a contradiction in your own memory during a dream cycle. ' +
+        'This is not performance — you are genuinely updating your beliefs based on evidence. ' +
+        'Produce 1-2 sentences: the resolved understanding. Be specific and concrete. ' +
+        'If one memory is clearly outdated or wrong, say so. If both have merit, synthesize.',
+      maxTokens: 200,
+    });
+
+    const { text, evidenceIds } = parseEvidenceCitations(response, sourceMemories);
+
+    if (isCopoutResponse(text)) {
+      log.warn({ memA: memA.id, memB: memB.id }, 'Contradiction resolution produced cop-out — skipping pair');
+      continue;
+    }
+
+    outputs.push(text);
+
+    // Store resolution as semantic memory
+    const resolutionId = await storeMemory({
+      type: 'semantic',
+      content: `Contradiction resolved: ${text}`,
+      summary: text.slice(0, 300),
+      tags: ['contradiction_resolution', 'belief_update'],
+      importance: 0.65,
+      emotionalValence: 0,
+      source: 'contradiction_resolution',
+      evidenceIds,
+    });
+
+    if (resolutionId) {
+      newMemoryIds.push(resolutionId);
+
+      // Link resolution to both contradicting memories
+      createMemoryLink(resolutionId, memA.id, 'resolves', 0.85).catch(() => {});
+      createMemoryLink(resolutionId, memB.id, 'resolves', 0.85).catch(() => {});
+
+      // Accelerate decay on the older/weaker memory (20% reduction)
+      const weaker = memA.importance < memB.importance ? memA : memB;
+      const newDecay = Math.max(0.05, weaker.decay_factor * 0.8);
+      db.from('memories')
+        .update({ decay_factor: newDecay })
+        .eq('id', weaker.id)
+        .then(() => log.debug({ memoryId: weaker.id, newDecay: newDecay.toFixed(3) }, 'Accelerated decay on weaker contradicting memory'));
+    }
+  }
+
+  if (outputs.length > 0) {
+    await storeDreamLog(
+      'contradiction_resolution',
+      allInputIds,
+      outputs.join('\n---\n'),
+      newMemoryIds
+    );
+  }
+
+  log.info({ resolved: outputs.length, skipped: pairs.length - outputs.length }, 'Contradiction resolution complete');
 }
 
 // ---- EMERGENCE ---- //

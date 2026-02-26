@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS memory_fragments (
 -- Dream logs: consolidation, reflection, emergence sessions
 CREATE TABLE IF NOT EXISTS dream_logs (
   id BIGSERIAL PRIMARY KEY,
-  session_type TEXT NOT NULL CHECK (session_type IN ('consolidation', 'reflection', 'emergence')),
+  session_type TEXT NOT NULL CHECK (session_type IN ('consolidation', 'reflection', 'emergence', 'compaction', 'decay', 'contradiction_resolution')),
   input_memory_ids BIGINT[] DEFAULT '{}',
   output TEXT NOT NULL,
   new_memories_created BIGINT[] DEFAULT '{}',
@@ -179,7 +179,8 @@ CREATE TABLE IF NOT EXISTS memory_links (
     'elaborates',   -- adds detail to existing memory
     'causes',       -- causal chain
     'follows',      -- temporal sequence
-    'relates'       -- general semantic association
+    'relates',      -- general semantic association
+    'resolves'      -- contradiction resolution outcome
   )),
   strength REAL DEFAULT 0.5,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -277,6 +278,38 @@ BEGIN
   GET DIAGNOSTICS affected = ROW_COUNT;
   RETURN affected;
 END;
+$$;
+
+-- Find unresolved contradiction pairs (no 'resolves' link spanning both memories)
+CREATE OR REPLACE FUNCTION get_unresolved_contradictions(
+  max_pairs INT DEFAULT 3
+)
+RETURNS TABLE (
+  link_id BIGINT,
+  source_id BIGINT,
+  target_id BIGINT,
+  strength FLOAT
+)
+LANGUAGE sql AS $$
+  SELECT
+    ml.id AS link_id,
+    ml.source_id,
+    ml.target_id,
+    ml.strength::float
+  FROM memory_links ml
+  JOIN memories ms ON ms.id = ml.source_id AND ms.decay_factor > 0.1
+  JOIN memories mt ON mt.id = ml.target_id AND mt.decay_factor > 0.1
+  WHERE ml.link_type = 'contradicts'
+    AND NOT EXISTS (
+      SELECT 1 FROM memory_links r1
+      JOIN memory_links r2 ON r1.source_id = r2.source_id
+      WHERE r1.link_type = 'resolves'
+        AND r2.link_type = 'resolves'
+        AND r1.target_id = ml.source_id
+        AND r2.target_id = ml.target_id
+    )
+  ORDER BY ml.strength DESC, ml.created_at DESC
+  LIMIT max_pairs;
 $$;
 
 -- Fragment-level semantic search with deduplication to parent memory.
