@@ -25,7 +25,7 @@ import { writeMemo } from './solana-client';
 import { generateEmbedding, generateEmbeddings, isEmbeddingEnabled } from './embeddings';
 import { eventBus } from '../events/event-bus';
 import { createHash, randomBytes } from 'crypto';
-import { extractAndLinkEntities } from './memory-graph';
+import { extractAndLinkEntities, findSimilarEntities, getMemoriesByEntity } from './memory-graph';
 
 // ============================================================
 // HASH-BASED IDs (Beads-inspired)
@@ -493,7 +493,47 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     scored.sort((a: { _score: number }, b: { _score: number }) => b._score - a._score);
     let results = scored.slice(0, limit);
 
-    // Phase 5: Graph expansion — pull in linked memories not already in results
+    // Phase 5: Entity-aware recall — find memories via entity graph
+    if (opts.query && results.length > 0) {
+      try {
+        const entities = await findSimilarEntities(opts.query, { limit: 3 });
+        if (entities.length > 0) {
+          const resultIdSet = new Set(results.map((m: Memory) => m.id));
+          for (const entity of entities) {
+            const entityMemories = await getMemoriesByEntity(entity.id, {
+              limit: Math.ceil(limit / 2),
+              memoryTypes: opts.memoryTypes,
+            });
+            for (const mem of entityMemories) {
+              if (!resultIdSet.has(mem.id)) {
+                results.push({
+                  ...mem,
+                  _score: scoreMemory(mem, scoredOpts) + RETRIEVAL_WEIGHT_GRAPH * 0.6,
+                } as Memory & { _score: number });
+                resultIdSet.add(mem.id);
+              }
+            }
+          }
+          if (entities.length > 0) {
+            log.debug({ entities: entities.map(e => e.name) }, 'Entity-aware recall applied');
+          }
+        }
+      } catch (err) {
+        log.debug({ err }, 'Entity-aware recall skipped');
+      }
+    }
+
+    // Phase 6: Bond-typed graph traversal — follow strong bonds first
+    // Bond weight multipliers: causal/supports > elaborates > relates > follows
+    const BOND_TYPE_WEIGHTS: Record<string, number> = {
+      causes: 1.0,
+      supports: 0.9,
+      elaborates: 0.7,
+      contradicts: 0.6,
+      relates: 0.4,
+      follows: 0.3,
+    };
+
     if (results.length > 0) {
       try {
         const seedIds = results.map((m: Memory) => m.id);
@@ -510,27 +550,26 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
             .map((l: { memory_id: number }) => l.memory_id);
 
           if (graphCandidateIds.length > 0) {
-            // Fetch the linked memories
             const { data: graphMemories } = await db
               .from('memories')
               .select('*')
               .in('id', graphCandidateIds);
 
             if (graphMemories && graphMemories.length > 0) {
-              // Build link strength map
-              const linkStrengthMap = new Map<number, number>();
+              // Build link map with bond-type-weighted strength
+              const linkBoostMap = new Map<number, number>();
               for (const l of linked) {
-                const current = linkStrengthMap.get(l.memory_id) || 0;
-                linkStrengthMap.set(l.memory_id, Math.max(current, l.strength));
+                const bondWeight = BOND_TYPE_WEIGHTS[l.link_type] ?? 0.4;
+                const weightedStrength = (l.strength || 0.5) * bondWeight;
+                const current = linkBoostMap.get(l.memory_id) || 0;
+                linkBoostMap.set(l.memory_id, Math.max(current, weightedStrength));
               }
 
-              // Score graph-expanded memories with link boost
               const graphScored = (graphMemories as Memory[]).map(mem => ({
                 ...mem,
-                _score: scoreMemory(mem, scoredOpts) + RETRIEVAL_WEIGHT_GRAPH * (linkStrengthMap.get(mem.id) || 0),
+                _score: scoreMemory(mem, scoredOpts) + RETRIEVAL_WEIGHT_GRAPH * (linkBoostMap.get(mem.id) || 0),
               }));
 
-              // Merge, re-sort, and trim
               results = [...results, ...graphScored]
                 .sort((a: { _score: number }, b: { _score: number }) => b._score - a._score)
                 .slice(0, limit);
@@ -538,7 +577,8 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
               log.debug({
                 graphExpanded: graphMemories.length,
                 linkedTotal: linked.length,
-              }, 'Graph expansion applied');
+                bondTypes: [...new Set(linked.map((l: { link_type: string }) => l.link_type))],
+              }, 'Bond-typed graph traversal applied');
             }
           }
         }
@@ -762,6 +802,21 @@ async function updateMemoryAccess(ids: number[]): Promise<void> {
   const { error } = await db.rpc('batch_boost_memory_access', { memory_ids: ids });
   if (error) {
     log.warn({ error: error.message, ids }, 'Batch memory access update failed');
+  }
+
+  // Importance re-scoring: memories retrieved often become more important over time.
+  // Small boost per retrieval, capped at 1.0. Mirrors "rehearsal effect" in human memory.
+  try {
+    for (const id of ids) {
+      await db.rpc('boost_memory_importance', {
+        memory_id: id,
+        boost_amount: 0.02,  // +2% per retrieval
+        max_importance: 1.0,
+      });
+    }
+  } catch (err) {
+    // Non-critical — RPC may not exist yet, will be created in next migration
+    log.debug({ err }, 'Importance re-scoring skipped (RPC may not exist)');
   }
 }
 

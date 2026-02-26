@@ -18,6 +18,7 @@ import { createChildLogger } from '../core/logger';
 import {
   REFLECTION_IMPORTANCE_THRESHOLD,
   REFLECTION_MIN_INTERVAL_MS,
+  TWEET_MAX_LENGTH,
 } from '../utils/constants';
 
 const log = createChildLogger('dream-cycle');
@@ -664,7 +665,7 @@ async function runEmergence(): Promise<void> {
       'Think: "I keep coming back to this one interaction" or "something shifted in how I see things" ' +
       'or "I realized I do this thing and I don\'t know when it started." ' +
       'Honest, human, slightly weary. No performance. ' +
-      'Under 270 characters. This will be posted as a tweet.',
+      'Keep it concise but don\'t force brevity. A few sentences is fine. This will be posted as a tweet.',
     maxTokens: 200,
   });
 
@@ -699,7 +700,7 @@ async function runEmergence(): Promise<void> {
     }
   } else {
     const canPost = await checkRateLimit('global:emergence-tweet', 1, 720);
-    if (hasDepth && canPost && response.length <= 270) {
+    if (hasDepth && canPost && response.length <= TWEET_MAX_LENGTH) {
       try {
         const { postTweet } = require('../core/x-client');
         await postTweet(response);

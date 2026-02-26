@@ -9,8 +9,8 @@ export const HELIUS_RPC_BASE_URL = 'https://mainnet.helius-rpc.com';
 export const HELIUS_BALANCES_BASE_URL = 'https://api.helius.xyz/v0/addresses';
 export const SOLSCAN_TX_BASE_URL = 'https://solscan.io/tx';
 
-export const TWEET_MAX_LENGTH = 280;
-export const TWEET_SAFE_LENGTH = 270;
+export const TWEET_MAX_LENGTH = 4000;
+export const TWEET_SAFE_LENGTH = 3900;
 
 // Memory system
 export const MEMORY_DECAY_RATE = 0.95;                  // Legacy: uniform decay (now per-type below)
