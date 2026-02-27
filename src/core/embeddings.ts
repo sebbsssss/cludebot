@@ -32,6 +32,11 @@ const PROVIDERS: Record<string, ProviderConfig> = {
     defaultModel: 'text-embedding-3-small',
     authHeader: (key) => `Bearer ${key}`,
   },
+  venice: {
+    url: 'https://api.venice.ai/api/v1/embeddings',
+    defaultModel: 'text-embedding-3-small',
+    authHeader: (key) => `Bearer ${key}`,
+  },
 };
 
 let _enabled: boolean | null = null;

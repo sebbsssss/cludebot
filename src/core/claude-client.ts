@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config';
 import { createChildLogger } from './logger';
 import { checkOutput } from './guardrails';
-import { isVeniceEnabled, generateVeniceResponse } from './venice-client';
+import { isVeniceEnabled, generateVeniceResponse, type CognitiveFunction } from './venice-client';
 
 const log = createChildLogger('claude-client');
 
@@ -56,6 +56,8 @@ export interface GenerateOptions {
   maxTokens?: number;
   /** If true, adds instruction to keep response under 270 chars for Twitter */
   forTwitter?: boolean;
+  /** Venice cognitive function routing: selects optimal model for the task */
+  cognitiveFunction?: CognitiveFunction;
 }
 
 export async function generateResponse(options: GenerateOptions): Promise<string> {
@@ -97,11 +99,13 @@ export async function generateResponse(options: GenerateOptions): Promise<string
 
   if (isVeniceEnabled()) {
     // Route through Venice (OpenAI-compatible API, supports Claude models)
+    // Cognitive function routing selects optimal model per task type
     text = await generateVeniceResponse({
       messages: [{ role: 'user', content: userContent }],
       systemPrompt,
       maxTokens: options.maxTokens || 300,
       temperature: 0.9,
+      cognitiveFunction: options.cognitiveFunction,
     });
   } else {
     // Direct Anthropic API

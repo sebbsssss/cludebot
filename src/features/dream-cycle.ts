@@ -245,6 +245,7 @@ async function generateFocalPoints(memories: Memory[]): Promise<string[]> {
       'to connect multiple memories, but specific enough to be answerable from the data. ' +
       'Do not number them. Just write the questions, one per line.',
     maxTokens: 200,
+    cognitiveFunction: 'dream',
   });
 
   return response
@@ -319,6 +320,7 @@ async function runConsolidation(): Promise<void> {
         'Cite the evidence memories in parentheses, e.g. (because of 1, 3, 5). ' +
         'One sentence only.',
       maxTokens: 200,
+    cognitiveFunction: 'dream',
     });
 
     const { text, evidenceIds } = parseEvidenceCitations(response, relevant);
@@ -380,6 +382,7 @@ async function runDirectConsolidation(recentEpisodic: Memory[]): Promise<void> {
       'After each observation, cite the evidence memories in parentheses, e.g. (because of 1, 3, 5). ' +
       'Separate with newlines.',
     maxTokens: 500,
+    cognitiveFunction: 'dream',
   });
 
   const observations = response.split('\n').filter(l => l.trim().length > 10);
@@ -497,6 +500,7 @@ async function runCompaction(): Promise<void> {
           'Distill these memories into their essential meaning — what was the overall pattern or lesson? ' +
           'Be concise. One or two sentences max. Preserve the most important information.',
         maxTokens: 150,
+    cognitiveFunction: 'summarize',
       });
 
       // Store as semantic memory
@@ -581,6 +585,7 @@ async function runReflection(): Promise<void> {
       'Be specific — reference actual patterns from the data. ' +
       'Cite evidence memories in parentheses, e.g. (because of 1, 3, 5).',
     maxTokens: 400,
+    cognitiveFunction: 'dream',
   });
 
   const { text, evidenceIds } = parseEvidenceCitations(response, allInputMemories);
@@ -793,6 +798,7 @@ async function runEmergence(): Promise<void> {
       'Honest, human, slightly weary. No performance. ' +
       'Keep it concise but don\'t force brevity. A few sentences is fine. This will be posted as a tweet.',
     maxTokens: 200,
+    cognitiveFunction: 'emergence',
   });
 
   const id = await storeMemory({
@@ -872,6 +878,7 @@ async function extractProceduralInsights(recentEpisodic: Memory[]): Promise<numb
         'Cite evidence memories in parentheses, e.g. (because of 1, 3). ' +
         'Separate with newlines. No numbering.',
       maxTokens: 300,
+    cognitiveFunction: 'dream',
     });
 
     const patterns = response.split('\n').filter(l => l.trim().length > 15);

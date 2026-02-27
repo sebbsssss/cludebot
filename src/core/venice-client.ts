@@ -66,6 +66,61 @@ export const VENICE_MODELS = {
 
 export type VeniceModelAlias = keyof typeof VENICE_MODELS;
 
+// ============================================================
+// COGNITIVE MODEL ROUTER
+//
+// Different brain functions use different models. Fast models for
+// quick tasks, reasoning models for deep thought, general models
+// for conversation. This mirrors how the brain allocates resources:
+// System 1 (fast/intuitive) vs System 2 (slow/deliberate).
+// ============================================================
+
+export type CognitiveFunction =
+  | 'reply'           // Responding to users (general, balanced)
+  | 'dream'           // Dream cycle consolidation/reflection (deep reasoning)
+  | 'emergence'       // Emergence thoughts (creative, introspective)
+  | 'entity'          // Entity extraction (fast, lightweight)
+  | 'importance'      // Importance scoring (fast, lightweight)
+  | 'summarize'       // Memory compaction/summarization (general)
+  | 'web_search';     // Web-augmented responses (general + search)
+
+const COGNITIVE_MODEL_MAP: Record<CognitiveFunction, string> = {
+  reply:       VENICE_MODELS['llama-70b'],
+  dream:       VENICE_MODELS['deepseek-r1'],
+  emergence:   VENICE_MODELS['qwen-235b'],
+  entity:      VENICE_MODELS['llama-8b'],
+  importance:  VENICE_MODELS['llama-8b'],
+  summarize:   VENICE_MODELS['llama-70b'],
+  web_search:  VENICE_MODELS['llama-70b'],
+};
+
+/**
+ * Get the optimal Venice model for a given cognitive function.
+ * Uses reasoning models for deep thought, fast models for lightweight tasks.
+ */
+export function getModelForFunction(fn: CognitiveFunction): string {
+  return COGNITIVE_MODEL_MAP[fn] || VENICE_MODELS['llama-70b'];
+}
+
+// Track Venice usage stats for the privacy dashboard
+let _veniceStats = {
+  totalInferenceCalls: 0,
+  totalTokensProcessed: 0,
+  callsByFunction: {} as Record<string, number>,
+  lastCallAt: null as string | null,
+};
+
+export function getVeniceStats() {
+  return { ..._veniceStats };
+}
+
+function trackVeniceUsage(fn: CognitiveFunction | 'general', tokens: number) {
+  _veniceStats.totalInferenceCalls++;
+  _veniceStats.totalTokensProcessed += tokens;
+  _veniceStats.callsByFunction[fn] = (_veniceStats.callsByFunction[fn] || 0) + 1;
+  _veniceStats.lastCallAt = new Date().toISOString();
+}
+
 let config: VeniceConfig | null = null;
 
 export function initVenice(cfg: VeniceConfig): void {
@@ -95,6 +150,7 @@ export async function generateVeniceResponse(opts: {
   maxTokens?: number;
   temperature?: number;
   systemPrompt?: string;
+  cognitiveFunction?: CognitiveFunction;
 }): Promise<string> {
   if (!config?.apiKey) {
     throw new Error('Venice client not initialized');
@@ -109,7 +165,9 @@ export async function generateVeniceResponse(opts: {
   
   messages.push(...opts.messages);
 
-  const model = opts.model || config.model || VENICE_MODELS['llama-70b'];
+  const model = opts.cognitiveFunction
+    ? getModelForFunction(opts.cognitiveFunction)
+    : (opts.model || config.model || VENICE_MODELS['llama-70b']);
   const maxTokens = opts.maxTokens || config.maxTokens || 2000;
 
   try {
@@ -139,8 +197,12 @@ export async function generateVeniceResponse(opts: {
       throw new Error('Invalid Venice response format');
     }
 
+    const totalTokens = (data.usage?.prompt_tokens || 0) + (data.usage?.completion_tokens || 0);
+    trackVeniceUsage(opts.cognitiveFunction || 'general', totalTokens);
+
     log.debug({
       model,
+      cognitiveFunction: opts.cognitiveFunction || 'general',
       promptTokens: data.usage?.prompt_tokens,
       completionTokens: data.usage?.completion_tokens,
     }, 'Venice response generated');

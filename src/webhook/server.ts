@@ -12,6 +12,7 @@ import { agentRoutes } from './agent-routes';
 import { graphRoutes } from './graph-routes';
 import { campaignRoutes } from './campaign-routes';
 import { getRecentActivity } from '../features/activity-stream';
+import { getVeniceStats } from '../core/venice-client';
 import { createChildLogger } from '../core/logger';
 import { checkInputContent } from '../core/guardrails';
 import rateLimit from 'express-rate-limit';
@@ -100,6 +101,27 @@ export function createServer(): express.Application {
 
   // Apply rate limiting to all API routes
   app.use('/api', apiLimiter);
+
+  // Venice integration stats (privacy dashboard)
+  app.get('/api/venice-stats', async (_req: Request, res: Response) => {
+    try {
+      const veniceStats = getVeniceStats();
+      const memoryStats = await getMemoryStats();
+      res.json({
+        venice: veniceStats,
+        decentralization: {
+          inference: 'Venice AI (permissionless, no logs)',
+          memory: 'Solana (on-chain, verifiable)',
+          embeddings: 'Venice AI (private indexing)',
+          totalMemoriesOnChain: memoryStats.total,
+          embeddedCount: memoryStats.embeddedCount,
+        },
+      });
+    } catch (err) {
+      log.error({ err }, 'Venice stats endpoint error');
+      res.status(500).json({ error: 'Failed to fetch Venice stats' });
+    }
+  });
 
   // Memory stats API (for frontend cortex visualization)
   app.get('/api/memory-stats', async (_req: Request, res: Response) => {
