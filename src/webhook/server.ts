@@ -564,6 +564,16 @@ export function createServer(): express.Application {
     next();
   });
 
+  // Venice privacy dashboard at /venice and /privacy
+  app.get('/venice', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/privacy.html';
+    next();
+  });
+  app.get('/privacy', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/privacy.html';
+    next();
+  });
+
   app.use(express.static(publicDir));
   app.use(express.static(distPublicDir));
   app.use('/api', verifyRoutes());

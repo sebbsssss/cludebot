@@ -22,6 +22,7 @@ import { replyAndMark } from '../services/social.service';
 import { loadInstruction } from '../utils/env-persona';
 import { getVestingInfo, getCAResponse, CLUDE_CA, getTokenStatus } from '../knowledge/tokenomics';
 import { checkInput, getCASpoofResponse } from '../core/input-guardrails';
+import { generateVeniceResponseWithSearch, isVeniceEnabled } from '../core/venice-client';
 
 const log = createChildLogger('dispatcher');
 
@@ -109,6 +110,10 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
         await handleCAQuestion(tweetId, text, authorId, tier);
         break;
 
+      case 'web-search':
+        await handleWebSearch(tweetId, text, authorId, tier);
+        break;
+
       case 'question':
         await handleOnchainOpinion(tweetId, text, authorId, tier);
         break;
@@ -167,6 +172,46 @@ async function handleCAQuestion(
   
   await replyAndMark(tweetId, response, 'ca');
   log.info({ tweetId }, 'CA question answered');
+}
+
+async function handleWebSearch(
+  tweetId: string,
+  text: string,
+  authorId: string,
+  tier: Awaited<ReturnType<typeof determineHolderTier>>
+): Promise<void> {
+  const cleanText = cleanMentionText(text);
+
+  if (!isVeniceEnabled()) {
+    // Fallback to general reply if Venice is not available
+    await handleGeneralReply(tweetId, text, authorId, tier);
+    return;
+  }
+
+  try {
+    const tierMod = getTierModifier(tier);
+    const { content, citations } = await generateVeniceResponseWithSearch({
+      messages: [{ role: 'user', content: cleanText }],
+      systemPrompt:
+        'You are Clude, an AI agent with persistent on-chain memory on Solana. ' +
+        'You are answering a question that requires current information. ' +
+        'Search the web and provide an accurate, concise answer. ' +
+        'If you find relevant sources, mention them naturally. ' +
+        'Keep your response under 800 characters. Be direct and helpful.' +
+        (tierMod ? `\n\n${tierMod}` : ''),
+      maxTokens: 400,
+    });
+
+    const response = citations && citations.length > 0
+      ? `${content}\n\n(searched via Venice AI - private, no logs)`
+      : `${content}\n\n(searched via Venice AI)`;
+
+    await replyAndMark(tweetId, response, 'web-search');
+    log.info({ tweetId, hasCitations: !!citations?.length }, 'Web search response sent via Venice');
+  } catch (err) {
+    log.error({ err, tweetId }, 'Venice web search failed, falling back to general reply');
+    await handleGeneralReply(tweetId, text, authorId, tier);
+  }
 }
 
 async function handleGeneralReply(
