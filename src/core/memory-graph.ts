@@ -235,6 +235,35 @@ export async function getEntitiesInMemory(memoryId: number): Promise<Entity[]> {
   return (data || []).map((d: any) => d.entities).filter((e: any) => e !== null) as Entity[];
 }
 
+/**
+ * Find entities that frequently co-occur with a given entity across memories.
+ * Uses the get_entity_cooccurrence RPC to find related entities.
+ */
+export async function getEntityCooccurrences(
+  entityId: number,
+  opts?: { minCooccurrence?: number; maxResults?: number }
+): Promise<Array<{ related_entity_id: number; cooccurrence_count: number; avg_salience: number }>> {
+  const db = getDb();
+
+  try {
+    const { data, error } = await db.rpc('get_entity_cooccurrence', {
+      entity_id: entityId,
+      min_cooccurrence: opts?.minCooccurrence ?? 2,
+      max_results: opts?.maxResults ?? 10,
+    });
+
+    if (error || !data) {
+      log.debug({ error: error?.message, entityId }, 'Entity co-occurrence lookup failed');
+      return [];
+    }
+
+    return data as Array<{ related_entity_id: number; cooccurrence_count: number; avg_salience: number }>;
+  } catch (err) {
+    log.debug({ err, entityId }, 'Entity co-occurrence skipped (RPC unavailable)');
+    return [];
+  }
+}
+
 // ---- ENTITY RELATIONS ---- //
 
 /**

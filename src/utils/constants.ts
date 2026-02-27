@@ -57,6 +57,7 @@ export type MemoryConcept = typeof MEMORY_CONCEPTS[number];
 
 // Memory association graph
 export const RETRIEVAL_WEIGHT_GRAPH = 1.5;              // Graph-linked memory boost in scoring
+export const RETRIEVAL_WEIGHT_COOCCURRENCE = 0.4;        // Co-occurring entity memory boost (below direct entity 0.6)
 export const LINK_SIMILARITY_THRESHOLD = 0.6;            // Min vector similarity for auto-linking
 export const MAX_AUTO_LINKS = 5;                         // Max links created per new memory
 export const LINK_CO_RETRIEVAL_BOOST = 0.05;             // Hebbian strength boost on co-retrieval

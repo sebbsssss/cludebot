@@ -12,6 +12,7 @@ import {
   RETRIEVAL_WEIGHT_IMPORTANCE,
   RETRIEVAL_WEIGHT_VECTOR,
   RETRIEVAL_WEIGHT_GRAPH,
+  RETRIEVAL_WEIGHT_COOCCURRENCE,
   VECTOR_MATCH_THRESHOLD,
   DECAY_RATES,
   EMBEDDING_FRAGMENT_MAX_LENGTH,
@@ -25,7 +26,7 @@ import { writeMemo } from './solana-client';
 import { generateEmbedding, generateEmbeddings, isEmbeddingEnabled } from './embeddings';
 import { eventBus } from '../events/event-bus';
 import { createHash, randomBytes } from 'crypto';
-import { extractAndLinkEntities, findSimilarEntities, getMemoriesByEntity } from './memory-graph';
+import { extractAndLinkEntities, findSimilarEntities, getMemoriesByEntity, getEntityCooccurrences } from './memory-graph';
 
 // ============================================================
 // HASH-BASED IDs (Beads-inspired)
@@ -493,12 +494,14 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     scored.sort((a: { _score: number }, b: { _score: number }) => b._score - a._score);
     let results = scored.slice(0, limit);
 
-    // Phase 5: Entity-aware recall — find memories via entity graph
+    // Phase 5: Entity-aware recall — find memories via entity graph + co-occurrence
     if (opts.query && results.length > 0) {
       try {
         const entities = await findSimilarEntities(opts.query, { limit: 3 });
         if (entities.length > 0) {
           const resultIdSet = new Set(results.map((m: Memory) => m.id));
+
+          // Phase 5a: Direct entity memories
           for (const entity of entities) {
             const entityMemories = await getMemoriesByEntity(entity.id, {
               limit: Math.ceil(limit / 2),
@@ -514,8 +517,40 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
               }
             }
           }
-          if (entities.length > 0) {
-            log.debug({ entities: entities.map(e => e.name) }, 'Entity-aware recall applied');
+
+          log.debug({ entities: entities.map(e => e.name) }, 'Entity-aware recall applied');
+
+          // Phase 5b: Co-occurring entity memories
+          let cooccurrenceAdded = 0;
+          const cooccurrenceNames: string[] = [];
+          for (const entity of entities) {
+            const cooccurrences = await getEntityCooccurrences(entity.id, { minCooccurrence: 2, maxResults: 3 });
+            for (const cooc of cooccurrences) {
+              if (cooccurrenceAdded >= limit) break;
+              const coMems = await getMemoriesByEntity(cooc.related_entity_id, {
+                limit: 3,
+                memoryTypes: opts.memoryTypes,
+              });
+              for (const mem of coMems) {
+                if (cooccurrenceAdded >= limit) break;
+                if (!resultIdSet.has(mem.id)) {
+                  const normalizedStrength = Math.min(cooc.cooccurrence_count / 5, 1);
+                  results.push({
+                    ...mem,
+                    _score: scoreMemory(mem, scoredOpts) + RETRIEVAL_WEIGHT_GRAPH * RETRIEVAL_WEIGHT_COOCCURRENCE * normalizedStrength,
+                  } as Memory & { _score: number });
+                  resultIdSet.add(mem.id);
+                  cooccurrenceAdded++;
+                }
+              }
+            }
+            if (cooccurrences.length > 0) {
+              cooccurrenceNames.push(...cooccurrences.map(c => String(c.related_entity_id)));
+            }
+          }
+
+          if (cooccurrenceAdded > 0) {
+            log.debug({ cooccurrenceAdded, cooccurrenceEntities: cooccurrenceNames.length }, 'Entity co-occurrence recall applied');
           }
         }
       } catch (err) {
