@@ -25,6 +25,16 @@ import { checkInput, getCASpoofResponse } from '../core/input-guardrails';
 
 const log = createChildLogger('dispatcher');
 
+// Tweets/conversations to ignore completely (even if Clude is tagged).
+// Add tweet IDs or conversation IDs here to block engagement.
+const BLOCKED_TWEET_IDS = new Set([
+  '2027286569233813567',  // mickeymantled thread - manual block by Seb
+]);
+
+const BLOCKED_CONVERSATION_IDS = new Set([
+  '2027286569233813567',  // same thread
+]);
+
 function isCreator(authorId: string): boolean {
   return !!(config.x.creatorUserId && authorId === config.x.creatorUserId);
 }
@@ -38,6 +48,26 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   const claimed = await claimForProcessing(tweetId);
   if (!claimed) {
     log.debug({ tweetId }, 'Tweet already claimed by another process');
+    return;
+  }
+
+  // Check blocked tweets/conversations
+  if (BLOCKED_TWEET_IDS.has(tweetId)) {
+    log.info({ tweetId }, 'Tweet is in blocked list, skipping');
+    await markProcessed(tweetId, 'blocked');
+    return;
+  }
+  const conversationId = (tweet as any).conversation_id;
+  if (conversationId && BLOCKED_CONVERSATION_IDS.has(conversationId)) {
+    log.info({ tweetId, conversationId }, 'Tweet is in blocked conversation, skipping');
+    await markProcessed(tweetId, 'blocked-conversation');
+    return;
+  }
+  // Also block replies TO blocked tweets
+  const inReplyTo = (tweet as any).in_reply_to_user_id ? (tweet as any).referenced_tweets?.find((r: any) => r.type === 'replied_to')?.id : null;
+  if (inReplyTo && BLOCKED_TWEET_IDS.has(inReplyTo)) {
+    log.info({ tweetId, inReplyTo }, 'Tweet replies to blocked tweet, skipping');
+    await markProcessed(tweetId, 'blocked-reply');
     return;
   }
 
