@@ -563,6 +563,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     const BOND_TYPE_WEIGHTS: Record<string, number> = {
       causes: 1.0,
       supports: 0.9,
+      resolves: 0.8,
       elaborates: 0.7,
       contradicts: 0.6,
       relates: 0.4,

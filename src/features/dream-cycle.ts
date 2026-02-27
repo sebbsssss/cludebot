@@ -731,13 +731,20 @@ async function runContradictionResolution(): Promise<void> {
       createMemoryLink(resolutionId, memA.id, 'resolves', 0.85).catch(() => {});
       createMemoryLink(resolutionId, memB.id, 'resolves', 0.85).catch(() => {});
 
-      // Accelerate decay on the older/weaker memory (20% reduction)
-      const weaker = memA.importance < memB.importance ? memA : memB;
+      // Accelerate decay on the weaker memory (20% reduction)
+      // Tiebreak by age: if equal importance, the older memory decays faster
+      const weaker = memA.importance !== memB.importance
+        ? (memA.importance < memB.importance ? memA : memB)
+        : (new Date(memA.created_at).getTime() < new Date(memB.created_at).getTime() ? memA : memB);
       const newDecay = Math.max(0.05, weaker.decay_factor * 0.8);
-      db.from('memories')
+      const { error: decayErr } = await db.from('memories')
         .update({ decay_factor: newDecay })
-        .eq('id', weaker.id)
-        .then(() => log.debug({ memoryId: weaker.id, newDecay: newDecay.toFixed(3) }, 'Accelerated decay on weaker contradicting memory'));
+        .eq('id', weaker.id);
+      if (!decayErr) {
+        log.debug({ memoryId: weaker.id, newDecay: newDecay.toFixed(3) }, 'Accelerated decay on weaker contradicting memory');
+      } else {
+        log.warn({ error: decayErr.message, memoryId: weaker.id }, 'Failed to accelerate decay on contradicting memory');
+      }
     }
   }
 
