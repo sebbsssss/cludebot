@@ -47,19 +47,35 @@ export interface VeniceResponse {
 
 // Available Venice models (subset - they support many more)
 export const VENICE_MODELS = {
+  // Frontier (Anthropic via Venice - private inference, no logs)
+  'claude-opus-4.6': 'claude-opus-4-6',
+  'claude-sonnet-4.6': 'claude-sonnet-4-6',
+  'claude-opus-4.5': 'claude-opus-45',
+  'claude-sonnet-4.5': 'claude-sonnet-45',
+
+  // Frontier (Other providers via Venice)
+  'gpt-5.2': 'openai-gpt-52',
+  'grok-4.1': 'grok-41-fast',
+  'gemini-3-pro': 'gemini-3-pro-preview',
+  'deepseek-v3.2': 'deepseek-v3.2',
+
   // Reasoning
-  'deepseek-r1': 'deepseek-ai-DeepSeek-R1',
-  'qwen-reasoning': 'zai-org-glm-4.7-reasoning',
+  'qwen-thinking': 'qwen3-235b-a22b-thinking-2507',
+  'kimi-thinking': 'kimi-k2-thinking',
   
   // General
   'llama-70b': 'llama-3.3-70b',
-  'qwen-235b': 'qwen3-235b-a22b',
+  'qwen-235b': 'qwen3-235b-a22b-instruct-2507',
   'glm-4': 'zai-org-glm-4.7',
   
   // Fast
-  'llama-8b': 'llama-3.1-8b',
+  'llama-3b': 'llama-3.2-3b',
   'qwen-4b': 'qwen3-4b',
+  'venice-medium': 'mistral-31-24b',
   
+  // Code
+  'qwen-coder': 'qwen3-coder-480b-a35b-instruct',
+
   // Uncensored
   'venice-uncensored': 'venice-uncensored-1.1',
 } as const;
@@ -85,13 +101,13 @@ export type CognitiveFunction =
   | 'web_search';     // Web-augmented responses (general + search)
 
 const COGNITIVE_MODEL_MAP: Record<CognitiveFunction, string> = {
-  reply:       VENICE_MODELS['llama-70b'],
-  dream:       VENICE_MODELS['deepseek-r1'],
-  emergence:   VENICE_MODELS['qwen-235b'],
-  entity:      VENICE_MODELS['llama-8b'],
-  importance:  VENICE_MODELS['llama-8b'],
-  summarize:   VENICE_MODELS['llama-70b'],
-  web_search:  VENICE_MODELS['llama-70b'],
+  reply:       VENICE_MODELS['claude-sonnet-4.6'],    // Balanced, high quality replies
+  dream:       VENICE_MODELS['claude-opus-4.6'],      // Deep reasoning for consolidation
+  emergence:   VENICE_MODELS['claude-sonnet-4.6'],    // Creative introspection
+  entity:      VENICE_MODELS['llama-3b'],             // Fast, lightweight extraction
+  importance:  VENICE_MODELS['llama-3b'],             // Fast importance scoring
+  summarize:   VENICE_MODELS['claude-sonnet-4.6'],    // Quality summarization
+  web_search:  VENICE_MODELS['claude-sonnet-4.6'],    // Web-augmented responses
 };
 
 /**
