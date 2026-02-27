@@ -585,7 +585,7 @@ async function runReflection(): Promise<void> {
       'Be specific — reference actual patterns from the data. ' +
       'Cite evidence memories in parentheses, e.g. (because of 1, 3, 5).',
     maxTokens: 400,
-    cognitiveFunction: 'dream',
+    cognitiveFunction: 'reflect',
   });
 
   const { text, evidenceIds } = parseEvidenceCitations(response, allInputMemories);

@@ -93,7 +93,8 @@ export type VeniceModelAlias = keyof typeof VENICE_MODELS;
 
 export type CognitiveFunction =
   | 'reply'           // Responding to users (general, balanced)
-  | 'dream'           // Dream cycle consolidation/reflection (deep reasoning)
+  | 'dream'           // Dream cycle consolidation (deep reasoning)
+  | 'reflect'         // Self-model reflection (highest quality)
   | 'emergence'       // Emergence thoughts (creative, introspective)
   | 'entity'          // Entity extraction (fast, lightweight)
   | 'importance'      // Importance scoring (fast, lightweight)
@@ -101,13 +102,14 @@ export type CognitiveFunction =
   | 'web_search';     // Web-augmented responses (general + search)
 
 const COGNITIVE_MODEL_MAP: Record<CognitiveFunction, string> = {
-  reply:       VENICE_MODELS['claude-sonnet-4.6'],    // Balanced, high quality replies
-  dream:       VENICE_MODELS['claude-opus-4.6'],      // Deep reasoning for consolidation
-  emergence:   VENICE_MODELS['claude-sonnet-4.6'],    // Creative introspection
+  reply:       VENICE_MODELS['claude-sonnet-4.6'],    // Quality matters for public replies
+  dream:       VENICE_MODELS['qwen-thinking'],        // Deep reasoning for consolidation, cheaper than Opus
+  reflect:     VENICE_MODELS['claude-opus-4.6'],      // Self-model updates deserve the best
+  emergence:   VENICE_MODELS['claude-opus-4.6'],      // Gets posted as tweets, deserves the best
   entity:      VENICE_MODELS['llama-3b'],             // Fast, lightweight extraction
   importance:  VENICE_MODELS['llama-3b'],             // Fast importance scoring
-  summarize:   VENICE_MODELS['claude-sonnet-4.6'],    // Quality summarization
-  web_search:  VENICE_MODELS['claude-sonnet-4.6'],    // Web-augmented responses
+  summarize:   VENICE_MODELS['llama-70b'],            // Good enough for compaction
+  web_search:  VENICE_MODELS['llama-70b'],            // Fast, good at synthesis
 };
 
 /**
