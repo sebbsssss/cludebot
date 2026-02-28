@@ -6,7 +6,7 @@ import { determineHolderTier, getLinkedWallet } from '../features/holder-tier';
 import { claimForProcessing, markProcessed } from '../core/database';
 import { getCurrentMood } from '../core/price-oracle';
 import { getTierModifier } from '../character/tier-modifiers';
-import { getTweetWithContext } from '../core/x-client';
+import { getTweetWithContext, getUsernameOrId } from '../core/x-client';
 import { config } from '../config';
 import {
   storeMemory,
@@ -238,7 +238,7 @@ async function handleGeneralReply(
 
   // Recall relevant memories for this user and context
   const memories = await recallMemories({
-    relatedUser: authorId,
+    relatedUser: getUsernameOrId(authorId),
     query: cleanText,
     tags: [tier, mood, 'general'],
     memoryTypes: ['episodic', 'semantic', 'self_model'],
@@ -284,7 +284,7 @@ async function handleGeneralReply(
     instruction,
     forTwitter: true,  // Enforce 270 char limit
     memory: {
-      relatedUser: authorId,
+      relatedUser: getUsernameOrId(authorId),
       query: cleanText,
       tags: [tier, mood, 'general'],
       memoryTypes: ['episodic', 'semantic', 'self_model'],
@@ -307,7 +307,7 @@ async function handleMemoryRecall(
   // Pull ALL memories for this user with timing
   const recallStart = Date.now();
   const memories = await recallMemories({
-    relatedUser: authorId,
+    relatedUser: getUsernameOrId(authorId),
     memoryTypes: ['episodic', 'semantic'],
     limit: 10,
   });
@@ -393,13 +393,14 @@ async function storeInteractionMemory(
 
   // Check if this is the first interaction with this user
   const existingMemories = await recallMemories({
-    relatedUser: authorId,
+    relatedUser: getUsernameOrId(authorId),
     memoryTypes: ['episodic'],
     limit: 1,
   });
   const isFirst = existingMemories.length === 0;
 
-  const description = `User (tier: ${tier}) asked via ${feature}: "${cleanText.slice(0, 200)}"` +
+  const displayName = getUsernameOrId(authorId);
+  const description = `${displayName} (tier: ${tier}) asked via ${feature}: "${cleanText.slice(0, 200)}"` +
     (isFirst ? ' (first interaction with this user)' : '') +
     ` during ${mood} market mood`;
   const importance = await scoreImportanceWithLLM(description, {
@@ -421,14 +422,14 @@ async function storeInteractionMemory(
 
   await storeMemory({
     type: 'episodic',
-    content: `User (tier: ${tier}) asked via ${feature}: "${cleanText.slice(0, 300)}"`,
-    summary: `${tier} user: "${cleanText.slice(0, 150)}"`,
+    content: `${displayName} (tier: ${tier}) asked via ${feature}: "${cleanText.slice(0, 300)}"`,
+    summary: `${displayName}: "${cleanText.slice(0, 150)}"`,
     tags,
     emotionalValence: moodToValence(mood),
     importance,
     source: feature,
     sourceId: tweetId,
-    relatedUser: authorId,
+    relatedUser: getUsernameOrId(authorId),
     relatedWallet: walletAddress,
     metadata: {
       mood,

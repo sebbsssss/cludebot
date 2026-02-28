@@ -126,15 +126,36 @@ export function splitForThread(text: string, maxLength: number = MAX_TWEET_LENGT
   return tweets;
 }
 
+// Username cache: maps X user IDs to @usernames
+const _usernameCache = new Map<string, string>();
+
+export function getCachedUsername(userId: string): string | undefined {
+  return _usernameCache.get(userId);
+}
+
+export function getUsernameOrId(userId: string): string {
+  return _usernameCache.get(userId) || userId;
+}
+
 export async function getMentions(sinceId?: string): Promise<TweetV2[]> {
   log.debug({ sinceId }, 'Fetching mentions');
   const params: Record<string, string> = {
     'tweet.fields': 'created_at,author_id,conversation_id,text',
+    'expansions': 'author_id',
+    'user.fields': 'username',
     max_results: '20',
   };
   if (sinceId) params.since_id = sinceId;
 
   const result = await rwClient.v2.userMentionTimeline(config.x.botUserId, params);
+
+  // Cache author usernames
+  if (result.includes?.users) {
+    for (const user of result.includes.users) {
+      _usernameCache.set(user.id, user.username);
+    }
+  }
+
   return result.data?.data || [];
 }
 
