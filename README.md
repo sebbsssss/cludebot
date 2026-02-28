@@ -186,7 +186,7 @@ const id = await brain.store({
 
 ### `brain.recall(opts)`
 
-Recall memories using hybrid scoring (vector similarity + keyword matching + tag overlap + importance + association graph).
+Recall memories using hybrid scoring (vector similarity + keyword matching + tag overlap + importance + entity graph + association bonds).
 
 ```typescript
 const memories = await brain.recall({
@@ -199,10 +199,13 @@ const memories = await brain.recall({
 });
 ```
 
-Scoring formula (Park et al. 2023):
-```
-score = (0.5 * recency + 3.0 * relevance + 2.0 * importance + 3.0 * vector + 1.5 * graph) * decay
-```
+**6-phase retrieval pipeline:**
+1. Vector search (memory + fragment level via pgvector)
+2. Metadata filtering (user, wallet, tags, types)
+3. Merge vector + metadata candidates
+4. Composite scoring (recency + relevance + importance + vector similarity) * decay
+5. Entity-aware expansion — direct entity recall + co-occurring entity memories
+6. Bond-typed graph traversal — follow strong bonds (causes > supports > resolves > elaborates > contradicts > relates > follows)
 
 Recalled memories get their access count incremented and decay reset. Co-retrieved memories strengthen their association links (Hebbian learning).
 
@@ -227,7 +230,7 @@ const full = await brain.hydrate(topIds);
 
 ### `brain.dream(opts?)`
 
-Run one dream cycle: consolidation, reflection, emergence. Requires `anthropic` config.
+Run one dream cycle. Requires `anthropic` config.
 
 ```typescript
 await brain.dream({
@@ -238,10 +241,12 @@ await brain.dream({
 });
 ```
 
-**Three phases:**
+**Five phases:**
 1. **Consolidation** — generates focal-point questions from recent memories, synthesizes evidence-linked insights
-2. **Reflection** — reviews accumulated knowledge, updates self-model with evidence citations
-3. **Emergence** — introspective synthesis, output sent to `onEmergence` callback
+2. **Compaction** — summarizes old, faded episodic memories into semantic summaries (Beads-inspired)
+3. **Reflection** — reviews accumulated knowledge, updates self-model with evidence citations
+4. **Contradiction Resolution** — finds unresolved `contradicts` links, Claude analyzes each pair and stores a resolved belief with `resolves` links, accelerates decay on the weaker memory
+5. **Emergence** — introspective synthesis, output sent to `onEmergence` callback
 
 ### `brain.startDreamSchedule()` / `brain.stopDreamSchedule()`
 
@@ -261,7 +266,7 @@ Create a typed association between two memories.
 await brain.link(42, 43, 'supports', 0.8);
 ```
 
-Link types: `'supports'` | `'contradicts'` | `'elaborates'` | `'causes'` | `'follows'` | `'relates'`
+Link types: `'supports'` | `'contradicts'` | `'elaborates'` | `'causes'` | `'follows'` | `'relates'` | `'resolves'`
 
 ### `brain.decay()`
 
@@ -458,47 +463,36 @@ Old, faded memories get summarized to save context window space:
 
 This mimics how human memory consolidates — details fade, patterns persist.
 
-### Dream Cycles (Molecular Synthesis)
+### Dream Cycles
 
-Four-phase introspection process:
+Five-phase introspection process triggered by accumulated importance or 6-hour cron:
 
-1. **Bond Formation**: Detect relationships between recent memories → create typed bonds (causal, semantic, temporal, contradictory)
-2. **Cluster Detection**: Identify stable "molecules" — groups of memories with high bond density
-3. **Compaction**: Summarize old faded memories, preserve stable molecules
-4. **Reflection**: Review self-model, produce self-observations with evidence citations
+1. **Consolidation** — Generate focal-point questions from recent episodic memories, synthesize evidence-linked semantic insights
+2. **Compaction** — Summarize old, faded episodic memories (7+ days, low importance, high decay) into semantic summaries. Originals marked as compacted.
+3. **Reflection** — Review self-model + recent semantic memories. Produce self-observations with evidence citations. Detect patterns and contradictions.
+4. **Contradiction Resolution** — Find unresolved `contradicts` links via graph query. Claude analyzes each pair, stores a resolved belief as semantic memory with `resolves` links. Accelerates decay on the weaker/older memory.
+5. **Emergence** — Introspective synthesis — the agent examines its own existence. Optionally posts the thought externally via `onEmergence` callback.
 
 ### Molecular Memory Architecture
 
-Memories aren't isolated — they form **molecules** with typed bonds:
+Memories form a graph with typed bonds:
 
 ```
-Memory Molecules:
-├── Atoms = Individual memories
-├── Bonds = Typed relationships
-│   ├── Causal (blue) — "this led to that"
-│   ├── Semantic (green) — "related concepts"  
-│   ├── Temporal (yellow) — "happened together"
-│   └── Contradictory (red) — "these conflict"
-└── Molecules = Stable memory clusters
+Memory Graph:
+├── Memories = nodes with type, importance, decay
+├── Bonds = typed weighted edges
+│   ├── causes (1.0) — "this led to that"
+│   ├── supports (0.9) — "evidence for"
+│   ├── resolves (0.8) — "contradiction resolved"
+│   ├── elaborates (0.7) — "adds detail"
+│   ├── contradicts (0.6) — "these conflict"
+│   ├── relates (0.4) — "conceptually linked"
+│   └── follows (0.3) — "temporal sequence"
+├── Entities = extracted people, tokens, concepts, wallets
+└── Co-occurrence = entities that appear together across memories
 ```
 
-**Why it's faster:**
-
-Traditional retrieval scans all memories → O(n).
-Molecular retrieval traverses bonds → O(k) where k ≈ 3-5.
-
-For 1000 memories: **~60x speedup** (1000ms → 16ms).
-
-**Stability scoring:**
-
-```
-stability = (bondCount × 0.3) + (bondDiversity × 0.4) + (crossTypeConnections × 0.3)
-```
-
-High-stability molecules get prioritized for retention and on-chain commitment.
-
-See [docs/MOLECULAR_MEMORY.md](./docs/MOLECULAR_MEMORY.md) for full architecture details
-4. **Emergence**: Introspective synthesis — the agent examines its own existence
+**Why it's faster:** Traditional retrieval scans all memories — O(n). Bond traversal follows strong connections — O(k) where k ≈ 3-5.
 
 ### Permissionless Inference (Venice)
 
@@ -526,13 +520,19 @@ const brain = new Cortex({
 
 Set `INFERENCE_PRIMARY=venice` and `VENICE_API_KEY` to use Venice by default.
 
-### Association Graph
+### Association Graph & Entity Knowledge Graph
 
-Typed, weighted links between memories:
-- `supports`, `contradicts`, `elaborates`, `causes`, `follows`, `relates`
-- Auto-linked on storage via embedding similarity
+**Memory-to-memory bonds** — typed, weighted links:
+- `supports`, `contradicts`, `elaborates`, `causes`, `follows`, `relates`, `resolves`
+- Auto-linked on storage via embedding similarity and heuristics
 - Strengthened through co-retrieval (Hebbian learning)
 - Boosts recall scores for connected memories
+- `contradicts` links are resolved during dream cycles, producing `resolves` links
+
+**Entity knowledge graph** — extracted from memory content:
+- Entity types: person, project, concept, token, wallet, location, event
+- Entities extracted automatically (Twitter handles, wallet addresses, token tickers, proper nouns)
+- Entity co-occurrence drives recall expansion — when recalling about an entity, memories from co-occurring entities are surfaced with a scaled boost
 
 ---
 
