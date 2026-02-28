@@ -623,6 +623,34 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
       }
     }
 
+    // Phase 7: Type diversity — ensure results span multiple memory types
+    // If all results are one type, pull in top candidates from other types
+    if (results.length >= 3) {
+      const typeSet = new Set(results.map((m: Memory) => m.memory_type));
+      if (typeSet.size === 1) {
+        const dominantType = [...typeSet][0];
+        const otherTypes = ['episodic', 'semantic', 'procedural', 'self_model'].filter(t => t !== dominantType);
+        const resultIdSet = new Set(results.map((m: Memory) => m.id));
+
+        // Find scored candidates from other types that didn't make the cut
+        const diverseCandidates = scored
+          .filter((m: Memory & { _score: number }) => otherTypes.includes(m.memory_type) && !resultIdSet.has(m.id))
+          .slice(0, Math.ceil(limit / 3));
+
+        if (diverseCandidates.length > 0) {
+          // Replace lowest-scored same-type results with diverse candidates
+          const replaceCount = Math.min(diverseCandidates.length, Math.ceil(results.length / 3));
+          results = [
+            ...results.slice(0, results.length - replaceCount),
+            ...diverseCandidates.slice(0, replaceCount),
+          ].sort((a: { _score: number }, b: { _score: number }) => b._score - a._score)
+           .slice(0, limit);
+
+          log.debug({ injectedTypes: diverseCandidates.map((m: Memory) => m.memory_type) }, 'Type diversity applied');
+        }
+      }
+    }
+
     // Update access counts in parallel (skip for internal processing like dream cycles)
     if (opts.trackAccess !== false) {
       const ids = results.map((m: Memory) => m.id);
@@ -636,6 +664,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
       topScore: results[0]?._score?.toFixed(3),
       query: opts.query?.slice(0, 40),
       vectorAssisted: vectorScores.size > 0,
+      typeSpread: [...new Set(results.map((m: Memory) => m.memory_type))].join(','),
     }, 'Memories recalled');
 
     return results;

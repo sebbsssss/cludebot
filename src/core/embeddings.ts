@@ -42,6 +42,32 @@ const PROVIDERS: Record<string, ProviderConfig> = {
 let _enabled: boolean | null = null;
 let _overrideConfig: { provider: string; apiKey: string; model?: string; dimensions?: number } | null = null;
 
+// LRU embedding cache — avoids re-computing embeddings for repeated/similar queries
+const EMBEDDING_CACHE_MAX = 200;
+const EMBEDDING_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const _embeddingCache = new Map<string, { embedding: number[]; ts: number }>();
+
+function getCachedEmbedding(text: string): number[] | null {
+  const key = text.slice(0, 500).toLowerCase().trim();
+  const entry = _embeddingCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > EMBEDDING_CACHE_TTL_MS) {
+    _embeddingCache.delete(key);
+    return null;
+  }
+  return entry.embedding;
+}
+
+function setCachedEmbedding(text: string, embedding: number[]): void {
+  const key = text.slice(0, 500).toLowerCase().trim();
+  // Evict oldest if at capacity
+  if (_embeddingCache.size >= EMBEDDING_CACHE_MAX) {
+    const oldest = _embeddingCache.keys().next().value;
+    if (oldest) _embeddingCache.delete(oldest);
+  }
+  _embeddingCache.set(key, { embedding, ts: Date.now() });
+}
+
 /** @internal SDK escape hatch — allows Cortex to override embedding config. */
 export function _configureEmbeddings(opts: { provider: string; apiKey: string; model?: string; dimensions?: number }): void {
   _overrideConfig = opts;
@@ -70,6 +96,13 @@ export function isEmbeddingEnabled(): boolean {
 export async function generateEmbedding(text: string): Promise<number[] | null> {
   if (!isEmbeddingEnabled()) return null;
 
+  // Check cache first
+  const cached = getCachedEmbedding(text);
+  if (cached) {
+    log.debug('Embedding cache hit');
+    return cached;
+  }
+
   const cfg = getEmbeddingConfig();
   if (!cfg.provider || !(cfg.provider in PROVIDERS)) return null;
 
@@ -97,7 +130,9 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
     }
 
     const data = await res.json() as { data: Array<{ embedding: number[] }> };
-    return data.data?.[0]?.embedding || null;
+    const embedding = data.data?.[0]?.embedding || null;
+    if (embedding) setCachedEmbedding(text, embedding);
+    return embedding;
   } catch (err) {
     log.error({ err }, 'Embedding generation failed');
     return null;
