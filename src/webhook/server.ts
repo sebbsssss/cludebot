@@ -463,7 +463,7 @@ export function createServer(): express.Application {
   app.post('/api/demo/store', async (req: Request, res: Response) => {
     try {
       const ip = req.ip || req.socket.remoteAddress || 'unknown';
-      const allowed = await checkRateLimit(`demo:store:${ip}`, 3, 1);
+      const allowed = await checkRateLimit(`demo:store:${ip}`, 10, 1);
       if (!allowed) {
         res.status(429).json({ error: 'Rate limited. 3 stores per minute max.' });
         return;
@@ -518,28 +518,37 @@ export function createServer(): express.Application {
   app.post('/api/demo/recall', async (req: Request, res: Response) => {
     try {
       const ip = req.ip || req.socket.remoteAddress || 'unknown';
-      const allowed = await checkRateLimit(`demo:recall:${ip}`, 5, 1);
+      const allowed = await checkRateLimit(`demo:recall:${ip}`, 30, 1);
       if (!allowed) {
         res.status(429).json({ error: 'Rate limited. 5 recalls per minute max.' });
         return;
       }
 
-      const { query } = req.body;
+      const { query, limit, memoryTypes } = req.body;
       const memories = await recallMemories({
         query: query ? String(query) : undefined,
-        relatedUser: 'demo-visitor',
-        limit: 10,
+        limit: Math.min(Number(limit) || 10, 20),
+        memoryTypes: Array.isArray(memoryTypes) ? memoryTypes : undefined,
       });
 
       res.json({
         memories: memories.map(m => ({
           id: m.id,
+          type: m.memory_type,
+          memory_type: m.memory_type,
           summary: m.summary,
           content: m.content,
           tags: m.tags,
+          concepts: m.concepts || [],
           importance: m.importance,
+          decay_factor: m.decay_factor,
+          access_count: m.access_count,
+          emotional_valence: m.emotional_valence,
+          source: m.source,
+          related_user: m.related_user,
           solana_signature: m.solana_signature || null,
           created_at: m.created_at,
+          last_accessed: m.last_accessed,
         })),
         count: memories.length,
         timestamp: new Date().toISOString(),
