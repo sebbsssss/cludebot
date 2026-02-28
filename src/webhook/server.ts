@@ -574,6 +574,12 @@ export function createServer(): express.Application {
     next();
   });
 
+  // Memory benchmark comparison at /benchmark
+  app.get('/benchmark', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/benchmark.html';
+    next();
+  });
+
   app.use(express.static(publicDir));
   app.use(express.static(distPublicDir));
   app.use('/api', verifyRoutes());

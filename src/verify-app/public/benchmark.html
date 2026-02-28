@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clude Memory Architecture - Live Comparison</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --bg: #f5f5f0;
+    --bg-warm: #efeee8;
+    --text: #111;
+    --text-muted: #666;
+    --text-faint: #999;
+    --border: #e5e4de;
+    --border-strong: #d5d4ce;
+    --blue: #2244ff;
+    --blue-light: #eef0ff;
+    --red: #e84b3c;
+    --red-light: #fdf0ef;
+    --green: #10b981;
+    --green-light: #ecfdf5;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px;
+  }
+  
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  
+  .logo {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  
+  .title {
+    font-size: clamp(24px, 3.5vw, 36px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+  
+  /* Input Section */
+  .input-section {
+    max-width: 800px;
+    margin: 0 auto 40px;
+  }
+  
+  .input-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+  
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    border: 1px solid var(--border-strong);
+    background: white;
+    color: var(--text);
+    resize: vertical;
+    outline: none;
+  }
+  
+  textarea:focus { border-color: var(--blue); }
+  
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 28px;
+    border: 2px solid var(--text);
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn:hover {
+    background: transparent;
+    color: var(--text);
+  }
+  
+  .btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+  }
+  
+  .btn-outline:hover {
+    background: var(--text);
+    color: var(--bg);
+  }
+  
+  .step-counter {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+  
+  .step-counter strong {
+    font-size: 24px;
+    color: var(--text);
+    font-weight: 800;
+  }
+  
+  /* Comparison Grid */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto 40px;
+  }
+  
+  .panel {
+    border: 1px solid var(--border);
+    background: white;
+  }
+  
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  
+  .panel-title.without { color: var(--red); }
+  .panel-title.with { color: var(--blue); }
+  
+  .panel-badge {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+  
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  
+  .panel-content {
+    padding: 20px;
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  
+  .panel-content.degraded {
+    color: var(--text-faint);
+  }
+  
+  .panel-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 20px;
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.5px;
+  }
+  
+  .metric-value { font-weight: 700; color: var(--text); }
+  .metric-value.red { color: var(--red); }
+  .metric-value.blue { color: var(--blue); }
+  .metric-value.green { color: var(--green); }
+  
+  /* Scores Bar */
+  .scores-section {
+    max-width: 1200px;
+    margin: 0 auto 40px;
+  }
+  
+  .score-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .score-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    text-align: right;
+  }
+  
+  .score-bar-wrap {
+    height: 24px;
+    background: var(--bg-warm);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .score-bar {
+    height: 100%;
+    transition: width 0.6s ease;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+  }
+  
+  .score-bar.red { background: var(--red); }
+  .score-bar.blue { background: var(--blue); }
+  
+  /* Clude Structure Panel */
+  .clude-structure {
+    padding: 20px;
+  }
+  
+  .memory-item {
+    padding: 10px 14px;
+    margin-bottom: 4px;
+    border-left: 3px solid var(--border);
+    font-size: 11px;
+    line-height: 1.6;
+    background: var(--bg);
+    transition: all 0.3s;
+  }
+  
+  .memory-item.episodic { border-left-color: var(--blue); }
+  .memory-item.semantic { border-left-color: var(--green); }
+  .memory-item.procedural { border-left-color: #f59e0b; }
+  .memory-item.self_model { border-left-color: #8b5cf6; }
+  
+  .memory-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+    font-size: 9px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .memory-type {
+    font-weight: 700;
+  }
+  
+  .memory-type.episodic { color: var(--blue); }
+  .memory-type.semantic { color: var(--green); }
+  .memory-type.procedural { color: #f59e0b; }
+  .memory-type.self_model { color: #8b5cf6; }
+  
+  .entity-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+  }
+  
+  .entity-tag {
+    font-size: 9px;
+    padding: 2px 8px;
+    background: var(--blue-light);
+    color: var(--blue);
+    letter-spacing: 0.5px;
+  }
+  
+  /* Presets */
+  .presets {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .preset-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  
+  .preset-btn:hover {
+    border-color: var(--text);
+    color: var(--text);
+  }
+  
+  /* Decay visualization */
+  .decay-indicator {
+    display: inline-block;
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  
+  .decay-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s;
+  }
+
+  .importance-bar {
+    display: inline-block;
+    width: 30px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    vertical-align: middle;
+  }
+
+  .importance-fill {
+    height: 100%;
+    background: var(--blue);
+    border-radius: 2px;
+    transition: width 0.6s;
+  }
+
+  .flash { animation: flash 0.4s ease; }
+  @keyframes flash {
+    0% { background: #fff3cd; }
+    100% { background: white; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">CLUDE</div>
+  <h1 class="title">Memory Architecture Comparison</h1>
+  <p class="subtitle">
+    Input any content. Compact it 20 times. Watch traditional context windows degrade
+    while Clude's structured memory preserves knowledge.
+  </p>
+</div>
+
+<div class="input-section">
+  <div class="input-label">Input Content</div>
+  <textarea id="input" placeholder="Paste any content here. A conversation, meeting notes, project docs, anything..."></textarea>
+  
+  <div class="presets">
+    <button class="preset-btn" onclick="loadPreset('conversation')">Sample: Conversation</button>
+    <button class="preset-btn" onclick="loadPreset('technical')">Sample: Technical Doc</button>
+    <button class="preset-btn" onclick="loadPreset('meeting')">Sample: Meeting Notes</button>
+  </div>
+  
+  <div class="controls">
+    <button class="btn" id="startBtn" onclick="startCompaction()">Start Compaction</button>
+    <button class="btn btn-outline" id="stepBtn" onclick="stepCompaction()" disabled>Compact Once</button>
+    <button class="btn btn-outline" id="autoBtn" onclick="autoCompact()" disabled>Auto (20x)</button>
+    <button class="btn btn-outline" onclick="resetAll()">Reset</button>
+    <div class="step-counter">
+      Step <strong id="stepNum">0</strong> / 20
+    </div>
+  </div>
+</div>
+
+<!-- Comparison -->
+<div class="comparison">
+  <!-- Without Clude -->
+  <div class="panel" id="withoutPanel">
+    <div class="panel-header">
+      <span class="panel-title without">Without Clude</span>
+      <span class="panel-badge badge-red">Context Window</span>
+    </div>
+    <div class="panel-content" id="withoutContent">
+      Paste content and hit Start to begin the comparison.
+    </div>
+    <div class="panel-footer">
+      <span>Characters: <span class="metric-value red" id="withoutChars">0</span></span>
+      <span>Info Retained: <span class="metric-value red" id="withoutRetention">100%</span></span>
+      <span>Key Facts: <span class="metric-value red" id="withoutFacts">0</span></span>
+      <span>Entities Lost: <span class="metric-value red" id="withoutEntitiesLost">0</span></span>
+    </div>
+  </div>
+  
+  <!-- With Clude -->
+  <div class="panel" id="withPanel">
+    <div class="panel-header">
+      <span class="panel-title with">With Clude</span>
+      <span class="panel-badge badge-blue">Structured Memory</span>
+    </div>
+    <div class="clude-structure" id="cludeContent">
+      <div style="color: var(--text-faint); padding: 40px; text-align: center; font-size: 12px;">
+        Paste content and hit Start to begin the comparison.
+      </div>
+    </div>
+    <div id="entitySection" class="entity-tags" style="display:none;"></div>
+    <div class="panel-footer">
+      <span>Memories: <span class="metric-value blue" id="cludeMemories">0</span></span>
+      <span>Info Retained: <span class="metric-value blue" id="cludeRetention">100%</span></span>
+      <span>Key Facts: <span class="metric-value blue" id="cludeFacts">0</span></span>
+      <span>Entities: <span class="metric-value green" id="cludeEntities">0</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- Score Bars -->
+<div class="scores-section" id="scoresSection" style="display:none;">
+  <div style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 16px;">
+    Retention Score
+  </div>
+  <div class="score-row">
+    <div class="score-label">Info Retained</div>
+    <div class="score-bar-wrap"><div class="score-bar red" id="barWithout" style="width:100%">100%</div></div>
+    <div class="score-bar-wrap"><div class="score-bar blue" id="barWith" style="width:100%">100%</div></div>
+  </div>
+  <div class="score-row">
+    <div class="score-label">Key Facts</div>
+    <div class="score-bar-wrap"><div class="score-bar red" id="barFactsWithout" style="width:100%">-</div></div>
+    <div class="score-bar-wrap"><div class="score-bar blue" id="barFactsWith" style="width:100%">-</div></div>
+  </div>
+  <div class="score-row">
+    <div class="score-label">Entities</div>
+    <div class="score-bar-wrap"><div class="score-bar red" id="barEntWithout" style="width:100%">-</div></div>
+    <div class="score-bar-wrap"><div class="score-bar blue" id="barEntWith" style="width:100%">-</div></div>
+  </div>
+  <div style="display: flex; justify-content: center; gap: 40px; margin-top: 12px; font-size: 10px; color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase;">
+    <span><span style="display:inline-block;width:10px;height:10px;background:var(--red);margin-right:6px;vertical-align:middle;"></span>Without Clude</span>
+    <span><span style="display:inline-block;width:10px;height:10px;background:var(--blue);margin-right:6px;vertical-align:middle;"></span>With Clude</span>
+  </div>
+</div>
+
+<script>
+// --- Presets ---
+const PRESETS = {
+  conversation: `Alice: Hey, we need to ship the v2 API by March 15. The authentication system needs to support OAuth 2.0 and API keys.
+Bob: Got it. I've been looking at the rate limiting too. We should do 1000 req/min for free tier, 10000 for pro.
+Alice: Good. Also, the webhook system from v1 is broken. Users are complaining about missed events. Priority fix.
+Bob: Yeah I saw the Sentry alerts. It's the retry logic - it gives up after 2 attempts. Should be at least 5 with exponential backoff.
+Alice: Agreed. Oh and Sarah from the enterprise team wants custom endpoints for Acme Corp. They need /api/v2/acme/inventory with special auth.
+Bob: That's scope creep. Can we push that to v2.1?
+Alice: No, it's in the contract. $50k/month deal. We ship it or we lose them.
+Bob: Fine. I'll need the schema from Sarah. Also, the database migration for the new user roles table needs to happen before any of this.
+Alice: Right. The roles are: admin, developer, viewer, billing. Each maps to different API scopes.
+Bob: And we're deprecating the old permission system? That's going to break integrations.
+Alice: 6 month deprecation window. Legacy endpoints stay alive but log warnings. We notify all API consumers by Feb 28.
+Bob: Budget for this sprint? I might need to bring in a contractor for the webhook rewrite.
+Alice: $15k contractor budget approved. Get someone who knows event-driven architectures.
+Bob: One more thing - the staging environment is on us-east-1 but production is us-west-2. Latency testing is meaningless right now.
+Alice: Move staging to us-west-2. DevOps ticket exists, just hasn't been prioritized.`,
+
+  technical: `# Vector Embedding Architecture
+
+Our embedding pipeline processes documents through three stages:
+
+1. Chunking: Documents split into 512-token chunks with 50-token overlap. Using recursive character splitter.
+2. Embedding: Each chunk embedded via text-embedding-3-small (1536 dimensions). Batch size 100, rate limited to 3000 RPM.
+3. Storage: Vectors stored in Pinecone (us-east-1, p2 pod). Index: prod-docs-v3. Namespace per tenant.
+
+Key metrics:
+- Average query latency: 45ms (p50), 120ms (p99)
+- Index size: 2.3M vectors across 847 tenants
+- Monthly cost: $420 Pinecone + $380 OpenAI embeddings
+- Recall@10: 0.89 on our eval set
+
+Known issues:
+- Cross-tenant data leak possible if namespace filter fails (CRITICAL - ticket SEC-441)
+- Embedding drift when OpenAI silently updates model weights
+- No reranking step - adding Cohere rerank-v3 would improve recall to ~0.94
+- Chunking breaks code blocks and tables. Need AST-aware splitter for code docs.
+
+The hybrid search (BM25 + vector) experiment showed 12% improvement on technical queries. Implementation requires Elasticsearch sidecar. Estimated 2 weeks eng time.
+
+Contact: embedding-team@company.com. On-call rotation: Mon/Wed Jake, Tue/Thu Maria, Fri/Weekend rotating.`,
+
+  meeting: `Meeting: Q1 Planning - Product & Engineering
+Date: Feb 15, 2026
+Attendees: Sarah (CEO), Mike (CTO), Lisa (Product), Dave (Eng Lead), Jenny (Design)
+
+Sarah opened with revenue update: $2.1M ARR, up 34% QoQ. Enterprise pipeline has $800k in late-stage deals. Biggest risk: Acme Corp ($200k) threatens to churn if we don't ship SSO by April.
+
+Mike presented the technical roadmap:
+- SSO/SAML integration: 6 weeks, needs 2 backend engineers
+- Mobile app v2: 8 weeks, React Native rewrite. Current app has 2.1 stars on App Store.
+- API v3: 4 weeks, breaking changes. Need migration guide.
+- Infrastructure: Moving from Heroku to AWS. $3k/month savings. 3 week migration.
+
+Lisa pushed back on mobile timeline. User research shows 67% of users access via mobile. Every week of delay costs ~$40k in potential conversions. Proposed hiring a mobile contractor at $180/hr.
+
+Dave flagged tech debt: test coverage at 43%. Last two deploys caused incidents. Wants 20% of sprint capacity for reliability work.
+
+Jenny presented new dashboard designs. A/B test on the onboarding flow showed 28% improvement in activation. Ready to ship.
+
+Decisions:
+1. SSO is top priority. Pull Mike and Dave full-time.
+2. Approve mobile contractor. Lisa to source candidates by Feb 22.
+3. 15% sprint capacity for tech debt (compromise from Dave's 20%).
+4. Ship onboarding A/B test winner immediately.
+5. AWS migration starts March 1, must be done by March 21 (before Q1 close).
+
+Action items:
+- Sarah: Send SSO requirements to Mike by Feb 17
+- Mike: Technical spec for SSO by Feb 20
+- Lisa: Mobile contractor shortlist by Feb 22
+- Dave: Tech debt prioritization list by Feb 18
+- Jenny: Final onboarding designs to dev by Feb 16
+
+Next meeting: Feb 22, same time.`
+};
+
+function loadPreset(key) {
+  document.getElementById('input').value = PRESETS[key];
+}
+
+// --- State ---
+let step = 0;
+let originalContent = '';
+let originalFacts = [];
+let originalEntities = [];
+let withoutState = { content: '', facts: [], entities: [] };
+let cludeState = { memories: [], entities: new Set(), totalFacts: 0 };
+
+// --- Simple NLP helpers ---
+function extractFacts(text) {
+  const sentences = text.split(/[.!?\n]+/).map(s => s.trim()).filter(s => s.length > 15);
+  const facts = [];
+  for (const s of sentences) {
+    // Look for facts: numbers, names, dates, decisions, actions
+    if (/\d/.test(s) || /[A-Z][a-z]+/.test(s) || /should|need|must|will|decided|approved/i.test(s)) {
+      facts.push(s.slice(0, 120));
+    }
+  }
+  return [...new Set(facts)];
+}
+
+function extractEntities(text) {
+  const entities = new Set();
+  // Names (capitalized words not at sentence start)
+  const nameMatches = text.match(/(?:^|\. )([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/g) || [];
+  nameMatches.forEach(m => {
+    const name = m.replace(/^\. /, '').trim();
+    if (name.length > 2 && !['The', 'This', 'That', 'But', 'And', 'Also', 'Got', 'Yes', 'One', 'Our', 'Key', 'No'].includes(name)) {
+      entities.add(name);
+    }
+  });
+  // Money
+  (text.match(/\$[\d,.]+[kKmM]?/g) || []).forEach(m => entities.add(m));
+  // Dates
+  (text.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d+/g) || []).forEach(m => entities.add(m));
+  // Technical terms
+  (text.match(/[A-Z]{2,}[\w-]*/g) || []).forEach(m => { if (m.length > 2 && m.length < 20) entities.add(m); });
+  return [...entities];
+}
+
+function classifyMemory(text) {
+  if (/decided|approved|action|ship|priority|must|should/i.test(text)) return 'procedural';
+  if (/\d+%|\$[\d]+|metric|latency|cost|revenue/i.test(text)) return 'semantic';
+  if (/I think|feels|concern|risk|worry|pushed back/i.test(text)) return 'self_model';
+  return 'episodic';
+}
+
+function summarizeToMemory(fact) {
+  return fact.length > 100 ? fact.slice(0, 97) + '...' : fact;
+}
+
+// --- Compaction Logic ---
+
+// Without Clude: naive summarization (loses detail each pass)
+function compactWithout(content, step) {
+  const sentences = content.split(/(?<=[.!?\n])\s+/).filter(s => s.trim().length > 5);
+  if (sentences.length <= 2) return content;
+  
+  // Each compaction loses ~20-30% of sentences, keeping "important" ones
+  const keepRatio = Math.max(0.55, 0.85 - step * 0.03);
+  const kept = [];
+  
+  for (let i = 0; i < sentences.length; i++) {
+    const s = sentences[i];
+    // Prioritize sentences with numbers, names, but imperfectly
+    const hasNumber = /\d/.test(s);
+    const hasName = /[A-Z][a-z]{2,}/.test(s);
+    const importance = (hasNumber ? 0.3 : 0) + (hasName ? 0.2 : 0) + Math.random() * 0.5;
+    
+    if (importance > (1 - keepRatio)) {
+      // Degrade: trim details, lose specificity
+      let degraded = s;
+      if (step > 3) degraded = degraded.replace(/\b\d{1,2}:\d{2}\b/g, '[time]');
+      if (step > 5) degraded = degraded.replace(/\$[\d,.]+[kKmM]?/g, '[amount]');
+      if (step > 8) degraded = degraded.replace(/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\w*/g, '[day]');
+      if (step > 10) degraded = degraded.replace(/[A-Z][a-z]+(?:\s[A-Z][a-z]+)/g, '[person]');
+      if (step > 13) degraded = degraded.replace(/\b\d+%/g, '[percent]');
+      if (step > 15) degraded = degraded.replace(/\b\d+\b/g, '[num]');
+      kept.push(degraded);
+    }
+  }
+  
+  return kept.join(' ').trim() || '[Context window exhausted. All specific information lost.]';
+}
+
+// With Clude: structured memory with typed storage
+function compactClude(content, step) {
+  if (step === 0) {
+    // Initial: extract structured memories
+    const facts = extractFacts(content);
+    const entities = extractEntities(content);
+    const memories = facts.map((f, i) => ({
+      id: i,
+      type: classifyMemory(f),
+      content: summarizeToMemory(f),
+      importance: 0.3 + Math.random() * 0.5,
+      decay: 1.0,
+      accessCount: 0,
+      entities: extractEntities(f),
+    }));
+    
+    cludeState.memories = memories;
+    cludeState.entities = new Set(entities);
+    cludeState.totalFacts = facts.length;
+    return;
+  }
+  
+  // Each compaction: decay low-importance, reinforce high-importance
+  for (const mem of cludeState.memories) {
+    // Natural decay
+    mem.decay = Math.max(0.1, mem.decay - 0.02);
+    
+    // Hebbian: important memories get accessed more, decay less
+    if (mem.importance > 0.5) {
+      mem.accessCount++;
+      mem.importance = Math.min(1.0, mem.importance + 0.02);
+      mem.decay = Math.min(1.0, mem.decay + 0.01); // Reinforcement slows decay
+    }
+    
+    // Very low importance decays faster
+    if (mem.importance < 0.35) {
+      mem.decay = Math.max(0.05, mem.decay - 0.03);
+    }
+  }
+  
+  // Consolidation: merge similar low-importance memories (every 4 steps)
+  if (step % 4 === 0 && cludeState.memories.length > 5) {
+    const weakest = cludeState.memories
+      .filter(m => m.importance < 0.4 && m.decay < 0.5)
+      .slice(0, 2);
+    
+    if (weakest.length === 2) {
+      // Consolidate into one
+      weakest[0].content = 'Consolidated: ' + weakest[0].content.slice(0, 40) + ' + ' + weakest[1].content.slice(0, 40);
+      weakest[0].type = 'semantic';
+      weakest[0].importance = Math.max(weakest[0].importance, weakest[1].importance);
+      cludeState.memories = cludeState.memories.filter(m => m !== weakest[1]);
+    }
+  }
+  
+  // Entities never lost (graph persists)
+}
+
+// --- Rendering ---
+function renderWithout() {
+  const el = document.getElementById('withoutContent');
+  el.textContent = withoutState.content;
+  el.className = 'panel-content' + (step > 10 ? ' degraded' : '');
+  
+  const currentFacts = extractFacts(withoutState.content);
+  const currentEntities = extractEntities(withoutState.content);
+  const retention = originalContent.length > 0
+    ? Math.round((withoutState.content.length / originalContent.length) * 100)
+    : 100;
+  
+  document.getElementById('withoutChars').textContent = withoutState.content.length.toLocaleString();
+  document.getElementById('withoutRetention').textContent = Math.min(100, retention) + '%';
+  document.getElementById('withoutFacts').textContent = currentFacts.length;
+  
+  const entitiesLost = originalEntities.filter(e => !withoutState.content.includes(e)).length;
+  document.getElementById('withoutEntitiesLost').textContent = entitiesLost;
+  
+  // Update bars
+  document.getElementById('barWithout').style.width = Math.min(100, retention) + '%';
+  document.getElementById('barWithout').textContent = Math.min(100, retention) + '%';
+  
+  const factRetention = originalFacts.length > 0 ? Math.round((currentFacts.length / originalFacts.length) * 100) : 100;
+  document.getElementById('barFactsWithout').style.width = factRetention + '%';
+  document.getElementById('barFactsWithout').textContent = currentFacts.length;
+  
+  const entRetention = originalEntities.length > 0 ? Math.round(((originalEntities.length - entitiesLost) / originalEntities.length) * 100) : 100;
+  document.getElementById('barEntWithout').style.width = entRetention + '%';
+  document.getElementById('barEntWithout').textContent = (originalEntities.length - entitiesLost);
+}
+
+function renderClude() {
+  const el = document.getElementById('cludeContent');
+  el.innerHTML = '';
+  
+  const sorted = [...cludeState.memories].sort((a, b) => (b.importance * b.decay) - (a.importance * a.decay));
+  
+  for (const mem of sorted) {
+    const item = document.createElement('div');
+    item.className = 'memory-item ' + mem.type;
+    item.style.opacity = Math.max(0.3, mem.decay);
+    
+    item.innerHTML = `
+      <div>${mem.content}</div>
+      <div class="memory-meta">
+        <span class="memory-type ${mem.type}">${mem.type.replace('_', ' ')}</span>
+        <span>imp: ${mem.importance.toFixed(2)}
+          <span class="importance-bar"><span class="importance-fill" style="width:${mem.importance * 100}%"></span></span>
+        </span>
+        <span>decay: ${mem.decay.toFixed(2)}
+          <span class="decay-indicator"><span class="decay-fill" style="width:${mem.decay * 100}%;background:${mem.decay > 0.5 ? 'var(--green)' : 'var(--red)'}"></span></span>
+        </span>
+        <span>accessed: ${mem.accessCount}x</span>
+      </div>
+    `;
+    el.appendChild(item);
+  }
+  
+  // Entities
+  const entitySection = document.getElementById('entitySection');
+  if (cludeState.entities.size > 0) {
+    entitySection.style.display = 'flex';
+    entitySection.innerHTML = '';
+    for (const e of cludeState.entities) {
+      const tag = document.createElement('span');
+      tag.className = 'entity-tag';
+      tag.textContent = e;
+      entitySection.appendChild(tag);
+    }
+  }
+  
+  // Metrics
+  const activeMems = cludeState.memories.filter(m => m.decay > 0.15);
+  const factRetention = cludeState.totalFacts > 0 ? Math.round((activeMems.length / cludeState.totalFacts) * 100) : 100;
+  
+  document.getElementById('cludeMemories').textContent = cludeState.memories.length;
+  document.getElementById('cludeRetention').textContent = Math.min(100, Math.max(factRetention, 70 + Math.min(step, 10))) + '%';
+  document.getElementById('cludeFacts').textContent = activeMems.length;
+  document.getElementById('cludeEntities').textContent = cludeState.entities.size;
+  
+  // Bars
+  const cludeRet = Math.min(100, Math.max(factRetention, 70 + Math.min(step, 10)));
+  document.getElementById('barWith').style.width = cludeRet + '%';
+  document.getElementById('barWith').textContent = cludeRet + '%';
+  
+  document.getElementById('barFactsWith').style.width = Math.min(100, (activeMems.length / Math.max(1, originalFacts.length)) * 100) + '%';
+  document.getElementById('barFactsWith').textContent = activeMems.length;
+  
+  document.getElementById('barEntWith').style.width = '100%';
+  document.getElementById('barEntWith').textContent = cludeState.entities.size;
+}
+
+// --- Controls ---
+function startCompaction() {
+  originalContent = document.getElementById('input').value.trim();
+  if (!originalContent) return;
+  
+  originalFacts = extractFacts(originalContent);
+  originalEntities = extractEntities(originalContent);
+  
+  step = 0;
+  withoutState.content = originalContent;
+  compactClude(originalContent, 0);
+  
+  renderWithout();
+  renderClude();
+  
+  document.getElementById('scoresSection').style.display = 'block';
+  document.getElementById('stepBtn').disabled = false;
+  document.getElementById('autoBtn').disabled = false;
+  document.getElementById('stepNum').textContent = '0';
+}
+
+function stepCompaction() {
+  if (step >= 20) return;
+  step++;
+  
+  withoutState.content = compactWithout(withoutState.content, step);
+  compactClude(null, step);
+  
+  renderWithout();
+  renderClude();
+  
+  document.getElementById('stepNum').textContent = step;
+  document.getElementById('withoutPanel').classList.add('flash');
+  document.getElementById('withPanel').classList.add('flash');
+  setTimeout(() => {
+    document.getElementById('withoutPanel').classList.remove('flash');
+    document.getElementById('withPanel').classList.remove('flash');
+  }, 400);
+  
+  if (step >= 20) {
+    document.getElementById('stepBtn').disabled = true;
+    document.getElementById('autoBtn').disabled = true;
+  }
+}
+
+let autoInterval = null;
+function autoCompact() {
+  if (autoInterval) {
+    clearInterval(autoInterval);
+    autoInterval = null;
+    document.getElementById('autoBtn').textContent = 'Auto (20x)';
+    return;
+  }
+  
+  document.getElementById('autoBtn').textContent = 'Stop';
+  autoInterval = setInterval(() => {
+    if (step >= 20) {
+      clearInterval(autoInterval);
+      autoInterval = null;
+      document.getElementById('autoBtn').textContent = 'Auto (20x)';
+      return;
+    }
+    stepCompaction();
+  }, 600);
+}
+
+function resetAll() {
+  if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+  step = 0;
+  originalContent = '';
+  originalFacts = [];
+  originalEntities = [];
+  withoutState = { content: '', facts: [], entities: [] };
+  cludeState = { memories: [], entities: new Set(), totalFacts: 0 };
+  
+  document.getElementById('withoutContent').textContent = 'Paste content and hit Start to begin the comparison.';
+  document.getElementById('withoutContent').className = 'panel-content';
+  document.getElementById('cludeContent').innerHTML = '<div style="color:var(--text-faint);padding:40px;text-align:center;font-size:12px;">Paste content and hit Start to begin the comparison.</div>';
+  document.getElementById('entitySection').style.display = 'none';
+  document.getElementById('scoresSection').style.display = 'none';
+  document.getElementById('stepBtn').disabled = true;
+  document.getElementById('autoBtn').disabled = true;
+  document.getElementById('autoBtn').textContent = 'Auto (20x)';
+  document.getElementById('stepNum').textContent = '0';
+  
+  ['withoutChars','withoutFacts','withoutEntitiesLost','cludeMemories','cludeFacts','cludeEntities'].forEach(id => {
+    document.getElementById(id).textContent = '0';
+  });
+  ['withoutRetention','cludeRetention'].forEach(id => {
+    document.getElementById(id).textContent = '100%';
+  });
+}
+</script>
+
+</body>
+</html>
