@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [2.5.1] — 2026-03-01
+
+### Fixed
+- npm onboarding: add bin entry point and postinstall banner
+
+## [2.5.0] — 2026-02-28
+
+### Added
+- Entity co-occurrence expansion in memory recall pipeline
+- Contradiction resolution phase in dream cycle (finds unresolved `contradicts` links, resolves via Claude, stores semantic resolution with `resolves` links)
+- Entity-aware recall with bond-typed graph traversal and importance re-scoring
+- `resolves` memory link type for contradiction resolution outcomes
+- `get_unresolved_contradictions` and `get_entity_cooccurrence` Supabase RPC functions
+- Entity knowledge graph: person, project, concept, token, wallet, location, event
+- Deep Venice integration: cognitive model router, embeddings, stats API, web search
+- Content filter on demo store endpoint (blocks hate speech and spam)
+- Security: block CA spoofing attacks and URL prompt injection
+- Context awareness to prevent confusion about other projects
+- 10 Days campaign page, API routes, and tweet tracker
+
+### Changed
+- Upgraded cognitive router to Claude Opus/Sonnet via Venice
+- Optimized cognitive model routing for cost/quality balance
+- Improved memory retrieval accuracy: word boundaries, stopwords, rebalanced weights
+- Routed X replies through Venice AI
+
+### Fixed
+- Backtest issues: await decay update, add resolves bond weight, deterministic tiebreak
+- Memory corruption: exclude demo from recall, block cop-out consolidation, skip empty tweets
+- Replace generic guardrail fallback with contextual responses
+- Block Clude from engaging specific problematic threads
+
 ## [2.4.0] — 2026-02-15
 
 ### Changed
