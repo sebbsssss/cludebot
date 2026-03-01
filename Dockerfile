@@ -4,6 +4,7 @@ FROM node:22-slim AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
+COPY scripts/ ./scripts/
 RUN npm ci
 
 COPY tsconfig.json ./
@@ -17,7 +18,8 @@ FROM node:22-slim
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+COPY scripts/ ./scripts/
+RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist/ ./dist/
 COPY src/verify-app/public/ ./dist/verify-app/public/
