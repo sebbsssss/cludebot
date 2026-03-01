@@ -6,9 +6,17 @@
  *
  * Usage: npx tsx scripts/benchmark.ts
  */
-import 'dotenv/config';
+process.env.LOG_LEVEL = 'error'; // Suppress pino noise during benchmark
+import dotenv from 'dotenv';
+dotenv.config();
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Cortex } from '../src/sdk';
+
+// Suppress uncaught rejections from fire-and-forget Solana memo writes
+process.on('unhandledRejection', (err: any) => {
+  if (err?.message?.includes('429') || err?.message?.includes('Too Many Requests')) return;
+  console.error('Unhandled rejection:', err?.message || err);
+});
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -38,13 +46,13 @@ function sleep(msec: number): Promise<void> {
 // ── Config ─────────────────────────────────────────────────────
 
 const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY!;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const EMBEDDING_PROVIDER = (process.env.EMBEDDING_PROVIDER || '') as 'voyage' | 'openai' | '';
 const EMBEDDING_KEY = process.env.VOYAGE_API_KEY || process.env.OPENAI_API_KEY || '';
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
+  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in .env');
   process.exit(1);
 }
 

@@ -164,6 +164,88 @@ export async function initDatabase(): Promise<void> {
         ON memories(memory_type, compacted, decay_factor, importance, created_at)
         WHERE memory_type = 'episodic' AND compacted = FALSE;
 
+        -- Memory fragments: granular vector decomposition for precision retrieval
+        CREATE TABLE IF NOT EXISTS memory_fragments (
+          id BIGSERIAL PRIMARY KEY,
+          memory_id BIGINT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+          fragment_type TEXT NOT NULL,
+          content TEXT NOT NULL,
+          embedding vector(1024),
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_fragments_memory_id ON memory_fragments(memory_id);
+
+        -- Memory association graph: typed, weighted links between memories
+        CREATE TABLE IF NOT EXISTS memory_links (
+          id BIGSERIAL PRIMARY KEY,
+          source_id BIGINT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+          target_id BIGINT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+          link_type TEXT NOT NULL CHECK (link_type IN (
+            'supports', 'contradicts', 'elaborates', 'causes', 'follows', 'relates', 'resolves'
+          )),
+          strength REAL DEFAULT 0.5,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(source_id, target_id, link_type)
+        );
+        CREATE INDEX IF NOT EXISTS idx_links_source ON memory_links(source_id);
+        CREATE INDEX IF NOT EXISTS idx_links_target ON memory_links(target_id);
+        CREATE INDEX IF NOT EXISTS idx_links_type ON memory_links(link_type);
+        CREATE INDEX IF NOT EXISTS idx_links_strength ON memory_links(strength DESC);
+
+        -- 1-hop traversal: get all memories linked to a set of IDs (both directions)
+        CREATE OR REPLACE FUNCTION get_linked_memories(
+          seed_ids BIGINT[],
+          min_strength FLOAT DEFAULT 0.1,
+          max_results INT DEFAULT 20
+        )
+        RETURNS TABLE (
+          memory_id BIGINT,
+          linked_from BIGINT,
+          link_type TEXT,
+          strength FLOAT
+        )
+        LANGUAGE sql AS $$
+          SELECT DISTINCT ON (ml.target_id, ml.link_type)
+            ml.target_id AS memory_id,
+            ml.source_id AS linked_from,
+            ml.link_type,
+            ml.strength::float
+          FROM memory_links ml
+          WHERE ml.source_id = ANY(seed_ids)
+            AND ml.target_id != ALL(seed_ids)
+            AND ml.strength >= min_strength
+          UNION
+          SELECT DISTINCT ON (ml.source_id, ml.link_type)
+            ml.source_id AS memory_id,
+            ml.target_id AS linked_from,
+            ml.link_type,
+            ml.strength::float
+          FROM memory_links ml
+          WHERE ml.target_id = ANY(seed_ids)
+            AND ml.source_id != ALL(seed_ids)
+            AND ml.strength >= min_strength
+          ORDER BY strength DESC
+          LIMIT max_results;
+        $$;
+
+        -- Hebbian reinforcement: boost link strength for co-retrieved memories
+        CREATE OR REPLACE FUNCTION boost_link_strength(
+          memory_ids BIGINT[],
+          boost_amount FLOAT DEFAULT 0.05
+        )
+        RETURNS INTEGER
+        LANGUAGE plpgsql AS $$
+        DECLARE affected INTEGER;
+        BEGIN
+          UPDATE memory_links
+          SET strength = LEAST(1.0, strength + boost_amount)
+          WHERE source_id = ANY(memory_ids)
+            AND target_id = ANY(memory_ids);
+          GET DIAGNOSTICS affected = ROW_COUNT;
+          RETURN affected;
+        END;
+        $$;
+
         -- Migration: expand dream_logs session types for compaction/decay/contradiction_resolution
         ALTER TABLE dream_logs DROP CONSTRAINT IF EXISTS dream_logs_session_type_check;
         ALTER TABLE dream_logs ADD CONSTRAINT dream_logs_session_type_check
