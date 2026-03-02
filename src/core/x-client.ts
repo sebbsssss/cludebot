@@ -311,6 +311,14 @@ export async function refreshTweetMetrics(
   return metricsMap;
 }
 
+/**
+ * Get engagement metrics for a single tweet.
+ */
+export async function getTweetMetrics(tweetId: string): Promise<{ likes: number; retweets: number; replies: number; quotes: number } | null> {
+  const result = await refreshTweetMetrics([tweetId]);
+  return result.get(tweetId) || null;
+}
+
 export async function getUserById(userId: string): Promise<UserV2 | null> {
   try {
     const result = await rwClient.v2.user(userId, {

@@ -1,6 +1,8 @@
 import { postReply, postTweet, postThread } from '../core/x-client';
 import { markProcessed } from '../core/database';
+import { logAction } from '../features/action-learning';
 import { createChildLogger } from '../core/logger';
+import { randomBytes } from 'crypto';
 
 const log = createChildLogger('social');
 
@@ -14,12 +16,26 @@ const log = createChildLogger('social');
 export async function replyAndMark(
   tweetId: string,
   text: string,
-  feature: string
+  feature: string,
+  context?: { trigger?: string; reasoning?: string; relatedUser?: string }
 ): Promise<string> {
   // x-client handles smart truncation
   const replyId = await postReply(tweetId, text);
   await markProcessed(tweetId, feature, replyId);
   log.info({ tweetId, replyId, feature }, 'Reply posted and marked');
+
+  // Log action for self-learning (fire-and-forget)
+  const actionId = `reply:${replyId || tweetId}:${randomBytes(4).toString('hex')}`;
+  logAction({
+    actionId,
+    action: `Replied to tweet: "${text.slice(0, 200)}"`,
+    reasoning: context?.reasoning || `Responded via ${feature}`,
+    feature,
+    relatedUser: context?.relatedUser,
+    trigger: context?.trigger,
+    metadata: { tweetId, replyId },
+  }).catch(err => log.error({ err }, 'Action logging failed (non-fatal)'));
+
   return replyId;
 }
 

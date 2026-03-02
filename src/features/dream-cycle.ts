@@ -118,11 +118,13 @@ async function triggerReflection(): Promise<void> {
       (async () => {
         await runConsolidation();
         await sleep(3000);
-        await runCompaction();    // NEW: Beads-inspired memory compaction
+        await runCompaction();    // Beads-inspired memory compaction
         await sleep(3000);
         await runReflection();
         await sleep(3000);
         await runContradictionResolution();
+        await sleep(3000);
+        await runLearning();      // Self-learning: track outcomes + refine strategies
         await sleep(3000);
         await runEmergence();
       })(),
@@ -758,6 +760,32 @@ async function runContradictionResolution(): Promise<void> {
   }
 
   log.info({ resolved: outputs.length, skipped: pairs.length - outputs.length }, 'Contradiction resolution complete');
+}
+
+// ---- LEARNING (Self-improvement from action-outcome pairs) ---- //
+
+async function runLearning(): Promise<void> {
+  log.info('--- Learning phase: tracking outcomes & refining strategies ---');
+  try {
+    const { trackSocialOutcomes, refineStrategies } = await import('./action-learning');
+
+    // Step 1: Check outcomes of recent actions
+    const tracked = await trackSocialOutcomes();
+    if (tracked > 0) {
+      log.info({ tracked }, 'Social outcomes tracked');
+    }
+
+    // Step 2: Analyze action-outcome patterns and generate strategies
+    const lessons = await refineStrategies();
+    if (lessons.length > 0) {
+      log.info({ lessons: lessons.length }, 'New strategies learned');
+      for (const lesson of lessons) {
+        log.info({ lesson: lesson.slice(0, 150) }, 'Learned strategy');
+      }
+    }
+  } catch (err) {
+    log.error({ err }, 'Learning phase failed');
+  }
 }
 
 // ---- EMERGENCE ---- //
