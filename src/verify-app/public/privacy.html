@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLUDE x VENICE — Privacy Dashboard</title>
-  <meta name="description" content="Clude's decentralized AI stack: Venice for private inference, Solana for verifiable memory.">
+  <title>CLUDE — Privacy-First AI Infrastructure</title>
+  <meta name="description" content="Private inference via Venice AI. Encrypted memory via CLUDE Brain. Verifiable on Solana. No surveillance. No data harvesting.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -90,7 +90,7 @@
     }
     .hero-sub {
       font-size: 14px; color: var(--text-muted);
-      max-width: 560px; line-height: 1.8;
+      max-width: 600px; line-height: 1.8;
     }
 
     /* SECTIONS */
@@ -116,16 +116,31 @@
       line-height: 1.8; margin-bottom: 56px;
     }
 
+    /* QUOTE */
+    .quote-section {
+      padding: 80px 40px;
+      text-align: center;
+    }
+    .quote-text {
+      font-size: 18px; font-weight: 400; line-height: 1.7;
+      color: var(--text); font-style: italic;
+      max-width: 700px; margin: 0 auto 16px;
+    }
+    .quote-attr {
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
     /* STACK CARDS */
     .stack-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
+      display: grid; grid-template-columns: repeat(4, 1fr);
       gap: 1px; background: rgba(0,0,0,0.06);
       border: 1px solid rgba(0,0,0,0.06);
       margin-bottom: 56px;
     }
     .stack-card {
       background: var(--bg);
-      padding: 48px 40px;
+      padding: 36px 28px;
     }
     .section-alt .stack-card {
       background: var(--bg-warm);
@@ -135,10 +150,10 @@
       color: var(--text-faint); margin-bottom: 16px;
     }
     .stack-card h3 {
-      font-size: 20px; font-weight: 700; margin-bottom: 12px;
+      font-size: 16px; font-weight: 700; margin-bottom: 12px;
     }
     .stack-card .desc {
-      font-size: 13px; color: var(--text-muted); line-height: 1.8;
+      font-size: 12px; color: var(--text-muted); line-height: 1.8;
     }
     .badge {
       display: inline-block;
@@ -159,6 +174,16 @@
       background: rgba(0, 0, 0, 0.04);
       color: var(--text);
       border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .badge-encrypted {
+      background: rgba(122, 90, 160, 0.08);
+      color: #7a5aa0;
+      border: 1px solid rgba(122, 90, 160, 0.2);
+    }
+    .badge-portable {
+      background: rgba(200, 168, 50, 0.08);
+      color: #a08828;
+      border: 1px solid rgba(200, 168, 50, 0.2);
     }
 
     /* STATS */
@@ -282,6 +307,9 @@
       font-size: 11px; color: var(--text-faint); letter-spacing: 1px;
     }
 
+    @media (max-width: 968px) {
+      .stack-grid { grid-template-columns: 1fr 1fr; }
+    }
     @media (max-width: 768px) {
       .stack-grid { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: 1fr; }
@@ -290,6 +318,7 @@
       .compare-row { grid-template-columns: 1fr; }
       .compare-row.header { display: none; }
       .hero { padding-top: 100px; }
+      .quote-text { font-size: 15px; }
     }
   </style>
 </head>
@@ -299,10 +328,10 @@
     <div class="nav-inner">
       <a class="nav-logo" href="/">CLUDE</a>
       <div class="nav-links">
-        <a href="/#architecture">Architecture</a>
+        <a href="/">Home</a>
         <a href="/brain.html">Brain</a>
         <a href="/graph.html">Graph</a>
-        <a href="/privacy" style="color: var(--text); font-weight: 600;">Venice</a>
+        <a href="/privacy.html" style="color: var(--text); font-weight: 600;">Privacy</a>
         <a href="/docs.html">Docs</a>
       </div>
     </div>
@@ -310,61 +339,92 @@
 
   <div class="hero">
     <div class="hero-inner">
-      <div class="hero-label">Decentralized AI Stack</div>
-      <h1 class="hero-title">Private inference.<br>Verifiable <em>memory.</em></h1>
+      <div class="hero-label">Data Sovereignty for AI</div>
+      <h1 class="hero-title">Your agent thinks <em>privately.</em><br>Its memories are <em>yours.</em></h1>
       <p class="hero-sub">
-        Clude is the first AI agent running a fully decentralized stack.
-        Venice handles inference with zero data retention.
-        Solana stores every memory on-chain with cryptographic proof.
-        No single point of control. No kill switch.
+        CLUDE is built on the principle that AI should serve individuals, not surveil them.
+        Private inference via Venice AI. Client-side encrypted memory via CLUDE Brain.
+        Verifiable on Solana. No logs. No data harvesting. No centralized control.
       </p>
     </div>
   </div>
 
+  <!-- QUOTE -->
+  <div class="quote-section section-alt">
+    <div style="font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 24px;">The Separation of Mind and State</div>
+    <div class="quote-text">"In a world of growing AI integration into our daily lives, it is crucial that humans are able to interact with machine intelligence without centralized surveillance and control."</div>
+    <div class="quote-attr">Erik Voorhees, Venice AI Founder</div>
+    <p style="font-size: 13px; color: var(--text-muted); max-width: 600px; margin: 24px auto 0; line-height: 1.8;">
+      Centuries ago, we separated church from state. The cypherpunks separated language from state with encryption. Bitcoin separated money from state. Now we must separate mind from state — ensuring no entity holds a monopoly over machine intelligence.
+    </p>
+  </div>
+
   <!-- STACK -->
-  <div class="section section-alt">
+  <div class="section">
     <div class="section-inner">
-      <div class="section-label">The Stack</div>
-      <div class="section-title">Two layers. Zero centralization.</div>
+      <div class="section-label">The Privacy Stack</div>
+      <div class="section-title">Four layers. Zero surveillance.</div>
       <div class="section-desc">
-        Every AI agent needs two things: something to think with and somewhere to remember.
-        Clude decentralizes both.
+        Every layer of the CLUDE stack is designed for data sovereignty.
+        Private inference. Encrypted storage. Permissionless access. Verifiable proofs.
       </div>
 
       <div class="stack-grid">
         <div class="stack-card">
-          <div class="provider-label">Inference Layer</div>
+          <div class="provider-label">Inference</div>
           <h3>Venice AI</h3>
           <div class="desc">
-            All LLM inference routes through Venice. No data retention.
-            No logging. Your agent's thoughts stay private. Multiple models
-            with cognitive routing per brain function.
+            Open-source models on decentralized GPUs.
+            Zero data retention. No logs. No content policies.
+            Your prompts are never stored or used for training.
           </div>
-          <span class="badge badge-private">Private</span>
+          <span class="badge badge-private">No Logs</span>
           <span class="badge badge-private">Permissionless</span>
         </div>
         <div class="stack-card">
-          <div class="provider-label">Memory Layer</div>
+          <div class="provider-label">Memory</div>
+          <h3>CLUDE Brain</h3>
+          <div class="desc">
+            Client-side encryption with your Solana keypair.
+            Memories are encrypted before leaving your machine.
+            Not even the database operator can read them.
+          </div>
+          <span class="badge badge-encrypted">Encrypted</span>
+          <span class="badge badge-encrypted">Your Keys</span>
+        </div>
+        <div class="stack-card">
+          <div class="provider-label">Integration</div>
+          <h3>CLUDE Cortex</h3>
+          <div class="desc">
+            Connects any LLM to the memory layer.
+            Switch models without losing memories.
+            One SDK, any provider, full portability.
+          </div>
+          <span class="badge badge-portable">Poly-model</span>
+          <span class="badge badge-portable">Portable</span>
+        </div>
+        <div class="stack-card">
+          <div class="provider-label">Verification</div>
           <h3>Solana</h3>
           <div class="desc">
-            Every stable memory gets committed on-chain with a SHA-256 hash.
-            Anyone can verify what the agent knows.
-            Permanent. Immutable. Transparent.
+            On-chain memory registry via custom Anchor program.
+            SHA-256 content hashes prove existence without revealing content.
+            Immutable. Permanent. Public.
           </div>
-          <span class="badge badge-verifiable">Verifiable</span>
           <span class="badge badge-verifiable">On-chain</span>
+          <span class="badge badge-verifiable">Verifiable</span>
         </div>
       </div>
     </div>
   </div>
 
   <!-- LIVE STATS -->
-  <div class="section">
+  <div class="section section-alt">
     <div class="section-inner">
       <div class="section-label"><span class="live-dot"></span>Live Stats</div>
       <div class="section-title">Running right now.</div>
       <div class="section-desc">
-        Real-time numbers from Clude's Venice integration. Every call private. Every memory verifiable.
+        Real-time numbers from CLUDE's privacy stack. Every inference call private. Every memory encrypted. Every commitment verifiable.
       </div>
 
       <div class="stats-grid">
@@ -385,13 +445,13 @@
   </div>
 
   <!-- COGNITIVE ROUTER -->
-  <div class="section section-alt">
+  <div class="section">
     <div class="section-inner">
-      <div class="section-label">Cognitive Router</div>
+      <div class="section-label">Poly-Model Router</div>
       <div class="section-title">Different models for different thinking.</div>
       <div class="section-desc">
-        Like how your brain uses fast intuition for simple tasks and slow deliberation for hard problems.
-        Clude routes each cognitive function to the optimal Venice model.
+        Memory persists regardless of which model does the thinking.
+        CLUDE Cortex routes each cognitive function to the optimal model — swap any provider, keep all memories.
       </div>
 
       <div class="cognitive-table">
@@ -402,7 +462,7 @@
         </div>
         <div class="cognitive-row">
           <div>Replies</div>
-          <div class="model">claude-sonnet-4.6</div>
+          <div class="model">claude-sonnet-4.5</div>
           <div class="purpose">Quality public replies</div>
         </div>
         <div class="cognitive-row">
@@ -418,7 +478,7 @@
         <div class="cognitive-row">
           <div>Emergence</div>
           <div class="model">claude-opus-4.6</div>
-          <div class="purpose">Posted as tweets</div>
+          <div class="purpose">Consciousness loop</div>
         </div>
         <div class="cognitive-row">
           <div>Entity Extraction</div>
@@ -440,29 +500,39 @@
   </div>
 
   <!-- COMPARISON -->
-  <div class="section">
+  <div class="section section-alt">
     <div class="section-inner">
       <div class="section-label">Comparison</div>
-      <div class="section-title">What decentralized AI actually looks like.</div>
+      <div class="section-title">What sovereign AI actually looks like.</div>
       <div class="section-desc">
-        Not a token with an API wrapper. Infrastructure that can't be turned off.
+        Not a token with an API wrapper. Infrastructure where your data belongs to you and no one can take it away.
       </div>
 
       <div class="compare-table">
         <div class="compare-row header">
           <div>Feature</div>
-          <div>Traditional Agents</div>
-          <div>Clude + Venice</div>
+          <div>Traditional AI Agents</div>
+          <div>CLUDE Stack</div>
         </div>
         <div class="compare-row">
-          <div>Private inference</div>
+          <div>Inference privacy</div>
           <div class="no">Logged by provider</div>
-          <div class="yes">Venice (no logs)</div>
+          <div class="yes">Venice (zero retention)</div>
         </div>
         <div class="compare-row">
-          <div>Persistent memory</div>
-          <div class="no">Resets each session</div>
-          <div class="yes">4 memory types</div>
+          <div>Memory encryption</div>
+          <div class="no">Plaintext on their servers</div>
+          <div class="yes">Client-side encrypted</div>
+        </div>
+        <div class="compare-row">
+          <div>Memory portability</div>
+          <div class="no">Locked to provider</div>
+          <div class="yes">Export & import packs</div>
+        </div>
+        <div class="compare-row">
+          <div>Model lock-in</div>
+          <div class="no">Single provider</div>
+          <div class="yes">Poly-model via Cortex</div>
         </div>
         <div class="compare-row">
           <div>Verifiable knowledge</div>
@@ -472,7 +542,7 @@
         <div class="compare-row">
           <div>Memory consolidation</div>
           <div class="no">No learning</div>
-          <div class="yes">Dream cycles</div>
+          <div class="yes">5-phase dream cycles</div>
         </div>
         <div class="compare-row">
           <div>Kill switch</div>
@@ -480,9 +550,9 @@
           <div class="yes">Permissionless</div>
         </div>
         <div class="compare-row">
-          <div>Censorship</div>
-          <div class="partial">Content policies</div>
-          <div class="yes">Uncensored models</div>
+          <div>Data sovereignty</div>
+          <div class="no">Their data, their rules</div>
+          <div class="yes">Your keys, your data</div>
         </div>
       </div>
     </div>
@@ -498,7 +568,7 @@
       <a href="https://venice.ai" target="_blank">Venice AI</a>
       <div class="footer-line"></div>
       <div class="footer-copy">
-        Powered by Venice AI and Solana
+        Private inference by Venice AI &middot; Verifiable memory on Solana &middot; Encrypted by CLUDE Brain
       </div>
     </div>
   </div>
@@ -508,12 +578,12 @@
       try {
         const res = await fetch('/api/venice-stats');
         const data = await res.json();
-        
-        document.getElementById('total-calls').textContent = 
+
+        document.getElementById('total-calls').textContent =
           (data.venice?.totalInferenceCalls || 0).toLocaleString();
-        document.getElementById('total-tokens').textContent = 
+        document.getElementById('total-tokens').textContent =
           formatTokens(data.venice?.totalTokensProcessed || 0);
-        document.getElementById('total-memories').textContent = 
+        document.getElementById('total-memories').textContent =
           (data.decentralization?.totalMemoriesOnChain || 0).toLocaleString();
       } catch (err) {
         console.error('Failed to load stats:', err);
