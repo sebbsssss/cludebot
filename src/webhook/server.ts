@@ -16,6 +16,7 @@ import { getVeniceStats } from '../core/venice-client';
 import { createChildLogger } from '../core/logger';
 import { checkInputContent } from '../core/guardrails';
 import rateLimit from 'express-rate-limit';
+import { requirePrivyAuth, optionalPrivyAuth } from './privy-auth';
 
 const log = createChildLogger('server');
 
@@ -101,6 +102,9 @@ export function createServer(): express.Application {
 
   // Apply rate limiting to all API routes
   app.use('/api', apiLimiter);
+
+  // Attach Privy user to all API requests (optional — doesn't block unauthenticated)
+  app.use('/api', optionalPrivyAuth);
 
   // Venice integration stats (privacy dashboard)
   app.get('/api/venice-stats', async (_req: Request, res: Response) => {
@@ -275,6 +279,110 @@ export function createServer(): express.Application {
 
   // Campaign: 10 Days of Growing a Blockchain Brain
   app.use('/api/campaign', apiLimiter, campaignRoutes());
+
+  // ---- DASHBOARD ENDPOINTS (Privy-authenticated) ---- //
+
+  // Export memory pack
+  app.post('/api/memory-packs/export', requirePrivyAuth, async (req: Request, res: Response) => {
+    try {
+      const { name, description, tags, types } = req.body;
+      if (!name) { res.status(400).json({ error: 'name is required' }); return; }
+
+      const hours = 8760; // 1 year
+      const limit = 200;
+      let memories = await getRecentMemories(hours, types || undefined, limit);
+
+      // Filter by tags if provided
+      if (tags && tags.length > 0) {
+        memories = memories.filter(m => m.tags.some((t: string) => tags.includes(t)));
+      }
+
+      // Build entities list
+      const db = getDb();
+      const memoryIds = memories.map(m => m.id);
+      let entities: any[] = [];
+      let links: any[] = [];
+
+      if (memoryIds.length > 0) {
+        const { data: entityData } = await db
+          .from('entity_memories')
+          .select('entity_id, entities(id, entity_type, name, normalized_name, description, mention_count)')
+          .in('memory_id', memoryIds);
+        if (entityData) {
+          const seen = new Set<number>();
+          for (const row of entityData) {
+            const e = (row as any).entities;
+            if (e && !seen.has(e.id)) {
+              entities.push(e);
+              seen.add(e.id);
+            }
+          }
+        }
+
+        const { data: linkData } = await db
+          .from('memory_links')
+          .select('source_id, target_id, link_type, strength')
+          .or(`source_id.in.(${memoryIds.join(',')}),target_id.in.(${memoryIds.join(',')})`);
+        if (linkData) links = linkData;
+      }
+
+      const pack = {
+        id: `pack-${Date.now()}`,
+        name,
+        description: description || '',
+        memories,
+        entities,
+        links,
+        created_at: new Date().toISOString(),
+        created_by: req.privyUser?.userId || 'unknown',
+        memory_count: memories.length,
+        entity_count: entities.length,
+      };
+
+      res.json(pack);
+    } catch (err) {
+      log.error({ err }, 'Memory pack export error');
+      res.status(500).json({ error: 'Export failed' });
+    }
+  });
+
+  // Import memory pack
+  app.post('/api/memory-packs/import', requirePrivyAuth, async (req: Request, res: Response) => {
+    try {
+      const pack = req.body;
+      if (!pack || !Array.isArray(pack.memories)) {
+        res.status(400).json({ error: 'Invalid memory pack format' });
+        return;
+      }
+
+      let imported = 0;
+      for (const mem of pack.memories) {
+        const id = await storeMemory({
+          type: mem.memory_type || 'episodic',
+          content: String(mem.content || '').slice(0, 5000),
+          summary: String(mem.summary || '').slice(0, 500),
+          tags: mem.tags || [],
+          concepts: mem.concepts || [],
+          emotionalValence: mem.emotional_valence || 0,
+          importance: mem.importance || 0.5,
+          source: 'import',
+          relatedUser: req.privyUser?.userId || mem.related_user || null,
+          metadata: { imported_from: pack.name || 'unknown', original_id: mem.id },
+        });
+        if (id) imported++;
+      }
+
+      res.json({ imported, total: pack.memories.length });
+    } catch (err) {
+      log.error({ err }, 'Memory pack import error');
+      res.status(500).json({ error: 'Import failed' });
+    }
+  });
+
+  // List memory packs (stub — packs aren't persisted yet, returns empty)
+  app.get('/api/memory-packs', optionalPrivyAuth, async (_req: Request, res: Response) => {
+    res.json([]);
+  });
 
   // Activity stream (recent on-chain events)
   app.get('/api/activity', async (req: Request, res: Response) => {

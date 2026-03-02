@@ -94,6 +94,11 @@ export const config = {
     /** Fallback provider if primary fails */
     fallback: optional('INFERENCE_FALLBACK', 'anthropic') as 'anthropic' | 'venice',
   },
+  privy: {
+    appId: optional('PRIVY_APP_ID', ''),
+    appSecret: optional('PRIVY_APP_SECRET', ''),
+    jwksUrl: optional('PRIVY_JWKS_URL', ''),
+  },
   activity: {
     minSolValue: parseFloat(optional('ACTIVITY_MIN_SOL', '5.0')),
     minEthValue: parseFloat(optional('ACTIVITY_MIN_ETH', '0.1')), // legacy, kept for schema compat
