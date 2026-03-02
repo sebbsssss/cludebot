@@ -24,7 +24,7 @@ interface ProviderConfig {
 const PROVIDERS: Record<string, ProviderConfig> = {
   voyage: {
     url: 'https://api.voyageai.com/v1/embeddings',
-    defaultModel: 'voyage-3-lite',
+    defaultModel: 'voyage-4-large',
     authHeader: (key) => `Bearer ${key}`,
   },
   openai: {
