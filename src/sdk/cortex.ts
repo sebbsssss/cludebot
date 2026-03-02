@@ -49,11 +49,14 @@ export class Cortex {
 
     // Inject Solana config if provided
     if (config.solana) {
-      const { _configureSolana } = require('../core/solana-client');
+      const { _configureSolana, _configureMemoryRegistry } = require('../core/solana-client');
       _configureSolana(
         config.solana.rpcUrl || 'https://api.mainnet-beta.solana.com',
         config.solana.botWalletPrivateKey,
       );
+      if (config.solana.memoryRegistryProgramId) {
+        _configureMemoryRegistry(config.solana.memoryRegistryProgramId);
+      }
     }
 
     // Wire event bus for importance-driven dream triggers
@@ -66,10 +69,27 @@ export class Cortex {
     });
   }
 
-  /** Initialize database schema. Call before store/recall. */
+  /** Initialize database schema, encryption, and on-chain registry. Call before store/recall. */
   async init(): Promise<void> {
     const { initDatabase } = require('../core/database');
     await initDatabase();
+
+    // Configure encryption if provided (must be after DB init)
+    if (this.config.encryption?.solanaSecretKey) {
+      const { configureEncryption } = require('../core/encryption');
+      await configureEncryption(this.config.encryption.solanaSecretKey);
+    }
+
+    // Initialize on-chain registry PDA if configured
+    if (this.config.solana?.memoryRegistryProgramId) {
+      const { initializeRegistry } = require('../core/solana-client');
+      await initializeRegistry().catch((err: Error) => {
+        // Non-fatal — registry just won't be available, falls back to memo
+        const { createChildLogger } = require('../core/logger');
+        createChildLogger('cortex').warn({ err }, 'Registry initialization failed, falling back to memo');
+      });
+    }
+
     this.initialized = true;
   }
 
@@ -198,6 +218,20 @@ export class Cortex {
   on(event: 'memory:stored', handler: (payload: { importance: number; memoryType: string }) => void): void {
     const { eventBus } = require('../events/event-bus');
     eventBus.on(event, handler);
+  }
+
+  /** Verify a memory exists in the on-chain registry by its ID. */
+  async verifyOnChain(memoryId: number): Promise<boolean> {
+    this.guard();
+    const { hydrateMemories } = require('../core/memory');
+    const { verifyMemoryOnChain } = require('../core/solana-client');
+    const { createHash } = require('crypto');
+
+    const memories = await hydrateMemories([memoryId]);
+    if (memories.length === 0) return false;
+
+    const contentHash = createHash('sha256').update(memories[0].content).digest();
+    return verifyMemoryOnChain(contentHash);
   }
 
   /** Clean up resources and stop schedules. */

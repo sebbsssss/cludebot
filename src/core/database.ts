@@ -258,6 +258,10 @@ export async function initDatabase(): Promise<void> {
             'supports', 'contradicts', 'elaborates', 'causes', 'follows', 'relates', 'resolves'
           ));
 
+        -- Migration: client-side encryption support
+        ALTER TABLE memories ADD COLUMN IF NOT EXISTS encrypted BOOLEAN DEFAULT FALSE;
+        ALTER TABLE memories ADD COLUMN IF NOT EXISTS encryption_pubkey TEXT;
+
         -- Find unresolved contradiction pairs (no 'resolves' link spanning both)
         CREATE OR REPLACE FUNCTION get_unresolved_contradictions(
           max_pairs INT DEFAULT 3

@@ -26,6 +26,14 @@ export interface CortexConfig {
   solana?: {
     rpcUrl?: string;
     botWalletPrivateKey?: string;
+    /** Program ID for the on-chain memory registry (Anchor program). Optional — falls back to memo writes. */
+    memoryRegistryProgramId?: string;
+  };
+
+  /** Client-side encryption config. Optional — memories stored plaintext if not provided. */
+  encryption?: {
+    /** User's 64-byte Ed25519 secret key (Solana keypair). Used to derive encryption key via HKDF. */
+    solanaSecretKey: Uint8Array;
   };
 }
 

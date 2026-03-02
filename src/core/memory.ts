@@ -22,8 +22,9 @@ import {
 } from '../utils';
 import type { MemoryLinkType } from '../utils/constants';
 import { generateImportanceScore } from './claude-client';
-import { writeMemo } from './solana-client';
+import { writeMemo, isRegistryEnabled, registerMemoryOnChain } from './solana-client';
 import { generateEmbedding, generateEmbeddings, isEmbeddingEnabled } from './embeddings';
+import { isEncryptionEnabled, getEncryptionPubkey, encryptContent, decryptMemoryBatch } from './encryption';
 import { eventBus } from '../events/event-bus';
 import { createHash, randomBytes } from 'crypto';
 import { extractAndLinkEntities, findSimilarEntities, getMemoriesByEntity, getEntityCooccurrences } from './memory-graph';
@@ -107,6 +108,9 @@ export interface Memory {
   // Compaction fields
   compacted: boolean;           // True if this memory has been compacted
   compacted_into: string | null; // hash_id of the compacted summary memory
+  // Encryption fields
+  encrypted: boolean;
+  encryption_pubkey: string | null;
 }
 
 /** Lightweight memory summary for progressive disclosure (no content field). */
@@ -205,12 +209,17 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
   const hashId = generateHashId();
 
   try {
+    // Encrypt content if encryption is enabled (content only — summary/tags/metadata stay plaintext)
+    const plaintextContent = opts.content.slice(0, MEMORY_MAX_CONTENT_LENGTH);
+    const shouldEncrypt = isEncryptionEnabled();
+    const storedContent = shouldEncrypt ? encryptContent(plaintextContent) : plaintextContent;
+
     const { data, error } = await db
       .from('memories')
       .insert({
         hash_id: hashId,
         memory_type: opts.type,
-        content: opts.content.slice(0, MEMORY_MAX_CONTENT_LENGTH),
+        content: storedContent,
         summary: opts.summary.slice(0, MEMORY_MAX_SUMMARY_LENGTH),
         tags: opts.tags || [],
         concepts,
@@ -223,6 +232,8 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
         metadata: opts.metadata || {},
         evidence_ids: opts.evidenceIds || [],
         compacted: false,
+        encrypted: shouldEncrypt,
+        encryption_pubkey: shouldEncrypt ? getEncryptionPubkey() : null,
       })
       .select('id, hash_id')
       .single();
@@ -272,10 +283,28 @@ async function commitMemoryToChain(memoryId: number, opts: StoreMemoryOptions): 
   // Skip mainnet commits for demo memories (they use devnet instead)
   if (opts.source === 'demo' || opts.source === 'demo-maas') return;
 
-  const contentHash = createHash('sha256').update(opts.content).digest('hex');
-  const memo = `clude-memory | id: ${memoryId} | type: ${opts.type} | hash: ${contentHash.slice(0, 16)} | ${opts.summary.slice(0, 400)}`;
+  const contentHashBuf = createHash('sha256').update(opts.content).digest();
+  let signature: string | null = null;
 
-  const signature = await writeMemo(memo);
+  // Try on-chain registry first, fall back to memo
+  if (isRegistryEnabled()) {
+    const encrypted = isEncryptionEnabled();
+    signature = await registerMemoryOnChain(
+      contentHashBuf,
+      opts.type,
+      opts.importance ?? 0.5,
+      memoryId,
+      encrypted,
+    );
+  }
+
+  // Fallback to memo if registry unavailable or failed
+  if (!signature) {
+    const contentHashHex = contentHashBuf.toString('hex');
+    const memo = `clude-memory | id: ${memoryId} | type: ${opts.type} | hash: ${contentHashHex.slice(0, 16)} | ${opts.summary.slice(0, 400)}`;
+    signature = await writeMemo(memo);
+  }
+
   if (!signature) return;
 
   const db = getDb();
@@ -466,7 +495,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     }
 
     // Phase 3: Merge vector candidates with metadata candidates
-    let candidates: Memory[] = data || [];
+    let candidates: Memory[] = decryptMemoryBatch(data || []);
 
     // If vector search found memories not in the metadata set, fetch them
     if (vectorScores.size > 0) {
@@ -478,7 +507,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
           .from('memories')
           .select('*')
           .in('id', missingIds);
-        if (vectorOnly) candidates = [...candidates, ...vectorOnly];
+        if (vectorOnly) candidates = [...candidates, ...decryptMemoryBatch(vectorOnly)];
       }
     }
 
@@ -592,6 +621,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
               .in('id', graphCandidateIds);
 
             if (graphMemories && graphMemories.length > 0) {
+              decryptMemoryBatch(graphMemories);
               // Build link map with bond-type-weighted strength
               const linkBoostMap = new Map<number, number>();
               for (const l of linked) {
@@ -850,7 +880,7 @@ export async function hydrateMemories(ids: number[]): Promise<Memory[]> {
       return [];
     }
 
-    return (data || []) as Memory[];
+    return decryptMemoryBatch((data || []) as Memory[]);
   } catch (err) {
     log.error({ err }, 'Memory hydration failed');
     return [];
@@ -1240,7 +1270,7 @@ export async function getRecentMemories(
     return [];
   }
 
-  return data || [];
+  return decryptMemoryBatch(data || []);
 }
 
 // ---- SELF-MODEL ---- //
@@ -1262,7 +1292,7 @@ export async function getSelfModel(): Promise<Memory[]> {
     return [];
   }
 
-  return data || [];
+  return decryptMemoryBatch(data || []);
 }
 
 // ---- STORE DREAM LOG ---- //
