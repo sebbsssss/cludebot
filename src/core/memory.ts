@@ -23,7 +23,7 @@ import {
 import type { MemoryLinkType } from '../utils/constants';
 import { generateImportanceScore } from './claude-client';
 import { writeMemo, isRegistryEnabled, registerMemoryOnChain } from './solana-client';
-import { generateEmbedding, generateEmbeddings, isEmbeddingEnabled } from './embeddings';
+import { generateEmbedding, generateQueryEmbedding, generateEmbeddings, isEmbeddingEnabled } from './embeddings';
 import { isEncryptionEnabled, getEncryptionPubkey, encryptContent, decryptMemoryBatch } from './encryption';
 import { eventBus } from '../events/event-bus';
 import { createHash, randomBytes } from 'crypto';
@@ -418,7 +418,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     let vectorScores = opts._vectorScores || new Map<number, number>();
 
     if (opts.query && isEmbeddingEnabled() && !opts._vectorScores) {
-      const queryEmbedding = await generateEmbedding(opts.query);
+      const queryEmbedding = await generateQueryEmbedding(opts.query);
       if (queryEmbedding) {
         // Search both memory-level and fragment-level embeddings
         try {

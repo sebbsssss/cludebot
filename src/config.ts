@@ -79,10 +79,14 @@ export const config = {
     startDate: optional('CAMPAIGN_START', ''),
   },
   embedding: {
-    provider: optional('EMBEDDING_PROVIDER', '') as '' | 'voyage' | 'openai',
+    provider: optional('EMBEDDING_PROVIDER', '') as '' | 'voyage' | 'openai' | 'venice',
     apiKey: optional('EMBEDDING_API_KEY', ''),
     model: optional('EMBEDDING_MODEL', ''),
     dimensions: parseInt(optional('EMBEDDING_DIMENSIONS', '1024'), 10),
+    // Optional: faster provider for query-time embeddings (recall)
+    queryProvider: optional('EMBEDDING_QUERY_PROVIDER', '') as '' | 'voyage' | 'openai' | 'venice',
+    queryApiKey: optional('EMBEDDING_QUERY_API_KEY', ''),
+    queryModel: optional('EMBEDDING_QUERY_MODEL', ''),
   },
   venice: {
     apiKey: optional('VENICE_API_KEY', ''),

@@ -90,6 +90,51 @@ export function isEmbeddingEnabled(): boolean {
 }
 
 /**
+ * Call a specific embedding provider.
+ */
+async function callEmbeddingAPI(
+  provider: string,
+  apiKey: string,
+  model: string,
+  text: string,
+  dimensions?: number
+): Promise<number[] | null> {
+  const providerConfig = PROVIDERS[provider];
+  if (!providerConfig) return null;
+
+  const startMs = Date.now();
+  try {
+    const res = await fetch(providerConfig.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': providerConfig.authHeader(apiKey),
+      },
+      body: JSON.stringify({
+        input: text.slice(0, 8000),
+        model,
+        ...(provider === 'openai' ? { dimensions } : {}),
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      log.error({ status: res.status, body: errText.slice(0, 200), provider }, 'Embedding API error');
+      return null;
+    }
+
+    const data = await res.json() as { data: Array<{ embedding: number[] }> };
+    const embedding = data.data?.[0]?.embedding || null;
+    const elapsed = Date.now() - startMs;
+    log.debug({ provider, model, elapsed }, 'Embedding generated');
+    return embedding;
+  } catch (err) {
+    log.error({ err, provider }, 'Embedding generation failed');
+    return null;
+  }
+}
+
+/**
  * Generate a single embedding vector for the given text.
  * Returns null if embeddings are disabled or the API call fails.
  */
@@ -109,34 +154,47 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
   const providerConfig = PROVIDERS[cfg.provider];
   const model = cfg.model || providerConfig.defaultModel;
 
-  try {
-    const res = await fetch(providerConfig.url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': providerConfig.authHeader(cfg.apiKey),
-      },
-      body: JSON.stringify({
-        input: text.slice(0, 8000),
-        model,
-        ...(cfg.provider === 'openai' ? { dimensions: cfg.dimensions } : {}),
-      }),
-    });
+  const embedding = await callEmbeddingAPI(cfg.provider, cfg.apiKey, model, text, cfg.dimensions);
+  if (embedding) setCachedEmbedding(text, embedding);
+  return embedding;
+}
 
-    if (!res.ok) {
-      const errText = await res.text();
-      log.error({ status: res.status, body: errText.slice(0, 200) }, 'Embedding API error');
-      return null;
-    }
+/**
+ * Generate embedding optimized for query-time (recall).
+ * Uses a faster provider if configured (EMBEDDING_QUERY_PROVIDER),
+ * otherwise falls back to the default provider.
+ */
+export async function generateQueryEmbedding(text: string): Promise<number[] | null> {
+  if (!isEmbeddingEnabled()) return null;
 
-    const data = await res.json() as { data: Array<{ embedding: number[] }> };
-    const embedding = data.data?.[0]?.embedding || null;
-    if (embedding) setCachedEmbedding(text, embedding);
-    return embedding;
-  } catch (err) {
-    log.error({ err }, 'Embedding generation failed');
-    return null;
+  // Check cache first
+  const cached = getCachedEmbedding(text);
+  if (cached) {
+    log.debug('Query embedding cache hit');
+    return cached;
   }
+
+  const cfg = getEmbeddingConfig();
+
+  // Try fast query provider first
+  const qProvider = (cfg as any).queryProvider as string;
+  const qApiKey = (cfg as any).queryApiKey as string;
+  const qModel = (cfg as any).queryModel as string;
+
+  if (qProvider && qApiKey && qProvider in PROVIDERS) {
+    const providerConfig = PROVIDERS[qProvider];
+    const model = qModel || providerConfig.defaultModel;
+    log.debug({ provider: qProvider }, 'Using fast query embedding provider');
+    const embedding = await callEmbeddingAPI(qProvider, qApiKey, model, text);
+    if (embedding) {
+      setCachedEmbedding(text, embedding);
+      return embedding;
+    }
+    log.warn({ provider: qProvider }, 'Fast query provider failed, falling back to default');
+  }
+
+  // Fallback to default provider
+  return generateEmbedding(text);
 }
 
 /**
