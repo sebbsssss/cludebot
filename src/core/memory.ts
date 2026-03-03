@@ -861,9 +861,9 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   }
 
   // Consolidation memories are self-referential meta-observations, not factual answers
-  // Slight penalty to prevent them from dominating every query
+  // Strong penalty to prevent them from dominating factual queries
   if (mem.source === 'consolidation') {
-    rawScore *= 0.75;
+    rawScore *= 0.50;
   }
 
   return rawScore * mem.decay_factor;
