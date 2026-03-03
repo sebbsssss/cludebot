@@ -459,7 +459,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
             db.rpc('match_memories', {
               query_embedding: JSON.stringify(queryEmbedding),
               match_threshold: VECTOR_MATCH_THRESHOLD,
-              match_count: limit * 3,
+              match_count: limit * 8,
               filter_types: opts.memoryTypes || null,
               filter_user: opts.relatedUser || null,
               min_decay: minDecay,
