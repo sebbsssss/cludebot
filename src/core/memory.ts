@@ -855,15 +855,15 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   const typeBoost = KNOWLEDGE_TYPE_BOOST[mem.memory_type] || 0;
   rawScore += typeBoost;
 
-  // Knowledge-seed memories get strong boost — curated facts should outrank tweet noise
+  // Knowledge-seed memories are curated facts — always rank highest
   if (mem.source === 'knowledge-seed') {
-    rawScore += 0.50;
+    rawScore = Math.max(rawScore, 2.0) + 1.0;
   }
 
   // Consolidation memories are self-referential meta-observations, not factual answers
   // Strong penalty to prevent them from dominating factual queries
   if (mem.source === 'consolidation') {
-    rawScore *= 0.50;
+    rawScore *= 0.40;
   }
 
   return rawScore * mem.decay_factor;
