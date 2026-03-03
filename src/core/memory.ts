@@ -14,6 +14,7 @@ import {
   RETRIEVAL_WEIGHT_GRAPH,
   RETRIEVAL_WEIGHT_COOCCURRENCE,
   VECTOR_MATCH_THRESHOLD,
+  KNOWLEDGE_TYPE_BOOST,
   DECAY_RATES,
   EMBEDDING_FRAGMENT_MAX_LENGTH,
   LINK_SIMILARITY_THRESHOLD,
@@ -809,6 +810,10 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   } else {
     rawScore /= (RETRIEVAL_WEIGHT_RECENCY + RETRIEVAL_WEIGHT_RELEVANCE + RETRIEVAL_WEIGHT_IMPORTANCE);
   }
+
+  // Knowledge type boost: semantic/procedural/self_model rank above raw episodic
+  const typeBoost = KNOWLEDGE_TYPE_BOOST[mem.memory_type] || 0;
+  rawScore += typeBoost;
 
   return rawScore * mem.decay_factor;
 }

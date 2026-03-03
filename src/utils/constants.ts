@@ -34,6 +34,14 @@ export const RETRIEVAL_WEIGHT_RELEVANCE = 2.0;          // Keyword relevance (lo
 export const RETRIEVAL_WEIGHT_IMPORTANCE = 2.0;         // Importance stays the same
 export const RETRIEVAL_WEIGHT_VECTOR = 4.0;             // Vector similarity dominates when available
 
+// Knowledge type boost — semantic/procedural/self_model rank higher than raw episodic
+export const KNOWLEDGE_TYPE_BOOST: Record<string, number> = {
+  semantic:   0.15,    // Distilled knowledge gets meaningful boost
+  procedural: 0.12,    // Learned behaviors get moderate boost
+  self_model: 0.10,    // Identity/reflection gets slight boost
+  episodic:   0.0,     // Raw experiences — no boost (majority of memories)
+};
+
 // Vector search thresholds
 export const VECTOR_MATCH_THRESHOLD = 0.4;              // Min cosine similarity (was 0.3 — too permissive)
 
