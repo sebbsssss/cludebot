@@ -25,6 +25,7 @@ import type { MemoryLinkType } from '../utils/constants';
 import { generateImportanceScore } from './claude-client';
 import { writeMemo, isRegistryEnabled, registerMemoryOnChain } from './solana-client';
 import { generateEmbedding, generateQueryEmbedding, generateEmbeddings, isEmbeddingEnabled } from './embeddings';
+import { generateVeniceResponse, isVeniceEnabled } from './venice-client';
 import { isEncryptionEnabled, getEncryptionPubkey, encryptContent, decryptMemoryBatch } from './encryption';
 import { eventBus } from '../events/event-bus';
 import { createHash, randomBytes } from 'crypto';
@@ -441,58 +442,113 @@ async function embedMemory(memoryId: number, opts: StoreMemoryOptions): Promise<
  * score = (w_recency * recency + w_relevance * relevance + w_importance * importance
  *          + w_vector * vector_similarity) * decay_factor
  */
+// ---- QUERY EXPANSION ---- //
+
+/**
+ * Expand a query into multiple search angles using a fast LLM.
+ * Returns the original query + 2-3 reformulations for broader vector coverage.
+ * Falls back to just the original query if LLM is unavailable or slow.
+ */
+async function expandQuery(query: string): Promise<string[]> {
+  if (!isVeniceEnabled()) return [query];
+  
+  try {
+    const response = await Promise.race([
+      generateVeniceResponse({
+        systemPrompt: 'You are a search query expander. Given a question, output 3 alternative phrasings that would help find relevant information in a memory database. Output ONLY the 3 alternatives, one per line. No numbering, no explanations.',
+        messages: [{ role: 'user', content: query }],
+        model: 'llama-3.2-3b',
+        maxTokens: 150,
+        temperature: 0.3,
+        cognitiveFunction: 'entity', // Use fast model slot
+      }),
+      new Promise<string>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+    ]) as string;
+
+    const expansions = response
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 5 && l.length < 200)
+      .slice(0, 3);
+
+    log.debug({ original: query, expansions: expansions.length }, 'Query expanded');
+    return [query, ...expansions];
+  } catch (err) {
+    log.debug({ err }, 'Query expansion failed, using original');
+    return [query];
+  }
+}
+
 export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
   const db = getDb();
   const limit = opts.limit || 5;
   const minDecay = opts.minDecay ?? 0.1;
 
   try {
+    // Phase 0: Query expansion — generate alternative phrasings for broader recall
+    const queries = opts.query && !opts._vectorScores
+      ? await expandQuery(opts.query)
+      : opts.query ? [opts.query] : [];
+
     // Phase 1: Vector search for semantic candidates (if available)
     let vectorScores = opts._vectorScores || new Map<number, number>();
 
-    if (opts.query && isEmbeddingEnabled() && !opts._vectorScores) {
-      const queryEmbedding = await generateQueryEmbedding(opts.query);
-      if (queryEmbedding) {
-        // Search both memory-level and fragment-level embeddings
+    if (queries.length > 0 && isEmbeddingEnabled() && !opts._vectorScores) {
+      // Embed all query variants in parallel
+      const queryEmbeddings = await Promise.all(
+        queries.map(q => generateQueryEmbedding(q))
+      );
+      const validEmbeddings = queryEmbeddings.filter((e): e is number[] => e !== null);
+
+      if (validEmbeddings.length > 0) {
         try {
-          const [memoryMatches, fragmentMatches] = await Promise.all([
+          // Search with all query variants, union results
+          const allSearches = validEmbeddings.flatMap(emb => [
             db.rpc('match_memories', {
-              query_embedding: JSON.stringify(queryEmbedding),
+              query_embedding: JSON.stringify(emb),
               match_threshold: VECTOR_MATCH_THRESHOLD,
-              match_count: limit * 8,
+              match_count: limit * 4,
               filter_types: opts.memoryTypes || null,
               filter_user: opts.relatedUser || null,
               min_decay: minDecay,
               filter_owner: getOwnerWallet() || null,
             }).then(r => r.data || []),
             db.rpc('match_memory_fragments', {
-              query_embedding: JSON.stringify(queryEmbedding),
+              query_embedding: JSON.stringify(emb),
               match_threshold: VECTOR_MATCH_THRESHOLD,
-              match_count: limit * 3,
+              match_count: limit * 2,
               filter_owner: getOwnerWallet() || null,
             }).then(r => r.data || []),
           ]);
 
-          // Merge: take highest similarity per memory_id across both sources
-          for (const m of memoryMatches) {
-            const current = vectorScores.get(m.id) || 0;
-            vectorScores.set(m.id, Math.max(current, m.similarity));
-          }
-          for (const f of fragmentMatches) {
-            const current = vectorScores.get(f.memory_id) || 0;
-            vectorScores.set(f.memory_id, Math.max(current, f.max_similarity));
+          const results = await Promise.all(allSearches);
+          
+          // Merge: take highest similarity per memory_id across ALL queries
+          for (let i = 0; i < results.length; i++) {
+            if (i % 2 === 0) {
+              // Memory-level matches
+              for (const m of results[i]) {
+                const current = vectorScores.get(m.id) || 0;
+                vectorScores.set(m.id, Math.max(current, m.similarity));
+              }
+            } else {
+              // Fragment-level matches
+              for (const f of results[i]) {
+                const current = vectorScores.get(f.memory_id) || 0;
+                vectorScores.set(f.memory_id, Math.max(current, f.max_similarity));
+              }
+            }
           }
 
           log.debug({
-            memoryHits: memoryMatches.length,
-            fragmentHits: fragmentMatches.length,
+            queryVariants: validEmbeddings.length,
             uniqueMemories: vectorScores.size,
-          }, 'Vector search completed');
+          }, 'Expanded vector search completed');
         } catch (err) {
           log.warn({ err }, 'Vector search RPC failed, falling back to keyword retrieval');
         }
       } else {
-        log.debug('Query embedding generation returned null, using keyword-only retrieval');
+        log.debug('All query embeddings returned null, using keyword-only retrieval');
       }
     }
 
