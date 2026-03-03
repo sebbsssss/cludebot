@@ -11,6 +11,7 @@ import {
   recallMemorySummaries,
   createMemoryLink,
   generateHashId,
+  getOwnerWallet,
   type Memory,
   type MemoryStats,
 } from '../core/memory';
@@ -451,7 +452,7 @@ async function runCompaction(): Promise<void> {
   const db = getDb();
 
   // Find compaction candidates: old, faded, low-importance episodic memories
-  const { data: candidates, error } = await db
+  let compactionQuery = db
     .from('memories')
     .select('id, hash_id, memory_type, summary, tags, concepts, importance, decay_factor, created_at')
     .eq('memory_type', 'episodic')
@@ -461,6 +462,11 @@ async function runCompaction(): Promise<void> {
     .lt('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // 7+ days old
     .order('created_at', { ascending: true })
     .limit(30);
+
+  const ownerWallet = getOwnerWallet();
+  if (ownerWallet) compactionQuery = compactionQuery.eq('owner_wallet', ownerWallet);
+
+  const { data: candidates, error } = await compactionQuery;
 
   if (error) {
     log.error({ error: error.message }, 'Failed to fetch compaction candidates');
@@ -648,7 +654,10 @@ async function runContradictionResolution(): Promise<void> {
   // Find unresolved contradiction pairs (graceful if RPC doesn't exist yet)
   let pairs: Array<{ link_id: number; source_id: number; target_id: number; strength: number }>;
   try {
-    const { data, error } = await db.rpc('get_unresolved_contradictions', { max_pairs: 3 });
+    const { data, error } = await db.rpc('get_unresolved_contradictions', {
+      max_pairs: 3,
+      filter_owner: getOwnerWallet() || null,
+    });
     if (error || !data || data.length === 0) {
       log.debug({ error: error?.message }, 'No unresolved contradictions found — skipping phase');
       return;
@@ -663,10 +672,13 @@ async function runContradictionResolution(): Promise<void> {
 
   // Collect all unique memory IDs and fetch them
   const allIds = [...new Set(pairs.flatMap(p => [p.source_id, p.target_id]))];
-  const { data: memories } = await db
+  let memFetchQuery = db
     .from('memories')
     .select('*')
     .in('id', allIds);
+  const ownerWallet = getOwnerWallet();
+  if (ownerWallet) memFetchQuery = memFetchQuery.eq('owner_wallet', ownerWallet);
+  const { data: memories } = await memFetchQuery;
 
   if (!memories || memories.length === 0) {
     log.warn('Could not fetch contradiction memories — skipping phase');

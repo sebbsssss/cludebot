@@ -196,7 +196,8 @@ export async function initDatabase(): Promise<void> {
         CREATE OR REPLACE FUNCTION get_linked_memories(
           seed_ids BIGINT[],
           min_strength FLOAT DEFAULT 0.1,
-          max_results INT DEFAULT 20
+          max_results INT DEFAULT 20,
+          filter_owner TEXT DEFAULT NULL
         )
         RETURNS TABLE (
           memory_id BIGINT,
@@ -211,9 +212,11 @@ export async function initDatabase(): Promise<void> {
             ml.link_type,
             ml.strength::float
           FROM memory_links ml
+          JOIN memories m ON m.id = ml.target_id
           WHERE ml.source_id = ANY(seed_ids)
             AND ml.target_id != ALL(seed_ids)
             AND ml.strength >= min_strength
+            AND (filter_owner IS NULL OR m.owner_wallet = filter_owner)
           UNION
           SELECT DISTINCT ON (ml.source_id, ml.link_type)
             ml.source_id AS memory_id,
@@ -221,9 +224,11 @@ export async function initDatabase(): Promise<void> {
             ml.link_type,
             ml.strength::float
           FROM memory_links ml
+          JOIN memories m ON m.id = ml.source_id
           WHERE ml.target_id = ANY(seed_ids)
             AND ml.source_id != ALL(seed_ids)
             AND ml.strength >= min_strength
+            AND (filter_owner IS NULL OR m.owner_wallet = filter_owner)
           ORDER BY strength DESC
           LIMIT max_results;
         $$;
@@ -266,9 +271,14 @@ export async function initDatabase(): Promise<void> {
         ALTER TABLE memories ADD COLUMN IF NOT EXISTS owner_wallet TEXT;
         CREATE INDEX IF NOT EXISTS idx_memories_owner ON memories(owner_wallet);
 
+        -- Migration: owner wallet on agent keys for hosted cortex
+        ALTER TABLE agent_keys ADD COLUMN IF NOT EXISTS owner_wallet TEXT;
+        CREATE INDEX IF NOT EXISTS idx_agent_keys_owner ON agent_keys(owner_wallet);
+
         -- Find unresolved contradiction pairs (no 'resolves' link spanning both)
         CREATE OR REPLACE FUNCTION get_unresolved_contradictions(
-          max_pairs INT DEFAULT 3
+          max_pairs INT DEFAULT 3,
+          filter_owner TEXT DEFAULT NULL
         )
         RETURNS TABLE (
           link_id BIGINT,
@@ -286,6 +296,8 @@ export async function initDatabase(): Promise<void> {
           JOIN memories ms ON ms.id = ml.source_id AND ms.decay_factor > 0.1
           JOIN memories mt ON mt.id = ml.target_id AND mt.decay_factor > 0.1
           WHERE ml.link_type = 'contradicts'
+            AND (filter_owner IS NULL OR ms.owner_wallet = filter_owner)
+            AND (filter_owner IS NULL OR mt.owner_wallet = filter_owner)
             AND NOT EXISTS (
               SELECT 1 FROM memory_links r1
               JOIN memory_links r2 ON r1.source_id = r2.source_id

@@ -11,7 +11,7 @@
  *   All linked via entity bonds: action →causes→ outcome →informs→ lesson
  */
 
-import { storeMemory, recallMemories } from '../core/memory';
+import { storeMemory, recallMemories, getOwnerWallet } from '../core/memory';
 import { createChildLogger } from '../core/logger';
 import { getDb } from '../core/database';
 import { generateResponse } from '../core/claude-client';
@@ -146,11 +146,14 @@ async function updateActionImportance(actionId: string, sentiment: string): Prom
   try {
     const db = getDb();
     // Find the action memory by source_id
-    const { data: actionMem } = await db
+    let actionQuery = db
       .from('memories')
       .select('id, importance, tags')
       .eq('source_id', actionId)
       .limit(1);
+    const ownerWallet = getOwnerWallet();
+    if (ownerWallet) actionQuery = actionQuery.eq('owner_wallet', ownerWallet);
+    const { data: actionMem } = await actionQuery;
 
     if (!actionMem || actionMem.length === 0) return;
 
@@ -193,13 +196,16 @@ export async function refineStrategies(): Promise<string[]> {
     const db = getDb();
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: recentActions } = await db
+    let recentQuery = db
       .from('memories')
       .select('*')
       .contains('tags', ['action'])
       .gte('created_at', weekAgo)
       .order('created_at', { ascending: false })
       .limit(50);
+    const ownerWallet = getOwnerWallet();
+    if (ownerWallet) recentQuery = recentQuery.eq('owner_wallet', ownerWallet);
+    const { data: recentActions } = await recentQuery;
 
     if (!recentActions || recentActions.length === 0) {
       log.debug('No recent actions to analyze');
@@ -341,12 +347,15 @@ async function reinforceSuccessfulStrategies(positiveActions: any[]): Promise<vo
     const db = getDb();
 
     // Find procedural memories with strategy tags
-    const { data: strategies } = await db
+    let stratQuery = db
       .from('memories')
       .select('id, importance, tags, access_count')
       .eq('memory_type', 'procedural')
       .contains('tags', ['strategy'])
       .limit(20);
+    const ownerWallet = getOwnerWallet();
+    if (ownerWallet) stratQuery = stratQuery.eq('owner_wallet', ownerWallet);
+    const { data: strategies } = await stratQuery;
 
     if (!strategies || strategies.length === 0) return;
 
@@ -394,13 +403,16 @@ export async function trackSocialOutcomes(): Promise<number> {
     const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
 
-    const { data: pendingActions } = await db
+    let pendingQuery = db
       .from('memories')
       .select('*')
       .contains('tags', ['action', 'awaiting_outcome'])
       .gte('created_at', twoDaysAgo)
       .lte('created_at', sixHoursAgo) // at least 6h old for engagement to accumulate
       .limit(20);
+    const ownerWallet = getOwnerWallet();
+    if (ownerWallet) pendingQuery = pendingQuery.eq('owner_wallet', ownerWallet);
+    const { data: pendingActions } = await pendingQuery;
 
     if (!pendingActions || pendingActions.length === 0) return 0;
 

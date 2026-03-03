@@ -73,6 +73,10 @@ export const config = {
   owner: {
     wallet: optional('OWNER_WALLET', ''),
   },
+  cortex: {
+    apiKey: optional('CORTEX_API_KEY', ''),
+    hostUrl: optional('CORTEX_HOST_URL', 'https://cluude.ai'),
+  },
   features: {
     showTxLinksInTweets: optional('SHOW_TX_LINKS_IN_TWEETS', 'true') === 'true',
     siteOnly: optional('SITE_ONLY', 'false') === 'true',

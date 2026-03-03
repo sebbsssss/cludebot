@@ -151,7 +151,8 @@ CREATE OR REPLACE FUNCTION match_memories(
   match_count int DEFAULT 10,
   filter_types text[] DEFAULT NULL,
   filter_user text DEFAULT NULL,
-  min_decay float DEFAULT 0.1
+  min_decay float DEFAULT 0.1,
+  filter_owner text DEFAULT NULL
 )
 RETURNS TABLE (id bigint, similarity float)
 LANGUAGE plpgsql AS $$
@@ -163,6 +164,7 @@ BEGIN
     AND m.decay_factor >= min_decay
     AND (filter_types IS NULL OR m.memory_type = ANY(filter_types))
     AND (filter_user IS NULL OR m.related_user = filter_user)
+    AND (filter_owner IS NULL OR m.owner_wallet = filter_owner)
     AND (1 - (m.embedding <=> query_embedding)) > match_threshold
   ORDER BY m.embedding <=> query_embedding
   LIMIT match_count;
@@ -203,7 +205,8 @@ CREATE INDEX IF NOT EXISTS idx_links_strength ON memory_links(strength DESC);
 CREATE OR REPLACE FUNCTION get_linked_memories(
   seed_ids BIGINT[],
   min_strength FLOAT DEFAULT 0.1,
-  max_results INT DEFAULT 20
+  max_results INT DEFAULT 20,
+  filter_owner TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   memory_id BIGINT,
@@ -218,9 +221,11 @@ LANGUAGE sql AS $$
     ml.link_type,
     ml.strength::float
   FROM memory_links ml
+  JOIN memories m ON m.id = ml.target_id
   WHERE ml.source_id = ANY(seed_ids)
     AND ml.target_id != ALL(seed_ids)
     AND ml.strength >= min_strength
+    AND (filter_owner IS NULL OR m.owner_wallet = filter_owner)
   UNION
   SELECT DISTINCT ON (ml.source_id, ml.link_type)
     ml.source_id AS memory_id,
@@ -228,9 +233,11 @@ LANGUAGE sql AS $$
     ml.link_type,
     ml.strength::float
   FROM memory_links ml
+  JOIN memories m ON m.id = ml.source_id
   WHERE ml.target_id = ANY(seed_ids)
     AND ml.source_id != ALL(seed_ids)
     AND ml.strength >= min_strength
+    AND (filter_owner IS NULL OR m.owner_wallet = filter_owner)
   ORDER BY strength DESC
   LIMIT max_results;
 $$;
@@ -289,7 +296,8 @@ $$;
 
 -- Find unresolved contradiction pairs (no 'resolves' link spanning both memories)
 CREATE OR REPLACE FUNCTION get_unresolved_contradictions(
-  max_pairs INT DEFAULT 3
+  max_pairs INT DEFAULT 3,
+  filter_owner TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   link_id BIGINT,
@@ -307,6 +315,8 @@ LANGUAGE sql AS $$
   JOIN memories ms ON ms.id = ml.source_id AND ms.decay_factor > 0.1
   JOIN memories mt ON mt.id = ml.target_id AND mt.decay_factor > 0.1
   WHERE ml.link_type = 'contradicts'
+    AND (filter_owner IS NULL OR ms.owner_wallet = filter_owner)
+    AND (filter_owner IS NULL OR mt.owner_wallet = filter_owner)
     AND NOT EXISTS (
       SELECT 1 FROM memory_links r1
       JOIN memory_links r2 ON r1.source_id = r2.source_id
@@ -325,7 +335,8 @@ $$;
 CREATE OR REPLACE FUNCTION match_memory_fragments(
   query_embedding vector(1024),
   match_threshold float DEFAULT 0.3,
-  match_count int DEFAULT 10
+  match_count int DEFAULT 10,
+  filter_owner text DEFAULT NULL
 )
 RETURNS TABLE (memory_id bigint, max_similarity float)
 LANGUAGE plpgsql AS $$
@@ -333,8 +344,10 @@ BEGIN
   RETURN QUERY
   SELECT f.memory_id, MAX((1 - (f.embedding <=> query_embedding))::float) AS max_similarity
   FROM memory_fragments f
+  JOIN memories m ON m.id = f.memory_id
   WHERE f.embedding IS NOT NULL
     AND (1 - (f.embedding <=> query_embedding)) > match_threshold
+    AND (filter_owner IS NULL OR m.owner_wallet = filter_owner)
   GROUP BY f.memory_id
   ORDER BY max_similarity DESC
   LIMIT match_count;

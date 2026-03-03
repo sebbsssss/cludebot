@@ -16,6 +16,7 @@ export interface AgentRegistration {
   last_used: string | null;
   is_active: boolean;
   metadata: Record<string, unknown>;
+  owner_wallet: string | null;
 }
 
 export async function authenticateAgent(apiKey: string): Promise<AgentRegistration | null> {

@@ -9,6 +9,7 @@ import { getDb, checkRateLimit } from '../core/database';
 import { writeMemo, solscanTxUrl } from '../core/solana-client';
 import { createHash, timingSafeEqual } from 'crypto';
 import { agentRoutes } from './agent-routes';
+import { cortexRoutes } from './cortex-routes';
 import { graphRoutes } from './graph-routes';
 import { campaignRoutes } from './campaign-routes';
 import { getRecentActivity } from '../features/activity-stream';
@@ -273,6 +274,9 @@ export function createServer(): express.Application {
 
   // Agent API (authenticated endpoints for other AI agents)
   app.use('/api/agent', agentRoutes());
+
+  // Hosted Cortex API (memory-as-a-service for SDK users)
+  app.use('/api/cortex', cortexRoutes());
 
   // Knowledge Graph API (entity-centric memory visualization)
   app.use('/api/graph', graphRoutes());

@@ -29,6 +29,7 @@ import { isEncryptionEnabled, getEncryptionPubkey, encryptContent, decryptMemory
 import { eventBus } from '../events/event-bus';
 import { createHash, randomBytes } from 'crypto';
 import { extractAndLinkEntities, findSimilarEntities, getMemoriesByEntity, getEntityCooccurrences } from './memory-graph';
+import { getContextOwnerWallet } from './owner-context';
 
 // ---- OWNER WALLET ---- //
 let _ownerWallet: string | null = null;
@@ -38,9 +39,26 @@ export function _setOwnerWallet(wallet: string): void {
   _ownerWallet = wallet;
 }
 
-/** Get the configured owner wallet, if any. */
+/** Get the configured owner wallet, if any. Checks async context first (hosted API), then module-level (SDK/bot). */
 export function getOwnerWallet(): string | null {
+  // AsyncLocalStorage takes priority (request-scoped for hosted API)
+  const contextWallet = getContextOwnerWallet();
+  if (contextWallet !== undefined) return contextWallet;
+  // Fallback to module-level (SDK / main bot)
   return _ownerWallet;
+}
+
+/**
+ * Apply owner_wallet scoping to a Supabase query builder.
+ * When an owner wallet is set, filters to only that wallet's memories.
+ * When null, no filter is applied (backward-compatible).
+ */
+function scopeToOwner<T>(query: T): T {
+  const wallet = getOwnerWallet();
+  if (wallet) {
+    return (query as any).eq('owner_wallet', wallet);
+  }
+  return query;
 }
 
 // ============================================================
@@ -445,11 +463,13 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
               filter_types: opts.memoryTypes || null,
               filter_user: opts.relatedUser || null,
               min_decay: minDecay,
+              filter_owner: getOwnerWallet() || null,
             }).then(r => r.data || []),
             db.rpc('match_memory_fragments', {
               query_embedding: JSON.stringify(queryEmbedding),
               match_threshold: VECTOR_MATCH_THRESHOLD,
               match_count: limit * 3,
+              filter_owner: getOwnerWallet() || null,
             }).then(r => r.data || []),
           ]);
 
@@ -485,6 +505,8 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
       .order('importance', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit * 3);
+
+    query = scopeToOwner(query);
 
     if (opts.memoryTypes && opts.memoryTypes.length > 0) {
       query = query.in('memory_type', opts.memoryTypes);
@@ -522,6 +544,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
           .from('memories')
           .select('*')
           .in('id', missingIds);
+        vectorQuery = scopeToOwner(vectorQuery);
         // Respect memoryTypes filter even for vector-matched results
         if (opts.memoryTypes && opts.memoryTypes.length > 0) {
           vectorQuery = vectorQuery.in('memory_type', opts.memoryTypes);
@@ -626,6 +649,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
           seed_ids: seedIds,
           min_strength: 0.2,
           max_results: limit,
+          filter_owner: getOwnerWallet() || null,
         });
 
         if (linked && linked.length > 0) {
@@ -635,10 +659,12 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
             .map((l: { memory_id: number }) => l.memory_id);
 
           if (graphCandidateIds.length > 0) {
-            const { data: graphMemories } = await db
+            let graphQuery = db
               .from('memories')
               .select('*')
               .in('id', graphCandidateIds);
+            graphQuery = scopeToOwner(graphQuery);
+            const { data: graphMemories } = await graphQuery;
 
             if (graphMemories && graphMemories.length > 0) {
               decryptMemoryBatch(graphMemories);
@@ -856,6 +882,8 @@ export async function recallMemorySummaries(opts: RecallOptions): Promise<Memory
       .order('created_at', { ascending: false })
       .limit(limit);
 
+    query = scopeToOwner(query);
+
     if (opts.memoryTypes && opts.memoryTypes.length > 0) {
       query = query.in('memory_type', opts.memoryTypes);
     }
@@ -894,10 +922,13 @@ export async function hydrateMemories(ids: number[]): Promise<Memory[]> {
   const db = getDb();
 
   try {
-    const { data, error } = await db
+    let query = db
       .from('memories')
       .select('*')
       .in('id', ids);
+    query = scopeToOwner(query);
+
+    const { data, error } = await query;
 
     if (error) {
       log.error({ error: error.message }, 'Memory hydration failed');
@@ -993,16 +1024,19 @@ async function autoLinkMemory(memoryId: number, opts: StoreMemoryOptions): Promi
         query_embedding: JSON.stringify(embedding),
         match_threshold: LINK_SIMILARITY_THRESHOLD,
         match_count: MAX_AUTO_LINKS * 2,
+        filter_owner: getOwnerWallet() || null,
       });
 
       if (similar) {
         // Fetch metadata for link classification
         const similarIds = similar.map((s: { id: number }) => s.id).filter((id: number) => id !== memoryId);
         if (similarIds.length > 0) {
-          const { data: metas } = await db
+          let metaQuery = db
             .from('memories')
             .select('id, memory_type, concepts, related_user, emotional_valence, created_at')
             .in('id', similarIds);
+          metaQuery = scopeToOwner(metaQuery);
+          const { data: metas } = await metaQuery;
 
           if (metas) {
             const simMap = new Map<number, number>(similar.map((s: Record<string, unknown>) => [Number(s.id), Number(s.similarity)]));
@@ -1026,13 +1060,15 @@ async function autoLinkMemory(memoryId: number, opts: StoreMemoryOptions): Promi
 
   // 3. Also find by concept overlap (fallback when no embeddings)
   if (candidates.length < MAX_AUTO_LINKS && opts.concepts && opts.concepts.length > 0) {
-    const { data: conceptMatches } = await db
+    let conceptQuery = db
       .from('memories')
       .select('id, memory_type, concepts, related_user, emotional_valence, created_at')
       .overlaps('concepts', opts.concepts)
       .neq('id', memoryId)
       .order('created_at', { ascending: false })
       .limit(MAX_AUTO_LINKS);
+    conceptQuery = scopeToOwner(conceptQuery);
+    const { data: conceptMatches } = await conceptQuery;
 
     if (conceptMatches) {
       const existingIds = new Set(candidates.map(c => c.id));
@@ -1200,10 +1236,12 @@ export async function getMemoryStats(): Promise<MemoryStats> {
   };
 
   try {
-    const { data: memories } = await db
+    let statsQuery = db
       .from('memories')
       .select('memory_type, importance, decay_factor, created_at, related_user, tags, concepts, embedding')
       .gt('decay_factor', MEMORY_MIN_DECAY);
+    statsQuery = scopeToOwner(statsQuery);
+    const { data: memories } = await statsQuery;
 
     if (memories && memories.length > 0) {
       stats.total = memories.length;
@@ -1284,6 +1322,8 @@ export async function getRecentMemories(
     .order('created_at', { ascending: false })
     .limit(limit || 50);
 
+  query = scopeToOwner(query);
+
   if (types && types.length > 0) {
     query = query.in('memory_type', types);
   }
@@ -1302,7 +1342,7 @@ export async function getRecentMemories(
 export async function getSelfModel(): Promise<Memory[]> {
   const db = getDb();
 
-  const { data, error } = await db
+  let query = db
     .from('memories')
     .select('*')
     .eq('memory_type', 'self_model')
@@ -1310,6 +1350,10 @@ export async function getSelfModel(): Promise<Memory[]> {
     .order('importance', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(5);
+
+  query = scopeToOwner(query);
+
+  const { data, error } = await query;
 
   if (error) {
     log.error({ error: error.message }, 'Failed to get self model');
