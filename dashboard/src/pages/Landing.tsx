@@ -1,7 +1,23 @@
+import { useState } from 'react';
 import { useAuthContext } from '../hooks/AuthContext';
 
 export function Landing() {
-  const { login } = useAuthContext();
+  const { login, loginWithApiKey } = useAuthContext();
+  const [apiKey, setApiKey] = useState('');
+  const [endpoint, setEndpoint] = useState('');
+  const [error, setError] = useState('');
+  const [connecting, setConnecting] = useState(false);
+
+  async function handleApiKeyLogin() {
+    if (!apiKey.trim()) return;
+    setError('');
+    setConnecting(true);
+    const valid = await loginWithApiKey(apiKey.trim(), endpoint.trim() || undefined);
+    if (!valid) {
+      setError('Invalid API key or endpoint unreachable');
+    }
+    setConnecting(false);
+  }
 
   return (
     <div style={{
@@ -73,8 +89,97 @@ export function Landing() {
             e.currentTarget.style.color = 'var(--bg)';
           }}
         >
-          Sign In
+          Sign In with Wallet
         </button>
+
+        {/* Divider */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          margin: '32px 0',
+          maxWidth: 320,
+          marginLeft: 'auto',
+          marginRight: 'auto',
+        }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border-strong)' }} />
+          <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)' }}>or</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border-strong)' }} />
+        </div>
+
+        {/* API Key Login */}
+        <div style={{ maxWidth: 320, margin: '0 auto', textAlign: 'left' }}>
+          <label style={{ display: 'block', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 6 }}>
+            Cortex API Key
+          </label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="clk_..."
+            onKeyDown={(e) => e.key === 'Enter' && handleApiKeyLogin()}
+            style={{
+              fontFamily: 'var(--mono)',
+              fontSize: 12,
+              padding: '10px 12px',
+              border: '1px solid var(--border-strong)',
+              background: 'transparent',
+              width: '100%',
+              outline: 'none',
+              marginBottom: 12,
+            }}
+          />
+
+          <label style={{ display: 'block', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 6 }}>
+            Endpoint
+          </label>
+          <input
+            type="text"
+            value={endpoint}
+            onChange={(e) => setEndpoint(e.target.value)}
+            placeholder="https://cluude.ai (default)"
+            onKeyDown={(e) => e.key === 'Enter' && handleApiKeyLogin()}
+            style={{
+              fontFamily: 'var(--mono)',
+              fontSize: 12,
+              padding: '10px 12px',
+              border: '1px solid var(--border-strong)',
+              background: 'transparent',
+              width: '100%',
+              outline: 'none',
+              marginBottom: 16,
+            }}
+          />
+
+          {error && (
+            <div style={{ fontSize: 11, color: '#ef4444', marginBottom: 12 }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleApiKeyLogin}
+            disabled={!apiKey.trim() || connecting}
+            style={{
+              fontFamily: 'var(--mono)',
+              fontSize: 10,
+              letterSpacing: 2,
+              textTransform: 'uppercase',
+              padding: '12px 24px',
+              background: apiKey.trim() ? 'var(--text)' : 'var(--border-strong)',
+              color: apiKey.trim() ? 'var(--bg)' : 'var(--text-faint)',
+              border: 'none',
+              cursor: apiKey.trim() ? 'pointer' : 'not-allowed',
+              width: '100%',
+            }}
+          >
+            {connecting ? 'Connecting...' : 'Connect with API Key'}
+          </button>
+
+          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 8, textAlign: 'center' }}>
+            Get a key with <span style={{ fontFamily: 'var(--mono)' }}>npx clude-bot register</span>
+          </div>
+        </div>
 
         <div style={{
           marginTop: 48,

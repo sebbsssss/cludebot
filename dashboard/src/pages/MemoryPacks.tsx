@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
+import { useAuthContext } from '../hooks/AuthContext';
 import { packToMarkdown, downloadMarkdown } from '../lib/export-markdown';
 
 export function MemoryPacks() {
+  const { authMode } = useAuthContext();
   const [exportName, setExportName] = useState('');
   const [exportDesc, setExportDesc] = useState('');
   const [exportTags, setExportTags] = useState('');
@@ -70,6 +72,22 @@ export function MemoryPacks() {
         </p>
       </div>
 
+      {authMode === 'cortex' ? (
+        <div style={{
+          border: '1px solid var(--border)',
+          padding: '40px 20px',
+          textAlign: 'center',
+          color: 'var(--text-muted)',
+          fontSize: 13,
+          lineHeight: 1.8,
+        }}>
+          <div style={{ fontSize: 24, opacity: 0.2, marginBottom: 16 }}>▦</div>
+          Memory packs require self-hosted mode.<br />
+          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+            Set up your own Supabase to export and import memory packs.
+          </span>
+        </div>
+      ) : (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
         {/* Export */}
         <div style={{ border: '1px solid var(--border)' }}>
@@ -247,6 +265,7 @@ export function MemoryPacks() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

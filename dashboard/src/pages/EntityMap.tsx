@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { api } from '../lib/api';
+import { useAuthContext } from '../hooks/AuthContext';
 import type { KnowledgeGraph } from '../types/memory';
 
 const ENTITY_COLORS: Record<string, string> = {
@@ -13,6 +14,7 @@ const ENTITY_COLORS: Record<string, string> = {
 };
 
 export function EntityMap() {
+  const { authMode } = useAuthContext();
   const [graph, setGraph] = useState<KnowledgeGraph | null>(null);
   const [graphStats, setGraphStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -22,6 +24,10 @@ export function EntityMap() {
   const nodesRef = useRef<Array<any>>([]);
 
   useEffect(() => {
+    if (authMode === 'cortex') {
+      setLoading(false);
+      return;
+    }
     Promise.all([
       api.getKnowledgeGraph({ includeMemories, minMentions: 1 }),
       api.getGraphStats(),
@@ -195,6 +201,24 @@ export function EntityMap() {
         </p>
       </div>
 
+      {authMode === 'cortex' && (
+        <div style={{
+          border: '1px solid var(--border)',
+          padding: '40px 20px',
+          textAlign: 'center',
+          color: 'var(--text-muted)',
+          fontSize: 13,
+          lineHeight: 1.8,
+        }}>
+          <div style={{ fontSize: 24, opacity: 0.2, marginBottom: 16 }}>◎</div>
+          Entity graph requires self-hosted mode.<br />
+          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+            Set up your own Supabase to use the knowledge graph.
+          </span>
+        </div>
+      )}
+
+      {authMode !== 'cortex' && <>
       {/* Controls */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, alignItems: 'center' }}>
         <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -278,6 +302,7 @@ export function EntityMap() {
           ))}
         </div>
       )}
+      </>}
     </div>
   );
 }

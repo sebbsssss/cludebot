@@ -2,9 +2,12 @@ import type { Memory, MemoryStats, Entity, KnowledgeGraph, MemoryPack } from '..
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://clude.io';
 
+type ApiMode = 'legacy' | 'cortex';
+
 class CludeAPI {
   private token: string | null = null;
   private agentEndpoint: string = API_BASE;
+  private mode: ApiMode = 'legacy';
 
   setToken(token: string) {
     this.token = token;
@@ -12,6 +15,14 @@ class CludeAPI {
 
   setAgentEndpoint(endpoint: string) {
     this.agentEndpoint = endpoint;
+  }
+
+  setMode(mode: ApiMode) {
+    this.mode = mode;
+  }
+
+  getMode(): ApiMode {
+    return this.mode;
   }
 
   private async fetch<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -34,13 +45,35 @@ class CludeAPI {
     return res.json();
   }
 
+  /** Validate a Cortex API key by pinging stats. */
+  async validateApiKey(): Promise<boolean> {
+    try {
+      await this.fetch('/api/cortex/stats');
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // Memory Stats
   async getStats(): Promise<MemoryStats> {
+    if (this.mode === 'cortex') {
+      return this.fetch('/api/cortex/stats');
+    }
     return this.fetch('/api/memory-stats');
   }
 
   // Recent Memories
   async getMemories(opts?: { hours?: number; limit?: number }): Promise<Memory[]> {
+    if (this.mode === 'cortex') {
+      const params = new URLSearchParams();
+      if (opts?.hours) params.set('hours', String(opts.hours));
+      if (opts?.limit) params.set('limit', String(opts.limit));
+      const result = await this.fetch<{ memories: Memory[]; count: number }>(
+        `/api/cortex/recent?${params}`,
+      );
+      return result.memories;
+    }
     const params = new URLSearchParams();
     if (opts?.hours) params.set('hours', String(opts.hours));
     if (opts?.limit) params.set('limit', String(opts.limit));
@@ -56,6 +89,20 @@ class CludeAPI {
       stats: MemoryStats;
     };
   }> {
+    if (this.mode === 'cortex') {
+      const [selfModelResult, stats] = await Promise.all([
+        this.fetch<{ memories: Memory[] }>('/api/cortex/self-model'),
+        this.fetch<MemoryStats>('/api/cortex/stats'),
+      ]);
+      return {
+        memories: selfModelResult.memories,
+        consciousness: {
+          selfModel: selfModelResult.memories,
+          recentDreams: [], // Not available in cortex mode
+          stats,
+        },
+      };
+    }
     const [memories, consciousness] = await Promise.all([
       this.fetch<Memory[]>('/api/brain?hours=168&limit=50'),
       this.fetch('/api/brain/consciousness'),
@@ -68,6 +115,9 @@ class CludeAPI {
     includeMemories?: boolean;
     minMentions?: number;
   }): Promise<KnowledgeGraph> {
+    if (this.mode === 'cortex') {
+      return { nodes: [], edges: [] };
+    }
     const params = new URLSearchParams();
     if (opts?.includeMemories) params.set('includeMemories', 'true');
     if (opts?.minMentions) params.set('minMentions', String(opts.minMentions));
@@ -81,6 +131,9 @@ class CludeAPI {
     mentionCount: number;
     topEntities: Array<{ name: string; type: string; mentions: number }>;
   }> {
+    if (this.mode === 'cortex') {
+      return { entityCount: 0, relationCount: 0, mentionCount: 0, topEntities: [] };
+    }
     return this.fetch('/api/graph/stats');
   }
 
@@ -97,12 +150,29 @@ class CludeAPI {
       totalMemoriesOnChain: number;
       embeddedCount: number;
     };
-  }> {
+  } | null> {
+    if (this.mode === 'cortex') {
+      return null;
+    }
     return this.fetch('/api/venice-stats');
   }
 
   // Memory Recall
   async recall(query: string, opts?: { limit?: number; types?: string[] }): Promise<Memory[]> {
+    if (this.mode === 'cortex') {
+      const result = await this.fetch<{ memories: Memory[]; count: number }>(
+        '/api/cortex/recall',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            query,
+            limit: opts?.limit || 10,
+            memory_types: opts?.types,
+          }),
+        },
+      );
+      return result.memories;
+    }
     return this.fetch('/api/demo/recall', {
       method: 'POST',
       body: JSON.stringify({
@@ -122,6 +192,9 @@ class CludeAPI {
     tags?: string[];
     types?: string[];
   }): Promise<MemoryPack> {
+    if (this.mode === 'cortex') {
+      throw new Error('Memory packs require self-hosted mode');
+    }
     return this.fetch('/api/memory-packs/export', {
       method: 'POST',
       body: JSON.stringify(opts),
@@ -130,6 +203,9 @@ class CludeAPI {
 
   // Import Memory Pack
   async importMemoryPack(pack: MemoryPack): Promise<{ imported: number }> {
+    if (this.mode === 'cortex') {
+      throw new Error('Memory packs require self-hosted mode');
+    }
     return this.fetch('/api/memory-packs/import', {
       method: 'POST',
       body: JSON.stringify(pack),
@@ -138,6 +214,9 @@ class CludeAPI {
 
   // List available packs
   async listMemoryPacks(): Promise<MemoryPack[]> {
+    if (this.mode === 'cortex') {
+      return [];
+    }
     return this.fetch('/api/memory-packs');
   }
 }
