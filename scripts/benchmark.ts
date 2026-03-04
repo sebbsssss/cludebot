@@ -49,7 +49,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL!;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY!;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
 const EMBEDDING_PROVIDER = (process.env.EMBEDDING_PROVIDER || '') as 'voyage' | 'openai' | '';
-const EMBEDDING_KEY = process.env.EMBEDDING_API_KEY || process.env.VOYAGE_API_KEY || process.env.OPENAI_API_KEY || '';
+const EMBEDDING_KEY = process.env.VOYAGE_API_KEY || process.env.OPENAI_API_KEY || '';
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in .env');
