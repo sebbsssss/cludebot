@@ -707,8 +707,10 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
             seedsAdded++;
           }
           // Compute vector similarity for seeds that lack it (fetched via metadata, not vector search)
-          if (primaryQueryEmbedding && m.embedding && !vectorScores.has(m.id)) {
-            const emb = m.embedding as number[];
+          const rawEmb = (m as any).embedding;
+          if (primaryQueryEmbedding && rawEmb && !vectorScores.has(m.id)) {
+            // Supabase returns embeddings as JSON strings from select('*')
+            const emb: number[] = typeof rawEmb === 'string' ? JSON.parse(rawEmb) : rawEmb;
             const qEmb = primaryQueryEmbedding as number[];
             if (emb.length === qEmb.length) {
               let dot = 0, magA = 0, magB = 0;
