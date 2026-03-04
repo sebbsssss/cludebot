@@ -242,13 +242,12 @@
   .panel-footer {
     padding: 12px 20px;
     border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: flex-start;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
     font-size: 10px;
     color: var(--text-faint);
     letter-spacing: 0.5px;
-    text-align: left;
   }
   
   .metric-value { font-weight: 700; color: var(--text); }
@@ -476,7 +475,7 @@
     .step-counter { margin-left: 0; width: 100%; text-align: center; margin-top: 8px; }
     .score-row { grid-template-columns: 80px 1fr 1fr; gap: 8px; }
     .score-label { font-size: 8px; }
-    .panel-footer { flex-wrap: wrap; gap: 8px 16px; }
+    .panel-footer { grid-template-columns: repeat(2, 1fr); gap: 6px 12px; }
     .memory-meta { flex-wrap: wrap; gap: 6px; }
     .input-section { margin-bottom: 24px; }
     textarea { min-height: 80px; font-size: 11px; }
