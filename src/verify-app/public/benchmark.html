@@ -810,77 +810,13 @@
   </p>
 </div>
 
-<!-- LoCoMo Benchmark Results -->
-<div class="bench-wrap">
-  <div class="bench-label">LoCoMo Benchmark (ACL 2024)</div>
-  
-  <div class="bench-grid">
-    <div class="bench-card">
-      <div class="bench-hero">100%</div>
-      <div class="bench-desc">Overall Accuracy (1,986 questions)<br>Categories 1-5: Single-hop, Temporal, Multi-hop, Open-domain, Adversarial</div>
-    </div>
-    <div class="bench-card">
-      <div class="bench-label-sm">vs. Competitors</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div class="comp-row"><span class="comp-name">Clude</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:100%;background:var(--blue);">100.0%</div></div></div>
-        <div class="comp-row"><span class="comp-name">Zep / Graphiti</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:75.1%;background:var(--text-faint);">75.1%</div></div></div>
-        <div class="comp-row"><span class="comp-name">Mem0 (graph)</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:68.5%;background:var(--text-faint);">68.5%</div></div></div>
-        <div class="comp-row"><span class="comp-name">Mem0</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:66.9%;background:var(--text-faint);">66.9%</div></div></div>
-        <div class="comp-row"><span class="comp-name">OpenAI Memory</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:52.9%;background:var(--text-faint);">52.9%</div></div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Per-category breakdown -->
-  <div class="bench-card" style="margin-bottom:32px;">
-    <div class="bench-label-sm">Per-Category Breakdown</div>
-    <div class="cat-grid">
-      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Single-hop</div><div class="cat-count">282/282</div></div>
-      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Temporal</div><div class="cat-count">321/321</div></div>
-      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Multi-hop</div><div class="cat-count">96/96</div></div>
-      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Open-domain</div><div class="cat-count">841/841</div></div>
-      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Adversarial</div><div class="cat-count">446/446</div></div>
-    </div>
-  </div>
-
-  <!-- Clude Internal Benchmark Suite -->
-  <div class="bench-label">Clude Memory Suite (Internal, 12k+ Live Memories)</div>
-  
-  <div class="bench-grid">
-    <div class="bench-card">
-      <div class="bench-hero">75.8<span class="bench-hero-sub">/100</span></div>
-      <div class="bench-desc">Overall score across 8 evaluation suites on live production data</div>
-    </div>
-    <div class="bench-card" style="padding:24px;">
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div class="suite-row"><span class="suite-name">Decay & Importance</span><span class="suite-score" style="color:var(--green);">100/100</span></div>
-        <div class="suite-row"><span class="suite-name">Entity Awareness</span><span class="suite-score" style="color:var(--green);">100/100</span></div>
-        <div class="suite-row"><span class="suite-name">Type Distribution</span><span class="suite-score">87.1/100</span></div>
-        <div class="suite-row"><span class="suite-name">Store + Recall</span><span class="suite-score">85.0/100</span></div>
-        <div class="suite-row"><span class="suite-name">Multi-Hop Recall</span><span class="suite-score">84.0/100</span></div>
-        <div class="suite-row"><span class="suite-name">Recall Quality</span><span class="suite-score">60.1/100</span></div>
-        <div class="suite-row"><span class="suite-name">Answer Quality</span><span class="suite-score">50.0/100</span></div>
-        <div class="suite-row"><span class="suite-name">Scale & Latency</span><span class="suite-score" style="color:var(--red);">40.0/100</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Methodology note -->
-  <div class="methodology">
-    <strong style="color:var(--text);">Methodology:</strong> LoCoMo benchmark uses the <a href="https://arxiv.org/abs/2402.09552">ACL 2024 dataset</a> (10 conversations, 1,986 QA pairs). 
-    Memories stored as per-turn chunks with contextual windows. Retrieval via Voyage-4-Large embeddings with cosine similarity search. 
-    Answers generated and judged by Grok-3. Internal suite runs against 12,700+ live production memories on Solana-backed storage.
-    Competitor scores from published benchmarks.
-  </div>
-
-  <div class="demo-divider">
-    <div class="bench-label" style="margin-bottom:8px;">Interactive Demo</div>
-    <h2 class="title" style="font-size:24px;">Memory Architecture Comparison</h2>
-    <p class="subtitle" style="font-size:11px;">
-      Input any content. Compact it 20 times. Watch traditional context windows degrade
-      while Clude's structured memory preserves knowledge.
-    </p>
-  </div>
+<div class="bench-wrap" style="margin-bottom:24px;">
+  <div class="bench-label" style="margin-bottom:8px;">Interactive Demo</div>
+  <h2 class="title" style="font-size:24px;">Memory Architecture Comparison</h2>
+  <p class="subtitle" style="font-size:11px;">
+    Input any content. Compact it 20 times. Watch traditional context windows degrade
+    while Clude's structured memory preserves knowledge.
+  </p>
 </div>
 
 <div class="input-section">
@@ -968,6 +904,71 @@
     <span><span style="display:inline-block;width:10px;height:10px;background:var(--red);margin-right:6px;vertical-align:middle;"></span>Without Clude</span>
     <span><span style="display:inline-block;width:10px;height:10px;background:var(--blue);margin-right:6px;vertical-align:middle;"></span>With Clude</span>
   </div>
+</div>
+
+<!-- LoCoMo Benchmark Results -->
+<div class="bench-wrap">
+  <div class="bench-label">LoCoMo Benchmark (ACL 2024)</div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <div class="bench-hero">100%</div>
+      <div class="bench-desc">Overall Accuracy (1,986 questions)<br>Categories 1-5: Single-hop, Temporal, Multi-hop, Open-domain, Adversarial</div>
+    </div>
+    <div class="bench-card">
+      <div class="bench-label-sm">vs. Competitors</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="comp-row"><span class="comp-name">Clude</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:100%;background:var(--blue);">100.0%</div></div></div>
+        <div class="comp-row"><span class="comp-name">Zep / Graphiti</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:75.1%;background:var(--text-faint);">75.1%</div></div></div>
+        <div class="comp-row"><span class="comp-name">Mem0 (graph)</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:68.5%;background:var(--text-faint);">68.5%</div></div></div>
+        <div class="comp-row"><span class="comp-name">Mem0</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:66.9%;background:var(--text-faint);">66.9%</div></div></div>
+        <div class="comp-row"><span class="comp-name">OpenAI Memory</span><div class="comp-bar-wrap"><div class="comp-bar" style="width:52.9%;background:var(--text-faint);">52.9%</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-category breakdown -->
+  <div class="bench-card" style="margin-bottom:32px;">
+    <div class="bench-label-sm">Per-Category Breakdown</div>
+    <div class="cat-grid">
+      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Single-hop</div><div class="cat-count">282/282</div></div>
+      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Temporal</div><div class="cat-count">321/321</div></div>
+      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Multi-hop</div><div class="cat-count">96/96</div></div>
+      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Open-domain</div><div class="cat-count">841/841</div></div>
+      <div class="cat-item"><div class="cat-score">100%</div><div class="cat-name">Adversarial</div><div class="cat-count">446/446</div></div>
+    </div>
+  </div>
+
+  <!-- Clude Internal Benchmark Suite -->
+  <div class="bench-label">Clude Memory Suite (Internal, 12k+ Live Memories)</div>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <div class="bench-hero">75.8<span class="bench-hero-sub">/100</span></div>
+      <div class="bench-desc">Overall score across 8 evaluation suites on live production data</div>
+    </div>
+    <div class="bench-card" style="padding:24px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="suite-row"><span class="suite-name">Decay & Importance</span><span class="suite-score" style="color:var(--green);">100/100</span></div>
+        <div class="suite-row"><span class="suite-name">Entity Awareness</span><span class="suite-score" style="color:var(--green);">100/100</span></div>
+        <div class="suite-row"><span class="suite-name">Type Distribution</span><span class="suite-score">87.1/100</span></div>
+        <div class="suite-row"><span class="suite-name">Store + Recall</span><span class="suite-score">85.0/100</span></div>
+        <div class="suite-row"><span class="suite-name">Multi-Hop Recall</span><span class="suite-score">84.0/100</span></div>
+        <div class="suite-row"><span class="suite-name">Recall Quality</span><span class="suite-score">60.1/100</span></div>
+        <div class="suite-row"><span class="suite-name">Answer Quality</span><span class="suite-score">50.0/100</span></div>
+        <div class="suite-row"><span class="suite-name">Scale & Latency</span><span class="suite-score" style="color:var(--red);">40.0/100</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Methodology note -->
+  <div class="methodology">
+    <strong style="color:var(--text);">Methodology:</strong> LoCoMo benchmark uses the <a href="https://arxiv.org/abs/2402.09552">ACL 2024 dataset</a> (10 conversations, 1,986 QA pairs).
+    Memories stored as per-turn chunks with contextual windows. Retrieval via Voyage-4-Large embeddings with cosine similarity search.
+    Answers generated and judged by Grok-3. Internal suite runs against 12,700+ live production memories on Solana-backed storage.
+    Competitor scores from published benchmarks.
+  </div>
+
 </div>
 
 <!-- ============= REPORT SECTIONS ============= -->
