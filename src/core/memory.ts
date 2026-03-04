@@ -542,7 +542,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
               Promise.resolve(db.rpc('match_memories', {
                 query_embedding: JSON.stringify(emb),
                 match_threshold: VECTOR_MATCH_THRESHOLD,
-                match_count: limit * (opts.skipExpansion ? 8 : 4),
+                match_count: limit * (opts.skipExpansion ? 12 : 4),
                 filter_types: opts.memoryTypes || null,
                 filter_user: opts.relatedUser || null,
                 min_decay: minDecay,
@@ -1014,16 +1014,16 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
 
   // Knowledge-seed memories get boosted ONLY when vector-relevant to the query
   // High vector sim = strong boost; no vector match = no boost (don't pollute unrelated queries)
-  if (mem.source === 'knowledge-seed' && vectorSim > 0.3) {
-    rawScore += 1.5 + vectorSim * 1.5; // ranges from +1.95 (sim=0.3) to +3.0 (sim=1.0)
+  if (mem.source === 'knowledge-seed' && vectorSim > 0.25) {
+    rawScore += 2.0 + vectorSim * 2.0; // ranges from +2.5 (sim=0.25) to +4.0 (sim=1.0)
   } else if (mem.source === 'knowledge-seed') {
-    rawScore += 0.3; // small boost even without vector match, but won't dominate
+    rawScore += 0.5; // moderate boost even without vector match
   }
 
-  // Consolidation memories are meta-observations — moderate penalty
-  // Not as aggressive so they can still surface for relevant queries
+  // Consolidation memories are dream-cycle meta-observations — strong penalty
+  // 2000+ consolidation memories flood results; only the most vector-relevant should surface
   if (mem.source === 'consolidation') {
-    rawScore *= 0.55;
+    rawScore *= vectorSim > 0.5 ? 0.45 : 0.30;
   }
 
   return rawScore * mem.decay_factor;
