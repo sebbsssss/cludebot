@@ -259,30 +259,94 @@ export async function runInit(): Promise<void> {
   if (config.mode === 'hosted') {
     // ─── Hosted: API Key ────────────────────────────────────
     printStep(2, 4, 'API Key');
-    printInfo('Get a key with: npx clude-bot register');
-    printInfo('Or register at https://clude.io/developers\n');
+    printInfo('Do you already have an API key, or should we generate one?\n');
 
-    config.cortexApiKey = await ask(rl, 'Cortex API Key (Enter to skip): ');
+    config.cortexApiKey = await ask(rl, 'Paste API key (or Enter to auto-register): ');
     console.log('');
 
     if (config.cortexApiKey) {
       printSuccess('API key configured');
     } else {
-      printInfo('Skipped — run `npx clude-bot register` to get a key');
+      // Auto-register inline
+      printInfo('Let\'s register your agent and generate a key.\n');
+
+      const agentName = await ask(rl, 'Agent name (your project name): ');
+      if (!agentName || agentName.length < 2) {
+        printWarn('Name must be at least 2 characters — skipping registration');
+      } else {
+        config.ownerWallet = await ask(rl, 'Solana wallet address (Enter to skip): ');
+        console.log('');
+
+        // ─── Hosted: Base URL (optional) ────────────────────────
+        config.cortexHostUrl = await ask(rl, 'API base URL (Enter for https://cluude.ai): ');
+        if (!config.cortexHostUrl) config.cortexHostUrl = 'https://cluude.ai';
+        console.log('');
+
+        process.stdout.write(`  ${c.gray}Registering on ${config.cortexHostUrl}...${c.reset}`);
+
+        try {
+          const res = await fetch(`${config.cortexHostUrl}/api/cortex/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: agentName,
+              wallet: config.ownerWallet || 'pending',
+            }),
+          });
+
+          if (process.stdout.clearLine) {
+            process.stdout.clearLine(0);
+            process.stdout.cursorTo(0);
+          } else {
+            console.log('');
+          }
+
+          if (res.ok) {
+            const data = await res.json() as { apiKey?: string; agentId?: string; error?: string };
+            if (data.apiKey) {
+              config.cortexApiKey = data.apiKey;
+              printSuccess(`Registered! API key: ${c.green}${data.apiKey.slice(0, 16)}...${c.reset}`);
+              printInfo(`Agent ID: ${data.agentId}`);
+              printWarn('Save this key — it will not be shown again.');
+            } else {
+              printWarn('Registration returned no key');
+            }
+          } else {
+            const errData = await res.json().catch(() => ({})) as { error?: string };
+            printWarn(`Registration failed: ${errData.error || res.statusText}`);
+            printInfo('You can register manually later: npx clude-bot register');
+          }
+        } catch (err) {
+          if (process.stdout.clearLine) {
+            process.stdout.clearLine(0);
+            process.stdout.cursorTo(0);
+          } else {
+            console.log('');
+          }
+          printWarn(`Could not reach server: ${(err as Error).message}`);
+          printInfo('You can register manually later: npx clude-bot register');
+        }
+      }
+
+      console.log('');
     }
 
-    // ─── Hosted: Base URL (optional) ────────────────────────
-    config.cortexHostUrl = await ask(rl, 'API base URL (Enter for https://cluude.ai): ');
-    if (!config.cortexHostUrl) config.cortexHostUrl = 'https://cluude.ai';
-    console.log('');
+    if (!config.cortexHostUrl) {
+      // ─── Hosted: Base URL (optional) ────────────────────────
+      config.cortexHostUrl = await ask(rl, 'API base URL (Enter for https://cluude.ai): ');
+      if (!config.cortexHostUrl) config.cortexHostUrl = 'https://cluude.ai';
+      console.log('');
+    }
 
     // ─── Hosted: Owner Wallet ───────────────────────────────
-    printStep(3, 4, 'Owner Wallet');
-    printInfo('Your Solana wallet address proves you own this agent\'s memories.');
-    printInfo('This is your PUBLIC address only — no private key needed here.\n');
+    if (!config.ownerWallet) {
+      printStep(3, 4, 'Owner Wallet');
+      printInfo('Your Solana wallet address proves you own this agent\'s memories.');
+      printInfo('This is your PUBLIC address only — no private key needed here.\n');
 
-    config.ownerWallet = await ask(rl, 'Your Solana wallet address (Enter to skip): ');
-    console.log('');
+      config.ownerWallet = await ask(rl, 'Your Solana wallet address (Enter to skip): ');
+      console.log('');
+    }
 
     if (config.ownerWallet) {
       if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(config.ownerWallet)) {
