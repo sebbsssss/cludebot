@@ -611,8 +611,7 @@
     }
     .prov-node-date { font-size: 9px; color: var(--text-faint); }
     .prov-node-relation { font-size: 9px; color: var(--accent); margin-bottom: 4px; }
-    .prov-node-summary { font-size: 10px; line-height: 1.6; color: var(--text-muted); margin-bottom: 6px;
-      display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+    .prov-node-summary { font-size: 10px; line-height: 1.6; color: var(--text-muted); margin-bottom: 6px; }
     .prov-node-meta {
       display: flex; gap: 10px; font-size: 9px; color: var(--text-faint);
     }
@@ -1172,6 +1171,7 @@
       document.getElementById('btnSemantic').title = '';
 
       hideLoading();
+      usingSampleData = false;
       loadBrainData(data);
     } catch (err) {
       hideLoading();
@@ -1251,6 +1251,7 @@
 
   /* ============= DATA PARSING ============= */
   function loadFromMemoryPack(pack) {
+    usingSampleData = true;
     loadedConnections = pack.connections || [];
     const mems = pack.memories || pack.nodes || [];
     const nodes = mems.map((m, i) => ({
@@ -1862,6 +1863,7 @@
   /* ============= PROVENANCE ============= */
   let currentProvTrace = null;
   let loadedConnections = []; // from sample packs
+  let usingSampleData = false; // skip API when viewing samples
 
   async function openProvenance(memoryId) {
     const overlay = document.getElementById('provOverlay');
@@ -1871,15 +1873,17 @@
     document.getElementById('provAnswer').innerHTML = '';
     document.getElementById('provAskInput').value = '';
 
-    // Try API first, fall back to local trace
-    try {
-      const res = await fetch('/api/memory/' + memoryId + '/trace');
-      if (res.ok) {
-        currentProvTrace = await res.json();
-        renderProvenance(currentProvTrace);
-        return;
-      }
-    } catch (e) {}
+    // Try API first (only for real data, not samples), fall back to local trace
+    if (!usingSampleData) {
+      try {
+        const res = await fetch('/api/memory/' + memoryId + '/trace');
+        if (res.ok) {
+          currentProvTrace = await res.json();
+          renderProvenance(currentProvTrace);
+          return;
+        }
+      } catch (e) {}
+    }
 
     // Local trace from loaded data
     currentProvTrace = localTrace(memoryId);
