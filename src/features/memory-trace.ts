@@ -404,7 +404,7 @@ Question: ${question}`;
   const response = await generateResponse({
     userMessage: userPrompt,
     featureInstruction: systemPrompt,
-    cognitiveFunction: 'summarize' as CognitiveFunction,
+    cognitiveFunction: 'reply' as CognitiveFunction,
     maxTokens: 1500,
   });
 
