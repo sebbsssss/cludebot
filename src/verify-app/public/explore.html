@@ -1119,6 +1119,11 @@
   let pendingData = null;
   let searchMode = 'keyword';
   let searchTimer = null;
+  let displayedCount = 0;
+  const PAGE_SIZE = 50;
+  const BRAIN_MAX = 500; // max nodes to send to 3D brain
+  let currentDisplayNodes = [];
+  let isLoadingMore = false;
 
   /* ============= GUIDE TOGGLE ============= */
   function toggleGuide() {
@@ -1201,25 +1206,37 @@
   });
 
   function handleFile(file) {
-    showLoading('Parsing ' + file.name + '...');
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    showLoading('Reading ' + file.name + ' (' + sizeMB + 'MB)...');
     const reader = new FileReader();
     reader.onload = (e) => {
-      try {
-        const text = e.target.result;
-        if (file.name.endsWith('.json')) {
-          const pack = JSON.parse(text);
-          loadFromMemoryPack(pack);
-        } else {
-          loadFromMarkdown(text);
+      // Use setTimeout to let the loading UI paint before blocking parse
+      setTimeout(() => {
+        try {
+          showLoading('Parsing ' + file.name + '...');
+          const text = e.target.result;
+          if (file.name.endsWith('.json')) {
+            const pack = JSON.parse(text);
+            showLoading('Loading ' + (pack.memories || pack.nodes || []).length + ' memories...');
+            setTimeout(() => {
+              loadFromMemoryPack(pack);
+              document.getElementById('dropZone').style.display = 'none';
+              document.getElementById('fileLoaded').style.display = 'flex';
+              document.getElementById('fileName').textContent = file.name + ' (' + (pack.memories || pack.nodes || []).length + ' memories)';
+              hideLoading();
+            }, 50);
+          } else {
+            loadFromMarkdown(text);
+            document.getElementById('dropZone').style.display = 'none';
+            document.getElementById('fileLoaded').style.display = 'flex';
+            document.getElementById('fileName').textContent = file.name;
+            hideLoading();
+          }
+        } catch (err) {
+          hideLoading();
+          alert('Failed to parse file: ' + err.message);
         }
-        document.getElementById('dropZone').style.display = 'none';
-        document.getElementById('fileLoaded').style.display = 'flex';
-        document.getElementById('fileName').textContent = file.name;
-        hideLoading();
-      } catch (err) {
-        hideLoading();
-        alert('Failed to parse file: ' + err.message);
-      }
+      }, 50);
     };
     reader.readAsText(file);
   }
@@ -1233,6 +1250,7 @@
 
   /* ============= DATA PARSING ============= */
   function loadFromMemoryPack(pack) {
+    loadedConnections = pack.connections || [];
     const mems = pack.memories || pack.nodes || [];
     const nodes = mems.map((m, i) => ({
       id: m.id || m._local_id || (i + 1),
@@ -1324,14 +1342,23 @@
     brainNodes = data.nodes || [];
     allNodes = [...brainNodes];
 
+    // Only send top memories to brain visualization (by importance)
+    const brainSubset = [...brainNodes]
+      .sort((a, b) => (b.importance || 0) - (a.importance || 0))
+      .slice(0, BRAIN_MAX);
+    const brainPayload = { nodes: brainSubset, total: brainNodes.length };
+
     if (brainReady) {
-      sendToBrain(data);
+      sendToBrain(brainPayload);
     } else {
-      pendingData = data;
+      pendingData = brainPayload;
     }
 
     renderStats(brainNodes);
-    renderMemoryCards(brainNodes);
+    currentDisplayNodes = brainNodes;
+    displayedCount = 0;
+    document.getElementById('cardsGrid').innerHTML = '';
+    renderMoreCards();
     showDataUI();
   }
 
@@ -1381,7 +1408,10 @@
 
   async function searchMemories(query) {
     if (!query.trim()) {
-      renderMemoryCards(allNodes);
+      currentDisplayNodes = allNodes;
+      displayedCount = 0;
+      document.getElementById('cardsGrid').innerHTML = '';
+      renderMoreCards();
       resetBrainHighlights();
       document.getElementById('searchCount').textContent = '';
       return;
@@ -1460,40 +1490,76 @@
       '<span class="stat">decay <span class="v">' + avgDecay + '%</span></span>';
   }
 
-  function renderMemoryCards(nodes, showScores) {
+  function renderCardHtml(n, showScores) {
+    const typeName = (n.type || 'episodic').replace('_', ' ');
+    const age = timeAgo(n.createdAt);
+    const tags = (n.tags || []).slice(0, 4).map(t => '<span class="card-tag">' + esc(t) + '</span>').join('');
+    const scoreHtml = showScores && n._score ? '<span class="card-score">' + (n._score).toFixed(2) + '</span>' : '';
+    const hasEvidence = (n.evidenceIds && n.evidenceIds.length > 0);
+
+    return '<div class="memory-card" data-type="' + esc(n.type) + '" onclick="focusInBrain(' + n.id + ')">' +
+      scoreHtml +
+      '<div class="card-header">' +
+        '<span class="card-type" data-type="' + esc(n.type) + '">' + esc(typeName) + '</span>' +
+        '<span class="card-id">#' + n.id + '</span>' +
+      '</div>' +
+      '<div class="card-summary">' + esc(n.summary || '') + '</div>' +
+      '<div class="card-meta">' +
+        '<span>imp <span class="v">' + (n.importance || 0).toFixed(2) + '</span></span>' +
+        '<div class="card-imp-bar"><div class="card-imp-fill" style="width:' + ((n.importance || 0) * 100) + '%"></div></div>' +
+        '<span>decay <span class="v">' + ((n.decay ?? 1) * 100).toFixed(0) + '%</span></span>' +
+        '<span>' + age + '</span>' +
+        (hasEvidence ? '<span style="color:var(--accent)">🔗' + n.evidenceIds.length + '</span>' : '') +
+      '</div>' +
+      (tags ? '<div class="card-tags">' + tags + '</div>' : '') +
+      '<div class="card-actions">' +
+        '<button onclick="event.stopPropagation(); openProvenance(' + n.id + ')">&#x2B95; Trace</button>' +
+        '<button onclick="event.stopPropagation(); focusInBrain(' + n.id + ')">&#x25CE; Focus</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderMoreCards(showScores) {
     const grid = document.getElementById('cardsGrid');
-    if (nodes.length === 0) {
+    const nodes = currentDisplayNodes;
+    if (nodes.length === 0 && displayedCount === 0) {
       grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-faint);font-size:11px;letter-spacing:2px">No memories found</div>';
       return;
     }
-
-    grid.innerHTML = nodes.map(n => {
-      const typeName = (n.type || 'episodic').replace('_', ' ');
-      const age = timeAgo(n.createdAt);
-      const tags = (n.tags || []).slice(0, 4).map(t => '<span class="card-tag">' + esc(t) + '</span>').join('');
-      const scoreHtml = showScores && n._score ? '<span class="card-score">' + (n._score).toFixed(2) + '</span>' : '';
-
-      return '<div class="memory-card" data-type="' + esc(n.type) + '" onclick="focusInBrain(' + n.id + ')">' +
-        scoreHtml +
-        '<div class="card-header">' +
-          '<span class="card-type" data-type="' + esc(n.type) + '">' + esc(typeName) + '</span>' +
-          '<span class="card-id">#' + n.id + '</span>' +
-        '</div>' +
-        '<div class="card-summary">' + esc(n.summary || '') + '</div>' +
-        '<div class="card-meta">' +
-          '<span>imp <span class="v">' + (n.importance || 0).toFixed(2) + '</span></span>' +
-          '<div class="card-imp-bar"><div class="card-imp-fill" style="width:' + ((n.importance || 0) * 100) + '%"></div></div>' +
-          '<span>decay <span class="v">' + ((n.decay ?? 1) * 100).toFixed(0) + '%</span></span>' +
-          '<span>' + age + '</span>' +
-        '</div>' +
-        (tags ? '<div class="card-tags">' + tags + '</div>' : '') +
-        '<div class="card-actions">' +
-          '<button onclick="event.stopPropagation(); openProvenance(' + n.id + ')">&#x2B95; Trace</button>' +
-          '<button onclick="event.stopPropagation(); focusInBrain(' + n.id + ')">&#x25CE; Focus</button>' +
-        '</div>' +
-      '</div>';
-    }).join('');
+    const end = Math.min(displayedCount + PAGE_SIZE, nodes.length);
+    let html = '';
+    for (let i = displayedCount; i < end; i++) {
+      html += renderCardHtml(nodes[i], showScores);
+    }
+    grid.insertAdjacentHTML('beforeend', html);
+    displayedCount = end;
+    
+    // Update count display
+    const countEl = document.getElementById('searchCount');
+    if (countEl && nodes.length > PAGE_SIZE) {
+      countEl.textContent = 'Showing ' + displayedCount + ' of ' + nodes.length;
+    }
   }
+
+  function renderMemoryCards(nodes, showScores) {
+    currentDisplayNodes = nodes;
+    displayedCount = 0;
+    document.getElementById('cardsGrid').innerHTML = '';
+    renderMoreCards(showScores);
+  }
+
+  // Infinite scroll
+  window.addEventListener('scroll', function() {
+    if (isLoadingMore) return;
+    if (displayedCount >= currentDisplayNodes.length) return;
+    const scrollBottom = window.innerHeight + window.scrollY;
+    const docHeight = document.documentElement.scrollHeight;
+    if (scrollBottom > docHeight - 400) {
+      isLoadingMore = true;
+      renderMoreCards();
+      isLoadingMore = false;
+    }
+  });
 
   /* ============= EXPORT ============= */
   function exportJSON() {
@@ -1661,6 +1727,7 @@
 
   /* ============= PROVENANCE ============= */
   let currentProvTrace = null;
+  let loadedConnections = []; // from sample packs
 
   async function openProvenance(memoryId) {
     const overlay = document.getElementById('provOverlay');
@@ -1670,14 +1737,114 @@
     document.getElementById('provAnswer').innerHTML = '';
     document.getElementById('provAskInput').value = '';
 
+    // Try API first, fall back to local trace
     try {
       const res = await fetch('/api/memory/' + memoryId + '/trace');
-      if (!res.ok) throw new Error('Memory not found');
-      currentProvTrace = await res.json();
+      if (res.ok) {
+        currentProvTrace = await res.json();
+        renderProvenance(currentProvTrace);
+        return;
+      }
+    } catch (e) {}
+
+    // Local trace from loaded data
+    currentProvTrace = localTrace(memoryId);
+    if (currentProvTrace) {
       renderProvenance(currentProvTrace);
-    } catch (err) {
-      document.getElementById('provStats').innerHTML = '<span style="color:var(--error)">Error: ' + esc(err.message) + '</span>';
+    } else {
+      document.getElementById('provStats').innerHTML = '<span style="color:var(--error)">Memory #' + memoryId + ' not found in loaded data</span>';
     }
+  }
+
+  function localTrace(memoryId) {
+    const nodeMap = new Map();
+    for (const n of allNodes) nodeMap.set(n.id, n);
+    const root = nodeMap.get(memoryId);
+    if (!root) return null;
+
+    const toTraceNode = (n, depth, relation, strength) => ({
+      id: n.id, hash_id: n.hash_id || '', summary: n.summary || '', content: n.content || '',
+      memory_type: n.type || 'episodic', source: n.source || '', importance: n.importance || 0,
+      emotional_valence: n.valence || 0, decay_factor: n.decay ?? 1, access_count: n.accessCount || 0,
+      created_at: n.createdAt || '', last_accessed: n.lastAccessed || '',
+      tags: n.tags || [], concepts: [], depth, relation, strength,
+    });
+
+    const ancestors = [];
+    const descendants = [];
+    const related = [];
+    const links = [];
+    const visited = new Set([memoryId]);
+
+    // Walk evidence_ids (ancestors)
+    const evidenceIds = root.evidenceIds || [];
+    for (const eid of evidenceIds) {
+      const eNode = nodeMap.get(eid);
+      if (eNode && !visited.has(eid)) {
+        visited.add(eid);
+        ancestors.push(toTraceNode(eNode, 1, 'evidence', 0.9));
+        links.push({ source_id: eid, target_id: memoryId, link_type: 'supports', strength: 0.9 });
+      }
+    }
+
+    // Walk connections
+    for (const conn of loadedConnections) {
+      // Backward: connections pointing TO this memory
+      if (conn.target_id === memoryId && !visited.has(conn.source_id)) {
+        const src = nodeMap.get(conn.source_id);
+        if (src) {
+          visited.add(conn.source_id);
+          ancestors.push(toTraceNode(src, 1, conn.link_type, conn.strength));
+          links.push(conn);
+        }
+      }
+      // Forward: connections FROM this memory
+      if (conn.source_id === memoryId && !visited.has(conn.target_id)) {
+        const tgt = nodeMap.get(conn.target_id);
+        if (tgt) {
+          visited.add(conn.target_id);
+          descendants.push(toTraceNode(tgt, 1, conn.link_type, conn.strength));
+          links.push(conn);
+        }
+      }
+    }
+
+    // Also find memories that cite this one as evidence
+    for (const n of allNodes) {
+      if (n.evidenceIds && n.evidenceIds.includes(memoryId) && !visited.has(n.id)) {
+        visited.add(n.id);
+        descendants.push(toTraceNode(n, 1, 'derived', 0.8));
+        links.push({ source_id: memoryId, target_id: n.id, link_type: 'supports', strength: 0.8 });
+      }
+    }
+
+    // Find concept-related (same tags)
+    const rootTags = new Set(root.tags || []);
+    if (rootTags.size > 0) {
+      const scored = allNodes.filter(n => !visited.has(n.id) && n.id !== memoryId)
+        .map(n => ({ node: n, overlap: (n.tags || []).filter(t => rootTags.has(t)).length }))
+        .filter(x => x.overlap > 0)
+        .sort((a, b) => b.overlap - a.overlap)
+        .slice(0, 8);
+      for (const { node, overlap } of scored) {
+        visited.add(node.id);
+        const sharedTag = (node.tags || []).find(t => rootTags.has(t)) || 'tag';
+        related.push(toTraceNode(node, 1, 'shared:' + sharedTag, overlap * 0.3));
+      }
+    }
+
+    const allN = [toTraceNode(root, 0, 'root', 1.0), ...ancestors, ...descendants, ...related];
+    const timeline = [...allN].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const linkTypes = {};
+    for (const l of links) linkTypes[l.link_type] = (linkTypes[l.link_type] || 0) + 1;
+    const dates = allN.map(n => new Date(n.created_at).getTime()).filter(t => !isNaN(t));
+    const span = dates.length > 1 ? (Math.max(...dates) - Math.min(...dates)) / 86400000 : 0;
+
+    return {
+      root: toTraceNode(root, 0, 'root', 1.0),
+      ancestors, descendants, related, links, entities: [], timeline,
+      stats: { total_nodes: allN.length, max_depth: 1, link_types: linkTypes, time_span_days: Math.round(span * 10) / 10 }
+    };
   }
 
   function closeProvenance() {
