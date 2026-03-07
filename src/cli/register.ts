@@ -83,8 +83,16 @@ export async function runRegister(): Promise<void> {
   } catch (err) {
     process.stdout.clearLine(0);
     process.stdout.cursorTo(0);
-    printWarn(`Could not reach ${url} — is the server running?`);
-    printInfo(`Error: ${(err as Error).message}`);
+    const msg = (err as Error).message || '';
+    const isCert = /certificate|CERT|SSL|self.signed|unable to verify/i.test(msg);
+    if (isCert) {
+      printWarn('SSL certificate error — your network may be intercepting HTTPS traffic');
+      printInfo('This is common with corporate firewalls (Fortinet, Zscaler, etc.)');
+      printInfo('Try: switch to a mobile hotspot or VPN, or ask IT to whitelist cluude.ai');
+    } else {
+      printWarn(`Could not reach ${url} — is the server running?`);
+      printInfo(`Error: ${msg}`);
+    }
   }
 
   printDivider();

@@ -208,7 +208,15 @@ export async function runSetup(): Promise<void> {
       } else {
         console.log('');
       }
-      printWarn(`Could not reach clude.io: ${(err as Error).message}`);
+      const msg = (err as Error).message || '';
+      const isCert = /certificate|CERT|SSL|self.signed|unable to verify/i.test(msg);
+      if (isCert) {
+        printWarn('SSL certificate error — your network may be intercepting HTTPS traffic');
+        printInfo('This is common with corporate firewalls (Fortinet, Zscaler, etc.)');
+        printInfo('Try: switch to a mobile hotspot or VPN, or ask IT to whitelist cluude.ai');
+      } else {
+        printWarn(`Could not reach clude.io: ${msg}`);
+      }
       printInfo('You can register manually later: npx clude-bot register');
       apiKey = await ask(rl, 'Paste an API key (or Enter to skip): ');
     }

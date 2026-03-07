@@ -1121,7 +1121,25 @@ async function register() {
     btn.style.display = 'inline-flex';
     btn.disabled = false;
     result.className = 'register-result error';
-    result.innerHTML = `<span class="result-icon">\u2717</span> <span class="result-error">Could not reach clude.io. Check your connection and try again.</span>`;
+
+    const msg = (err && err.message) || '';
+    const isCertError = msg.includes('certificate') || msg.includes('SSL') || msg.includes('CERT') || msg.includes('fetch');
+    if (isCertError) {
+      result.innerHTML = `
+        <span class="result-icon">\u2717</span>
+        <span class="result-error"><strong>SSL certificate error</strong></span>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-muted);line-height:1.7;text-align:left">
+          Your network may be intercepting HTTPS traffic (common with corporate firewalls, Fortinet, Zscaler, etc.).<br><br>
+          <strong>Try one of these:</strong>
+          <ol style="margin:8px 0 0 18px;padding:0">
+            <li>Switch to a different network (mobile hotspot or VPN)</li>
+            <li>Ask your IT admin to whitelist <code style="background:rgba(0,0,0,0.06);padding:2px 5px;border-radius:3px">cluude.ai</code></li>
+            <li>Use the CLI instead: <code style="background:rgba(0,0,0,0.06);padding:2px 5px;border-radius:3px">npx clude-bot setup</code></li>
+          </ol>
+        </div>`;
+    } else {
+      result.innerHTML = `<span class="result-icon">\u2717</span> <span class="result-error">Could not reach clude.io. Check your connection and try again.</span>`;
+    }
   }
 }
 

@@ -151,7 +151,14 @@ if (existingKey) {
     }
   } catch (err) {
     writeTty('\r' + ' '.repeat(50) + '\r');
-    warn('Could not reach clude.io');
+    const msg = (err && err.message) || String(err);
+    if (/certificate|CERT|SSL|self.signed|unable to verify/i.test(msg)) {
+      warn('SSL certificate error — your network may be intercepting HTTPS');
+      info('Common with corporate firewalls (Fortinet, Zscaler, etc.)');
+      info('Try a mobile hotspot/VPN, or ask IT to whitelist cluude.ai');
+    } else {
+      warn('Could not reach clude.io');
+    }
     info('Run npx clude-bot register later to get a key');
   }
 }
