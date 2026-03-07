@@ -82,18 +82,20 @@ const cliPath = path.join(__dirname, '..', 'dist', 'cli', 'index.js');
 
 if (fs.existsSync(cliPath)) {
   try {
-    // Open /dev/tty for interactive I/O (bypasses npm's pipe)
-    const ttyFd = fs.openSync('/dev/tty', 'r+');
+    // Open separate read/write fds so readline works properly
+    const ttyIn = fs.openSync('/dev/tty', 'r');
+    const ttyOut = fs.openSync('/dev/tty', 'w');
 
     writeTty(`\n  ${bold}Starting setup wizard...${reset}\n\n`);
 
     const result = spawnSync(process.execPath, [cliPath, 'setup'], {
-      stdio: [ttyFd, ttyFd, ttyFd],
+      stdio: [ttyIn, ttyOut, ttyOut],
       cwd: userDir,
       env: { ...process.env, INIT_CWD: userDir },
     });
 
-    fs.closeSync(ttyFd);
+    fs.closeSync(ttyIn);
+    fs.closeSync(ttyOut);
 
     // If setup wizard ran successfully, we're done
     if (result.status === 0) {
