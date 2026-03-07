@@ -277,12 +277,9 @@ export async function runInit(): Promise<void> {
         config.ownerWallet = await ask(rl, 'Solana wallet address (Enter to skip): ');
         console.log('');
 
-        // ─── Hosted: Base URL (optional) ────────────────────────
-        config.cortexHostUrl = await ask(rl, 'API base URL (Enter for https://cluude.ai): ');
-        if (!config.cortexHostUrl) config.cortexHostUrl = 'https://cluude.ai';
-        console.log('');
+        config.cortexHostUrl = 'https://cluude.ai';
 
-        process.stdout.write(`  ${c.gray}Registering on ${config.cortexHostUrl}...${c.reset}`);
+        process.stdout.write(`  ${c.gray}Registering on clude.io...${c.reset}`);
 
         try {
           const res = await fetch(`${config.cortexHostUrl}/api/cortex/register`, {
@@ -332,10 +329,7 @@ export async function runInit(): Promise<void> {
     }
 
     if (!config.cortexHostUrl) {
-      // ─── Hosted: Base URL (optional) ────────────────────────
-      config.cortexHostUrl = await ask(rl, 'API base URL (Enter for https://cluude.ai): ');
-      if (!config.cortexHostUrl) config.cortexHostUrl = 'https://cluude.ai';
-      console.log('');
+      config.cortexHostUrl = 'https://cluude.ai';
     }
 
     // ─── Hosted: Owner Wallet ───────────────────────────────

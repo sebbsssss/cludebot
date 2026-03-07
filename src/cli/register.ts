@@ -37,8 +37,7 @@ export async function runRegister(): Promise<void> {
     return;
   }
 
-  const baseUrl = await ask(rl, 'API base URL (Enter for https://cluude.ai): ');
-  const url = baseUrl || 'https://cluude.ai';
+  const url = 'https://cluude.ai';
 
   console.log('');
   process.stdout.write(`  ${c.gray}Registering...${c.reset}`);
