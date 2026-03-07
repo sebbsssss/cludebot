@@ -74,7 +74,7 @@ export function getOwnerWallet(): string | null {
  * When an owner wallet is set, filters to only that wallet's memories.
  * When null, no filter is applied (backward-compatible).
  */
-function scopeToOwner<T>(query: T): T {
+export function scopeToOwner<T>(query: T): T {
   const wallet = getOwnerWallet();
   if (wallet) {
     return (query as any).eq('owner_wallet', wallet);

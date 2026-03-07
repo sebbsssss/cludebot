@@ -18,6 +18,7 @@ import { createChildLogger } from '../core/logger';
 import { checkInputContent } from '../core/guardrails';
 import rateLimit from 'express-rate-limit';
 import { requirePrivyAuth, optionalPrivyAuth } from './privy-auth';
+import { traceMemory, explainMemory } from '../features/memory-trace';
 
 const log = createChildLogger('server');
 
@@ -166,6 +167,54 @@ export function createServer(): express.Application {
     } catch (err) {
       log.error({ err }, 'Memories endpoint error');
       res.status(500).json({ error: 'Failed to fetch memories' });
+    }
+  });
+
+  // ── Memory Provenance API ──────────────────────────────────────────
+
+  // Trace a memory's full ancestry, descendants, and related memories
+  app.get('/api/memory/:id/trace', async (req: Request, res: Response) => {
+    try {
+      const memoryId = parseInt(req.params.id);
+      if (isNaN(memoryId)) {
+        res.status(400).json({ error: 'Invalid memory ID' });
+        return;
+      }
+      const maxDepth = Math.min(parseInt(req.query.depth as string) || 3, 5);
+      const trace = await traceMemory(memoryId, maxDepth);
+      if (!trace) {
+        res.status(404).json({ error: 'Memory not found' });
+        return;
+      }
+      res.json(trace);
+    } catch (err) {
+      log.error({ err }, 'Memory trace error');
+      res.status(500).json({ error: 'Failed to trace memory' });
+    }
+  });
+
+  // Explain a memory — "why did you think this?"
+  app.post('/api/memory/:id/explain', async (req: Request, res: Response) => {
+    try {
+      const memoryId = parseInt(req.params.id);
+      if (isNaN(memoryId)) {
+        res.status(400).json({ error: 'Invalid memory ID' });
+        return;
+      }
+      const { question } = req.body;
+      if (!question || typeof question !== 'string') {
+        res.status(400).json({ error: 'Missing "question" in request body' });
+        return;
+      }
+      const result = await explainMemory(memoryId, question);
+      if (!result) {
+        res.status(404).json({ error: 'Memory not found or explanation failed' });
+        return;
+      }
+      res.json(result);
+    } catch (err) {
+      log.error({ err }, 'Memory explain error');
+      res.status(500).json({ error: 'Failed to explain memory' });
     }
   });
 
@@ -803,6 +852,12 @@ export function createServer(): express.Application {
   // Memory benchmark comparison at /benchmark
   app.get('/benchmark', (req: Request, _res: Response, next: express.NextFunction) => {
     req.url = '/benchmark.html';
+    next();
+  });
+
+  // Memory provenance at /trace
+  app.get('/trace', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/trace.html';
     next();
   });
 

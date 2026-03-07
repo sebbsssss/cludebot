@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Provenance — Clude</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #f5f5f0;
+      --card: #ffffff;
+      --border: #e0ddd5;
+      --text: #1a1a1a;
+      --text-secondary: #666;
+      --blue: #455cfa;
+      --blue-light: #455cfa15;
+      --red: #e84b3c;
+      --green: #2ecc71;
+      --orange: #f39c12;
+      --purple: #9b59b6;
+      --ancestor: #3498db;
+      --descendant: #2ecc71;
+      --related: #9b59b6;
+      --root: #455cfa;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+    
+    header h1 span { color: var(--blue); }
+    
+    .back-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+    
+    .back-link:hover { color: var(--blue); }
+    
+    /* Search */
+    .search-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .search-bar input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      outline: none;
+    }
+    
+    .search-bar input:focus { border-color: var(--blue); }
+    
+    .search-bar button {
+      padding: 0.75rem 1.5rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    .search-bar button:hover { opacity: 0.9; }
+    
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 1.5rem;
+      padding: 1rem 1.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      font-size: 0.8rem;
+      flex-wrap: wrap;
+    }
+    
+    .stat { display: flex; align-items: center; gap: 0.4rem; }
+    .stat .label { color: var(--text-secondary); }
+    .stat .value { font-weight: 600; }
+    
+    /* Layout */
+    .trace-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 1.5rem;
+    }
+    
+    @media (max-width: 900px) {
+      .trace-layout { grid-template-columns: 1fr; }
+    }
+    
+    /* Graph canvas */
+    .graph-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      min-height: 500px;
+    }
+    
+    .graph-panel canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    
+    .graph-legend {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      display: flex;
+      gap: 1rem;
+      font-size: 0.7rem;
+      background: rgba(255,255,255,0.9);
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+    
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    
+    /* Detail panel */
+    .detail-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .memory-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    
+    .memory-card:hover { border-color: var(--blue); }
+    .memory-card.active { border-color: var(--blue); border-width: 2px; }
+    
+    .memory-card .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .memory-card .card-type {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    
+    .type-root { background: var(--blue-light); color: var(--blue); }
+    .type-ancestor { background: #3498db20; color: var(--ancestor); }
+    .type-descendant { background: #2ecc7120; color: var(--descendant); }
+    .type-related { background: #9b59b620; color: var(--related); }
+    
+    .memory-card .card-date {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+    
+    .memory-card .card-summary {
+      font-size: 0.8rem;
+      line-height: 1.5;
+      margin-bottom: 0.5rem;
+    }
+    
+    .memory-card .card-meta {
+      display: flex;
+      gap: 0.75rem;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+    
+    .card-relation {
+      font-size: 0.7rem;
+      color: var(--blue);
+      margin-bottom: 0.5rem;
+    }
+    
+    /* Explain panel */
+    .explain-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    
+    .explain-section h3 {
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .explain-input {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .explain-input input {
+      flex: 1;
+      padding: 0.6rem 0.8rem;
+      font-family: inherit;
+      font-size: 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+    }
+    
+    .explain-input button {
+      padding: 0.6rem 1rem;
+      font-family: inherit;
+      font-size: 0.8rem;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    
+    .explain-result {
+      font-size: 0.8rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    
+    .explain-chain {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    
+    .chain-step {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.75rem;
+    }
+    
+    .chain-step .step-date {
+      color: var(--blue);
+      white-space: nowrap;
+      min-width: 80px;
+    }
+    
+    /* Section headers */
+    .section-header {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin: 1rem 0 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .section-count {
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
+    
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    
+    .loading::after {
+      content: '';
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-left: 0.5rem;
+    }
+    
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+    
+    .empty-state p { margin-bottom: 0.5rem; }
+    .empty-state code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="/" class="back-link">← clude.io</a>
+      <h1>Memory <span>Provenance</span></h1>
+    </header>
+
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="Enter memory ID or search term..." />
+      <button onclick="doSearch()">Trace</button>
+    </div>
+
+    <div id="stats-bar" class="stats-bar" style="display:none"></div>
+
+    <div id="content">
+      <div class="empty-state">
+        <p>Enter a memory ID to trace its provenance.</p>
+        <p>See every memory that led to it, what it spawned, and why it exists.</p>
+        <p style="margin-top:1rem; font-size:0.75rem; color:#999">Try: <code>12067</code> or any memory ID from the <a href="/explore" style="color:var(--blue)">Explorer</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let currentTrace = null;
+    let selectedNode = null;
+
+    async function doSearch() {
+      const input = document.getElementById('search-input').value.trim();
+      if (!input) return;
+
+      const memoryId = parseInt(input);
+      if (isNaN(memoryId)) {
+        // TODO: search by term, pick first result
+        alert('Enter a numeric memory ID for now');
+        return;
+      }
+
+      document.getElementById('content').innerHTML = '<div class="loading">Tracing memory provenance</div>';
+      document.getElementById('stats-bar').style.display = 'none';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/memory/${memoryId}/trace`);
+        if (!res.ok) throw new Error(await res.text());
+        currentTrace = await res.json();
+        renderTrace(currentTrace);
+      } catch (err) {
+        document.getElementById('content').innerHTML = 
+          `<div class="empty-state"><p>Error: ${err.message}</p></div>`;
+      }
+    }
+
+    function renderTrace(trace) {
+      // Stats bar
+      const statsBar = document.getElementById('stats-bar');
+      statsBar.style.display = 'flex';
+      statsBar.innerHTML = `
+        <div class="stat"><span class="label">Nodes:</span><span class="value">${trace.stats.total_nodes}</span></div>
+        <div class="stat"><span class="label">Ancestors:</span><span class="value">${trace.ancestors.length}</span></div>
+        <div class="stat"><span class="label">Descendants:</span><span class="value">${trace.descendants.length}</span></div>
+        <div class="stat"><span class="label">Related:</span><span class="value">${trace.related.length}</span></div>
+        <div class="stat"><span class="label">Depth:</span><span class="value">${trace.stats.max_depth}</span></div>
+        <div class="stat"><span class="label">Span:</span><span class="value">${trace.stats.time_span_days}d</span></div>
+        ${trace.entities.length ? `<div class="stat"><span class="label">Entities:</span><span class="value">${trace.entities.map(e => e.name).join(', ')}</span></div>` : ''}
+      `;
+
+      // Main content
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <div class="trace-layout">
+          <div>
+            <div class="graph-panel" id="graph-panel">
+              <canvas id="graph-canvas"></canvas>
+              <div class="graph-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--root)"></div>Root</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--ancestor)"></div>Ancestor</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--descendant)"></div>Descendant</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--related)"></div>Related</div>
+              </div>
+            </div>
+            <div class="explain-section" style="margin-top:1rem">
+              <h3>Ask about this memory</h3>
+              <div class="explain-input">
+                <input type="text" id="explain-input" placeholder="Why did you form this memory? What led to this decision?" />
+                <button onclick="doExplain()">Ask</button>
+              </div>
+              <div id="explain-result"></div>
+            </div>
+          </div>
+          <div class="detail-panel" id="detail-panel"></div>
+        </div>
+      `;
+
+      renderGraph(trace);
+      renderDetailPanel(trace);
+    }
+
+    function renderDetailPanel(trace) {
+      const panel = document.getElementById('detail-panel');
+      let html = '';
+
+      // Root
+      html += renderCard(trace.root, 'root');
+
+      // Ancestors
+      if (trace.ancestors.length > 0) {
+        html += `<div class="section-header">Ancestors <span class="section-count">(${trace.ancestors.length})</span></div>`;
+        for (const a of trace.ancestors) html += renderCard(a, 'ancestor');
+      }
+
+      // Descendants
+      if (trace.descendants.length > 0) {
+        html += `<div class="section-header">Descendants <span class="section-count">(${trace.descendants.length})</span></div>`;
+        for (const d of trace.descendants) html += renderCard(d, 'descendant');
+      }
+
+      // Related
+      if (trace.related.length > 0) {
+        html += `<div class="section-header">Related <span class="section-count">(${trace.related.length})</span></div>`;
+        for (const r of trace.related) html += renderCard(r, 'related');
+      }
+
+      panel.innerHTML = html;
+    }
+
+    function renderCard(node, category) {
+      const date = new Date(node.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const time = new Date(node.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      return `
+        <div class="memory-card" onclick="selectNode(${node.id})" data-id="${node.id}">
+          <div class="card-header">
+            <span class="card-type type-${category}">${category} · ${node.memory_type}</span>
+            <span class="card-date">${date} ${time}</span>
+          </div>
+          ${node.relation !== 'root' ? `<div class="card-relation">↳ ${node.relation} (strength: ${node.strength.toFixed(2)})</div>` : ''}
+          <div class="card-summary">${escapeHtml(node.summary.slice(0, 200))}</div>
+          <div class="card-meta">
+            <span>importance: ${node.importance.toFixed(2)}</span>
+            <span>decay: ${node.decay_factor.toFixed(2)}</span>
+            <span>accessed: ${node.access_count}x</span>
+            <span>depth: ${node.depth}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectNode(id) {
+      document.querySelectorAll('.memory-card').forEach(c => c.classList.remove('active'));
+      const card = document.querySelector(`[data-id="${id}"]`);
+      if (card) card.classList.add('active');
+      selectedNode = id;
+    }
+
+    async function doExplain() {
+      const question = document.getElementById('explain-input').value.trim();
+      if (!question || !currentTrace) return;
+
+      const resultDiv = document.getElementById('explain-result');
+      resultDiv.innerHTML = '<div class="loading">Analyzing memory provenance</div>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/memory/${currentTrace.root.id}/explain`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question }),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const result = await res.json();
+
+        let html = `<div class="explain-result">${escapeHtml(result.explanation)}</div>`;
+
+        if (result.reasoning_chain && result.reasoning_chain.length > 0) {
+          html += `<div class="explain-chain"><div class="section-header">Reasoning Chain</div>`;
+          for (const step of result.reasoning_chain) {
+            const [date, ...rest] = step.split(': ');
+            html += `<div class="chain-step"><span class="step-date">${date}</span><span>${escapeHtml(rest.join(': '))}</span></div>`;
+          }
+          html += '</div>';
+        }
+
+        resultDiv.innerHTML = html;
+      } catch (err) {
+        resultDiv.innerHTML = `<p style="color:var(--red)">Error: ${err.message}</p>`;
+      }
+    }
+
+    // ── Graph Rendering (force-directed) ────────────────────────────
+
+    function renderGraph(trace) {
+      const canvas = document.getElementById('graph-canvas');
+      const panel = document.getElementById('graph-panel');
+      const rect = panel.getBoundingClientRect();
+      canvas.width = rect.width * 2;
+      canvas.height = 500 * 2;
+      canvas.style.height = '500px';
+      const ctx = canvas.getContext('2d');
+      ctx.scale(2, 2);
+
+      const W = rect.width;
+      const H = 500;
+
+      // Build nodes
+      const allNodes = [trace.root, ...trace.ancestors, ...trace.descendants, ...trace.related];
+      const nodeMap = new Map();
+      const nodes = allNodes.map((n, i) => {
+        const category = n.depth === 0 ? 'root' : 
+          trace.ancestors.includes(n) ? 'ancestor' :
+          trace.descendants.includes(n) ? 'descendant' : 'related';
+        const colors = { root: '#455cfa', ancestor: '#3498db', descendant: '#2ecc71', related: '#9b59b6' };
+        const obj = {
+          id: n.id,
+          x: W/2 + (Math.random() - 0.5) * W * 0.6,
+          y: H/2 + (Math.random() - 0.5) * H * 0.6,
+          vx: 0, vy: 0,
+          r: n.depth === 0 ? 14 : Math.max(5, 10 - n.depth * 2),
+          color: colors[category],
+          label: n.summary.slice(0, 30),
+          importance: n.importance,
+          category,
+          data: n,
+        };
+        nodeMap.set(n.id, obj);
+        return obj;
+      });
+
+      // Build edges
+      const edges = trace.links.map(l => ({
+        source: nodeMap.get(l.source_id),
+        target: nodeMap.get(l.target_id),
+        strength: l.strength,
+        type: l.link_type,
+      })).filter(e => e.source && e.target);
+
+      // Also link ancestors/descendants to root if no explicit link
+      for (const n of [...trace.ancestors, ...trace.descendants]) {
+        const hasLink = edges.some(e => 
+          (e.source.id === n.id && e.target.id === trace.root.id) ||
+          (e.target.id === n.id && e.source.id === trace.root.id)
+        );
+        if (!hasLink && nodeMap.has(n.id)) {
+          edges.push({
+            source: nodeMap.get(n.id),
+            target: nodeMap.get(trace.root.id),
+            strength: n.strength,
+            type: n.relation,
+          });
+        }
+      }
+
+      // Force simulation
+      function tick() {
+        // Repulsion
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            let dx = nodes[j].x - nodes[i].x;
+            let dy = nodes[j].y - nodes[i].y;
+            let d = Math.sqrt(dx*dx + dy*dy) || 1;
+            let force = 800 / (d * d);
+            nodes[i].vx -= dx/d * force;
+            nodes[i].vy -= dy/d * force;
+            nodes[j].vx += dx/d * force;
+            nodes[j].vy += dy/d * force;
+          }
+        }
+
+        // Attraction (edges)
+        for (const e of edges) {
+          let dx = e.target.x - e.source.x;
+          let dy = e.target.y - e.source.y;
+          let d = Math.sqrt(dx*dx + dy*dy) || 1;
+          let force = (d - 100) * 0.01 * e.strength;
+          e.source.vx += dx/d * force;
+          e.source.vy += dy/d * force;
+          e.target.vx -= dx/d * force;
+          e.target.vy -= dy/d * force;
+        }
+
+        // Center gravity
+        for (const n of nodes) {
+          n.vx += (W/2 - n.x) * 0.002;
+          n.vy += (H/2 - n.y) * 0.002;
+          n.vx *= 0.85;
+          n.vy *= 0.85;
+          n.x += n.vx;
+          n.y += n.vy;
+          n.x = Math.max(n.r + 5, Math.min(W - n.r - 5, n.x));
+          n.y = Math.max(n.r + 5, Math.min(H - n.r - 5, n.y));
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        // Edges
+        for (const e of edges) {
+          ctx.beginPath();
+          ctx.moveTo(e.source.x, e.source.y);
+          ctx.lineTo(e.target.x, e.target.y);
+          ctx.strokeStyle = `rgba(0,0,0,${0.08 + e.strength * 0.12})`;
+          ctx.lineWidth = 0.5 + e.strength;
+          ctx.stroke();
+        }
+
+        // Nodes
+        for (const n of nodes) {
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+          ctx.fillStyle = n.color;
+          ctx.globalAlpha = 0.3 + n.importance * 0.7;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = n.color;
+          ctx.lineWidth = n.category === 'root' ? 2 : 1;
+          ctx.stroke();
+
+          // Label for root and large nodes
+          if (n.r >= 8) {
+            ctx.font = `${n.category === 'root' ? 10 : 8}px JetBrains Mono`;
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.fillText(n.label, n.x, n.y + n.r + 12);
+          }
+        }
+      }
+
+      // Run simulation
+      let frame = 0;
+      function animate() {
+        tick();
+        draw();
+        frame++;
+        if (frame < 200) requestAnimationFrame(animate);
+      }
+      animate();
+
+      // Click detection
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        for (const n of nodes) {
+          const dx = n.x - x;
+          const dy = n.y - y;
+          if (dx*dx + dy*dy < (n.r + 5) * (n.r + 5)) {
+            selectNode(n.id);
+            // Scroll to card
+            const card = document.querySelector(`[data-id="${n.id}"]`);
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            break;
+          }
+        }
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // URL param support
+    const urlParams = new URLSearchParams(window.location.search);
+    const memId = urlParams.get('id');
+    if (memId) {
+      document.getElementById('search-input').value = memId;
+      doSearch();
+    }
+
+    // Enter key
+    document.getElementById('search-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doSearch();
+    });
+    document.getElementById('content').addEventListener('keydown', (e) => {
+      if (e.target.id === 'explain-input' && e.key === 'Enter') doExplain();
+    });
+  </script>
+</body>
+</html>
