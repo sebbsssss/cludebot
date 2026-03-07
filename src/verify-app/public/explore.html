@@ -611,7 +611,8 @@
     }
     .prov-node-date { font-size: 9px; color: var(--text-faint); }
     .prov-node-relation { font-size: 9px; color: var(--accent); margin-bottom: 4px; }
-    .prov-node-summary { font-size: 10px; line-height: 1.6; color: var(--text-muted); margin-bottom: 6px; }
+    .prov-node-summary { font-size: 10px; line-height: 1.6; color: var(--text-muted); margin-bottom: 6px;
+      display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
     .prov-node-meta {
       display: flex; gap: 10px; font-size: 9px; color: var(--text-faint);
     }
@@ -2023,7 +2024,7 @@
         '<span class="prov-node-date">' + date + '</span>' +
       '</div>' +
       (node.relation !== 'root' ? '<div class="prov-node-relation">↳ ' + esc(node.relation) + ' (' + node.strength.toFixed(2) + ')</div>' : '') +
-      '<div class="prov-node-summary">' + esc((node.summary || '').slice(0, 180)) + '</div>' +
+      '<div class="prov-node-summary">' + esc(node.summary || node.content || '') + '</div>' +
       '<div class="prov-node-meta">' +
         '<span>imp <span class="v">' + (node.importance || 0).toFixed(2) + '</span></span>' +
         '<span>decay <span class="v">' + ((node.decay_factor || 1) * 100).toFixed(0) + '%</span></span>' +
