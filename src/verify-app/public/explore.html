@@ -1399,9 +1399,48 @@
   }
 
   /* ============= BRAIN INTEGRATION ============= */
+  function computeTraceCounts(nodes) {
+    // Build adjacency from loadedConnections + evidence_ids
+    const adj = new Map(); // id → Set of connected ids
+    const addEdge = (a, b) => {
+      if (!adj.has(a)) adj.set(a, new Set());
+      if (!adj.has(b)) adj.set(b, new Set());
+      adj.get(a).add(b);
+      adj.get(b).add(a);
+    };
+    for (const c of loadedConnections) addEdge(c.source_id, c.target_id);
+    for (const n of nodes) {
+      if (n.evidenceIds) for (const eid of n.evidenceIds) addEdge(n.id, eid);
+    }
+    // BFS up to depth 3 (matching localTrace)
+    const nodeSet = new Set(nodes.map(n => n.id));
+    for (const n of nodes) {
+      const visited = new Set([n.id]);
+      let frontier = [n.id];
+      for (let d = 0; d < 3 && frontier.length > 0; d++) {
+        const next = [];
+        for (const fid of frontier) {
+          for (const nb of (adj.get(fid) || [])) {
+            if (!visited.has(nb) && nodeSet.has(nb)) {
+              visited.add(nb);
+              next.push(nb);
+            }
+          }
+        }
+        frontier = next.slice(0, 10);
+      }
+      n._traceCount = visited.size - 1; // exclude self
+    }
+  }
+
   function loadBrainData(data) {
     brainNodes = data.nodes || [];
     allNodes = [...brainNodes];
+
+    // Compute trace counts and sort by them (high to low)
+    computeTraceCounts(allNodes);
+    allNodes.sort((a, b) => (b._traceCount || 0) - (a._traceCount || 0));
+    brainNodes = allNodes;
 
     // Only send top memories to brain visualization (by importance)
     const brainSubset = [...brainNodes]
@@ -1603,6 +1642,7 @@
         '<div class="card-imp-bar"><div class="card-imp-fill" style="width:' + ((n.importance || 0) * 100) + '%"></div></div>' +
         '<span>decay <span class="v">' + ((n.decay ?? 1) * 100).toFixed(0) + '%</span></span>' +
         '<span>' + age + '</span>' +
+        (n._traceCount ? '<span style="color:var(--accent)" title="Trace depth">⛓ ' + n._traceCount + ' traces</span>' : '') +
         (hasEvidence ? '<span style="color:var(--accent)">🔗' + n.evidenceIds.length + '</span>' : '') +
       '</div>' +
       (tags ? '<div class="card-tags">' + tags + '</div>' : '') +
