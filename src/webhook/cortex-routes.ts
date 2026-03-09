@@ -158,7 +158,7 @@ export function cortexRoutes(): Router {
   router.post('/store', async (req: Request, res: Response) => {
     try {
       const cortexReq = req as CortexRequest;
-      const { content, summary, type, tags, concepts, importance, emotional_valence, source, source_id, metadata } = req.body;
+      const { content, summary, type, tags, concepts, importance, emotional_valence, source, source_id, related_user, related_wallet, metadata } = req.body;
 
       if (!content || typeof content !== 'string') {
         res.status(400).json({ error: 'content is required (string)' });
@@ -170,7 +170,7 @@ export function cortexRoutes(): Router {
       }
 
       const memoryType = (type || 'episodic') as MemoryType;
-      const validTypes: MemoryType[] = ['episodic', 'semantic', 'procedural', 'self_model'];
+      const validTypes: MemoryType[] = ['episodic', 'semantic', 'procedural', 'self_model', 'introspective' as any];
       if (!validTypes.includes(memoryType)) {
         res.status(400).json({ error: `type must be one of: ${validTypes.join(', ')}` });
         return;
@@ -187,6 +187,8 @@ export function cortexRoutes(): Router {
           emotionalValence: emotional_valence ?? undefined,
           source: source || 'cortex-api',
           sourceId: source_id,
+          relatedUser: related_user,
+          relatedWallet: related_wallet,
           metadata: metadata || {},
         });
       });
