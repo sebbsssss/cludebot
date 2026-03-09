@@ -217,7 +217,7 @@ export interface CampaignTweet {
 }
 
 /**
- * Search tweets mentioning @cludebot with #CludeHackathon.
+ * Search tweets mentioning @cludebotclone with #CludeHackathon.
  * Requires X API Basic tier ($100/mo) for v2.search().
  */
 export async function searchHashtagTweets(
@@ -228,7 +228,7 @@ export async function searchHashtagTweets(
 
   try {
     // Broad match: direct mentions, hashtag, or $CLUDE with campaign keywords
-    const query = '(@cludebot OR #CludeHackathon OR ($CLUDE (hackathon OR "10 days" OR "growing a brain" OR "blockchain brain"))) -is:retweet';
+    const query = '(@cludebotclone OR #CludeHackathon OR ($CLUDE (hackathon OR "10 days" OR "growing a brain" OR "blockchain brain"))) -is:retweet';
     const params: Record<string, string> = {
       'tweet.fields': 'created_at,author_id,public_metrics',
       'expansions': 'author_id',
@@ -273,7 +273,7 @@ export async function searchHashtagTweets(
 }
 
 /**
- * Search tweets mentioning $CLUDE or @cludebot.
+ * Search tweets mentioning $CLUDE or @cludebotclone.
  * Used by the sentiment monitor for Telegram digests.
  */
 export async function searchTokenMentions(
@@ -283,7 +283,7 @@ export async function searchTokenMentions(
   log.info({ sinceId, maxResults }, 'Searching $CLUDE mentions');
 
   try {
-    const query = '($CLUDE OR @cludebot) -is:retweet';
+    const query = '($CLUDE OR @cludebotclone) -is:retweet';
     const params: Record<string, string> = {
       'tweet.fields': 'created_at,author_id,public_metrics',
       'expansions': 'author_id',

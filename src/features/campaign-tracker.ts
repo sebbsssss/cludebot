@@ -110,7 +110,7 @@ function calculateCampaignDay(date: Date, campaignStart: Date): number {
 }
 
 /**
- * Poll for new tweets with @cludebot #CludeHackathon.
+ * Poll for new tweets with @cludebotclone #CludeHackathon.
  */
 async function pollCampaignTweets(): Promise<void> {
   const db = getDb();

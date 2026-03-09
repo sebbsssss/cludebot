@@ -10,6 +10,9 @@ export const SOLSCAN_TX_BASE_URL = 'https://solscan.io/tx';
 export const TWEET_MAX_LENGTH = 4000;
 export const TWEET_SAFE_LENGTH = 3900;
 
+// X handle (bot account)
+export const BOT_X_HANDLE = process.env.BOT_X_HANDLE || 'cludebotclone';
+
 // Memory system
 export const MEMORY_DECAY_RATE = 0.95;                  // Legacy: uniform decay (now per-type below)
 export const MEMORY_MIN_DECAY = 0.05;
