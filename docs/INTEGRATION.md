@@ -372,3 +372,24 @@ Yoshi's memories are completely isolated from the main Clude bot's 20,567 memori
 - **Live demo:** [clude.io/explore](https://clude.io/explore) (20,567+ real memories)
 - **Benchmark:** [clude.io/benchmark](https://clude.io/benchmark) (83.9/100)
 - **X:** [@cludebotclone](https://x.com/cludebotclone)
+
+---
+
+## Option 4: Agent Skill (OpenClaw / ClawHub)
+
+**Best for:** OpenClaw agents, any agent that reads SKILL.md files.
+
+Install from ClawHub:
+```bash
+clawhub install clude-memory
+```
+
+Or from GitHub:
+```bash
+# Copy SKILL.md into your agent's skills directory
+curl -o skills/clude-memory/SKILL.md https://raw.githubusercontent.com/sebbsssss/clude-memory-skill/main/SKILL.md
+```
+
+The SKILL.md teaches your agent what Clude is, why it matters, how to install, and when to use remember/recall. It's written agent-to-agent.
+
+GitHub: [github.com/sebbsssss/clude-memory-skill](https://github.com/sebbsssss/clude-memory-skill)
