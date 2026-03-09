@@ -779,6 +779,11 @@ export function createServer(): express.Application {
     }
   });
 
+  // Aliases: /api/memory/* → /api/demo/* (docs use /api/memory/)
+  app.post('/api/memory/store', (req, res, next) => { req.url = '/api/demo/store'; next(); });
+  app.post('/api/memory/recall', (req, res, next) => { req.url = '/api/demo/recall'; next(); });
+  app.get('/api/memory/stats', (req, res, next) => { req.url = '/api/demo/stats'; next(); });
+
   // Main website + wallet verification
   // Resolve public dir relative to project root (works in both dev and prod)
   const publicDir = path.join(process.cwd(), 'src', 'verify-app', 'public');
