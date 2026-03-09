@@ -52,11 +52,16 @@ async function cortexAuth(req: Request, res: Response, next: NextFunction): Prom
     return;
   }
 
-  // Resolve owner_wallet from the agent_keys row
-  const ownerWallet = agent.owner_wallet;
+  // Resolve owner_wallet from the agent_keys row; auto-generate if missing
+  let ownerWallet = agent.owner_wallet;
   if (!ownerWallet) {
-    res.status(403).json({ error: 'API key not configured for hosted Cortex. Register with a wallet address first.' });
-    return;
+    // Auto-assign a deterministic wallet-like ID so memories are scoped from the start
+    const { createHash } = require('crypto');
+    ownerWallet = createHash('sha256').update(`cortex:${agent.agent_id}`).digest('hex').slice(0, 44);
+    const db = getDb();
+    await db.from('agent_keys').update({ owner_wallet: ownerWallet }).eq('id', agent.id);
+    agent.owner_wallet = ownerWallet;
+    log.info({ agentId: agent.agent_id, ownerWallet }, 'Auto-assigned owner_wallet for agent');
   }
 
   (req as CortexRequest).agent = agent;
