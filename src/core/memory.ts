@@ -289,7 +289,7 @@ export async function storeMemory(opts: StoreMemoryOptions): Promise<number | nu
         compacted: false,
         encrypted: shouldEncrypt,
         encryption_pubkey: shouldEncrypt ? getEncryptionPubkey() : null,
-        owner_wallet: _ownerWallet || null,
+        owner_wallet: getOwnerWallet() || null,
       })
       .select('id, hash_id')
       .single();
