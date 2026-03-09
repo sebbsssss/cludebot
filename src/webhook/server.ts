@@ -827,6 +827,12 @@ export function createServer(): express.Application {
     next();
   });
 
+  // Compare page — benchmark vs competitors
+  app.get('/compare', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/compare.html';
+    next();
+  });
+
   // Agents page — alias for install
   app.get('/agents', (req: Request, _res: Response, next: express.NextFunction) => {
     req.url = '/install.html';
