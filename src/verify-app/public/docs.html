@@ -416,13 +416,15 @@
       <li><a href="#recalling">Recalling Memories</a></li>
       <li><a href="#export-import">Export &amp; Import</a></li>
       <li><a href="#dream-cycles">Dream Cycles</a></li>
+      <li><a href="#active-reflection">Active Reflection</a></li>
+      <li><a href="#mcp-integration">MCP Integration</a></li>
       <li><a href="#association-graph">Association Graph</a></li>
       <li><a href="#utilities">Utilities</a></li>
       <li><a href="#events">Events</a></li>
       <li><a href="#database">Database Schema</a></li>
       <li><a href="#degradation">Graceful Degradation</a></li>
     </ul>
-    <div class="sidebar-version">v2.6.0</div>
+    <div class="sidebar-version">v2.7.0</div>
   </aside>
 
   <main class="docs-content">
@@ -653,7 +655,7 @@ console.<span class="fn">log</span>(id); <span class="cmt">// 42 (memory ID) or 
       <h3>StoreMemoryOptions</h3>
       <table class="doc-table">
         <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-        <tr><td><code>type</code></td><td class="required">MemoryType</td><td><code>'episodic'</code> | <code>'semantic'</code> | <code>'procedural'</code> | <code>'self_model'</code></td></tr>
+        <tr><td><code>type</code></td><td class="required">MemoryType</td><td><code>'episodic'</code> | <code>'semantic'</code> | <code>'procedural'</code> | <code>'self_model'</code> | <code>'introspective'</code></td></tr>
         <tr><td><code>content</code></td><td class="required">string</td><td>Full memory content (max 5000 chars)</td></tr>
         <tr><td><code>summary</code></td><td class="required">string</td><td>Short summary for recall matching (max 500 chars)</td></tr>
         <tr><td><code>source</code></td><td class="required">string</td><td>Identifier for the agent storing the memory</td></tr>
@@ -676,6 +678,7 @@ console.<span class="fn">log</span>(id); <span class="cmt">// 42 (memory ID) or 
         <tr><td><code>semantic</code></td><td>2%</td><td>Distilled knowledge. Patterns and insights.</td></tr>
         <tr><td><code>procedural</code></td><td>3%</td><td>Learned behavior. What works, what doesn't.</td></tr>
         <tr><td><code>self_model</code></td><td>1%</td><td>Evolving self-understanding. Nearly permanent.</td></tr>
+        <tr><td><code>introspective</code></td><td>~2%</td><td>Self-generated journal entries. Original thoughts from active reflection.</td></tr>
       </table>
 
       <h3>Concept Ontology</h3>
@@ -806,10 +809,10 @@ console.<span class="fn">log</span>(result); <span class="cmt">// { imported: 14
     <!-- ═══════ DREAM CYCLES ═══════ -->
     <div class="doc-section" id="dream-cycles">
       <h2>Dream Cycles</h2>
-      <p class="doc-lead">A three-phase introspection cycle inspired by biological memory consolidation. Requires <code>anthropic</code> config.</p>
+      <p class="doc-lead">A five-phase introspection cycle inspired by biological memory consolidation. Requires <code>anthropic</code> config.</p>
 
       <h3>dream(opts?)</h3>
-      <p>Run one full dream cycle: consolidation, reflection, emergence.</p>
+      <p>Run one full dream cycle: consolidation, compaction, reflection, contradiction resolution, emergence.</p>
       <div class="code">
 <span class="cmt">// Basic dream</span>
 <span class="kw">await</span> brain.<span class="fn">dream</span>();
@@ -827,8 +830,10 @@ console.<span class="fn">log</span>(result); <span class="cmt">// { imported: 14
       <table class="doc-table">
         <tr><th>Phase</th><th>What Happens</th></tr>
         <tr><td><strong>I. Consolidation</strong></td><td>Generates focal questions from recent memories. Each question retrieves evidence and produces new semantic insights with citation chains.</td></tr>
-        <tr><td><strong>II. Reflection</strong></td><td>Self-model review against accumulated knowledge. Identity evolves based on experience.</td></tr>
-        <tr><td><strong>III. Emergence</strong></td><td>Examines its own existence. Output sent to <code>onEmergence</code> callback if provided.</td></tr>
+        <tr><td><strong>II. Compaction</strong></td><td>Faded episodic memories summarized and compressed. Important signal survives; noise decays gracefully.</td></tr>
+        <tr><td><strong>III. Reflection</strong></td><td>Self-model review against accumulated knowledge. Identity evolves based on experience.</td></tr>
+        <tr><td><strong>IV. Contradiction Resolution</strong></td><td>Finds conflicting memories and resolves them. The stronger memory survives; the weaker one decays faster.</td></tr>
+        <tr><td><strong>V. Emergence</strong></td><td>Examines its own existence. Output sent to <code>onEmergence</code> callback if provided.</td></tr>
       </table>
 
       <h3>startDreamSchedule() / stopDreamSchedule()</h3>
@@ -843,6 +848,100 @@ brain.<span class="fn">stopDreamSchedule</span>();
       <div class="callout">
         <div class="callout-label">Requires</div>
         Dream cycles require <code>anthropic</code> config. Calling <code>dream()</code> without it throws an error.
+      </div>
+    </div>
+
+    <!-- ═══════ ACTIVE REFLECTION ═══════ -->
+    <div class="doc-section" id="active-reflection">
+      <h2>Active Reflection</h2>
+      <p class="doc-lead">A generative meditation cycle that runs between dream cycles. While dreams look backward (consolidation), reflection looks forward (journaling). Requires <code>anthropic</code> config.</p>
+
+      <h3>reflect(opts?)</h3>
+      <p>Run a single active reflection session. Returns a journal entry.</p>
+      <div class="code">
+<span class="kw">const</span> journal = <span class="kw">await</span> brain.<span class="fn">reflect</span>({
+  onReflection: <span class="kw">async</span> (entry) => {
+    console.<span class="fn">log</span>(entry.title);  <span class="cmt">// 'Thinking About Patterns'</span>
+    console.<span class="fn">log</span>(entry.text);   <span class="cmt">// Full journal text</span>
+  },
+});
+      </div>
+
+      <h3>ReflectionJournal</h3>
+      <table class="doc-table">
+        <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        <tr><td><code>text</code></td><td>string</td><td>Full journal entry text</td></tr>
+        <tr><td><code>title</code></td><td>string</td><td>Generated title/theme for the entry</td></tr>
+        <tr><td><code>seedMemoryIds</code></td><td>number[]</td><td>Memory IDs that seeded this reflection</td></tr>
+        <tr><td><code>memoryId</code></td><td>number | null</td><td>ID of the stored introspective memory</td></tr>
+        <tr><td><code>timestamp</code></td><td>string</td><td>ISO timestamp</td></tr>
+      </table>
+
+      <h3>startReflectionSchedule() / stopReflectionSchedule()</h3>
+      <p>Run active reflection on a 3-hour schedule, offset from dream cycles.</p>
+      <div class="code">
+brain.<span class="fn">startReflectionSchedule</span>();
+
+<span class="cmt">// Later...</span>
+brain.<span class="fn">stopReflectionSchedule</span>();
+      </div>
+
+      <h3>How It Works</h3>
+      <p>Each session: select seed memories (recent events + high-importance + one random older memory) &rarr; generate a theme &rarr; free-write journal entry &rarr; store as <code>introspective</code> memory &rarr; link to seed memories.</p>
+      <p>Journal entries build on previous reflections, creating a continuity chain of original thought.</p>
+
+      <div class="callout">
+        <div class="callout-label">Dream Cycle vs. Active Reflection</div>
+        <strong>Dream cycle</strong> = backward-looking consolidation (compress, link, decay). Like sleep.<br>
+        <strong>Active reflection</strong> = forward-looking journaling (generate, explore, question). Like a diary.<br>
+        Both are automatic when using <code>startDreamSchedule()</code> + <code>startReflectionSchedule()</code>.
+      </div>
+    </div>
+
+    <!-- ═══════ MCP INTEGRATION ═══════ -->
+    <div class="doc-section" id="mcp-integration">
+      <h2>MCP Integration</h2>
+      <p class="doc-lead">Use Clude's memory directly from your IDE. The MCP server exposes recall, store, and stats as tools that Claude Code, Cursor, and other MCP-compatible editors can use.</p>
+
+      <h3>Quick Setup</h3>
+      <div class="code">
+<span class="prompt">$</span> <span class="cmd">npx clude-bot mcp-serve</span>
+      </div>
+
+      <h3>Two Modes</h3>
+      <table class="doc-table">
+        <tr><th>Mode</th><th>Config</th><th>What It Does</th></tr>
+        <tr><td><strong>Hosted</strong></td><td>Set <code>CORTEX_API_KEY</code> env var</td><td>Calls the Cortex HTTP API. No Supabase needed.</td></tr>
+        <tr><td><strong>Self-hosted</strong></td><td>Set Supabase env vars</td><td>Connects directly to your database. Full local control.</td></tr>
+      </table>
+
+      <h3>Available Tools</h3>
+      <table class="doc-table">
+        <tr><th>Tool</th><th>Description</th></tr>
+        <tr><td><code>recall_memories</code></td><td>Search memories by query, tags, type, importance threshold. Returns scored results.</td></tr>
+        <tr><td><code>store_memory</code></td><td>Store a new memory with type, content, summary, tags, and importance.</td></tr>
+        <tr><td><code>get_memory_stats</code></td><td>Memory system statistics: counts by type, averages, dream sessions, top tags.</td></tr>
+      </table>
+
+      <h3>Claude Code Setup</h3>
+      <p>Add to your <code>.mcp.json</code>:</p>
+      <div class="code">
+{
+  <span class="str">"mcpServers"</span>: {
+    <span class="str">"clude"</span>: {
+      <span class="str">"command"</span>: <span class="str">"npx"</span>,
+      <span class="str">"args"</span>: [<span class="str">"clude-bot"</span>, <span class="str">"mcp-serve"</span>],
+      <span class="str">"env"</span>: {
+        <span class="str">"CORTEX_API_KEY"</span>: <span class="str">"your-api-key"</span>
+      }
+    }
+  }
+}
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">IDE Support</div>
+        Any MCP-compatible editor works: Claude Code, Cursor, Windsurf, etc. The server communicates over stdio.
       </div>
     </div>
 
@@ -890,7 +989,7 @@ console.<span class="fn">log</span>(<span class="str">`Decayed ${count} memories
 <span class="kw">const</span> stats = <span class="kw">await</span> brain.<span class="fn">stats</span>();
 <span class="cmt">// {
 //   total: 1500,
-//   byType: { episodic: 900, semantic: 400, procedural: 120, self_model: 80 },
+//   byType: { episodic: 900, semantic: 400, procedural: 120, self_model: 80, introspective: 45 },
 //   avgImportance: 0.65,
 //   avgDecay: 0.88,
 //   topTags: [{ tag: 'market', count: 200 }, ...],
@@ -1011,6 +1110,7 @@ brain.<span class="fn">on</span>(<span class="str">'memory:stored'</span>, (payl
         <tr><td>Dream cycles</td><td><code>anthropic</code></td><td><code>dream()</code> throws clear error</td></tr>
         <tr><td>On-chain commits</td><td><code>solana</code></td><td>Silently skipped</td></tr>
         <tr><td>Emergence output</td><td><code>onEmergence</code></td><td>Output discarded (SDK never tweets)</td></tr>
+        <tr><td>Active reflection</td><td><code>anthropic</code></td><td><code>reflect()</code> throws clear error</td></tr>
       </table>
 
       <div class="callout">

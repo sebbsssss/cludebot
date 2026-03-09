@@ -293,6 +293,9 @@
       margin-top: 16px; font-size: 11px; color: var(--text-faint);
       letter-spacing: 1px;
     }
+    .memory-grid > .memory-card:nth-child(5) {
+      grid-column: 1 / -1;
+    }
 
     /* ── DREAM CYCLE ── */
     .dream-phases {
@@ -539,9 +542,9 @@
   <section class="hero">
     <div class="hero-inner">
       <div class="hero-text">
-        <div class="hero-label">Memory Infrastructure for AI</div>
-        <h1 class="hero-title">We separate <em>memory</em> from the model.</h1>
-        <p class="hero-sub">Your agent's brain shouldn't be locked inside someone else's API. CLUDE gives AI agents private, portable, persistent memory that you own and control.</p>
+        <div class="hero-label">An AI that actually remembers</div>
+        <h1 class="hero-title">Your AI should <em>remember</em> you.</h1>
+        <p class="hero-sub">Every time you start a new chat, your AI forgets everything. CLUDE gives AI agents a permanent brain — private, portable, and yours to keep. Switch models, switch tools, your agent still remembers.</p>
         <div class="hero-ca" style="margin-bottom: 24px; padding: 12px 16px; background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.08); display: inline-block;">
           <div style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px;">Contract Address</div>
           <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; word-break: break-all; cursor: pointer;" onclick="navigator.clipboard.writeText('AWGCDT2gd8JadbYbYyZy1iKxfWokPNgrEQoU24zUpump').then(function(){this.textContent='Copied!'}.bind(this)).catch(function(){});" title="Click to copy">AWGCDT2gd8JadbYbYyZy1iKxfWokPNgrEQoU24zUpump</div>
@@ -561,23 +564,23 @@
   <section class="section section-alt">
     <div class="section-inner reveal">
       <div class="section-label">The Problem</div>
-      <div class="section-title">AI memory is a walled garden.</div>
-      <div class="section-desc">Every AI platform keeps your agent's memory locked inside their servers. Switch providers and your agent loses everything. That's not a feature — it's a trap.</div>
+      <div class="section-title">AI has amnesia. By design.</div>
+      <div class="section-desc">ChatGPT, Claude, Gemini — they all forget you after every conversation. And the little they do remember? It's locked inside their servers. Switch providers and your agent starts from zero.</div>
       <div class="problem-grid">
         <div class="problem-card">
           <div class="problem-card-num">01</div>
-          <div class="problem-card-title">Locked inside the model</div>
-          <div class="problem-card-text">Context windows flush after every conversation. Memory is ephemeral, trapped in someone else's infrastructure. You own nothing.</div>
+          <div class="problem-card-title">Every conversation starts from scratch</div>
+          <div class="problem-card-text">AI chatbots flush their memory after every session. Weeks of context, preferences, and history — gone. You repeat yourself endlessly.</div>
         </div>
         <div class="problem-card">
           <div class="problem-card-num">02</div>
           <div class="problem-card-title">No privacy, no sovereignty</div>
-          <div class="problem-card-text">Every conversation logged. Every memory stored on corporate servers. Your agent's cognitive history is their training data.</div>
+          <div class="problem-card-text">Everything you say is logged on corporate servers. Your conversations train their next model. Your agent's memory is their product.</div>
         </div>
         <div class="problem-card">
           <div class="problem-card-num">03</div>
-          <div class="problem-card-title">Vendor lock-in by design</div>
-          <div class="problem-card-text">Switch from OpenAI to Claude to Llama? Start from zero. No portability, no interop, no way to take your agent's learned experience with you.</div>
+          <div class="problem-card-title">Trapped with one provider</div>
+          <div class="problem-card-text">Want to switch from ChatGPT to Claude? Start over. No way to bring what your AI learned about you. That's not a technical limitation — it's a business strategy.</div>
         </div>
       </div>
     </div>
@@ -625,22 +628,22 @@
       <div class="solution-grid">
         <div class="solution-text">
           <div class="section-label">The Stack</div>
-          <div class="section-title">Three layers. Complete sovereignty.</div>
-          <div class="section-desc">CLUDE Brain handles storage and recall. CLUDE Cortex connects any model to the memory layer. Venice AI provides private inference. Solana makes it verifiable. Each layer is independent — swap any piece without losing the rest.</div>
+          <div class="section-title">Four layers. You own every one.</div>
+          <div class="section-desc">CLUDE Brain stores and organizes memories. CLUDE Cortex connects any AI model to the memory layer. Venice AI keeps everything private. Solana makes it tamper-proof. Each layer is independent — swap any piece without losing the rest.</div>
         </div>
         <div class="layer-stack">
           <div class="layer-card">
             <div class="layer-num">01</div>
             <div class="layer-content">
               <div class="layer-title">CLUDE Brain</div>
-              <div class="layer-desc">The memory system. Four tiers with biological decay, hybrid vector + keyword retrieval, association graphs, dream cycles. Stanford Generative Agents architecture.</div>
+              <div class="layer-desc">The memory system. Five types of memory that fade naturally, just like a real brain. Conversations, knowledge, learned habits, self-awareness, and original thoughts — all organized and searchable.</div>
             </div>
           </div>
           <div class="layer-card">
             <div class="layer-num">02</div>
             <div class="layer-content">
               <div class="layer-title">CLUDE Cortex</div>
-              <div class="layer-desc">The integration layer. Connects any LLM to the Brain. Handles recall pipelines, entity extraction, memory scoring, and on-chain commitment. One SDK, any model.</div>
+              <div class="layer-desc">The connector. Plugs any AI model into the Brain — Claude, GPT, Llama, or any open-source model. Works as an SDK in your code or as an MCP server in your IDE (Claude Code, Cursor, etc.).</div>
             </div>
           </div>
           <div class="layer-card">
@@ -666,8 +669,8 @@
   <section class="section">
     <div class="section-inner reveal">
       <div class="section-label">CLUDE Brain</div>
-      <div class="section-title">Four tiers. Biological decay.</div>
-      <div class="section-desc">Each memory type persists at a different rate, mirroring how biological memory works. Events fade. Knowledge persists. Identity endures.</div>
+      <div class="section-title">Five memory types. Natural decay.</div>
+      <div class="section-desc">Like a real brain, different kinds of memories last different amounts of time. A conversation from last week fades. A lesson you learned sticks. Your sense of self barely changes at all.</div>
       <div class="memory-grid">
         <div class="memory-card" style="--card-color: #2244ff;">
           <div class="memory-card-label">Type 01</div>
@@ -692,6 +695,12 @@
           <div class="memory-card-title">Self-Model</div>
           <div class="memory-card-desc">Evolving self-understanding. Updated through recursive introspection during dream cycles. Nearly permanent.</div>
           <div class="memory-card-decay">Decay: 1% / day</div>
+        </div>
+        <div class="memory-card" style="--card-color: #d46a3a;">
+          <div class="memory-card-label">Type 05</div>
+          <div class="memory-card-title">Introspective</div>
+          <div class="memory-card-desc">Original thoughts. Journal entries from the agent's meditation cycle — its own ideas, questions, and inner monologue. Not reactions to input; self-generated thinking.</div>
+          <div class="memory-card-decay">Decay: 2% / day</div>
         </div>
       </div>
     </div>
@@ -738,8 +747,48 @@
     </div>
   </section>
 
-  <!-- ═══════════════ VENICE / PRIVACY ═══════════════ -->
+  <!-- ═══════════════ ACTIVE REFLECTION ═══════════════ -->
   <section class="section">
+    <div class="section-inner reveal">
+      <div class="solution-grid">
+        <div>
+          <div class="section-label">Active Reflection</div>
+          <div class="section-title">Between dreams, the Brain journals.</div>
+          <div class="section-desc" style="margin-bottom: 32px;">Every 3 hours, the agent pauses to think on its own — not responding to anyone, not processing old memories, just reflecting. Like a person writing in a diary. The result is stored as a new kind of memory: introspective.</div>
+          <div style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">Dream Cycle vs. Active Reflection</div>
+          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.8; margin-bottom: 16px;">The dream cycle looks <strong>backward</strong> — consolidating, compressing, and cleaning up existing memories. Like sleep.</p>
+          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.8; margin-bottom: 16px;">Active reflection looks <strong>forward</strong> — generating new thoughts, making unexpected connections, forming opinions. Like journaling.</p>
+          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.8;">Together, they give the agent both consolidation and generative thinking. Most AI agents only react. This one also thinks on its own.</p>
+        </div>
+        <div class="layer-stack">
+          <div class="layer-card">
+            <div class="layer-num">01</div>
+            <div class="layer-content">
+              <div class="layer-title">Seed Selection</div>
+              <div class="layer-desc">Pulls recent events, high-importance memories, and one random older memory for serendipitous connections.</div>
+            </div>
+          </div>
+          <div class="layer-card">
+            <div class="layer-num">02</div>
+            <div class="layer-content">
+              <div class="layer-title">Free-Write Journal</div>
+              <div class="layer-desc">The agent writes freely about whatever is on its mind — exploring ideas, questioning beliefs, noticing patterns in its own thinking.</div>
+            </div>
+          </div>
+          <div class="layer-card">
+            <div class="layer-num">03</div>
+            <div class="layer-content">
+              <div class="layer-title">Store & Connect</div>
+              <div class="layer-desc">The journal entry becomes an introspective memory, linked to the seed memories that inspired it. A chain of original thought builds over time.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ VENICE / PRIVACY ═══════════════ -->
+  <section class="section section-alt">
     <div class="section-inner reveal">
       <div class="venice-grid">
         <div>
@@ -790,7 +839,7 @@
   </section>
 
   <!-- ═══════════════ ON-CHAIN ═══════════════ -->
-  <section class="section section-alt">
+  <section class="section">
     <div class="section-inner reveal">
       <div class="onchain-content">
         <div>
@@ -832,15 +881,14 @@
     </div>
   </section>
 
-  <!-- ═══════════════ PORTABILITY (WIP) ═══════════════ -->
-  <section class="section">
+  <!-- ═══════════════ PORTABILITY ═══════════════ -->
+  <section class="section section-alt">
     <div class="section-inner reveal">
       <div class="onchain-content">
         <div>
-          <div class="wip-badge">Work in Progress</div>
           <div class="section-label">Memory Portability</div>
           <div class="section-title">Take your agent's brain anywhere.</div>
-          <div class="section-desc" style="margin-bottom: 0;">We're building memory import/export — pack your agent's entire cognitive history into a portable format and move it to any provider, any infrastructure, any model. A working version exists today. Full production release coming soon.</div>
+          <div class="section-desc" style="margin-bottom: 0;">Pack your agent's entire memory into a portable file and move it anywhere — different provider, different server, different model. Export, import, and verify on-chain that nothing was tampered with.</div>
         </div>
         <div class="layer-stack">
           <div class="layer-card">
@@ -870,7 +918,7 @@
   </section>
 
   <!-- ═══════════════ GET STARTED ═══════════════ -->
-  <section class="section section-alt install-section">
+  <section class="section install-section">
     <div class="section-inner reveal">
       <div class="section-label">Get Started</div>
       <div class="section-title">Three lines to a brain.</div>
@@ -882,7 +930,7 @@
       </div>
       <div class="stats-row">
         <div class="stat">
-          <div class="stat-value">4</div>
+          <div class="stat-value">5</div>
           <div class="stat-label">Memory types</div>
         </div>
         <div class="stat">
