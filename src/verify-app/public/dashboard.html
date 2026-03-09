@@ -21,10 +21,12 @@
     worker-src 'self' blob:;
   ">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="preconnect" href="https://esm.sh">
-  <link rel="modulepreload" href="https://esm.sh/react@19">
-  <link rel="modulepreload" href="https://esm.sh/react-dom@19">
-  <link rel="modulepreload" href="https://esm.sh/@privy-io/react-auth@2?external=react,react-dom">
+  <link rel="preconnect" href="https://esm.sh" crossorigin>
+  <link rel="preconnect" href="https://auth.privy.io" crossorigin>
+  <link rel="dns-prefetch" href="https://relay.walletconnect.com">
+  <link rel="modulepreload" href="https://esm.sh/react@19?bundle">
+  <link rel="modulepreload" href="https://esm.sh/react-dom@19/client?bundle">
+  <link rel="modulepreload" href="https://esm.sh/@privy-io/react-auth@2.4.0?external=react,react-dom&bundle-deps">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1399,29 +1401,31 @@
   <!-- Privy SDK -->
   <script type="importmap">
   { "imports": {
-    "react": "https://esm.sh/react@19",
-    "react-dom": "https://esm.sh/react-dom@19",
-    "react-dom/client": "https://esm.sh/react-dom@19/client",
-    "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime"
+    "react": "https://esm.sh/react@19?bundle",
+    "react-dom": "https://esm.sh/react-dom@19?bundle",
+    "react-dom/client": "https://esm.sh/react-dom@19/client?bundle",
+    "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime?bundle"
   }}
   </script>
   <script type="module">
   (async () => {
     var fallback = document.getElementById('privyFallback');
     try {
-      var [React, ReactDOM, PrivyModule] = await Promise.all([
+      // Load everything in parallel — bundle-deps collapses sub-dependencies into single files
+      var [React, ReactDOM, PrivyModule, SolanaModule] = await Promise.all([
         import('react'),
         import('react-dom/client'),
-        import('https://esm.sh/@privy-io/react-auth@2?external=react,react-dom'),
+        import('https://esm.sh/@privy-io/react-auth@2.4.0?external=react,react-dom&bundle-deps'),
+        import('https://esm.sh/@privy-io/react-auth@2.4.0/solana?external=react,react-dom&bundle-deps').catch(function() { return null; }),
       ]);
 
-      // Try loading Solana connectors — may fail on some CDN versions
       var solanaConnectors = null;
-      try {
-        var SolanaModule = await import('https://esm.sh/@privy-io/react-auth@2.4.0/solana?external=react,react-dom&bundle-deps');
-        solanaConnectors = SolanaModule.toSolanaWalletConnectors({ shouldAutoConnect: true });
-      } catch (e) {
-        console.warn('Solana connectors failed to load, using default wallet detection:', e.message);
+      if (SolanaModule && SolanaModule.toSolanaWalletConnectors) {
+        try {
+          solanaConnectors = SolanaModule.toSolanaWalletConnectors({ shouldAutoConnect: true });
+        } catch (e) {
+          console.warn('Solana connectors init failed:', e.message);
+        }
       }
 
       var { PrivyProvider, usePrivy, useWallets } = PrivyModule;
