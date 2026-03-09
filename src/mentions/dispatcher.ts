@@ -252,7 +252,7 @@ async function handleGeneralReply(
   const hasHistory = userHistory.length > 0;
   const creatorMode = isCreator(authorId);
   let instruction = loadInstruction('general', 'Respond helpfully and concisely.') +
-    (hasHistory ? ` You have a history with this person — this is a CONTINUING relationship, not a new conversation. Reference past interactions naturally, like catching up with someone you know.` : '') +
+    (hasHistory ? ` You have history with this person. DO NOT list or enumerate past interactions. Instead, weave in subtle references — a callback, an inside joke, a "like you mentioned before" — the way a friend would. The goal is warmth and familiarity, not a recap.` : '') +
     (memories.length > 0 ? ' You have memories of past interactions — use them naturally if relevant.' : '') +
     (hasStrategies ? ' You have learned behavioral strategies from past outcomes — apply them.' : '') +
     (threadContext ? ' You can see the conversation thread — stay on topic.' : '') +
@@ -265,7 +265,7 @@ async function handleGeneralReply(
 
   if (creatorMode) {
     instruction = loadInstruction('creator', 'Your creator is talking to you. Be warm and helpful.') +
-      (hasHistory ? ' You have a long history with your creator — this is an ongoing relationship. Pick up where you left off.' : '') +
+      (hasHistory ? ' You have a long history with your creator. Be natural — no recaps, just pick up like you always do.' : '') +
       (memories.length > 0 ? ' You have memories of past interactions with them — reference them naturally.' : '') +
       (threadContext ? ' You can see the conversation thread.' : '');
   }
@@ -284,14 +284,14 @@ async function handleGeneralReply(
       .filter(m => !memories.some(rm => rm.id === m.id)) // don't duplicate
       .slice(0, 20);
     if (historyItems.length > 0) {
-      contextParts.push(`YOUR HISTORY WITH @${username} (past interactions, newest first):`);
+      contextParts.push(`BACKGROUND ON @${username} (for your internal context only — DO NOT recite this):`);
       for (const m of historyItems) {
         const ago = Math.round((Date.now() - new Date(m.created_at).getTime()) / (1000 * 60 * 60));
         const timeLabel = ago < 1 ? 'just now' : ago < 24 ? `${ago}h ago` : `${Math.round(ago / 24)}d ago`;
         contextParts.push(`- [${timeLabel}] ${m.summary}`);
       }
       contextParts.push('');
-      contextParts.push('Continue naturally from where you left off. Don\'t re-introduce yourself or start fresh.');
+      contextParts.push('USE THIS SUBTLY. Drop hints, callbacks, natural references. Never list history. Think: how would a friend who remembers everything respond? Not "last time you said X" but naturally incorporating what you know about them into your tone, recommendations, and personality.');
       contextParts.push('');
     }
   }
