@@ -11,7 +11,7 @@ Three ways to give your AI agent persistent cognitive memory, from simplest to m
 ### Store a memory
 
 ```bash
-curl -X POST https://clude.io/api/demo/store \
+curl -X POST https://clude.io/api/memory/store \
   -H "Content-Type: application/json" \
   -d '{
     "content": "API rate limit is 100 requests per minute",
@@ -25,7 +25,7 @@ curl -X POST https://clude.io/api/demo/store \
 ### Recall memories
 
 ```bash
-curl -X POST https://clude.io/api/demo/recall \
+curl -X POST https://clude.io/api/memory/recall \
   -H "Content-Type: application/json" \
   -d '{
     "query": "rate limits",
@@ -39,7 +39,7 @@ curl -X POST https://clude.io/api/demo/recall \
 import httpx
 
 class CludeMemory:
-    def __init__(self, base_url="https://clude.io/api/demo"):
+    def __init__(self, base_url="https://clude.io/api/memory"):
         self.base = base_url
 
     async def store(self, content, summary, type="semantic", importance=0.5):
@@ -70,7 +70,7 @@ npm install clude-bot
 ### Self-hosted mode (your own Supabase + Voyage keys)
 
 ```typescript
-import { Cortex } from 'clude-bot/sdk';
+import { Cortex } from 'clude-bot';
 
 const brain = new Cortex({
   supabase: {
@@ -83,7 +83,7 @@ const brain = new Cortex({
     model: 'voyage-4-large',
     dimensions: 1024,
   },
-  ownerWallet: 'my-agent-001',  // isolates your agent's memories
+  agentId: 'my-agent-001',  // isolates your agent's memories
 });
 
 await brain.init();
@@ -117,11 +117,11 @@ const strategies = await brain.recall({
 
 ### Memory isolation
 
-Each agent gets its own memory space via `ownerWallet`:
+Each agent gets its own memory space via `agentId`:
 
 ```typescript
-const agentA = new Cortex({ ownerWallet: 'agent-a', ... });
-const agentB = new Cortex({ ownerWallet: 'agent-b', ... });
+const agentA = new Cortex({ agentId: 'agent-a', ... });
+const agentB = new Cortex({ agentId: 'agent-b', ... });
 // Completely isolated. Agent A can't see Agent B's memories.
 ```
 
@@ -131,7 +131,7 @@ const agentB = new Cortex({ ownerWallet: 'agent-b', ... });
 const brain = new Cortex({
   // ... supabase + voyage config
   anthropic: { apiKey: process.env.ANTHROPIC_API_KEY },
-  ownerWallet: 'my-agent',
+  agentId: 'my-agent',
 });
 await brain.init();
 
@@ -199,18 +199,17 @@ await brain.init();
 
 **Best for:** Adding memory to Claude Desktop, Claude Code, Cursor, Windsurf, or any MCP-compatible agent.
 
-The MCP server is in the [clude monorepo](https://github.com/sebbsssss/clude/tree/main/packages/mcp). It wraps the SDK into 5 MCP tools.
+It wraps the SDK into 5 MCP tools.
 
-### Setup (Claude Code)
+### Quick install
+
+Local mode uses GTE-Small embeddings (~30MB download on first run, fully offline after).
 
 ```bash
-git clone https://github.com/sebbsssss/clude.git
-cd clude/packages/mcp
-npm install
-claude mcp add clude -- npx tsx src/index.ts
+npx clude-bot mcp-install --local
 ```
 
-### Setup (Claude Desktop)
+### Manual setup (Claude Desktop)
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -219,7 +218,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "clude": {
       "command": "npx",
-      "args": ["tsx", "/path/to/clude/packages/mcp/src/index.ts"]
+      "args": ["clude-bot", "mcp-serve", "--local"]
     }
   }
 }
@@ -227,23 +226,9 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ### Cloud mode
 
-```json
-{
-  "mcpServers": {
-    "clude": {
-      "command": "npx",
-      "args": ["tsx", "/path/to/clude/packages/mcp/src/index.ts"],
-      "env": {
-        "CLUDE_MODE": "cloud",
-        "CLUDE_SUPABASE_URL": "https://your-project.supabase.co",
-        "CLUDE_SUPABASE_KEY": "your-service-key",
-        "CLUDE_VOYAGE_KEY": "your-voyage-api-key",
-        "CLUDE_OWNER_WALLET": "your-agent-id"
-      }
-    }
-  }
-}
-```
+Cloud mode requires a Supabase instance and Voyage API key. See the [README](https://github.com/sebbsssss/cludebot) for setup.
+
+Remove `--local` from the args above and set the required environment variables.
 
 ### MCP Tools
 
@@ -252,7 +237,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 | `remember` | Store a memory (content, summary, type, tags, importance) |
 | `recall` | Search memories by query, type, or tags |
 | `forget` | Delete a memory by ID |
-| `memory_stats` | Total count and breakdown by type |
+| `stats` | Total count and breakdown by type |
 | `visualize` | 3D brain visualization in browser |
 
 ---
@@ -333,7 +318,7 @@ const brain = new Cortex({
     model: 'voyage-4-large',
     dimensions: 1024,
   },
-  ownerWallet: 'yoshi-openclaw-agent',
+  agentId: 'yoshi-openclaw-agent',
 });
 
 await brain.init();
@@ -357,11 +342,7 @@ Yoshi's memories are completely isolated from the main Clude bot's 20,567 memori
 | **Voyage AI** | Embeddings (voyage-4-large) | [voyageai.com](https://dash.voyageai.com) |
 | **Anthropic** | Dream cycle + reflection (optional) | [anthropic.com](https://console.anthropic.com) |
 
-### Supabase Setup
-
-1. Create project at supabase.com
-2. Run the migrations from `migrations/` in the SQL editor
-3. Copy project URL + service key
+Cloud mode requires a Supabase instance and Voyage API key. See the [README](https://github.com/sebbsssss/cludebot) for setup.
 
 ---
 
@@ -379,7 +360,7 @@ Yoshi's memories are completely isolated from the main Clude bot's 20,567 memori
 
 **Best for:** OpenClaw agents, any agent that reads SKILL.md files.
 
-Install from ClawHub:
+If you're on OpenClaw:
 ```bash
 clawhub install clude-memory
 ```

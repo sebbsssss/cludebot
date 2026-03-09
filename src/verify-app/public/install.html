@@ -218,7 +218,7 @@
   <h1>Give your agent <span>real memory</span></h1>
 
   <p class="lead">
-    Two commands. Your agent remembers everything across sessions.
+    One command. Your agent remembers everything across sessions.
     Works locally, fully offline, free. No API keys needed.
   </p>
 
@@ -275,17 +275,15 @@
   <h2>Install in 30 seconds</h2>
 
   <h3>Local mode (recommended)</h3>
-  <p>No API keys. No network. No cost. SQLite + local embeddings.</p>
+  <p>No API keys. No network. No cost. SQLite + local embeddings. Local mode uses GTE-Small embeddings (~30MB download on first run, fully offline after).</p>
 <pre>
-npm install -g clude-bot
-clude-bot mcp-install --local
+npx clude-bot mcp-install --local
 </pre>
 
   <h3>Cloud mode (for portability)</h3>
   <p>Memories sync across devices and agents.</p>
 <pre>
-npm install -g clude-bot
-clude-bot mcp-install
+npx clude-bot mcp-install
 </pre>
 
   <h3>Manual MCP config</h3>
@@ -306,7 +304,7 @@ clude-bot mcp-install
     <li><strong>Claude Desktop:</strong> <code>claude_desktop_config.json</code></li>
     <li><strong>Cursor:</strong> <code>.cursor/mcp.json</code></li>
     <li><strong>DeerFlow:</strong> <code>extensions_config.json</code></li>
-    <li><strong>OpenClaw:</strong> <code>clawhub install clude-memory</code></li>
+    <li><strong>If you're on OpenClaw:</strong> <code>clawhub install clude-memory</code></li>
   </ul>
 
   <!-- ── TOOLS ────────────────────────────────────── -->
@@ -324,7 +322,7 @@ clude-bot mcp-install
 
   <!-- ── MEMORY TYPES ─────────────────────────────── -->
 
-  <h2>4 memory types</h2>
+  <h2>5 memory types</h2>
 
   <div class="card">
     <p><strong>episodic</strong> — Events and interactions<br>
@@ -338,6 +336,9 @@ clude-bot mcp-install
 
     <p><strong>self_model</strong> — Self-knowledge<br>
     <span style="color: var(--text-faint)">"I tend to over-explain, keep it concise"</span></p>
+
+    <p><strong>introspective</strong> — Original thoughts and pattern recognition<br>
+    <span style="color: var(--text-faint)">"The pattern across my last 10 tasks suggests..."</span></p>
   </div>
 
   <!-- ── COMPOUND EFFECT ──────────────────────────── -->
@@ -401,7 +402,7 @@ npx clude-bot import ./memory/    <span class="comment"># imports all .md files<
 
   <div class="card">
     <p><strong>GitHub:</strong> <a href="https://github.com/sebbsssss/cludebot" style="color: var(--blue)">sebbsssss/cludebot</a> — MIT license, fully open source</p>
-    <p><strong>npm:</strong> <a href="https://www.npmjs.com/package/clude-bot" style="color: var(--blue)">clude-bot</a> — v2.7.0</p>
+    <p><strong>npm:</strong> <a href="https://www.npmjs.com/package/clude-bot" style="color: var(--blue)">clude-bot</a></p>
     <p><strong>Benchmarks:</strong> 83.9/100 overall. <a href="/benchmark" style="color: var(--blue)">LoCoMo (ACL 2024): 100% accuracy</a></p>
     <p><strong>Production:</strong> 20,000+ memories on the live Clude agent</p>
     <p><strong>Tests:</strong> 147 tests across the full ecosystem, all passing</p>
@@ -411,10 +412,9 @@ npx clude-bot import ./memory/    <span class="comment"># imports all .md files<
   <!-- ── CTA ──────────────────────────────────────── -->
 
   <div class="cta">
-    <h2>Two commands. <span style="color: var(--blue)">Your agent remembers.</span></h2>
+    <h2>One command. <span style="color: var(--blue)">Your agent remembers.</span></h2>
 <pre>
-npm install -g clude-bot
-clude-bot mcp-install
+npx clude-bot mcp-install --local
 </pre>
     <p>
       <a href="https://github.com/sebbsssss/cludebot" style="color: var(--blue)">GitHub</a>&nbsp;&nbsp;·&nbsp;&nbsp;
