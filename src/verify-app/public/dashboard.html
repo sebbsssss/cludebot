@@ -697,11 +697,17 @@
         </div>
         <div class="form-group">
           <label class="form-label">Type</label>
-          <select class="form-select" id="agentType">
+          <select class="form-select" id="agentType" onchange="onAgentTypeChange()">
             <option value="claude_code">Claude Code</option>
             <option value="script">Script</option>
             <option value="webhook">Webhook</option>
             <option value="clude_bot">Clude Bot</option>
+            <option value="content">Content Agent</option>
+            <option value="research">Research Agent</option>
+            <option value="dev">Dev Agent</option>
+            <option value="testing">Testing Agent</option>
+            <option value="design_audit">Design Audit Agent</option>
+            <option value="customer_journey">Customer Journey Agent</option>
           </select>
         </div>
         <div class="form-group">
@@ -950,6 +956,9 @@
       }
       el.innerHTML = items.map(function(t) {
         var agentName = t.dashboard_agents ? t.dashboard_agents.name : 'Unassigned';
+        var canRun = t.status === 'pending' && t.agent_id;
+        var canRetry = t.status === 'failed' && t.agent_id;
+        var hasResult = t.metadata && t.metadata.result;
         return '<div class="task-card" onclick="openTaskDetail(\'' + t.id + '\')">' +
           '<div class="task-title">' + esc(t.title) + '</div>' +
           '<div class="task-meta">' +
@@ -957,7 +966,10 @@
             '<span class="priority-badge priority-' + t.priority + '">' + t.priority + '</span>' +
             (t.status === 'failed' ? '<span class="priority-badge priority-critical">failed</span>' : '') +
             (t.status === 'cancelled' ? '<span class="priority-badge priority-low">cancelled</span>' : '') +
+            (hasResult ? '<span class="priority-badge" style="background:rgba(34,68,255,0.08);color:var(--blue);">has result</span>' : '') +
           '</div>' +
+          (canRun ? '<button class="btn btn-sm btn-primary" style="margin-top:6px;font-size:9px;padding:3px 8px;" onclick="event.stopPropagation();runTask(\'' + t.id + '\')">Run</button>' : '') +
+          (canRetry ? '<button class="btn btn-sm" style="margin-top:6px;font-size:9px;padding:3px 8px;" onclick="event.stopPropagation();retryTask(\'' + t.id + '\')">Retry</button>' : '') +
         '</div>';
       }).join('');
     }
@@ -1134,27 +1146,64 @@
       document.getElementById('taskDetailTitle').textContent = t.title;
 
       var agentName = t.dashboard_agents ? t.dashboard_agents.name : 'Unassigned';
+      var meta = t.metadata || {};
 
-      document.getElementById('taskDetailBody').innerHTML =
+      var html =
         (t.description ? '<div style="margin-bottom:14px;font-size:12px;color:var(--text-muted);line-height:1.7;">' + esc(t.description) + '</div>' : '') +
-        '<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:10px;">' +
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:10px;margin-bottom:14px;">' +
           '<div><span style="color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;">Status</span><br><strong>' + t.status + '</strong></div>' +
           '<div><span style="color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;">Priority</span><br><span class="priority-badge priority-' + t.priority + '">' + t.priority + '</span></div>' +
           '<div><span style="color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;">Agent</span><br><strong>' + esc(agentName) + '</strong></div>' +
           '<div><span style="color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;">Created</span><br>' + relativeTime(t.created_at) + '</div>' +
           (t.completed_at ? '<div><span style="color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;">Completed</span><br>' + relativeTime(t.completed_at) + '</div>' : '') +
+          (meta.model ? '<div><span style="color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;">Model</span><br>' + esc(meta.model) + '</div>' : '') +
+          (meta.cost_usd ? '<div><span style="color:var(--text-faint);letter-spacing:1px;text-transform:uppercase;">Cost</span><br>$' + parseFloat(meta.cost_usd).toFixed(4) + '</div>' : '') +
         '</div>';
+
+      // Show result if present
+      if (meta.result) {
+        html += '<div style="margin-bottom:14px;">' +
+          '<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px;">Result</div>' +
+          '<div style="background:#fff;border:1px solid #e0e0da;padding:12px;font-size:11px;line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;">' + esc(String(meta.result)) + '</div>' +
+        '</div>';
+      }
+
+      // Show error if present
+      if (meta.error) {
+        html += '<div style="margin-bottom:14px;">' +
+          '<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#9a3030;margin-bottom:6px;">Error</div>' +
+          '<div style="background:rgba(154,48,48,0.04);border:1px solid rgba(154,48,48,0.15);padding:12px;font-size:11px;line-height:1.5;color:#9a3030;">' + esc(String(meta.error)) + '</div>' +
+        '</div>';
+      }
+
+      // Show execution log if present
+      if (meta.execution_log && meta.execution_log.length > 0) {
+        html += '<div>' +
+          '<details><summary style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-faint);cursor:pointer;margin-bottom:6px;">Execution Log (' + meta.execution_log.length + ' entries)</summary>' +
+          '<div style="background:#fff;border:1px solid #e0e0da;padding:10px;font-size:10px;line-height:1.6;font-family:var(--mono);max-height:200px;overflow-y:auto;">' +
+          meta.execution_log.map(function(l) { return '<div style="color:var(--text-muted);">' + esc(l) + '</div>'; }).join('') +
+          '</div></details>' +
+        '</div>';
+      }
+
+      document.getElementById('taskDetailBody').innerHTML = html;
 
       // Action buttons based on status
       var footer = document.getElementById('taskDetailFooter');
       var btns = '<button class="btn" onclick="closeTaskDetailModal()">Close</button>';
 
+      if (t.status === 'pending' && t.agent_id) {
+        btns = '<button class="btn btn-primary" onclick="runTask(\'' + id + '\');closeTaskDetailModal()">Run Agent</button>' + btns;
+      }
       if (t.status === 'pending') {
-        btns = '<button class="btn" onclick="updateTaskStatus(\'' + id + '\', \'in_progress\')">Start</button>' + btns;
+        btns = '<button class="btn" onclick="updateTaskStatus(\'' + id + '\', \'in_progress\')">Start Manual</button>' + btns;
       }
       if (t.status === 'in_progress') {
         btns = '<button class="btn btn-primary" onclick="updateTaskStatus(\'' + id + '\', \'completed\')">Complete</button>' + btns;
         btns = '<button class="btn btn-danger" onclick="updateTaskStatus(\'' + id + '\', \'failed\')">Failed</button>' + btns;
+      }
+      if (t.status === 'failed' && t.agent_id) {
+        btns = '<button class="btn btn-primary" onclick="retryTask(\'' + id + '\');closeTaskDetailModal()">Retry</button>' + btns;
       }
       if (t.status !== 'completed' && t.status !== 'cancelled') {
         btns = '<button class="btn" onclick="openTaskModal(\'' + id + '\');closeTaskDetailModal()">Edit</button>' + btns;
@@ -1189,6 +1238,45 @@
         await loadAll();
       } catch (err) {
         toast(err.message, true);
+      }
+    }
+
+    // ── RUN / RETRY TASKS ──
+    async function runTask(id) {
+      try {
+        await api('/tasks/' + id + '/execute', { method: 'POST' });
+        toast('Task executing...');
+        await loadAll();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    }
+
+    async function retryTask(id) {
+      try {
+        await api('/tasks/' + id + '/retry', { method: 'POST' });
+        toast('Retrying task...');
+        await loadAll();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    }
+
+    // ── AGENT TYPE PRESETS ──
+    var agentTypeDescriptions = {
+      content: 'Writes and posts tweets and threads for $CLUDE.',
+      research: 'Investigates topics and stores findings in memory.',
+      dev: 'Analyzes code, writes specs, and plans improvements.',
+      testing: 'Reviews plans, finds edge cases, and writes test reports.',
+      design_audit: 'Audits UX flows and suggests design improvements.',
+      customer_journey: 'Maps user journeys, analyzes community patterns.',
+    };
+
+    function onAgentTypeChange() {
+      var type = document.getElementById('agentType').value;
+      var desc = agentTypeDescriptions[type];
+      if (desc && !document.getElementById('agentEditId').value) {
+        document.getElementById('agentDesc').value = desc;
       }
     }
 

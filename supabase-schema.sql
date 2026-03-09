@@ -348,7 +348,7 @@ $$;
 CREATE TABLE IF NOT EXISTS dashboard_agents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  type TEXT DEFAULT 'claude_code' CHECK (type IN ('claude_code', 'script', 'webhook', 'clude_bot')),
+  type TEXT DEFAULT 'claude_code' CHECK (type IN ('claude_code', 'script', 'webhook', 'clude_bot', 'content', 'research', 'dev', 'testing', 'design_audit', 'customer_journey')),
   status TEXT DEFAULT 'offline' CHECK (status IN ('online', 'offline', 'paused', 'error')),
   description TEXT,
   config JSONB DEFAULT '{}',

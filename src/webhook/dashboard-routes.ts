@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getDb } from '../core/database';
 import { createChildLogger } from '../core/logger';
 import { requirePrivyAuth } from './privy-auth';
+import { executeTaskManually, AGENT_TYPE_CONFIGS } from '../agents';
 
 const log = createChildLogger('dashboard');
 
@@ -436,6 +437,57 @@ export function dashboardRoutes(): Router {
       log.error({ err }, 'Delete task error');
       res.status(500).json({ error: 'Failed to delete task' });
     }
+  });
+
+  // POST /tasks/:id/execute — manually trigger task execution
+  router.post('/tasks/:id/execute', async (req: Request, res: Response) => {
+    try {
+      const result = await executeTaskManually(req.params.id);
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ status: 'executing', taskId: req.params.id });
+    } catch (err) {
+      log.error({ err }, 'Execute task error');
+      res.status(500).json({ error: 'Failed to execute task' });
+    }
+  });
+
+  // POST /tasks/:id/retry — retry a failed task
+  router.post('/tasks/:id/retry', async (req: Request, res: Response) => {
+    try {
+      const db = getDb();
+      // Reset to pending first, then execute
+      await db.from('dashboard_tasks').update({
+        status: 'pending',
+        updated_at: new Date().toISOString(),
+      }).eq('id', req.params.id).in('status', ['failed', 'completed']);
+
+      const result = await executeTaskManually(req.params.id);
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ status: 'executing', taskId: req.params.id });
+    } catch (err) {
+      log.error({ err }, 'Retry task error');
+      res.status(500).json({ error: 'Failed to retry task' });
+    }
+  });
+
+  // ── AGENT TYPES ──────────────────────────────────────
+
+  // GET /agent-types — list available agent type configs for UI presets
+  router.get('/agent-types', (_req: Request, res: Response) => {
+    const types = Object.values(AGENT_TYPE_CONFIGS).map(c => ({
+      type: c.type,
+      label: c.label,
+      description: c.description,
+      model: c.model,
+      allowedTools: c.allowedTools,
+    }));
+    res.json(types);
   });
 
   // ── ACTIVITY ──────────────────────────────────────────

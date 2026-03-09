@@ -107,4 +107,9 @@ export const config = {
     appSecret: optional('PRIVY_APP_SECRET', ''),
     jwksUrl: optional('PRIVY_JWKS_URL', ''),
   },
+  executor: {
+    pollMs: parseInt(optional('EXECUTOR_POLL_MS', '15000'), 10),
+    maxConcurrent: parseInt(optional('EXECUTOR_MAX_CONCURRENT', '2'), 10),
+    timeoutMs: parseInt(optional('EXECUTOR_TIMEOUT_MS', '300000'), 10),
+  },
 } as const;

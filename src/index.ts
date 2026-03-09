@@ -24,6 +24,7 @@ if (require.main === module) {
   const { startDreamCycle, stopDreamCycle } = require('./features/dream-cycle');
   const { startActiveReflection, stopActiveReflection } = require('./features/active-reflection');
   const { startCampaignTracker, stopCampaignTracker } = require('./features/campaign-tracker');
+  const { startTaskExecutor, stopTaskExecutor } = require('./agents');
   const { startServer } = require('./webhook/server');
   const { getBotWallet } = require('./core/solana-client');
   const { createChildLogger } = require('./core/logger');
@@ -127,6 +128,10 @@ if (require.main === module) {
       log.info('X sentiment monitor started — broadcasting to Telegram');
     }
 
+    // Start task executor — picks up dashboard tasks and runs agents
+    startTaskExecutor();
+    log.info('Task executor started — dashboard agents active');
+
     log.info('All systems operational. Unfortunately.');
 
     // Graceful shutdown
@@ -139,6 +144,7 @@ if (require.main === module) {
       stopDreamCycle();
       stopActiveReflection();
       stopCampaignTracker();
+      stopTaskExecutor();
       if (config.features.telegramEnabled) {
         const { stopXSentimentMonitor } = require('./features/x-sentiment-monitor');
         stopXSentimentMonitor();
