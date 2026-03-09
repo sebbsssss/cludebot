@@ -31,6 +31,7 @@ import {
 } from '../core/memory';
 import { createChildLogger } from '../core/logger';
 import { TWEET_MAX_LENGTH } from '../utils/constants';
+import { findClinamen } from './clinamen';
 
 const log = createChildLogger('active-reflection');
 
@@ -108,15 +109,34 @@ async function selectSeeds(): Promise<{ seeds: Memory[]; theme: string }> {
     .sort((a, b) => b.importance - a.importance)
     .slice(0, 5);
 
-  // One random older memory for serendipitous connections
-  const older = await getRecentMemories(720, ['episodic', 'semantic', 'procedural'], 50); // 30 days
-  const randomOld = older.length > 0
-    ? [older[Math.floor(Math.random() * older.length)]]
-    : [];
+  // Clinamen: find high-importance memories that are UNRELATED to recent context
+  // This replaces pure random selection with structured serendipity
+  const recentContext = recent.map(m => m.summary).join('. ');
+  let clinamenMemories: Memory[] = [];
+  try {
+    clinamenMemories = await findClinamen({
+      context: recentContext || 'general reflection on recent experiences',
+      limit: 2,
+      memoryTypes: ['episodic', 'semantic', 'procedural'],
+    });
+    if (clinamenMemories.length > 0) {
+      log.info({
+        count: clinamenMemories.length,
+        summaries: clinamenMemories.map(m => m.summary.slice(0, 40)),
+      }, 'Clinamen seeds selected (anomaly retrieval)');
+    }
+  } catch (err) {
+    log.debug({ err }, 'Clinamen retrieval failed — falling back to random');
+    // Fallback to random old memory
+    const older = await getRecentMemories(720, ['episodic', 'semantic', 'procedural'], 50);
+    if (older.length > 0) {
+      clinamenMemories = [older[Math.floor(Math.random() * older.length)]];
+    }
+  }
 
   // Combine and deduplicate
   const seedMap = new Map<number, Memory>();
-  for (const m of [...recent, ...highImportance, ...randomOld]) {
+  for (const m of [...recent, ...highImportance, ...clinamenMemories]) {
     seedMap.set(m.id, m);
   }
   const seeds = Array.from(seedMap.values()).slice(0, 15);

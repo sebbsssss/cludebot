@@ -435,6 +435,45 @@ export function cortexRoutes(): Router {
     }
   });
 
+  // POST /clinamen — anomaly retrieval (find unexpected connections)
+  router.post('/clinamen', async (req: Request, res: Response) => {
+    try {
+      const cortexReq = req as CortexRequest;
+      const { context, limit, memory_types, min_importance, max_relevance } = req.body;
+
+      if (!context || typeof context !== 'string') {
+        res.status(400).json({ error: 'context is required (string)' });
+        return;
+      }
+
+      const { findClinamen } = require('../features/clinamen');
+      const memories = await withOwnerWallet(cortexReq.ownerWallet!, async () => {
+        return findClinamen({
+          context,
+          limit: Math.min(limit || 3, 10),
+          memoryTypes: memory_types,
+          minImportance: min_importance,
+          maxRelevance: max_relevance,
+        });
+      });
+
+      await recordAgentInteraction(cortexReq.agent!.agent_id);
+
+      res.json({
+        memories: memories.map((m: any) => ({
+          ...m,
+          embedding: undefined,
+          _divergence: m._divergence,
+          _relevanceSim: m._relevanceSim,
+        })),
+        count: memories.length,
+      });
+    } catch (err) {
+      log.error({ err }, 'Cortex clinamen error');
+      res.status(500).json({ error: 'Failed to find clinamen memories' });
+    }
+  });
+
   // ── Memory Pack Export ────────────────────────────────
   router.post('/packs/export', async (req: Request, res: Response) => {
     try {
