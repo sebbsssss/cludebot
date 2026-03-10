@@ -395,10 +395,10 @@
     <button class="nav-toggle" id="navToggle" aria-label="Menu"><span></span><span></span><span></span></button>
     <div class="nav-links">
       <a href="/docs.html" class="nav-active">Docs</a>
-      <a href="/demo.html">Demo</a>
-      <a href="/brain.html">Brain</a>
+      <a href="/install">For Agents</a>
+      <a href="/compare">Compare</a>
       <a href="/explore">Explorer</a>
-      <a href="/setup">Get Started</a>
+      <a href="https://github.com/sebbsssss/cludebot">GitHub</a>
     </div>
   </div>
 </nav>
@@ -439,10 +439,16 @@
         <span class="prompt">$</span> <span class="cmd">npm install clude-bot</span>
       </div>
 
-      <h3>Option A: Hosted (recommended)</h3>
-      <p>No database required. Register for an API key and start storing memories immediately.</p>
+      <h3>Option A: Local-first (recommended)</h3>
+      <p>No API keys. No network. Fully offline with SQLite + local embeddings.</p>
       <div class="code">
-<span class="prompt">$</span> <span class="cmd">npx clude-bot register</span>    <span class="cmt"># Get your API key</span>
+<span class="prompt">$</span> <span class="cmd">npx clude-bot mcp-install --local</span>    <span class="cmt"># Auto-configures your IDE</span>
+      </div>
+
+      <h3>Option B: Hosted (cloud sync)</h3>
+      <p>Memories sync across devices. Register for an API key.</p>
+      <div class="code">
+<span class="prompt">$</span> <span class="cmd">npx clude-bot mcp-install</span>    <span class="cmt"># Prompts for API key</span>
       </div>
       <div class="code">
 <span class="kw">import</span> { Cortex } <span class="kw">from</span> <span class="str">'clude-bot'</span>;
@@ -456,12 +462,9 @@
 <span class="kw">await</span> brain.<span class="fn">store</span>({ type: <span class="str">'episodic'</span>, content: <span class="str">'Hello world'</span>, summary: <span class="str">'First memory'</span>, source: <span class="str">'my-agent'</span> });
       </div>
 
-      <h3>Option B: Self-hosted</h3>
-      <p>Run the init wizard to configure your own Supabase + pgvector database.</p>
-      <div class="code">
-<span class="prompt">$</span> <span class="cmd">npx clude-bot init</span>       <span class="cmt"># Interactive setup wizard</span>
-      </div>
-      <p>This generates a <code>.env</code> file. Then run the database schema:</p>
+      <h3>Option C: Self-hosted (Supabase)</h3>
+      <p>Run your own Supabase + pgvector database for full control.</p>
+      <p>Configure your <code>.env</code> with <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_KEY</code>, then run the schema:</p>
       <div class="code">
 <span class="prompt">$</span> <span class="cmd">psql</span> <span class="flag">$DATABASE_URL</span> <span class="cmd">-f node_modules/clude-bot/supabase-schema.sql</span>
       </div>

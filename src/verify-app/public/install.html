@@ -207,6 +207,7 @@
 <nav class="nav">
   <a href="/" class="nav-logo">CLUDE</a>
   <div>
+    <a href="/compare">Compare</a>&nbsp;&nbsp;&nbsp;
     <a href="/docs">Docs</a>&nbsp;&nbsp;&nbsp;
     <a href="/explore">Explore</a>&nbsp;&nbsp;&nbsp;
     <a href="https://github.com/sebbsssss/cludebot">GitHub</a>
@@ -309,15 +310,14 @@ npx clude-bot mcp-install
 
   <!-- ── TOOLS ────────────────────────────────────── -->
 
-  <h2>Your agent gets 5 tools</h2>
+  <h2>Your agent gets 4 tools</h2>
 
   <table class="tool-table">
     <tr><th>Tool</th><th>What it does</th><th>When to use</th></tr>
-    <tr><td>remember</td><td>Store a memory</td><td>When learning something worth keeping</td></tr>
-    <tr><td>recall</td><td>Semantic search</td><td>Before answering questions about past context</td></tr>
-    <tr><td>forget</td><td>Delete a memory</td><td>When info is outdated or user asks</td></tr>
-    <tr><td>stats</td><td>Memory breakdown</td><td>To understand what the agent knows</td></tr>
-    <tr><td>visualize</td><td>3D brain graph</td><td>To explore connections between memories</td></tr>
+    <tr><td>store_memory</td><td>Save a memory with type, importance, tags</td><td>When learning something worth keeping</td></tr>
+    <tr><td>recall_memories</td><td>Multi-phase semantic search + graph traversal</td><td>Before answering questions about past context</td></tr>
+    <tr><td>get_memory_stats</td><td>Memory breakdown by type, importance, decay</td><td>To understand what the agent knows</td></tr>
+    <tr><td>find_clinamen</td><td>Surface unexpected lateral connections</td><td>Creative problem-solving, reflection</td></tr>
   </table>
 
   <!-- ── MEMORY TYPES ─────────────────────────────── -->
@@ -389,12 +389,17 @@ npx clude-bot mcp-install
 
   <h2>Import your existing memories</h2>
 
-  <p>Already have MEMORY.md files? Import them:</p>
+  <p>Already have MEMORY.md files? Your agent can import them using the <code>store_memory</code> tool. Just ask your agent to read through your memory files and store the important parts. Each memory gets typed, embedded, and connected automatically.</p>
+  <p>Or use the SDK programmatically:</p>
 <pre>
-npx clude-bot import ./MEMORY.md
-npx clude-bot import ./memory/    <span class="comment"># imports all .md files</span>
+<span class="comment">// Store memories from your existing files</span>
+<span class="key">await</span> clude.store({
+  type: <span class="string">'semantic'</span>,
+  content: <span class="string">'User prefers TypeScript and dark mode'</span>,
+  summary: <span class="string">'User preferences'</span>,
+  source: <span class="string">'imported:MEMORY.md'</span>
+});
 </pre>
-  <p>Each file gets parsed into individual memories with automatic type detection and embedding. Your existing knowledge becomes searchable instantly.</p>
 
   <!-- ── CREDIBILITY ──────────────────────────────── -->
 
