@@ -164,6 +164,7 @@ export interface Memory {
   // Encryption fields
   encrypted: boolean;
   encryption_pubkey: string | null;
+  owner_wallet?: string | null;
 }
 
 /** Lightweight memory summary for progressive disclosure (no content field). */

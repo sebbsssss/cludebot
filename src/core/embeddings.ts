@@ -47,7 +47,7 @@ const EMBEDDING_CACHE_MAX = 200;
 const EMBEDDING_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const _embeddingCache = new Map<string, { embedding: number[]; ts: number }>();
 
-function getCachedEmbedding(text: string): number[] | null {
+export function getCachedEmbedding(text: string): number[] | null {
   const key = text.slice(0, 500).toLowerCase().trim();
   const entry = _embeddingCache.get(key);
   if (!entry) return null;
@@ -58,7 +58,7 @@ function getCachedEmbedding(text: string): number[] | null {
   return entry.embedding;
 }
 
-function setCachedEmbedding(text: string, embedding: number[]): void {
+export function setCachedEmbedding(text: string, embedding: number[]): void {
   const key = text.slice(0, 500).toLowerCase().trim();
   // Evict oldest if at capacity
   if (_embeddingCache.size >= EMBEDDING_CACHE_MAX) {

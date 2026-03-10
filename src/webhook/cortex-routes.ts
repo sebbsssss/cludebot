@@ -65,7 +65,7 @@ async function cortexAuth(req: Request, res: Response, next: NextFunction): Prom
   }
 
   (req as CortexRequest).agent = agent;
-  (req as CortexRequest).ownerWallet = ownerWallet;
+  (req as CortexRequest).ownerWallet = ownerWallet ?? undefined;
   next();
 }
 
