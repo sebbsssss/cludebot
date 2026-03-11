@@ -27,7 +27,7 @@ function formatDate(dateStr: string): string {
 function groupByType(memories: any[]): Record<string, any[]> {
   const byType: Record<string, any[]> = {};
   for (const m of memories) {
-    const t = m.type || 'episodic';
+    const t = m.type || m.memory_type || 'episodic';
     (byType[t] ??= []).push(m);
   }
   return byType;
@@ -216,15 +216,25 @@ export async function runExport(): Promise<void> {
     process.exit(1);
   }
 
-  // Lazy-load config to read .env
-  const { config } = require('../config');
+  // Detect mode: local > hosted > self-hosted
+  const isLocal = args.includes('--local') || process.env.CLUDE_LOCAL === 'true';
+  let isHosted = false;
+  let isSelfHosted = false;
+  let config: any = {};
 
-  const isHosted = !!config.cortex?.apiKey;
-  const isSelfHosted = !!config.supabase?.url && !!config.supabase?.serviceKey;
+  if (!isLocal) {
+    try {
+      config = require('../config').config;
+    } catch {
+      // Config may fail if env vars missing — that's OK for local mode
+    }
+    isHosted = !!config.cortex?.apiKey;
+    isSelfHosted = !!config.supabase?.url && !!config.supabase?.serviceKey;
+  }
 
-  if (!isHosted && !isSelfHosted) {
+  if (!isLocal && !isHosted && !isSelfHosted) {
     printError('No memory store configured.');
-    console.log(`\n  Run ${c.cyan}npx clude-bot init${c.reset} to set up hosted or self-hosted mode.\n`);
+    console.log(`\n  Use ${c.cyan}--local${c.reset} for local memories, or run ${c.cyan}npx clude-bot init${c.reset} to configure.\n`);
     process.exit(1);
   }
 
@@ -233,10 +243,35 @@ export async function runExport(): Promise<void> {
 
   let memories: any[] = [];
 
-  if (isHosted) {
+  if (isLocal) {
+    printInfo('Mode: local (~/.clude/memories.json)');
+    try {
+      const { localRecall, localStats } = require('../mcp/local-store');
+      const stats = localStats();
+      if (stats.total_memories === 0) {
+        printError('No local memories found.');
+        process.exit(1);
+      }
+      // Get all memories by recalling with a broad query
+      const allMems = localRecall({ query: '', limit: 10000 });
+      memories = allMems.map((m: any) => ({
+        id: m.id,
+        content: m.content,
+        summary: m.summary,
+        memory_type: m.type || m.memory_type || 'episodic',
+        importance: m.importance || 0.5,
+        tags: m.tags || [],
+        created_at: m.created_at || new Date().toISOString(),
+      }));
+      printInfo(`Found ${memories.length} local memories`);
+    } catch (err: any) {
+      printError(`Local export failed: ${err.message}`);
+      process.exit(1);
+    }
+  } else if (isHosted) {
     printInfo('Mode: hosted (Cortex API)');
 
-    const baseUrl = config.cortex.hostUrl || 'https://cluude.ai';
+    const baseUrl = config.cortex.hostUrl || 'https://clude.io';
     try {
       const res = await fetch(`${baseUrl}/api/cortex/packs/export`, {
         method: 'POST',

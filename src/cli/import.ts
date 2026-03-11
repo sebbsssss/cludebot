@@ -234,11 +234,24 @@ function parseMemoryPack(filePath: string): ImportedMemory[] {
 }
 
 async function storeMemories(memories: ImportedMemory[]): Promise<void> {
-  const { config } = require('../config');
-  const isHosted = !!config.cortex?.apiKey;
+  const isLocal = process.argv.includes('--local') || process.env.CLUDE_LOCAL === 'true';
+  let config: any = {};
+  let isHosted = false;
 
-  if (isHosted) {
-    const baseUrl = config.cortex.hostUrl || 'https://cluude.ai';
+  if (!isLocal) {
+    try { config = require('../config').config; } catch {}
+    isHosted = !!config.cortex?.apiKey;
+  }
+
+  if (isLocal) {
+    const { localStore } = require('../mcp/local-store');
+    for (let i = 0; i < memories.length; i++) {
+      const m = memories[i];
+      localStore({ content: m.content, summary: m.summary, type: m.type, importance: m.importance, tags: m.tags });
+      if ((i + 1) % 50 === 0) printInfo(`Stored ${i + 1}/${memories.length}...`);
+    }
+  } else if (isHosted) {
+    const baseUrl = config.cortex.hostUrl || 'https://clude.io';
     // Batch store via API
     const batchSize = 50;
     for (let i = 0; i < memories.length; i += batchSize) {
@@ -321,14 +334,23 @@ export async function runImport(): Promise<void> {
     process.exit(1);
   }
 
-  // Lazy-load config
-  const { config } = require('../config');
-  const isHosted = !!config.cortex?.apiKey;
-  const isSelfHosted = !!config.supabase?.url && !!config.supabase?.serviceKey;
+  // Detect mode
+  const isLocal = args.includes('--local') || process.env.CLUDE_LOCAL === 'true';
+  let config: any = {};
+  let isHosted = false;
+  let isSelfHosted = false;
 
-  if (!isHosted && !isSelfHosted) {
+  if (!isLocal) {
+    try {
+      config = require('../config').config;
+    } catch { /* OK for local */ }
+    isHosted = !!config.cortex?.apiKey;
+    isSelfHosted = !!config.supabase?.url && !!config.supabase?.serviceKey;
+  }
+
+  if (!isLocal && !isHosted && !isSelfHosted) {
     printError('No memory store configured.');
-    console.log(`\n  Run ${c.cyan}npx clude-bot init${c.reset} to set up hosted or self-hosted mode.\n`);
+    console.log(`\n  Use ${c.cyan}--local${c.reset} for local memories, or run ${c.cyan}npx clude-bot init${c.reset} to configure.\n`);
     process.exit(1);
   }
 

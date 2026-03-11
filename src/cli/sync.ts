@@ -19,7 +19,7 @@ async function generatePrompt(format: 'chatgpt' | 'gemini'): Promise<string> {
   let memories: any[] = [];
 
   if (isHosted) {
-    const baseUrl = config.cortex.hostUrl || 'https://cluude.ai';
+    const baseUrl = config.cortex.hostUrl || 'https://clude.io';
     const res = await fetch(`${baseUrl}/api/cortex/packs/export`, {
       method: 'POST',
       headers: {
