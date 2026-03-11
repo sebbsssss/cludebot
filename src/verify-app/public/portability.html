@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLUDE — Your Memory, Everywhere</title>
+  <meta name="description" content="Take your AI memory to ChatGPT, Gemini, Claude, or any model. Portable, private, persistent.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f5f0;
+      --bg-warm: #eeeee8;
+      --text: #111;
+      --text-muted: #666;
+      --text-faint: #999;
+      --accent: #111;
+      --blue: #2244ff;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--mono);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    ::selection { background: var(--text); color: var(--bg); }
+
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      background: rgba(245, 245, 240, 0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 40px;
+      height: 56px; display: flex; align-items: center;
+    }
+    .nav-logo {
+      font-size: 13px; font-weight: 800; letter-spacing: 5px;
+      color: var(--text); text-transform: uppercase; text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 32px; margin-left: auto; }
+    .nav-links a {
+      color: var(--text-muted); font-size: 11px; letter-spacing: 2px;
+      text-transform: uppercase; text-decoration: none; transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .container { max-width: 800px; margin: 0 auto; padding: 0 40px; }
+
+    /* Hero */
+    .hero {
+      padding: 160px 40px 100px;
+      text-align: center;
+    }
+    .hero-label {
+      font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 800; letter-spacing: -1px;
+      line-height: 1.1; margin-bottom: 24px;
+    }
+    .hero p {
+      font-size: 15px; color: var(--text-muted);
+      max-width: 600px; margin: 0 auto; line-height: 1.8;
+    }
+
+    /* Sections */
+    section {
+      padding: 80px 0;
+      border-top: 1px solid rgba(0,0,0,0.06);
+    }
+    section h2 {
+      font-size: 24px; font-weight: 700; margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    section .subtitle {
+      font-size: 13px; color: var(--text-muted); margin-bottom: 40px;
+    }
+    .step {
+      background: var(--bg-warm);
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin-bottom: 16px;
+    }
+    .step-num {
+      font-size: 11px; font-weight: 700; color: var(--text-faint);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .step h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+    .step p { font-size: 13px; color: var(--text-muted); }
+    .step code {
+      display: inline-block; background: rgba(0,0,0,0.06);
+      padding: 2px 8px; border-radius: 4px; font-size: 12px;
+      font-family: var(--mono); margin-top: 4px;
+    }
+
+    pre {
+      background: #1a1a1a; color: #e0e0e0;
+      padding: 20px 24px; border-radius: 8px;
+      font-size: 12px; overflow-x: auto;
+      margin: 16px 0;
+    }
+    pre .comment { color: #666; }
+    pre .cmd { color: #8be9fd; }
+
+    .platform-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 16px; margin-top: 24px;
+    }
+    @media (max-width: 640px) {
+      .platform-grid { grid-template-columns: 1fr; }
+    }
+    .platform-card {
+      background: var(--bg-warm); border-radius: 8px;
+      padding: 28px; text-align: center;
+    }
+    .platform-card .icon { font-size: 32px; margin-bottom: 12px; }
+    .platform-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .platform-card p { font-size: 12px; color: var(--text-muted); }
+
+    .arrow-flow {
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px; margin: 32px 0;
+      font-size: 13px; font-weight: 600;
+    }
+    .arrow-flow .arrow { color: var(--text-faint); font-size: 20px; }
+
+    footer {
+      border-top: 1px solid rgba(0,0,0,0.06);
+      padding: 40px; text-align: center;
+      font-size: 11px; color: var(--text-faint);
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">CLUDE</a>
+    <div class="nav-links">
+      <a href="/docs">Docs</a>
+      <a href="/explore">Explore</a>
+      <a href="/portability">Portability</a>
+      <a href="/dashboard">Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-label">Portability</div>
+  <h1>Your memory, everywhere</h1>
+  <p>Clude stores your AI memory in one place — then takes it wherever you go. Claude, ChatGPT, Gemini, or your own models. Switch freely. Never start over.</p>
+</div>
+
+<div class="container">
+
+  <!-- Claude Desktop/Code -->
+  <section>
+    <h2>Claude Desktop & Code</h2>
+    <p class="subtitle">Native MCP integration — one command, full memory access</p>
+
+    <div class="step">
+      <div class="step-num">Setup</div>
+      <h3>Install the MCP server</h3>
+      <p>Claude Desktop and Claude Code connect directly to your memory via MCP.</p>
+      <code>npx clude-bot mcp-install</code>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Result</div>
+      <h3>Claude remembers everything</h3>
+      <p>Your preferences, project context, and past conversations are automatically available. No copy-pasting, no setup files.</p>
+    </div>
+  </section>
+
+  <!-- ChatGPT -->
+  <section>
+    <h2>ChatGPT</h2>
+    <p class="subtitle">Export your memory as a system prompt — paste into Custom Instructions</p>
+
+    <div class="arrow-flow">
+      <span>Clude</span>
+      <span class="arrow">→</span>
+      <span>Export</span>
+      <span class="arrow">→</span>
+      <span>ChatGPT</span>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 1</div>
+      <h3>Export for ChatGPT</h3>
+      <p>Generates a system prompt with your key facts, learned behaviors, and recent context.</p>
+      <code>npx clude-bot export --format chatgpt</code>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 2</div>
+      <h3>Paste into ChatGPT</h3>
+      <p>Go to <strong>Settings → Personalization → Custom Instructions</strong> and paste the output. ChatGPT will now have your memory context.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Or: Clipboard</div>
+      <h3>One-step copy</h3>
+      <code>npx clude-bot export --format clipboard</code>
+      <p>Copies directly to your clipboard. Just paste.</p>
+    </div>
+
+    <div class="step" style="margin-top: 32px;">
+      <div class="step-num">Import</div>
+      <h3>Bring ChatGPT memories into Clude</h3>
+      <p>Download your data from ChatGPT (<strong>Settings → Data Controls → Export Data</strong>), then import the ZIP.</p>
+      <code>npx clude-bot import chatgpt-export.zip</code>
+      <p>We extract preferences, corrections, and key facts from your conversations.</p>
+    </div>
+  </section>
+
+  <!-- Gemini -->
+  <section>
+    <h2>Gemini</h2>
+    <p class="subtitle">Export your memory for Gemini Gems custom instructions</p>
+
+    <div class="arrow-flow">
+      <span>Clude</span>
+      <span class="arrow">→</span>
+      <span>Export</span>
+      <span class="arrow">→</span>
+      <span>Gemini Gem</span>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 1</div>
+      <h3>Export for Gemini</h3>
+      <code>npx clude-bot export --format gemini</code>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 2</div>
+      <h3>Create a Gem</h3>
+      <p>Go to <strong>Gemini → Gems → Create</strong> and paste the exported instructions. Your Gem now has full context about you.</p>
+    </div>
+  </section>
+
+  <!-- Any AI -->
+  <section>
+    <h2>Any AI</h2>
+    <p class="subtitle">REST API + SDK for custom integrations</p>
+
+    <pre><span class="comment"># Store a memory</span>
+<span class="cmd">curl</span> -X POST https://cluude.ai/api/cortex/memory \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -d '{"content": "User prefers TypeScript", "type": "semantic"}'
+
+<span class="comment"># Recall relevant memories</span>
+<span class="cmd">curl</span> -X POST https://cluude.ai/api/cortex/recall \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -d '{"query": "programming preferences"}'</pre>
+
+    <pre><span class="comment"># Python SDK</span>
+<span class="cmd">from</span> clude <span class="cmd">import</span> Cortex
+
+brain = Cortex(api_key="YOUR_KEY")
+brain.store("User prefers dark mode", type="semantic")
+memories = brain.recall("UI preferences")</pre>
+
+    <div class="step">
+      <div class="step-num">Live Sync</div>
+      <h3>Auto-updating system prompt</h3>
+      <p>Keep a system prompt file that refreshes as new memories form. Symlink it into your project.</p>
+      <code>npx clude-bot sync --format chatgpt -o system-prompt.txt</code>
+    </div>
+  </section>
+
+  <!-- Import -->
+  <section>
+    <h2>Import your history</h2>
+    <p class="subtitle">Bring existing memories from other platforms into Clude</p>
+
+    <div class="platform-grid">
+      <div class="platform-card">
+        <div class="icon">💬</div>
+        <h3>ChatGPT Export</h3>
+        <p>Import from Settings → Data Controls → Export Data (ZIP file)</p>
+      </div>
+      <div class="platform-card">
+        <div class="icon">📝</div>
+        <h3>Markdown / Text</h3>
+        <p>Import any text file — paragraphs and bullets become memories</p>
+      </div>
+      <div class="platform-card">
+        <div class="icon">📦</div>
+        <h3>MemoryPack JSON</h3>
+        <p>Import a Clude MemoryPack exported from another instance</p>
+      </div>
+      <div class="platform-card">
+        <div class="icon">🔌</div>
+        <h3>REST API</h3>
+        <p>Programmatic import via the Cortex API for custom pipelines</p>
+      </div>
+    </div>
+
+    <pre><span class="comment"># Import examples</span>
+<span class="cmd">npx clude-bot import</span> chatgpt-export.zip
+<span class="cmd">npx clude-bot import</span> my-notes.md
+<span class="cmd">npx clude-bot import</span> backup.json</pre>
+  </section>
+
+</div>
+
+<footer>
+  CLUDE — Memory belongs to you, not the model
+</footer>
+
+</body>
+</html>

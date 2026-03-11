@@ -39,6 +39,18 @@ if (command === 'setup') {
     console.error('Export failed:', err.message);
     process.exit(1);
   });
+} else if (command === 'import') {
+  const { runImport } = require('./import');
+  runImport().catch((err: Error) => {
+    console.error('Import failed:', err.message);
+    process.exit(1);
+  });
+} else if (command === 'sync') {
+  const { runSync } = require('./sync');
+  runSync().catch((err: Error) => {
+    console.error('Sync failed:', err.message);
+    process.exit(1);
+  });
 } else if (command === 'mcp-serve') {
   // Start the MCP server (used by IDE integrations)
   require('../mcp/server');
@@ -60,7 +72,9 @@ if (command === 'setup') {
   console.log(`    ${c.cyan}npx clude-bot init${c.reset}          Advanced setup (self-hosted options)`);
   console.log(`    ${c.cyan}npx clude-bot register${c.reset}      Get an API key only`);
   console.log(`    ${c.cyan}npx clude-bot mcp-install${c.reset}   Install MCP server for your IDE`);
-  console.log(`    ${c.cyan}npx clude-bot export${c.reset}        Export memories to file`);
+  console.log(`    ${c.cyan}npx clude-bot export${c.reset}        Export memories (json/md/chatgpt/gemini)`);
+  console.log(`    ${c.cyan}npx clude-bot import${c.reset}        Import from ChatGPT export, markdown, JSON`);
+  console.log(`    ${c.cyan}npx clude-bot sync${c.reset}          Auto-update system prompt file`);
   console.log(`    ${c.cyan}npx clude-bot ship "msg"${c.reset}    Broadcast to Telegram channel`);
   console.log(`    ${c.cyan}npx clude-bot start${c.reset}         Start the Clude bot\n`);
   console.log(`  ${c.bold}As a library:${c.reset}\n`);
