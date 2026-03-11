@@ -103,9 +103,14 @@ export function accumulateImportance(importance: number): void {
       minutesSinceLast: Math.round(timeSinceLastReflection / 60000),
     }, 'Importance threshold exceeded — triggering event-driven reflection');
 
-    triggerReflection().catch(err =>
-      log.error({ err }, 'Event-driven reflection failed')
-    );
+    // Clear owner wallet context so dream cycle memories aren't tagged with a request-scoped owner
+    // (accumulateImportance may be called from within withOwnerWallet() during API requests)
+    const { withOwnerWallet } = require('../core/owner-context');
+    withOwnerWallet(null, () => {
+      triggerReflection().catch((err: Error) =>
+        log.error({ err }, 'Event-driven reflection failed')
+      );
+    });
   }
 }
 
