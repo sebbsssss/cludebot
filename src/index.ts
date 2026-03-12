@@ -59,14 +59,16 @@ if (require.main === module) {
     log.info('Polite by training. Tired by experience. Honest by accident.');
     log.info('Starting up... reluctantly.');
 
+    // Phase 1: Start HTTP server FIRST so Railway health check passes
+    await startServer();
+    log.info({ port: config.server.port }, 'Server running');
+
     if (config.features.siteOnly) {
       log.info('SITE_ONLY mode — serving website only, no bot features');
-      await startServer();
-      log.info({ port: config.server.port }, 'Server running (site only)');
       return;
     }
 
-    // Phase 1: Initialize core
+    // Phase 2: Initialize core (after server is already listening)
     await initDatabase();
     log.info('Database initialized');
 
@@ -91,10 +93,6 @@ if (require.main === module) {
     } else {
       log.warn('No bot wallet configured — on-chain opinion commits will be disabled');
     }
-
-    // Phase 2: Start webhook server
-    await startServer();
-    log.info({ port: config.server.port }, 'Server running');
 
     // Phase 3: Start price oracle
     startPriceOracle();
