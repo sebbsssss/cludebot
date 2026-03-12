@@ -880,6 +880,12 @@ export function createServer(): express.Application {
     next();
   });
 
+  // Portability (export/import docs) at /portability
+  app.get('/portability', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/portability.html';
+    next();
+  });
+
   // Journal (active reflection diary) at /journal
   app.get('/journal', (req: Request, _res: Response, next: express.NextFunction) => {
     req.url = '/journal.html';
