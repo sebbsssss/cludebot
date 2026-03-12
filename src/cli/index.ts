@@ -68,9 +68,8 @@ if (command === 'setup') {
   console.log(pkg.version);
 } else {
   // Default: show banner + help (including bare `npx clude-bot`)
-  const { printAnimatedBanner } = require('./animated-banner');
-  const { c } = require('./banner');
-  printAnimatedBanner().then(() => {
+  const { printBanner, c } = require('./banner');
+  printBanner();
   console.log(`  ${c.bold}Quick start:${c.reset}\n`);
   console.log(`    ${c.cyan}npx clude-bot setup${c.reset}         ${c.dim}← start here${c.reset}`);
   console.log(`    ${c.dim}Register + create .env + install MCP in ~30 seconds${c.reset}\n`);
@@ -90,5 +89,4 @@ if (command === 'setup') {
   console.log(`    ${c.dim}const brain = new Cortex({ hosted: { apiKey } });${c.reset}`);
   console.log(`    ${c.dim}await brain.init();${c.reset}\n`);
   console.log(`  ${c.dim}Docs: https://clude.io/docs${c.reset}\n`);
-  });
 }
