@@ -459,6 +459,13 @@ await brain.init();</pre>
   }
 
   function copyToClipboard(text, btn) {
+    if (text === undefined || text === null) {
+      // Fallback: extract text from parent <pre>, excluding button text
+      var pre = btn.parentElement;
+      var clone = pre.cloneNode(true);
+      clone.querySelectorAll('button').forEach(function(b) { b.remove(); });
+      text = clone.textContent.trim();
+    }
     navigator.clipboard.writeText(text).then(function() {
       var orig = btn.textContent;
       btn.textContent = 'Copied!';
