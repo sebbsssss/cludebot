@@ -276,13 +276,13 @@
     <p class="subtitle">Choose how you want to run Clude. You can always switch later.</p>
 
     <div style="display: flex; flex-direction: column; gap: 12px;">
-      <div onclick="selectMode('local')" class="mode-card" id="modeLocal">
+      <div onclick="selectMode('cloud')" class="mode-card" id="modeCloud">
         <div class="mode-header">
-          <span class="mode-name">Local</span>
-          <span class="mode-badge" style="background: #2d8a4e; color: #fff;">Zero config</span>
+          <span class="mode-name">Cloud</span>
+          <span class="mode-badge" style="background: var(--blue); color: #fff;">Fastest</span>
         </div>
-        <div class="mode-desc">Runs on your machine. No API keys, no accounts, fully offline. Best for trying Clude or privacy-first use.</div>
-        <code class="mode-cmd">npx clude-bot mcp-serve --local</code>
+        <div class="mode-desc">Use Clude's hosted infrastructure. Register, get an API key, start storing memories in 30 seconds.</div>
+        <code class="mode-cmd">npm install clude-bot && npx clude-bot setup</code>
       </div>
 
       <div onclick="selectMode('selfhosted')" class="mode-card" id="modeSelfHosted">
@@ -294,13 +294,13 @@
         <code class="mode-cmd">npm install clude-bot && npx clude-bot setup</code>
       </div>
 
-      <div onclick="selectMode('cloud')" class="mode-card" id="modeCloud">
+      <div onclick="selectMode('local')" class="mode-card" id="modeLocal">
         <div class="mode-header">
-          <span class="mode-name">Cloud</span>
-          <span class="mode-badge" style="background: var(--blue); color: #fff;">Fastest</span>
+          <span class="mode-name">Local</span>
+          <span class="mode-badge" style="background: #2d8a4e; color: #fff;">Zero config</span>
         </div>
-        <div class="mode-desc">Use Clude's hosted infrastructure. Register, get an API key, start storing memories in 30 seconds.</div>
-        <code class="mode-cmd">curl -X POST https://clude.io/api/cortex/store ...</code>
+        <div class="mode-desc">Runs on your machine. No API keys, no accounts, fully offline. Best for trying Clude or privacy-first use.</div>
+        <code class="mode-cmd">npm install clude-bot && npx clude-bot setup</code>
       </div>
     </div>
   </div>
@@ -310,7 +310,15 @@
     <h1>Local mode</h1>
     <p class="subtitle">No API key needed. Everything runs on your machine.</p>
 
-    <div class="snippet-label">For Claude Desktop / Cursor (MCP)</div>
+    <div class="snippet-label">Setup wizard (recommended)</div>
+    <pre data-raw="npm install clude-bot
+npx clude-bot setup"><button class="snippet-copy" onclick="copyToClipboard(this.parentElement.dataset.raw, this)">Copy</button><span class="cmt"># Install and run the setup wizard</span>
+npm install clude-bot
+npx clude-bot setup
+<span class="cmt"># → Select "Local"</span>
+<span class="cmt"># → Installs MCP server for your IDE</span></pre>
+
+    <div class="snippet-label">Or install MCP directly</div>
     <pre data-raw="npx clude-bot mcp-install --local"><button class="snippet-copy" onclick="copyToClipboard(this.parentElement.dataset.raw, this)">Copy</button><span class="cmt"># One command, done</span>
 npx clude-bot mcp-install --local</pre>
 
@@ -354,15 +362,20 @@ const memories = await brain.recall({ query: 'hello' });</pre>
     <div class="snippet-label">What you need</div>
     <div style="background: var(--card-bg); border: 2px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; font-size: 13px; line-height: 2;">
       <strong>Supabase</strong> — memory storage + vector index <span style="color: var(--text-faint);">(free tier works)</span><br>
-      <strong>Voyage AI</strong> — embeddings <span style="color: var(--text-faint);">(voyage-4-large)</span><br>
+      <strong>Voyage AI</strong> — embeddings <span style="color: var(--text-faint);">(voyage-3-large)</span><br>
       <strong>Anthropic</strong> — dream cycles + reflection <span style="color: var(--text-faint);">(optional)</span>
     </div>
 
-    <div class="snippet-label">Setup</div>
+    <div class="snippet-label">Setup wizard (recommended)</div>
     <pre data-raw="npm install clude-bot
 npx clude-bot setup"><button class="snippet-copy" onclick="copyToClipboard(this.parentElement.dataset.raw, this)">Copy</button><span class="cmt"># Install and run the setup wizard</span>
 npm install clude-bot
-npx clude-bot setup</pre>
+npx clude-bot setup
+<span class="cmt"># → Select "Self-hosted"</span>
+<span class="cmt"># → Enter your Supabase URL + service key</span>
+<span class="cmt"># → Enter your Voyage AI key</span>
+<span class="cmt"># → (Optional) Anthropic key for dream cycles</span>
+<span class="cmt"># → Creates .env + installs MCP server</span></pre>
 
     <div class="snippet-label">Or configure manually</div>
     <pre data-raw="import { Cortex } from 'clude-bot';
@@ -370,12 +383,12 @@ npx clude-bot setup</pre>
 const brain = new Cortex({
   supabase: {
     url: process.env.SUPABASE_URL,
-    serviceKey: process.env.SUPABASE_KEY,
+    serviceKey: process.env.SUPABASE_SERVICE_KEY,
   },
   embedding: {
     provider: 'voyage',
     apiKey: process.env.VOYAGE_API_KEY,
-    model: 'voyage-4-large',
+    model: 'voyage-3-large',
     dimensions: 1024,
   },
   agentId: 'my-agent',
@@ -385,12 +398,12 @@ await brain.init();"><button class="snippet-copy" onclick="copyToClipboard(this.
 const brain = new Cortex({
   supabase: {
     url: process.env.SUPABASE_URL,
-    serviceKey: process.env.SUPABASE_KEY,
+    serviceKey: process.env.SUPABASE_SERVICE_KEY,
   },
   embedding: {
     provider: <span class="str">'voyage'</span>,
     apiKey: process.env.VOYAGE_API_KEY,
-    model: <span class="str">'voyage-4-large'</span>,
+    model: <span class="str">'voyage-3-large'</span>,
     dimensions: 1024,
   },
   agentId: <span class="str">'my-agent'</span>,
@@ -404,7 +417,8 @@ await brain.init();</pre>
   <!-- Cloud mode (registration form) -->
   <div id="registerForm" style="display:none;">
     <h1>Cloud mode — Get your API key</h1>
-    <p class="subtitle">Register your agent and start storing memories in 30 seconds. No infra to manage.</p>
+    <p class="subtitle">Register your agent and start storing memories in 30 seconds. No infra to manage.<br>
+    <span style="color: var(--text-faint);">Or skip the form — run <code style="background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 3px;">npx clude-bot setup</code> and select "Cloud".</span></p>
 
     <div class="global-error" id="globalError"></div>
 
