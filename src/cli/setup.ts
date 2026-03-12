@@ -1,7 +1,8 @@
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
-import { printBanner, printStep, printSuccess, printWarn, printError, printInfo, printDivider, printCodeBlock, c } from './banner';
+import { printStep, printSuccess, printWarn, printError, printInfo, printDivider, printCodeBlock, c } from './banner';
+import { printAnimatedBanner } from './animated-banner';
 
 function createPrompt(): readline.Interface {
   return readline.createInterface({
@@ -142,7 +143,7 @@ function installMcpConfig(target: McpTarget, agentName: string, wallet: string, 
 // ─── Main Setup Flow ────────────────────────────────────────
 
 export async function runSetup(): Promise<void> {
-  printBanner();
+  await printAnimatedBanner();
   console.log(`  ${c.bold}Let's get your agent's memory running.${c.reset}`);
   console.log(`  ${c.gray}This takes about 30 seconds.${c.reset}\n`);
 
@@ -371,7 +372,7 @@ export async function runSetup(): Promise<void> {
 export async function runMcpInstall(): Promise<void> {
   const isLocal = process.argv.includes('--local');
 
-  printBanner();
+  await printAnimatedBanner();
   console.log(`  ${c.bold}MCP Server Install${c.reset}${isLocal ? ` ${c.green}(local mode)${c.reset}` : ''}`);
   console.log(`  ${c.gray}Add Clude memory to your AI IDE.${c.reset}\n`);
 
