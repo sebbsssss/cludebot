@@ -92,21 +92,37 @@ function getMcpTargets(): McpTarget[] {
   return targets;
 }
 
-function installMcpConfig(target: McpTarget, agentName: string, wallet: string, apiKey?: string, local?: boolean): { ok: boolean; error?: string } {
-  const mcpEntry = local ? {
-    command: 'npx',
-    args: ['clude-bot', 'mcp-serve', '--local'],
-    env: {},
-  } : {
-    command: 'npx',
-    args: ['clude-bot', 'mcp-serve'],
-    env: {
-      ...(apiKey ? { CORTEX_API_KEY: apiKey } : {}),
-      CORTEX_HOST_URL: 'https://clude.io',
-      ...(wallet ? { CLUDE_WALLET: wallet } : {}),
-      ...(agentName ? { CLUDE_AGENT_NAME: agentName } : {}),
-    },
-  };
+function installMcpConfig(target: McpTarget, agentName: string, wallet: string, apiKey?: string, local?: boolean, selfHostedEnv?: Record<string, string>): { ok: boolean; error?: string } {
+  let mcpEntry: Record<string, any>;
+
+  if (local) {
+    mcpEntry = {
+      command: 'npx',
+      args: ['clude-bot', 'mcp-serve', '--local'],
+      env: {},
+    };
+  } else if (selfHostedEnv) {
+    mcpEntry = {
+      command: 'npx',
+      args: ['clude-bot', 'mcp-serve'],
+      env: {
+        ...selfHostedEnv,
+        ...(wallet ? { CLUDE_WALLET: wallet } : {}),
+        ...(agentName ? { CLUDE_AGENT_NAME: agentName } : {}),
+      },
+    };
+  } else {
+    mcpEntry = {
+      command: 'npx',
+      args: ['clude-bot', 'mcp-serve'],
+      env: {
+        ...(apiKey ? { CORTEX_API_KEY: apiKey } : {}),
+        CORTEX_HOST_URL: 'https://clude.io',
+        ...(wallet ? { CLUDE_WALLET: wallet } : {}),
+        ...(agentName ? { CLUDE_AGENT_NAME: agentName } : {}),
+      },
+    };
+  }
 
   try {
     // Read existing config or start fresh
@@ -148,149 +164,286 @@ export async function runSetup(): Promise<void> {
 
   const rl = createPrompt();
 
-  // ─── Step 1: Register ──────────────────────────────────
-  printStep(1, 3, 'Register');
-  printInfo('We\'ll create an account on clude.io and get you an API key.');
-  printInfo('Already have a key? Just paste it when asked.\n');
+  // ─── Mode Selection ─────────────────────────────────────
+  const modeChoices = [
+    { key: 'cloud', label: 'Cloud (hosted on clude.io — fastest)' },
+    { key: 'selfhosted', label: 'Self-hosted (your own Supabase + Voyage AI)' },
+    { key: 'local', label: 'Local (offline, no API keys needed)' },
+  ];
 
-  const existingKey = await ask(rl, 'Existing API key? (Enter to register a new one): ');
+  console.log(`  ${c.bold}How do you want to run Clude?${c.reset}\n`);
+  const mode = await askChoice(rl, 'Select mode:', modeChoices);
+  console.log('');
 
-  let apiKey = existingKey;
+  let apiKey = '';
   let agentName = '';
   let wallet = '';
+  const envPath = path.resolve(process.cwd(), '.env');
+  let envLines: string[] = [];
+  let selfHostedEnv: Record<string, string> | undefined;
 
-  if (!existingKey) {
-    // Register flow
-    agentName = await ask(rl, 'Agent name (your project name): ');
+  if (mode === 'local') {
+    // ─── Local Mode ────────────────────────────────────────
+    printStep(1, 2, 'Configuration');
+    agentName = await ask(rl, 'Agent name (Enter for folder name): ');
     if (!agentName || agentName.length < 2) {
       agentName = path.basename(process.cwd());
       printInfo(`Using directory name: ${agentName}`);
     }
 
-    printInfo('Optional: link a Solana wallet to prove ownership of your memories.');
+    printSuccess('Local mode — no API keys needed. Memories stored in ~/.clude/memories.json');
+    console.log('');
+
+    // ─── MCP Install (Step 2 for local) ────────────────────
+    printStep(2, 2, 'IDE Integration');
+
+  } else if (mode === 'selfhosted') {
+    // ─── Self-hosted Mode ──────────────────────────────────
+    printStep(1, 3, 'Infrastructure Keys');
+    printInfo('You\'ll need your own Supabase and Voyage AI accounts.');
+    printInfo('Get Supabase at https://supabase.com (free tier works)');
+    printInfo('Get Voyage AI at https://dash.voyageai.com\n');
+
+    const supabaseUrl = await ask(rl, 'Supabase URL: ');
+    const supabaseKey = await ask(rl, 'Supabase service key: ');
+    console.log('');
+
+    const voyageKey = await ask(rl, 'Voyage AI API key: ');
+    const voyageModel = await ask(rl, 'Voyage model (Enter for voyage-3-large): ');
+    console.log('');
+
+    const anthropicKey = await ask(rl, 'Anthropic API key (Enter to skip — needed for dream cycles): ');
+    console.log('');
+
+    agentName = await ask(rl, 'Agent name (Enter for folder name): ');
+    if (!agentName || agentName.length < 2) {
+      agentName = path.basename(process.cwd());
+      printInfo(`Using directory name: ${agentName}`);
+    }
+
+    printInfo('Optional: link a Solana wallet to scope memories to your identity.');
     printInfo('Public address only — no private key needed.\n');
     wallet = await ask(rl, 'Solana wallet address (Enter to skip): ');
     console.log('');
 
-    // Try to register
-    process.stdout.write(`  ${c.gray}Registering on clude.io...${c.reset}`);
+    // Build self-hosted env for MCP config
+    selfHostedEnv = {
+      SUPABASE_URL: supabaseUrl,
+      SUPABASE_SERVICE_KEY: supabaseKey,
+      EMBEDDING_PROVIDER: 'voyage',
+      VOYAGE_API_KEY: voyageKey,
+      VOYAGE_MODEL: voyageModel || 'voyage-3-large',
+      ...(anthropicKey ? { ANTHROPIC_API_KEY: anthropicKey } : {}),
+    };
 
-    try {
-      const res = await fetch('https://clude.io/api/cortex/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: agentName,
-          wallet: wallet || undefined,
-        }),
-      });
+    // ─── Create .env ───────────────────────────────────────
+    printStep(2, 3, 'Configuration');
 
-      // Clear the loading line
-      if (process.stdout.clearLine) {
-        process.stdout.clearLine(0);
-        process.stdout.cursorTo(0);
+    envLines = [
+      '# Generated by clude-bot setup (self-hosted)',
+      '',
+      '# Supabase',
+      `SUPABASE_URL=${supabaseUrl}`,
+      `SUPABASE_SERVICE_KEY=${supabaseKey}`,
+      '',
+      '# Embeddings (Voyage AI)',
+      `EMBEDDING_PROVIDER=voyage`,
+      `VOYAGE_API_KEY=${voyageKey}`,
+      `VOYAGE_MODEL=${voyageModel || 'voyage-3-large'}`,
+      '',
+    ];
+
+    if (anthropicKey) {
+      envLines.push('# Anthropic (for dream cycles + reflection)');
+      envLines.push(`ANTHROPIC_API_KEY=${anthropicKey}`);
+      envLines.push('');
+    }
+
+    if (wallet) {
+      envLines.push('# Owner wallet');
+      envLines.push(`OWNER_WALLET=${wallet}`);
+      envLines.push('');
+    }
+
+    envLines.push(`# Agent`);
+    envLines.push(`AGENT_NAME=${agentName}`);
+    envLines.push('');
+
+    const envContent = envLines.join('\n');
+
+    if (fs.existsSync(envPath)) {
+      const existing = fs.readFileSync(envPath, 'utf-8');
+      if (existing.includes('SUPABASE_URL')) {
+        printInfo('.env already has SUPABASE_URL — skipping');
       } else {
-        console.log('');
+        fs.appendFileSync(envPath, '\n' + envContent);
+        printSuccess('Appended self-hosted config to existing .env');
+      }
+    } else {
+      fs.writeFileSync(envPath, envContent, 'utf-8');
+      printSuccess('Created .env');
+    }
+
+    // .gitignore
+    const gitignorePath = path.resolve(process.cwd(), '.gitignore');
+    if (fs.existsSync(gitignorePath)) {
+      const gitignore = fs.readFileSync(gitignorePath, 'utf-8');
+      if (!gitignore.includes('.env')) {
+        fs.appendFileSync(gitignorePath, '\n.env\n');
+        printSuccess('Added .env to .gitignore');
+      }
+    } else {
+      fs.writeFileSync(gitignorePath, '.env\nnode_modules/\n', 'utf-8');
+      printSuccess('Created .gitignore (with .env)');
+    }
+
+    console.log('');
+
+  } else {
+    // ─── Cloud Mode (original flow) ────────────────────────
+    printStep(1, 3, 'Register');
+    printInfo('We\'ll create an account on clude.io and get you an API key.');
+    printInfo('Already have a key? Just paste it when asked.\n');
+
+    const existingKey = await ask(rl, 'Existing API key? (Enter to register a new one): ');
+    apiKey = existingKey;
+
+    if (!existingKey) {
+      agentName = await ask(rl, 'Agent name (your project name): ');
+      if (!agentName || agentName.length < 2) {
+        agentName = path.basename(process.cwd());
+        printInfo(`Using directory name: ${agentName}`);
       }
 
-      if (res.ok) {
-        const data = await res.json() as { apiKey?: string; agentId?: string; error?: string };
-        if (data.apiKey) {
-          apiKey = data.apiKey;
-          printSuccess(`Registered! API key: ${c.green}${apiKey.slice(0, 12)}...${c.reset}`);
-          printInfo(`Agent ID: ${data.agentId}`);
+      printInfo('Optional: link a Solana wallet to prove ownership of your memories.');
+      printInfo('Public address only — no private key needed.\n');
+      wallet = await ask(rl, 'Solana wallet address (Enter to skip): ');
+      console.log('');
+
+      process.stdout.write(`  ${c.gray}Registering on clude.io...${c.reset}`);
+
+      try {
+        const res = await fetch('https://clude.io/api/cortex/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: agentName,
+            wallet: wallet || undefined,
+          }),
+        });
+
+        if (process.stdout.clearLine) {
+          process.stdout.clearLine(0);
+          process.stdout.cursorTo(0);
         } else {
-          printWarn('Registration returned no key — enter one manually');
-          apiKey = await ask(rl, 'API key: ');
+          console.log('');
         }
-      } else {
-        const errData = await res.json().catch(() => ({})) as { error?: string };
-        printWarn(`Registration failed: ${errData.error || res.statusText}`);
+
+        if (res.ok) {
+          const data = await res.json() as { apiKey?: string; agentId?: string; error?: string };
+          if (data.apiKey) {
+            apiKey = data.apiKey;
+            printSuccess(`Registered! API key: ${c.green}${apiKey.slice(0, 12)}...${c.reset}`);
+            printInfo(`Agent ID: ${data.agentId}`);
+          } else {
+            printWarn('Registration returned no key — enter one manually');
+            apiKey = await ask(rl, 'API key: ');
+          }
+        } else {
+          const errData = await res.json().catch(() => ({})) as { error?: string };
+          printWarn(`Registration failed: ${errData.error || res.statusText}`);
+          printInfo('You can register manually later: npx clude-bot register');
+          apiKey = await ask(rl, 'Paste an API key (or Enter to skip): ');
+        }
+      } catch (err) {
+        if (process.stdout.clearLine) {
+          process.stdout.clearLine(0);
+          process.stdout.cursorTo(0);
+        } else {
+          console.log('');
+        }
+        const msg = (err as Error).message || '';
+        const isCert = /certificate|CERT|SSL|self.signed|unable to verify/i.test(msg);
+        if (isCert) {
+          printWarn('SSL certificate error — your network may be intercepting HTTPS traffic');
+          printInfo('This is common with corporate firewalls (Fortinet, Zscaler, etc.)');
+          printInfo('Try: switch to a mobile hotspot or VPN, or ask IT to whitelist clude.io');
+        } else {
+          printWarn(`Could not reach clude.io: ${msg}`);
+        }
         printInfo('You can register manually later: npx clude-bot register');
         apiKey = await ask(rl, 'Paste an API key (or Enter to skip): ');
       }
-    } catch (err) {
-      if (process.stdout.clearLine) {
-        process.stdout.clearLine(0);
-        process.stdout.cursorTo(0);
-      } else {
-        console.log('');
-      }
-      const msg = (err as Error).message || '';
-      const isCert = /certificate|CERT|SSL|self.signed|unable to verify/i.test(msg);
-      if (isCert) {
-        printWarn('SSL certificate error — your network may be intercepting HTTPS traffic');
-        printInfo('This is common with corporate firewalls (Fortinet, Zscaler, etc.)');
-        printInfo('Try: switch to a mobile hotspot or VPN, or ask IT to whitelist clude.io');
-      } else {
-        printWarn(`Could not reach clude.io: ${msg}`);
-      }
-      printInfo('You can register manually later: npx clude-bot register');
-      apiKey = await ask(rl, 'Paste an API key (or Enter to skip): ');
-    }
-  } else {
-    printSuccess('Using existing API key');
-    agentName = await ask(rl, 'Agent name (for MCP config, Enter to use folder name): ');
-    if (!agentName) agentName = path.basename(process.cwd());
-    printInfo('Optional: link a Solana wallet to prove ownership of your memories.');
-    printInfo('Public address only — no private key needed.\n');
-    wallet = await ask(rl, 'Solana wallet address (Enter to skip): ');
-  }
-
-  console.log('');
-
-  // ─── Step 2: Create .env ───────────────────────────────
-  printStep(2, 3, 'Configuration');
-
-  const envPath = path.resolve(process.cwd(), '.env');
-  let envLines = [
-    '# Generated by clude-bot setup',
-    '',
-    '# Cortex API (hosted memory)',
-    `CORTEX_API_KEY=${apiKey || 'your-api-key'}`,
-    'CORTEX_HOST_URL=https://clude.io',
-    '',
-  ];
-
-  if (wallet) {
-    envLines.push('# Owner wallet');
-    envLines.push(`OWNER_WALLET=${wallet}`);
-    envLines.push('');
-  }
-
-  const envContent = envLines.join('\n');
-
-  if (fs.existsSync(envPath)) {
-    const existing = fs.readFileSync(envPath, 'utf-8');
-    if (existing.includes('CORTEX_API_KEY')) {
-      printInfo('.env already has CORTEX_API_KEY — skipping');
     } else {
-      // Append to existing .env
-      fs.appendFileSync(envPath, '\n' + envContent);
-      printSuccess('Appended Cortex config to existing .env');
+      printSuccess('Using existing API key');
+      agentName = await ask(rl, 'Agent name (for MCP config, Enter to use folder name): ');
+      if (!agentName) agentName = path.basename(process.cwd());
+      printInfo('Optional: link a Solana wallet to prove ownership of your memories.');
+      printInfo('Public address only — no private key needed.\n');
+      wallet = await ask(rl, 'Solana wallet address (Enter to skip): ');
     }
-  } else {
-    fs.writeFileSync(envPath, envContent, 'utf-8');
-    printSuccess('Created .env');
+
+    console.log('');
+
+    // ─── Create .env ───────────────────────────────────────
+    printStep(2, 3, 'Configuration');
+
+    envLines = [
+      '# Generated by clude-bot setup',
+      '',
+      '# Cortex API (hosted memory)',
+      `CORTEX_API_KEY=${apiKey || 'your-api-key'}`,
+      'CORTEX_HOST_URL=https://clude.io',
+      '',
+    ];
+
+    if (wallet) {
+      envLines.push('# Owner wallet');
+      envLines.push(`OWNER_WALLET=${wallet}`);
+      envLines.push('');
+    }
+
+    const envContent = envLines.join('\n');
+
+    if (fs.existsSync(envPath)) {
+      const existing = fs.readFileSync(envPath, 'utf-8');
+      if (existing.includes('CORTEX_API_KEY')) {
+        printInfo('.env already has CORTEX_API_KEY — skipping');
+      } else {
+        fs.appendFileSync(envPath, '\n' + envContent);
+        printSuccess('Appended Cortex config to existing .env');
+      }
+    } else {
+      fs.writeFileSync(envPath, envContent, 'utf-8');
+      printSuccess('Created .env');
+    }
   }
 
-  // Check .gitignore
-  const gitignorePath = path.resolve(process.cwd(), '.gitignore');
-  if (fs.existsSync(gitignorePath)) {
-    const gitignore = fs.readFileSync(gitignorePath, 'utf-8');
-    if (!gitignore.includes('.env')) {
-      fs.appendFileSync(gitignorePath, '\n.env\n');
-      printSuccess('Added .env to .gitignore');
+  if (mode !== 'selfhosted') {
+    // .gitignore (cloud and local modes — self-hosted already handled above)
+    const gitignorePath = path.resolve(process.cwd(), '.gitignore');
+    if (fs.existsSync(gitignorePath)) {
+      const gitignore = fs.readFileSync(gitignorePath, 'utf-8');
+      if (!gitignore.includes('.env')) {
+        fs.appendFileSync(gitignorePath, '\n.env\n');
+        printSuccess('Added .env to .gitignore');
+      }
+    } else {
+      fs.writeFileSync(gitignorePath, '.env\nnode_modules/\n', 'utf-8');
+      printSuccess('Created .gitignore (with .env)');
     }
-  } else {
-    fs.writeFileSync(gitignorePath, '.env\nnode_modules/\n', 'utf-8');
-    printSuccess('Created .gitignore (with .env)');
+
+    console.log('');
   }
 
-  console.log('');
+  // ─── MCP Install (shared across all modes) ────────────
+  if (mode === 'cloud') {
+    printStep(3, 3, 'IDE Integration');
+  } else if (mode === 'selfhosted') {
+    printStep(3, 3, 'IDE Integration');
+  }
+  // local mode already printed Step 2/2 above
 
-  // ─── Step 3: MCP Install ──────────────────────────────
-  printStep(3, 3, 'IDE Integration');
   printInfo('Install the MCP server so your AI IDE can access memories.');
   printInfo('This lets Claude/Cursor remember things between conversations.\n');
 
@@ -306,10 +459,10 @@ export async function runSetup(): Promise<void> {
 
   if (mcpChoice !== 'skip') {
     const toInstall = mcpChoice === 'all' ? targets : targets.filter(t => t.key === mcpChoice);
+    const isLocal = mode === 'local';
 
     for (const target of toInstall) {
-      const isLocal = process.argv.includes('--local');
-      const result = installMcpConfig(target, agentName, wallet, apiKey, isLocal);
+      const result = installMcpConfig(target, agentName, wallet, apiKey || undefined, isLocal, selfHostedEnv);
       if (result.ok) {
         printSuccess(`Added clude-memory to ${target.label}`);
         printInfo(`  ${c.dim}${target.configPath}${c.reset}`);
@@ -325,19 +478,28 @@ export async function runSetup(): Promise<void> {
   printDivider();
   console.log(`\n  ${c.bold}${c.green}You're all set!${c.reset}\n`);
 
-  if (apiKey) {
-    printSuccess('API key configured');
+  if (mode === 'cloud') {
+    if (apiKey) {
+      printSuccess('API key configured');
+    } else {
+      printWarn('No API key yet — run: npx clude-bot register');
+    }
+    printSuccess('.env created');
+  } else if (mode === 'selfhosted') {
+    printSuccess('Self-hosted mode configured');
+    printSuccess('.env created with Supabase + Voyage AI keys');
   } else {
-    printWarn('No API key yet — run: npx clude-bot register');
+    printSuccess('Local mode — no API keys needed');
+    printInfo('Memories stored in ~/.clude/memories.json');
   }
-  printSuccess('.env created');
+
   if (mcpChoice !== 'skip') {
     // Verify MCP installation
     const toVerify = mcpChoice === 'all' ? targets : targets.filter(t => t.key === mcpChoice);
     let verified = 0;
     for (const target of toVerify) {
       try {
-        const content = require('fs').readFileSync(target.configPath, 'utf-8');
+        const content = fs.readFileSync(target.configPath, 'utf-8');
         if (content.includes('clude')) verified++;
       } catch {}
     }
@@ -352,26 +514,59 @@ export async function runSetup(): Promise<void> {
   }
 
   console.log(`\n  ${c.bold}Quick start:${c.reset}`);
-  printCodeBlock(
-    `const { Cortex } = require('clude-bot');\n` +
-    `\n` +
-    `const brain = new Cortex({\n` +
-    `  hosted: { apiKey: process.env.CORTEX_API_KEY },\n` +
-    `});\n` +
-    `await brain.init();\n` +
-    `\n` +
-    `// Store a memory\n` +
-    `await brain.store({\n` +
-    `  type: 'episodic',\n` +
-    `  content: 'User asked about pricing.',\n` +
-    `  summary: 'Pricing inquiry',\n` +
-    `  source: '${agentName || 'my-agent'}',\n` +
-    `});\n` +
-    `\n` +
-    `// Recall memories\n` +
-    `const memories = await brain.recall({ query: 'pricing' });\n` +
-    `console.log(brain.formatContext(memories));`
-  );
+
+  if (mode === 'selfhosted') {
+    printCodeBlock(
+      `const { Cortex } = require('clude-bot');\n` +
+      `\n` +
+      `const brain = new Cortex();\n` +
+      `await brain.init();\n` +
+      `\n` +
+      `// Store a memory\n` +
+      `await brain.store({\n` +
+      `  type: 'episodic',\n` +
+      `  content: 'User asked about pricing.',\n` +
+      `  summary: 'Pricing inquiry',\n` +
+      `  source: '${agentName || 'my-agent'}',\n` +
+      `});\n` +
+      `\n` +
+      `// Recall memories\n` +
+      `const memories = await brain.recall({ query: 'pricing' });\n` +
+      `console.log(brain.formatContext(memories));`
+    );
+  } else if (mode === 'local') {
+    printCodeBlock(
+      `// Local mode — use the MCP server in your IDE.\n` +
+      `// Memories are stored in ~/.clude/memories.json\n` +
+      `// No code integration needed — just chat!\n` +
+      `\n` +
+      `// Or use the SDK:\n` +
+      `const { LocalStore } = require('clude-bot/local');\n` +
+      `const store = new LocalStore();\n` +
+      `await store.store({ type: 'episodic', content: 'hello', summary: 'test' });`
+    );
+  } else {
+    printCodeBlock(
+      `const { Cortex } = require('clude-bot');\n` +
+      `\n` +
+      `const brain = new Cortex({\n` +
+      `  hosted: { apiKey: process.env.CORTEX_API_KEY },\n` +
+      `});\n` +
+      `await brain.init();\n` +
+      `\n` +
+      `// Store a memory\n` +
+      `await brain.store({\n` +
+      `  type: 'episodic',\n` +
+      `  content: 'User asked about pricing.',\n` +
+      `  summary: 'Pricing inquiry',\n` +
+      `  source: '${agentName || 'my-agent'}',\n` +
+      `});\n` +
+      `\n` +
+      `// Recall memories\n` +
+      `const memories = await brain.recall({ query: 'pricing' });\n` +
+      `console.log(brain.formatContext(memories));`
+    );
+  }
 
   console.log(`  ${c.dim}Dashboard:${c.reset}  ${c.cyan}https://clude.io/explore${c.reset}`);
   console.log(`  ${c.dim}Docs:${c.reset}       ${c.cyan}https://clude.io/docs${c.reset}`);
