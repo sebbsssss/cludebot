@@ -204,6 +204,62 @@ export function createServer(): express.Application {
     }
   });
 
+  // Verify a memory's on-chain commitment
+  app.get('/api/memory/:id/verify', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        res.status(400).json({ error: 'Invalid memory ID' });
+        return;
+      }
+      const db = getDb();
+      const { data: mem, error } = await db.from('memories')
+        .select('id, content, summary, memory_type, created_at, owner_wallet, onchain_tx, onchain_hash, onchain_committed_at')
+        .eq('id', id)
+        .single();
+
+      if (error || !mem) {
+        res.status(404).json({ error: 'Memory not found' });
+        return;
+      }
+
+      if (!mem.onchain_tx) {
+        res.json({
+          id: mem.id,
+          committed: false,
+          message: 'This memory has not been committed on-chain yet.',
+        });
+        return;
+      }
+
+      // Recompute hash to verify integrity
+      const payload = [
+        mem.id.toString(),
+        mem.content || '',
+        mem.summary || '',
+        mem.memory_type || 'episodic',
+        mem.created_at || '',
+        mem.owner_wallet || 'public',
+      ].join('|');
+      const computedHash = createHash('sha256').update(payload).digest('hex');
+      const verified = computedHash === mem.onchain_hash;
+
+      res.json({
+        id: mem.id,
+        committed: true,
+        verified,
+        onchain_tx: mem.onchain_tx,
+        onchain_hash: mem.onchain_hash,
+        committed_at: mem.onchain_committed_at,
+        explorer: `https://solscan.io/tx/${mem.onchain_tx}`,
+        integrity: verified ? 'VERIFIED' : 'HASH_MISMATCH',
+      });
+    } catch (err) {
+      log.error({ err }, 'Memory verify error');
+      res.status(500).json({ error: 'Failed to verify memory' });
+    }
+  });
+
   // Brain visualization API (full graph data for neural network viz)
   app.get('/api/brain', async (req: Request, res: Response) => {
     try {
