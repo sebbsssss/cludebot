@@ -73,6 +73,22 @@ export const LINK_SIMILARITY_THRESHOLD = 0.6;            // Min vector similarit
 export const MAX_AUTO_LINKS = 5;                         // Max links created per new memory
 export const LINK_CO_RETRIEVAL_BOOST = 0.05;             // Hebbian strength boost on co-retrieval
 
+// Source-aware reinforcement (internal vs external signal differentiation)
+// External sources = real-world inputs (user interactions, imports, knowledge seeds)
+// Internal sources = agent-generated (reflections, dreams, consolidations)
+// Internal signals get gated reinforcement to prevent confabulation spirals.
+// Based on Source Monitoring Framework (Johnson et al.) and validation-gated Hebbian learning.
+export const INTERNAL_MEMORY_SOURCES = new Set([
+  'reflection', 'emergence', 'consolidation', 'dream', 'active-reflection',
+  'introspection', 'dream-cycle', 'meditation',
+]);
+export const EXTERNAL_MEMORY_SOURCES = new Set([
+  'mention', 'knowledge-seed', 'cortex-import', 'conversation', 'user',
+  'api', 'mcp', 'tweet', 'dm', 'market',
+]);
+export const INTERNAL_REINFORCEMENT_GATE = 0.3;          // Internal sources get 30% of normal reinforcement
+export const INTERNAL_IMPORTANCE_BOOST = 0.005;          // +0.5% per retrieval (vs 2% for external)
+
 export type MemoryLinkType = 'supports' | 'contradicts' | 'elaborates' | 'causes' | 'follows' | 'relates' | 'resolves';
 
 // Embedding system

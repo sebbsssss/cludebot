@@ -20,6 +20,8 @@ import {
   LINK_SIMILARITY_THRESHOLD,
   MAX_AUTO_LINKS,
   LINK_CO_RETRIEVAL_BOOST,
+  INTERNAL_MEMORY_SOURCES,
+  INTERNAL_IMPORTANCE_BOOST,
 } from '../utils';
 import type { MemoryLinkType } from '../utils/constants';
 import { generateImportanceScore } from './claude-client';
@@ -942,9 +944,11 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     }
 
     // Update access counts in parallel (skip for internal processing like dream cycles)
+    // Source-aware reinforcement: internal signals get gated boost to prevent confabulation
     if (opts.trackAccess !== false) {
       const ids = results.map((m: Memory) => m.id);
-      updateMemoryAccess(ids).catch(err => log.warn({ err }, 'Memory access tracking failed'));
+      const sources = results.map((m: Memory) => m.source || '');
+      updateMemoryAccess(ids, sources).catch(err => log.warn({ err }, 'Memory access tracking failed'));
       // Hebbian: reinforce links between co-retrieved memories
       reinforceCoRetrievedLinks(ids).catch(err => log.debug({ err }, 'Link reinforcement failed'));
     }
@@ -1077,10 +1081,13 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
     rawScore += 0.5; // moderate boost for seeds without vector match
   }
 
-  // Consolidation memories are dream-cycle meta-observations — strong penalty
-  // 2000+ consolidation memories flood results; only the most vector-relevant should surface
+  // Internal source penalty: agent-generated memories (dreams, reflections, consolidations)
+  // get scored lower than external signals to prevent confabulation spirals.
+  // Consolidation gets strongest penalty (2K+ exist); other internals get moderate penalty.
   if (mem.source === 'consolidation') {
     rawScore *= vectorSim > 0.5 ? 0.45 : 0.30;
+  } else if (INTERNAL_MEMORY_SOURCES.has(mem.source)) {
+    rawScore *= vectorSim > 0.5 ? 0.70 : 0.50;
   }
 
   return rawScore * mem.decay_factor;
@@ -1172,7 +1179,7 @@ export async function hydrateMemories(ids: number[]): Promise<Memory[]> {
 
 // ---- ACCESS TRACKING ---- //
 
-async function updateMemoryAccess(ids: number[]): Promise<void> {
+async function updateMemoryAccess(ids: number[], sources: string[] = []): Promise<void> {
   if (ids.length === 0) return;
   const db = getDb();
 
@@ -1182,13 +1189,20 @@ async function updateMemoryAccess(ids: number[]): Promise<void> {
     log.warn({ error: error.message, ids }, 'Batch memory access update failed');
   }
 
-  // Importance re-scoring: memories retrieved often become more important over time.
-  // Small boost per retrieval, capped at 1.0. Mirrors "rehearsal effect" in human memory.
+  // Source-aware importance re-scoring (internal/external signal differentiation).
+  // External sources (user interactions, imports) get full reinforcement.
+  // Internal sources (dreams, reflections, consolidations) get gated reinforcement
+  // to prevent confabulation spirals where agent-generated memories self-amplify.
+  // Based on Source Monitoring Framework (Johnson et al.) and validation-gated Hebbian learning.
   try {
-    for (const id of ids) {
+    for (let i = 0; i < ids.length; i++) {
+      const source = sources[i] || '';
+      const isInternal = INTERNAL_MEMORY_SOURCES.has(source);
+      const boostAmount = isInternal ? INTERNAL_IMPORTANCE_BOOST : 0.02;
+
       await db.rpc('boost_memory_importance', {
-        memory_id: id,
-        boost_amount: 0.02,  // +2% per retrieval
+        memory_id: ids[i],
+        boost_amount: boostAmount,
         max_importance: 1.0,
       });
     }
