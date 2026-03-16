@@ -24,7 +24,7 @@ const log = createChildLogger('server');
 
 /**
  * Resolve owner scope from request: ?wallet= param, or Privy user ID.
- * Returns null if no scoping should be applied (unauthenticated public view).
+ * Returns null if no identity found.
  */
 function getRequestOwner(req: Request): string | null {
   const wallet = req.query.wallet as string | undefined;
@@ -33,10 +33,11 @@ function getRequestOwner(req: Request): string | null {
   return null;
 }
 
-/** Run a function scoped to the request owner, or unscoped if no owner. */
-async function withRequestScope<T>(req: Request, fn: () => Promise<T>): Promise<T> {
+/** Run a function scoped to the request owner. Returns null if no owner (never unscoped). */
+async function withRequestScope<T>(req: Request, fn: () => Promise<T>): Promise<T | null> {
   const owner = getRequestOwner(req);
-  return owner ? withOwnerWallet(owner, fn) : fn();
+  if (!owner) return null;
+  return withOwnerWallet(owner, fn);
 }
 
 const apiLimiter = rateLimit({
@@ -99,6 +100,12 @@ export function createServer(): express.Application {
   // Attach Privy user to all API requests (optional — doesn't block unauthenticated)
   app.use('/api', optionalPrivyAuth);
 
+  // Prevent browser/CDN caching of API responses (data is user-scoped)
+  app.use('/api', (_req: Request, res: Response, next: express.NextFunction) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    next();
+  });
+
   // Venice integration stats (privacy dashboard)
   app.get('/api/venice-stats', async (_req: Request, res: Response) => {
     try {
@@ -125,7 +132,12 @@ export function createServer(): express.Application {
     try {
       const owner = getRequestOwner(req);
       const stats = await withRequestScope(req, () => getMemoryStats());
-      res.json({ ...stats, scoped_to: owner || null });
+      if (!stats) {
+        // No owner identity — return empty stats, never unscoped data
+        res.json({ total: 0, byType: {}, embeddedCount: 0, avgDecay: 0, avgImportance: 0, uniqueUsers: 0, totalDreamSessions: 0, topTags: [], topConcepts: [], scoped_to: null });
+        return;
+      }
+      res.json({ ...stats, scoped_to: owner });
     } catch (err) {
       log.error({ err }, 'Memory stats endpoint error');
       res.status(500).json({ error: 'Failed to fetch memory stats' });
@@ -139,6 +151,11 @@ export function createServer(): express.Application {
       const limit = Math.min(parseInt(req.query.limit as string) || 30, 50);
       const owner = getRequestOwner(req);
       const memories = await withRequestScope(req, () => getRecentMemories(hours, undefined, limit));
+      if (!memories) {
+        // No owner identity — return empty, never unscoped data
+        res.json({ memories: [], count: 0, scoped_to: null, lastUpdate: new Date().toISOString() });
+        return;
+      }
       res.json({
         memories: memories.map(m => ({
           id: m.id,
@@ -155,7 +172,7 @@ export function createServer(): express.Application {
           solana_signature: m.solana_signature || null,
         })),
         count: memories.length,
-        scoped_to: owner || null,
+        scoped_to: owner,
         lastUpdate: new Date().toISOString(),
       });
     } catch (err) {
@@ -294,9 +311,14 @@ export function createServer(): express.Application {
   app.get('/api/brain', async (req: Request, res: Response) => {
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 300, 500);
-      const [memories, stats] = await withRequestScope(req, () =>
+      const result = await withRequestScope(req, () =>
         Promise.all([getRecentMemories(8760, undefined, limit), getMemoryStats()])
       );
+      if (!result) {
+        res.json({ nodes: [], total: 0, timestamp: new Date().toISOString() });
+        return;
+      }
+      const [memories, stats] = result;
       res.json({
         nodes: memories.map(m => ({
           id: m.id,
@@ -325,7 +347,7 @@ export function createServer(): express.Application {
   // Consciousness stream API (self-model, emergence, procedural insights)
   app.get('/api/brain/consciousness', async (req: Request, res: Response) => {
     try {
-      const [selfModel, emergence, procedural, recentEpisodic, stats] = await withRequestScope(req, () =>
+      const result = await withRequestScope(req, () =>
         Promise.all([
           getRecentMemories(8760, ['self_model'], 10),
           getRecentMemories(8760, ['self_model'], 20),
@@ -334,6 +356,11 @@ export function createServer(): express.Application {
           getMemoryStats(),
         ])
       );
+      if (!result) {
+        res.json({ selfModel: [], recentDreams: [], stats: { total: 0 } });
+        return;
+      }
+      const [selfModel, emergence, procedural, recentEpisodic, stats] = result;
 
       // Separate emergence thoughts (source: 'emergence') from reflections (source: 'reflection')
       const emergenceThoughts = emergence
