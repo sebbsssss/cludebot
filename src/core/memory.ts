@@ -1496,29 +1496,56 @@ export async function getMemoryStats(): Promise<MemoryStats> {
   };
 
   try {
-    let statsQuery = db
+    // Get exact total count (Supabase defaults to max 1000 rows)
+    let countQuery = db
       .from('memories')
-      .select('memory_type, importance, decay_factor, created_at, related_user, tags, concepts, embedding')
+      .select('id', { count: 'exact', head: true })
       .gt('decay_factor', MEMORY_MIN_DECAY);
-    statsQuery = scopeToOwner(statsQuery);
-    const { data: memories } = await statsQuery;
+    countQuery = scopeToOwner(countQuery);
+    const { count: totalCount } = await countQuery;
+    stats.total = totalCount || 0;
 
-    if (memories && memories.length > 0) {
-      stats.total = memories.length;
+    // Get embedded count separately
+    let embeddedQuery = db
+      .from('memories')
+      .select('id', { count: 'exact', head: true })
+      .gt('decay_factor', MEMORY_MIN_DECAY)
+      .not('embedding', 'is', null);
+    embeddedQuery = scopeToOwner(embeddedQuery);
+    const { count: embCount } = await embeddedQuery;
+    stats.embeddedCount = embCount || 0;
 
+    // Fetch rows for aggregation — paginate to get all (without embedding column to reduce payload)
+    const PAGE_SIZE = 5000;
+    let allMemories: any[] = [];
+    let page = 0;
+    while (true) {
+      let pageQuery = db
+        .from('memories')
+        .select('memory_type, importance, decay_factor, created_at, related_user, tags, concepts')
+        .gt('decay_factor', MEMORY_MIN_DECAY)
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      pageQuery = scopeToOwner(pageQuery);
+      const { data: pageData } = await pageQuery;
+      if (!pageData || pageData.length === 0) break;
+      allMemories = allMemories.concat(pageData);
+      if (pageData.length < PAGE_SIZE) break;
+      page++;
+    }
+
+    if (allMemories.length > 0) {
       let impSum = 0;
       let decaySum = 0;
       const tagCounts: Record<string, number> = {};
       const conceptCounts: Record<string, number> = {};
       const users = new Set<string>();
 
-      for (const m of memories) {
+      for (const m of allMemories) {
         const type = m.memory_type as MemoryType;
         if (type in stats.byType) stats.byType[type]++;
         impSum += m.importance;
         decaySum += m.decay_factor;
         if (m.related_user) users.add(m.related_user);
-        if (m.embedding) stats.embeddedCount++;
         if (m.tags) {
           for (const tag of m.tags) {
             tagCounts[tag] = (tagCounts[tag] || 0) + 1;
@@ -1531,8 +1558,8 @@ export async function getMemoryStats(): Promise<MemoryStats> {
         }
       }
 
-      stats.avgImportance = impSum / memories.length;
-      stats.avgDecay = decaySum / memories.length;
+      stats.avgImportance = impSum / allMemories.length;
+      stats.avgDecay = decaySum / allMemories.length;
       stats.uniqueUsers = users.size;
 
       stats.topTags = Object.entries(tagCounts)
@@ -1545,7 +1572,7 @@ export async function getMemoryStats(): Promise<MemoryStats> {
         .slice(0, 10)
         .map(([concept, count]) => ({ concept, count }));
 
-      const sorted = memories.map(m => m.created_at).sort();
+      const sorted = allMemories.map(m => m.created_at).sort();
       stats.oldestMemory = sorted[0] || null;
       stats.newestMemory = sorted[sorted.length - 1] || null;
     }
