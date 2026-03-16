@@ -13,7 +13,7 @@ export function useAuth(): AuthState {
   // Extract wallet address from connected wallets (prefer Solana)
   const walletAddress = useMemo(() => {
     if (!wallets || wallets.length === 0) return null;
-    const solanaWallet = wallets.find(w => w.walletClientType === 'solana' || w.chainType === 'solana');
+    const solanaWallet = wallets.find(w => w.walletClientType === 'solana' || (w as any).chainType === 'solana');
     if (solanaWallet) return solanaWallet.address;
     return wallets[0]?.address || null;
   }, [wallets]);

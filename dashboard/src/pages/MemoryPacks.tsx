@@ -124,7 +124,26 @@ export function MemoryPacks() {
           </span>
         </div>
       ) : (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      <>
+      {/* Coming Soon announcement */}
+      <div style={{
+        marginBottom: 24,
+        padding: '14px 20px',
+        background: 'var(--bg-warm)',
+        border: '1px solid var(--border)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+      }}>
+        <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, color: 'var(--episodic)', flexShrink: 0 }}>
+          Coming Soon
+        </span>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          On-chain memory marketplace. License memory packs for $CLUDE. Smart contract verification for pack authenticity.
+        </span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
         {/* Export */}
         <div style={{ border: '1px solid var(--border)' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 600 }}>
@@ -365,13 +384,10 @@ export function MemoryPacks() {
               </div>
             )}
 
-            <div style={{ marginTop: 32, padding: 16, background: 'var(--bg-warm)', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.7 }}>
-              <div style={{ fontWeight: 600, marginBottom: 8 }}>Coming Soon</div>
-              <div>On-chain memory marketplace. License memory packs for $CLUDE. Smart contract verification for pack authenticity.</div>
-            </div>
           </div>
         </div>
       </div>
+      </>
       )}
     </div>
   );

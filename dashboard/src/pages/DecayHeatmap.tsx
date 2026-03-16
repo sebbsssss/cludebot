@@ -16,9 +16,12 @@ export function DecayHeatmap() {
 
   useEffect(() => {
     api.getMemories({ hours: 720, limit: 50 }).then((data) => {
-      setMemories(data);
+      setMemories(Array.isArray(data) ? data : []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      setMemories([]);
+      setLoading(false);
+    });
   }, []);
 
   const sorted = [...memories].sort((a, b) => {
@@ -51,7 +54,7 @@ export function DecayHeatmap() {
       {/* Type Summary */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
         gap: 1,
         background: 'var(--border)',
         border: '1px solid var(--border)',

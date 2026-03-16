@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { NeuralCanvas } from '../components/NeuralCanvas';
 import type { Memory, MemoryType } from '../types/memory';
 
 const TYPE_COLORS: Record<MemoryType, string> = {
@@ -26,36 +27,50 @@ export function Timeline() {
   useEffect(() => {
     setLoading(true);
     api.getMemories({ hours, limit: 50 }).then((data) => {
-      setMemories(data);
+      setMemories(Array.isArray(data) ? data : []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {
+      setMemories([]);
+      setLoading(false);
+    });
   }, [hours]);
 
-  const filtered = memories
+  const filtered = (memories || [])
     .filter((m) => filter === 'all' || m.memory_type === filter)
-    .filter((m) => !search || m.summary.toLowerCase().includes(search.toLowerCase()) || m.tags.some(t => t.includes(search.toLowerCase())));
+    .filter((m) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (m.summary || '').toLowerCase().includes(q)
+        || (m.tags || []).some(t => t.toLowerCase().includes(q));
+    });
 
   return (
     <div>
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 12 }}>
+      <div style={{ marginBottom: 32 }}>
+        <div className="fade-in" style={{
+          fontSize: 11, letterSpacing: 3, textTransform: 'uppercase',
+          color: 'var(--text-faint)', marginBottom: 10,
+        }}>
           Timeline
         </div>
-        <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5, marginBottom: 8 }}>
+        <h1 className="fade-in" style={{
+          fontSize: 28, fontWeight: 700, letterSpacing: -0.5, marginBottom: 6,
+          animationDelay: '0.03s',
+        }}>
           Memory Timeline
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+        <p className="fade-in" style={{
+          fontSize: 13, color: 'var(--text-muted)', animationDelay: '0.06s',
+        }}>
           {filtered.length} memories shown
         </p>
       </div>
 
       {/* Filters */}
-      <div style={{
-        display: 'flex',
-        gap: 12,
-        marginBottom: 32,
-        alignItems: 'center',
-        flexWrap: 'wrap',
+      <div className="fade-in" style={{
+        display: 'flex', gap: 10, marginBottom: 28,
+        alignItems: 'center', flexWrap: 'wrap',
+        animationDelay: '0.08s',
       }}>
         <input
           type="text"
@@ -65,10 +80,10 @@ export function Timeline() {
           style={{
             fontFamily: 'var(--mono)',
             fontSize: 12,
-            padding: '8px 16px',
+            padding: '8px 14px',
             border: '1px solid var(--border-strong)',
             background: 'transparent',
-            width: 240,
+            width: 220,
             outline: 'none',
           }}
         />
@@ -82,11 +97,12 @@ export function Timeline() {
               fontSize: 10,
               letterSpacing: 1,
               textTransform: 'uppercase',
-              padding: '6px 14px',
+              padding: '6px 12px',
               border: `1px solid ${filter === t ? 'var(--text)' : 'var(--border-strong)'}`,
               background: filter === t ? 'var(--text)' : 'transparent',
               color: filter === t ? 'var(--bg)' : 'var(--text-muted)',
               cursor: 'pointer',
+              transition: 'all 0.15s',
             }}
           >
             {t === 'all' ? 'All' : TYPE_LABELS[t]}
@@ -115,26 +131,43 @@ export function Timeline() {
 
       {/* Timeline */}
       {loading ? (
-        <div style={{ color: 'var(--text-faint)', padding: 40, textAlign: 'center' }}>Loading...</div>
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', padding: 60, gap: 16,
+        }}>
+          <NeuralCanvas height={80} opacity={0.2} count={12} />
+          <div style={{
+            fontSize: 11, color: 'var(--text-faint)',
+            letterSpacing: 2, textTransform: 'uppercase',
+          }}>
+            <span className="pulse-dot" style={{
+              display: 'inline-block', width: 5, height: 5,
+              borderRadius: '50%', background: 'var(--episodic)',
+              marginRight: 6, verticalAlign: 'middle',
+            }} />
+            Recalling memories
+          </div>
+        </div>
       ) : (
         <div style={{ position: 'relative', paddingLeft: 40 }}>
           {/* Vertical line */}
           <div style={{
             position: 'absolute',
-            left: 16,
-            top: 0,
-            bottom: 0,
+            left: 16, top: 0, bottom: 0,
             width: 1,
             background: 'var(--border-strong)',
           }} />
 
-          {filtered.map((memory) => (
-            <MemoryCard key={memory.id} memory={memory} />
+          {filtered.map((memory, index) => (
+            <MemoryCard key={memory.id} memory={memory} index={index} />
           ))}
 
           {filtered.length === 0 && (
-            <div style={{ color: 'var(--text-faint)', padding: 40, textAlign: 'center' }}>
-              No memories found
+            <div style={{
+              color: 'var(--text-faint)', padding: 40,
+              textAlign: 'center', fontSize: 12,
+            }}>
+              No memories found for this filter.
             </div>
           )}
         </div>
@@ -143,17 +176,20 @@ export function Timeline() {
   );
 }
 
-function MemoryCard({ memory }: { memory: Memory }) {
+function MemoryCard({ memory, index }: { memory: Memory; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const date = new Date(memory.created_at);
   const color = TYPE_COLORS[memory.memory_type];
+  const isRecent = Date.now() - date.getTime() < 3600000; // < 1 hour
 
   return (
     <div
+      className="fade-in"
       style={{
         position: 'relative',
         marginBottom: 2,
         cursor: 'pointer',
+        animationDelay: `${Math.min(index * 0.03, 0.6)}s`,
       }}
       onClick={() => setExpanded(!expanded)}
     >
@@ -167,32 +203,35 @@ function MemoryCard({ memory }: { memory: Memory }) {
         borderRadius: '50%',
         background: color,
         border: '2px solid var(--bg)',
+        boxShadow: isRecent ? `0 0 8px ${color}` : 'none',
+        animation: isRecent ? 'breathe 2.5s ease-in-out infinite' : 'none',
       }} />
 
       <div style={{
         border: '1px solid var(--border)',
-        padding: '16px 20px',
+        padding: '14px 18px',
         background: expanded ? 'var(--bg-warm)' : 'var(--bg)',
-        transition: 'background 0.15s',
+        transition: 'all 0.2s',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6,
+        }}>
           <span style={{
-            fontSize: 9,
-            letterSpacing: 1,
-            textTransform: 'uppercase',
-            color,
-            fontWeight: 600,
+            fontSize: 9, letterSpacing: 1, textTransform: 'uppercase',
+            color, fontWeight: 600,
           }}>
             {TYPE_LABELS[memory.memory_type]}
           </span>
           <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
             {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
-          <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-faint)' }}>
-            imp: {memory.importance.toFixed(2)}
+          <span style={{
+            marginLeft: 'auto', fontSize: 10, color: 'var(--text-faint)',
+          }}>
+            imp: {memory.importance?.toFixed(2)}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-            decay: {memory.decay_factor.toFixed(2)}
+          <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+            decay: {memory.decay_factor?.toFixed(2)}
           </span>
         </div>
 
@@ -201,18 +240,23 @@ function MemoryCard({ memory }: { memory: Memory }) {
         </div>
 
         {expanded && (
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <div style={{
+            marginTop: 14, paddingTop: 14,
+            borderTop: '1px solid var(--border)',
+          }}>
             {memory.content && (
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 12 }}>
+              <div style={{
+                fontSize: 12, color: 'var(--text-muted)',
+                lineHeight: 1.7, marginBottom: 12,
+              }}>
                 {memory.content}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {memory.tags.map((tag) => (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {(memory.tags || []).map((tag) => (
                 <span key={tag} style={{
-                  fontSize: 10,
-                  padding: '2px 8px',
+                  fontSize: 10, padding: '2px 8px',
                   background: 'var(--blue-light)',
                   color: 'var(--blue)',
                   letterSpacing: 0.5,
@@ -220,10 +264,9 @@ function MemoryCard({ memory }: { memory: Memory }) {
                   {tag}
                 </span>
               ))}
-              {memory.concepts.map((c) => (
+              {(memory.concepts || []).map((c) => (
                 <span key={c} style={{
-                  fontSize: 10,
-                  padding: '2px 8px',
+                  fontSize: 10, padding: '2px 8px',
                   background: 'rgba(0,0,0,0.04)',
                   color: 'var(--text-muted)',
                   letterSpacing: 0.5,
@@ -247,8 +290,10 @@ function MemoryCard({ memory }: { memory: Memory }) {
               </div>
             )}
 
-            <div style={{ marginTop: 8, fontSize: 10, color: 'var(--text-faint)' }}>
-              ID: {memory.hash_id} · Source: {memory.source} · Accessed: {memory.access_count}x
+            <div style={{
+              marginTop: 8, fontSize: 10, color: 'var(--text-faint)',
+            }}>
+              ID: {memory.hash_id} / Source: {memory.source} / Accessed: {memory.access_count}x
             </div>
           </div>
         )}

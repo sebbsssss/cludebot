@@ -1,4 +1,4 @@
-import type { Memory, MemoryType } from '../types/memory';
+import type { Memory } from '../types/memory';
 
 // ─── Helpers ──────────────────────────────────────────────
 

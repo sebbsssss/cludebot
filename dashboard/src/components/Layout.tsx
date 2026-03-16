@@ -1,5 +1,6 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuthContext } from '../hooks/AuthContext';
+import { AgentSelector } from './AgentSelector';
 import styles from './Layout.module.css';
 
 const NAV_ITEMS = [
@@ -14,7 +15,6 @@ const NAV_ITEMS = [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { walletAddress, email, logout } = useAuthContext();
-  const location = useLocation();
   const displayName = email
     ? email
     : walletAddress
@@ -28,6 +28,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <a href="https://clude.io" target="_blank" rel="noopener">CLUDE</a>
           <span className={styles.badge}>Dashboard</span>
         </div>
+
+        <AgentSelector />
 
         <nav className={styles.nav}>
           {NAV_ITEMS.map((item) => (

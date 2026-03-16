@@ -1,6 +1,6 @@
-import type { Memory, MemoryStats, Entity, KnowledgeGraph, MemoryPack } from '../types/memory';
+import type { Memory, MemoryStats, KnowledgeGraph, MemoryPack, Agent } from '../types/memory';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://clude.io';
+const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 type ApiMode = 'legacy' | 'cortex';
 
@@ -65,19 +65,16 @@ class CludeAPI {
 
   // Recent Memories
   async getMemories(opts?: { hours?: number; limit?: number }): Promise<Memory[]> {
-    if (this.mode === 'cortex') {
-      const params = new URLSearchParams();
-      if (opts?.hours) params.set('hours', String(opts.hours));
-      if (opts?.limit) params.set('limit', String(opts.limit));
-      const result = await this.fetch<{ memories: Memory[]; count: number }>(
-        `/api/cortex/recent?${params}`,
-      );
-      return result.memories;
-    }
     const params = new URLSearchParams();
     if (opts?.hours) params.set('hours', String(opts.hours));
     if (opts?.limit) params.set('limit', String(opts.limit));
-    return this.fetch(`/api/memories?${params}`);
+
+    if (this.mode === 'cortex') {
+      const result = await this.fetch<any>(`/api/cortex/recent?${params}`);
+      return Array.isArray(result) ? result : (result?.memories || []);
+    }
+    const result = await this.fetch<any>(`/api/memories?${params}`);
+    return Array.isArray(result) ? result : (result?.memories || []);
   }
 
   // Brain / Consciousness
@@ -91,23 +88,25 @@ class CludeAPI {
   }> {
     if (this.mode === 'cortex') {
       const [selfModelResult, stats] = await Promise.all([
-        this.fetch<{ memories: Memory[] }>('/api/cortex/self-model'),
+        this.fetch<any>('/api/cortex/self-model'),
         this.fetch<MemoryStats>('/api/cortex/stats'),
       ]);
+      const selfMems = Array.isArray(selfModelResult) ? selfModelResult : (selfModelResult?.memories || []);
       return {
-        memories: selfModelResult.memories,
+        memories: selfMems,
         consciousness: {
-          selfModel: selfModelResult.memories,
-          recentDreams: [], // Not available in cortex mode
+          selfModel: selfMems,
+          recentDreams: [],
           stats,
         },
       };
     }
     const [memories, consciousness] = await Promise.all([
-      this.fetch<Memory[]>('/api/brain?hours=168&limit=50'),
-      this.fetch('/api/brain/consciousness'),
+      this.fetch<any>('/api/brain?hours=168&limit=50'),
+      this.fetch<any>('/api/brain/consciousness'),
     ]);
-    return { memories, consciousness: consciousness as any };
+    const memArr = Array.isArray(memories) ? memories : (memories?.memories || []);
+    return { memories: memArr, consciousness: consciousness || { selfModel: [], recentDreams: [], stats: null } };
   }
 
   // Knowledge Graph
@@ -160,7 +159,7 @@ class CludeAPI {
   // Memory Recall
   async recall(query: string, opts?: { limit?: number; types?: string[] }): Promise<Memory[]> {
     if (this.mode === 'cortex') {
-      const result = await this.fetch<{ memories: Memory[]; count: number }>(
+      const result = await this.fetch<any>(
         '/api/cortex/recall',
         {
           method: 'POST',
@@ -171,9 +170,9 @@ class CludeAPI {
           }),
         },
       );
-      return result.memories;
+      return Array.isArray(result) ? result : (result?.memories || []);
     }
-    return this.fetch('/api/demo/recall', {
+    const result = await this.fetch<any>('/api/demo/recall', {
       method: 'POST',
       body: JSON.stringify({
         query,
@@ -181,6 +180,7 @@ class CludeAPI {
         memoryTypes: opts?.types,
       }),
     });
+    return Array.isArray(result) ? result : (result?.memories || []);
   }
 
   // Export Memory Pack
@@ -218,6 +218,16 @@ class CludeAPI {
       return [];
     }
     return this.fetch('/api/memory-packs');
+  }
+
+  // List agents
+  async listAgents(): Promise<Agent[]> {
+    try {
+      const result = await this.fetch<any>('/api/dashboard/agents');
+      return Array.isArray(result) ? result : (result?.agents || []);
+    } catch {
+      return [];
+    }
   }
 }
 
