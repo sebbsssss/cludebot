@@ -8,6 +8,7 @@ class CludeAPI {
   private token: string | null = null;
   private agentEndpoint: string = API_BASE;
   private mode: ApiMode = 'legacy';
+  private walletAddress: string | null = null;
 
   setToken(token: string) {
     this.token = token;
@@ -23,6 +24,19 @@ class CludeAPI {
 
   getMode(): ApiMode {
     return this.mode;
+  }
+
+  setWalletAddress(wallet: string | null) {
+    this.walletAddress = wallet;
+  }
+
+  /** Append wallet param to legacy endpoints for owner scoping */
+  private walletParam(params?: URLSearchParams): URLSearchParams {
+    const p = params || new URLSearchParams();
+    if (this.mode === 'legacy' && this.walletAddress) {
+      p.set('wallet', this.walletAddress);
+    }
+    return p;
   }
 
   private async fetch<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -60,7 +74,8 @@ class CludeAPI {
     if (this.mode === 'cortex') {
       return this.fetch('/api/cortex/stats');
     }
-    return this.fetch('/api/memory-stats');
+    const params = this.walletParam();
+    return this.fetch(`/api/memory-stats?${params}`);
   }
 
   // Recent Memories
@@ -73,6 +88,7 @@ class CludeAPI {
       const result = await this.fetch<any>(`/api/cortex/recent?${params}`);
       return Array.isArray(result) ? result : (result?.memories || []);
     }
+    this.walletParam(params);
     const result = await this.fetch<any>(`/api/memories?${params}`);
     return Array.isArray(result) ? result : (result?.memories || []);
   }
@@ -101,9 +117,10 @@ class CludeAPI {
         },
       };
     }
+    const params = this.walletParam();
     const [memories, consciousness] = await Promise.all([
-      this.fetch<any>('/api/brain?hours=168&limit=50'),
-      this.fetch<any>('/api/brain/consciousness'),
+      this.fetch<any>(`/api/brain?hours=168&limit=50&${params}`),
+      this.fetch<any>(`/api/brain/consciousness?${params}`),
     ]);
     const memArr = Array.isArray(memories) ? memories : (memories?.memories || []);
     return { memories: memArr, consciousness: consciousness || { selfModel: [], recentDreams: [], stats: null } };
@@ -117,7 +134,7 @@ class CludeAPI {
     if (this.mode === 'cortex') {
       return { nodes: [], edges: [] };
     }
-    const params = new URLSearchParams();
+    const params = this.walletParam();
     if (opts?.includeMemories) params.set('includeMemories', 'true');
     if (opts?.minMentions) params.set('minMentions', String(opts.minMentions));
     return this.fetch(`/api/graph?${params}`);
@@ -133,7 +150,8 @@ class CludeAPI {
     if (this.mode === 'cortex') {
       return { entityCount: 0, relationCount: 0, mentionCount: 0, topEntities: [] };
     }
-    return this.fetch('/api/graph/stats');
+    const params = this.walletParam();
+    return this.fetch(`/api/graph/stats?${params}`);
   }
 
   // Venice Stats
@@ -178,6 +196,7 @@ class CludeAPI {
         query,
         limit: opts?.limit || 10,
         memoryTypes: opts?.types,
+        wallet: this.walletAddress,
       }),
     });
     return Array.isArray(result) ? result : (result?.memories || []);

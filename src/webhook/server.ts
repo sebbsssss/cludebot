@@ -104,9 +104,11 @@ export function createServer(): express.Application {
   });
 
   // Memory stats API (for frontend cortex visualization)
-  app.get('/api/memory-stats', async (_req: Request, res: Response) => {
+  app.get('/api/memory-stats', async (req: Request, res: Response) => {
     try {
-      const stats = await getMemoryStats();
+      const wallet = req.query.wallet as string | undefined;
+      const run = () => getMemoryStats();
+      const stats = wallet ? await withOwnerWallet(wallet, run) : await run();
       res.json(stats);
     } catch (err) {
       log.error({ err }, 'Memory stats endpoint error');
@@ -119,7 +121,9 @@ export function createServer(): express.Application {
     try {
       const hours = Math.min(parseInt(req.query.hours as string) || 168, 720); // Default 1 week, max 30 days
       const limit = Math.min(parseInt(req.query.limit as string) || 30, 50);
-      const memories = await getRecentMemories(hours, undefined, limit);
+      const wallet = req.query.wallet as string | undefined;
+      const run = () => getRecentMemories(hours, undefined, limit);
+      const memories = wallet ? await withOwnerWallet(wallet, run) : await run();
       res.json({
         memories: memories.map(m => ({
           id: m.id,
