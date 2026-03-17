@@ -1019,13 +1019,16 @@ function extractQueryTerms(query: string): string[] {
 /**
  * Enhanced scoring function with optional vector similarity component.
  *
- * When vector similarity is available:
- *   score = (w_recency * recency + w_relevance * keyword_relevance
- *            + w_importance * importance + w_vector * vector_sim) * decay
+ * Unified formula (vector weight always in denominator when search was performed):
+ *   score = (w_recency * recency + w_relevance * keyword_rel
+ *            + w_importance * importance + w_vector * vector_sim) / sum(weights) * decay
  *
- * When not available (graceful fallback):
- *   score = (w_recency * recency + w_relevance * keyword_relevance
- *            + w_importance * importance) * decay
+ * When vector search wasn't performed (graceful fallback):
+ *   score = (w_recency * recency + w_relevance * keyword_rel
+ *            + w_importance * importance) / sum(weights_no_vector) * decay
+ *
+ * Key: memories not found by vector search score lower (vectorSim=0 in numerator,
+ * but VECTOR weight still in denominator), naturally penalizing noise.
  */
 export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   const now = Date.now();
@@ -1070,27 +1073,27 @@ export function scoreMemory(mem: Memory, opts: RecallOptions): number {
   // Vector similarity component (0 if not available)
   const vectorSim = opts._vectorScores?.get(mem.id) || 0;
 
-  // Base score: always normalized by the same denominator so keyword signal isn't diluted
-  const baseDenom = RETRIEVAL_WEIGHT_RECENCY + RETRIEVAL_WEIGHT_RELEVANCE + RETRIEVAL_WEIGHT_IMPORTANCE;
+  // Unified weighted scoring — vector similarity is a FIRST-CLASS signal, not a bonus.
+  //
+  // RETRIEVAL_WEIGHT_VECTOR (4.0) is ALWAYS in the denominator when vector search was performed.
+  // This means memories NOT found by vector search (vectorSim=0) are naturally penalized —
+  // they score lower because they can't fill the vector slot. This prevents noise from
+  // outranking semantically relevant memories.
+  //
+  // When vector search wasn't performed (embedding disabled, RPC failed), we exclude
+  // the vector weight so keyword-only recall still works at full scale.
+  const vectorSearchActive = opts._vectorScores && opts._vectorScores.size > 0;
+  const denom = RETRIEVAL_WEIGHT_RECENCY + RETRIEVAL_WEIGHT_RELEVANCE + RETRIEVAL_WEIGHT_IMPORTANCE
+    + (vectorSearchActive ? RETRIEVAL_WEIGHT_VECTOR : 0);
   let rawScore =
     (RETRIEVAL_WEIGHT_RECENCY * recency +
      RETRIEVAL_WEIGHT_RELEVANCE * relevance +
-     RETRIEVAL_WEIGHT_IMPORTANCE * mem.importance) / baseDenom;
+     RETRIEVAL_WEIGHT_IMPORTANCE * mem.importance +
+     (vectorSearchActive ? RETRIEVAL_WEIGHT_VECTOR * vectorSim : 0)) / denom;
 
-  // Vector is an additive bonus — rewards agreement between semantic and keyword signals
-  // Memories with both high keyword match AND high vector similarity rank highest
-  if (vectorSim > 0) {
-    // Scale: vectorSim ∈ [0,1], bonus ∈ [0, ~0.35] — meaningful but doesn't overwhelm base score
-    const vectorBonus = 0.35 * vectorSim;
-    // Extra bonus when keyword relevance agrees with vector (hybrid agreement signal)
-    const agreementBonus = textScore > 0.6 ? 0.15 * vectorSim : 0;
-    rawScore += vectorBonus + agreementBonus;
-  }
-
-  // Penalize vector-only candidates: high vector similarity but zero keyword overlap
-  // These are typically semantically similar but factually wrong (e.g., same speaker, different facts)
-  if (vectorSim > 0 && textScore <= 0.3 && tagScore <= 0.5) {
-    rawScore *= 0.6; // dampen — vector alone isn't enough to rank high
+  // Hybrid agreement bonus: when keyword AND vector both agree, extra confidence
+  if (vectorSim > 0 && textScore > 0.6) {
+    rawScore += 0.10 * vectorSim; // small bonus for dual-signal agreement
   }
 
   // Knowledge type boost: semantic/procedural/self_model rank above raw episodic
