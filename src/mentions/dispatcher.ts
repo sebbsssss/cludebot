@@ -21,8 +21,19 @@ import { loadInstruction } from '../utils/env-persona';
 import { getVestingInfo, getCAResponse, CLUDE_CA, getTokenStatus } from '../knowledge/tokenomics';
 import { checkInput, getCASpoofResponse } from '../core/input-guardrails';
 import { generateVeniceResponseWithSearch, isVeniceEnabled } from '../core/venice-client';
+import { checkRateLimit } from '../core/database';
 
 const log = createChildLogger('dispatcher');
+
+// ── Rate limits ──────────────────────────────────────────────────────
+// Per-user: max 3 replies to the same user per hour (avoid spammy convos)
+const USER_REPLY_LIMIT = 3;
+const USER_REPLY_WINDOW_MIN = 60;
+// Global: max 30 replies per hour (well under X free-tier limits)
+const GLOBAL_REPLY_LIMIT = 30;
+const GLOBAL_REPLY_WINDOW_MIN = 60;
+// Max mentions to process per poll cycle (prevent backlog floods)
+export const MAX_PER_CYCLE = 8;
 
 // Tweets/conversations to ignore completely (even if Clude is tagged).
 // Add tweet IDs or conversation IDs here to block engagement.
@@ -48,6 +59,24 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   if (!claimed) {
     log.debug({ tweetId }, 'Tweet already claimed by another process');
     return;
+  }
+
+  // ── Rate limit checks ──
+  // Global hourly cap
+  const globalOk = await checkRateLimit('x:replies:global', GLOBAL_REPLY_LIMIT, GLOBAL_REPLY_WINDOW_MIN);
+  if (!globalOk) {
+    log.warn({ tweetId }, 'Global reply rate limit reached, skipping');
+    await markProcessed(tweetId, 'rate-limited');
+    return;
+  }
+  // Per-user cooldown (skip for creator)
+  if (authorId && !isCreator(authorId)) {
+    const userOk = await checkRateLimit(`x:replies:user:${authorId}`, USER_REPLY_LIMIT, USER_REPLY_WINDOW_MIN);
+    if (!userOk) {
+      log.info({ tweetId, authorId }, 'Per-user reply cooldown, skipping');
+      await markProcessed(tweetId, 'user-rate-limited');
+      return;
+    }
   }
 
   // Check blocked tweets/conversations

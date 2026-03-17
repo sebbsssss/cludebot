@@ -1,5 +1,5 @@
 import { getMentions } from '../core/x-client';
-import { dispatchMention } from './dispatcher';
+import { dispatchMention, MAX_PER_CYCLE } from './dispatcher';
 import { config } from '../config';
 import { createChildLogger } from '../core/logger';
 
@@ -22,14 +22,17 @@ async function poll(): Promise<void> {
     // Update last seen ID (mentions come newest first)
     lastSeenId = mentions[0].id;
 
-    // Process oldest first for chronological order
-    const sorted = [...mentions].reverse();
+    // Process oldest first, capped per cycle to avoid burst replying
+    const sorted = [...mentions].reverse().slice(0, MAX_PER_CYCLE);
+    if (mentions.length > MAX_PER_CYCLE) {
+      log.info({ total: mentions.length, processing: MAX_PER_CYCLE }, 'Capping mentions per cycle');
+    }
 
     for (const mention of sorted) {
       await dispatchMention(mention);
 
-      // Small delay between processing to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Delay between processing to pace replies
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
   } catch (err) {
     log.error({ err }, 'Mention polling failed');

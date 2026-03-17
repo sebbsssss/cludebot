@@ -14,6 +14,39 @@ const client = new TwitterApi({
 
 const rwClient = client.readWrite;
 
+// ── Post throttle ────────────────────────────────────────────────────
+// Enforces a minimum gap between ANY write to X (reply, tweet, thread tweet).
+// Prevents bursting and keeps us well under X rate limits.
+const MIN_POST_GAP_MS = 5_000; // 5s between posts → max ~12/min
+let lastPostTime = 0;
+
+async function throttlePost(): Promise<void> {
+  const now = Date.now();
+  const elapsed = now - lastPostTime;
+  if (elapsed < MIN_POST_GAP_MS) {
+    const wait = MIN_POST_GAP_MS - elapsed;
+    log.debug({ waitMs: wait }, 'Throttling post');
+    await new Promise(r => setTimeout(r, wait));
+  }
+  lastPostTime = Date.now();
+}
+
+/** Retry once on 429 with the delay X tells us, otherwise rethrow. */
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    if (err?.code === 429 || err?.data?.status === 429) {
+      const retryAfter = Number(err?.rateLimit?.reset || 0) * 1000 - Date.now();
+      const wait = Math.max(retryAfter, 60_000); // at least 60s
+      log.warn({ waitMs: wait }, 'X API 429 — backing off');
+      await new Promise(r => setTimeout(r, wait));
+      return fn();
+    }
+    throw err;
+  }
+}
+
 // X Premium allows up to 4000 characters (was 280 for standard accounts)
 const MAX_TWEET_LENGTH = 4000;
 
@@ -50,14 +83,16 @@ function smartTruncate(text: string, maxLength: number = MAX_TWEET_LENGTH): stri
 export async function postReply(tweetId: string, text: string): Promise<string> {
   const truncated = smartTruncate(stripEmDashes(text));
   log.info({ tweetId, originalLength: text.length, length: truncated.length }, 'Posting reply');
-  const result = await rwClient.v2.reply(truncated, tweetId);
+  await throttlePost();
+  const result = await withRetry(() => rwClient.v2.reply(truncated, tweetId));
   return result.data.id;
 }
 
 export async function postTweet(text: string): Promise<string> {
   const truncated = smartTruncate(stripEmDashes(text));
   log.info({ originalLength: text.length, length: truncated.length }, 'Posting tweet');
-  const result = await rwClient.v2.tweet(truncated);
+  await throttlePost();
+  const result = await withRetry(() => rwClient.v2.tweet(truncated));
   return result.data.id;
 }
 
@@ -68,11 +103,13 @@ export async function postThread(texts: string[]): Promise<string[]> {
   let previousId: string | undefined;
   for (const text of texts) {
     const truncated = smartTruncate(stripEmDashes(text));
+    await throttlePost();
     if (!previousId) {
-      const result = await rwClient.v2.tweet(truncated);
+      const result = await withRetry(() => rwClient.v2.tweet(truncated));
       previousId = result.data.id;
     } else {
-      const result = await rwClient.v2.reply(truncated, previousId);
+      const pid = previousId;
+      const result = await withRetry(() => rwClient.v2.reply(truncated, pid));
       previousId = result.data.id;
     }
     tweetIds.push(previousId);
