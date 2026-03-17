@@ -58,7 +58,7 @@ export function useAuth(): AuthState {
     }
   }, []);
 
-  // Privy auth: set token once, then signal refresh once
+  // Privy auth: set token, but DON'T refresh until wallet is available
   useEffect(() => {
     if (privyAuth && !cortexAuth && !tokenReady) {
       setAuthMode('privy');
@@ -68,7 +68,8 @@ export function useAuth(): AuthState {
           api.setToken(token);
           api.setWalletAddress(walletAddress);
           setTokenReady(true);
-          if (!hasRefreshed.current) {
+          // Only refresh if wallet is already available; otherwise wait for wallet effect
+          if (walletAddress && !hasRefreshed.current) {
             hasRefreshed.current = true;
             api.emitRefresh();
           }
@@ -78,12 +79,12 @@ export function useAuth(): AuthState {
   }, [privyAuth, cortexAuth, tokenReady, walletAddress]);
 
   // Update wallet on API when it changes (Privy wallets load async)
+  // This is the primary refresh trigger — fires once wallet address is resolved
   useEffect(() => {
     if (authMode === 'privy' && walletAddress) {
-      const prev = api.getMode() === 'legacy';
       api.setWalletAddress(walletAddress);
-      // If wallet just became available after initial auth, re-fetch with proper scoping
-      if (prev && tokenReady && !hasRefreshed.current) {
+      // Always re-fetch when wallet becomes available (even if hasRefreshed was set)
+      if (tokenReady) {
         hasRefreshed.current = true;
         api.emitRefresh();
       }

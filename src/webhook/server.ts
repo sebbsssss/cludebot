@@ -23,13 +23,19 @@ import { dashboardRoutes, autoRegisterClude } from './dashboard-routes';
 const log = createChildLogger('server');
 
 /**
- * Resolve owner scope from request: ?wallet= param, or Privy user ID.
- * Returns null if no identity found.
+ * Resolve owner scope from request: ?wallet= param preferred (Solana address).
+ * Falls back to Privy user ID only if no wallet param.
+ * The frontend MUST send ?wallet= for proper memory scoping.
  */
 function getRequestOwner(req: Request): string | null {
   const wallet = req.query.wallet as string | undefined;
   if (wallet) return wallet;
-  if (req.privyUser?.userId) return req.privyUser.userId;
+  // Privy DID fallback — won't match owner_wallet in memories table,
+  // but prevents unscoped data leaking. Frontend should always send ?wallet=.
+  if (req.privyUser?.userId) {
+    log.debug({ privyUserId: req.privyUser.userId }, 'No wallet param, falling back to Privy DID (memories will likely be empty)');
+    return req.privyUser.userId;
+  }
   return null;
 }
 
