@@ -11,7 +11,7 @@ export const TWEET_MAX_LENGTH = 4000;
 export const TWEET_SAFE_LENGTH = 3900;
 
 // X handle (bot account)
-export const BOT_X_HANDLE = process.env.BOT_X_HANDLE || 'cludebotclone';
+export const BOT_X_HANDLE = process.env.BOT_X_HANDLE || 'cludebot';
 
 // Memory system
 export const MEMORY_DECAY_RATE = 0.95;                  // Legacy: uniform decay (now per-type below)
@@ -32,9 +32,9 @@ export const DECAY_RATES: Record<string, number> = {
 // Memory retrieval — additive scoring (Park et al. 2023, Generative Agents)
 export const RECENCY_DECAY_BASE = 0.995;               // Exponential: 0.995^hours since last access
 export const RETRIEVAL_WEIGHT_RECENCY = 1.0;            // Boosted: recent memories matter more
-export const RETRIEVAL_WEIGHT_RELEVANCE = 2.0;          // Keyword relevance (lower when vector available)
+export const RETRIEVAL_WEIGHT_RELEVANCE = 2.0;          // Keyword relevance
 export const RETRIEVAL_WEIGHT_IMPORTANCE = 2.0;         // Importance stays the same
-export const RETRIEVAL_WEIGHT_VECTOR = 4.0;             // Vector similarity dominates when available
+export const RETRIEVAL_WEIGHT_VECTOR = 4.0;             // Vector similarity dominates when available (works well for diverse memory corpus)
 
 // Knowledge type boost — semantic/procedural/self_model rank higher than raw episodic
 export const KNOWLEDGE_TYPE_BOOST: Record<string, number> = {

@@ -1,6 +1,7 @@
 import { TwitterApi, TweetV2, UserV2 } from 'twitter-api-v2';
 import { config } from '../config';
 import { createChildLogger } from './logger';
+import { BOT_X_HANDLE } from '../utils/constants';
 
 const log = createChildLogger('x-client');
 
@@ -217,7 +218,7 @@ export interface CampaignTweet {
 }
 
 /**
- * Search tweets mentioning @cludebotclone with #CludeHackathon.
+ * Search tweets mentioning @cludebot with #CludeHackathon.
  * Requires X API Basic tier ($100/mo) for v2.search().
  */
 export async function searchHashtagTweets(
@@ -228,7 +229,7 @@ export async function searchHashtagTweets(
 
   try {
     // Broad match: direct mentions, hashtag, or $CLUDE with campaign keywords
-    const query = '(@cludebotclone OR #CludeHackathon OR ($CLUDE (hackathon OR "10 days" OR "growing a brain" OR "blockchain brain"))) -is:retweet';
+    const query = `(@${BOT_X_HANDLE} OR #CludeHackathon OR ($CLUDE (hackathon OR "10 days" OR "growing a brain" OR "blockchain brain"))) -is:retweet`;
     const params: Record<string, string> = {
       'tweet.fields': 'created_at,author_id,public_metrics',
       'expansions': 'author_id',
@@ -273,7 +274,7 @@ export async function searchHashtagTweets(
 }
 
 /**
- * Search tweets mentioning $CLUDE or @cludebotclone.
+ * Search tweets mentioning $CLUDE or @cludebot.
  * Used by the sentiment monitor for Telegram digests.
  */
 export async function searchTokenMentions(
@@ -283,7 +284,7 @@ export async function searchTokenMentions(
   log.info({ sinceId, maxResults }, 'Searching $CLUDE mentions');
 
   try {
-    const query = '($CLUDE OR @cludebotclone) -is:retweet';
+    const query = `($CLUDE OR @${BOT_X_HANDLE}) -is:retweet`;
     const params: Record<string, string> = {
       'tweet.fields': 'created_at,author_id,public_metrics',
       'expansions': 'author_id',
