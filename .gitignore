@@ -5,3 +5,5 @@ dist/
 *.db-shm
 *.db-wal
 .persona-backup/
+.claude/
+clude-memory-skill/

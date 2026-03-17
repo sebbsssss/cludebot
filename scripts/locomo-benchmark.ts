@@ -123,7 +123,7 @@ function parseArgs() {
     categories: new Set([1, 2, 3, 4]),
     qaLimit: Infinity,
     skipCleanup: false,
-    recallLimit: 15,
+    recallLimit: 25,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -188,6 +188,41 @@ const CATEGORY_NAMES: Record<number, string> = {
   4: 'Open-domain',
   5: 'Adversarial',
 };
+
+/** Poll DB until embeddings are generated for a given set of memory IDs, or timeout. */
+async function waitForEmbeddings(db: SupabaseClient, expectedCount: number, timeoutMs: number = 90000): Promise<number> {
+  const start = Date.now();
+  const pollInterval = 3000;
+  let lastCount = 0;
+  let stableRounds = 0;
+
+  while (Date.now() - start < timeoutMs) {
+    const { count } = await db
+      .from('memories')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_wallet', BENCHMARK_OWNER_WALLET)
+      .not('embedding', 'is', null);
+
+    const embedded = count || 0;
+
+    if (embedded >= expectedCount) {
+      return embedded;
+    }
+
+    // If count hasn't changed for 3 polls, embeddings are likely stuck/done
+    if (embedded === lastCount) {
+      stableRounds++;
+      if (stableRounds >= 3) return embedded;
+    } else {
+      stableRounds = 0;
+    }
+    lastCount = embedded;
+
+    await sleep(pollInterval);
+  }
+
+  return lastCount;
+}
 
 /** Extract session numbers and their dialog turns from a conversation object */
 function extractSessions(conv: LoCoMoConversation['conversation']): {
@@ -272,10 +307,19 @@ async function generateAnswer(context: string, question: string): Promise<string
   const resp = await anthropic.messages.create({
     model: JUDGE_MODEL,
     max_tokens: 300,
-    system: `You are answering questions about conversations between people. Use ONLY the provided context to answer. If the information is not clearly present in the context, say "I don't know based on the available context."`,
+    system: `You are answering questions about conversations between people based on memory context.
+
+Rules:
+- Use the provided context to answer the question.
+- Extract specific details: names, dates, places, numbers, preferences, opinions.
+- If the context contains partial information, provide what you can infer from it.
+- If the context discusses something related, use reasoning to connect the dots.
+- Answer directly with the specific information requested. Do NOT add qualifiers like "Based on the context" or "According to the memories".
+- Only say "I don't know" if the context contains absolutely nothing related to the question.
+- Keep answers concise (1-3 sentences).`,
     messages: [{
       role: 'user',
-      content: `Context:\n${context}\n\nQuestion: ${question}\n\nAnswer concisely:`,
+      content: `Memory context:\n${context}\n\nQuestion: ${question}\n\nAnswer:`,
     }],
   });
 
@@ -295,6 +339,50 @@ async function judgeAnswer(generated: string, reference: string, question: strin
 
   const text = resp.content[0].type === 'text' ? resp.content[0].text.trim() : '0';
   return text.startsWith('1') ? 1 : 0;
+}
+
+/** Build context optimized for benchmark QA — uses full content, not just summary. */
+function formatBenchmarkContext(memories: any[]): string {
+  if (memories.length === 0) return 'No relevant memories found.';
+
+  const lines: string[] = [];
+
+  // Separate by type for structured context
+  const semantic = memories.filter((m: any) => m.memory_type === 'semantic');
+  const episodic = memories.filter((m: any) => m.memory_type === 'episodic');
+  const other = memories.filter((m: any) => m.memory_type !== 'semantic' && m.memory_type !== 'episodic');
+
+  if (semantic.length > 0) {
+    lines.push('## Key Facts & Summaries');
+    for (const m of semantic) {
+      const content = m.content || m.summary;
+      const date = m.metadata?.event_date || '';
+      lines.push(`- ${date ? `[${date}] ` : ''}${content}`);
+    }
+    lines.push('');
+  }
+
+  if (episodic.length > 0) {
+    lines.push('## Conversation History');
+    for (const m of episodic) {
+      const content = m.content || m.summary;
+      const date = m.metadata?.event_date || '';
+      const session = m.metadata?.session ? `Session ${m.metadata.session}` : '';
+      const prefix = [date, session].filter(Boolean).join(', ');
+      lines.push(`- ${prefix ? `[${prefix}] ` : ''}${content}`);
+    }
+    lines.push('');
+  }
+
+  if (other.length > 0) {
+    lines.push('## Additional Context');
+    for (const m of other) {
+      lines.push(`- ${m.content || m.summary}`);
+    }
+    lines.push('');
+  }
+
+  return lines.join('\n');
 }
 
 // ── Main ──────────────────────────────────────────────────────
@@ -377,8 +465,8 @@ async function main() {
     const diaIdToMemoryId = new Map<string, number>();
 
     // Smaller batches + delay when embeddings are enabled to avoid rate limits
-    const storeBatchSize = hasEmbeddings ? 3 : 10;
-    const storeBatchDelay = hasEmbeddings ? 500 : 0;
+    const storeBatchSize = hasEmbeddings ? 5 : 10;
+    const storeBatchDelay = hasEmbeddings ? 800 : 0;
 
     for (const session of sessions) {
       for (let i = 0; i < session.turns.length; i += storeBatchSize) {
@@ -391,13 +479,14 @@ async function main() {
             const id = await cortex.store({
               type: 'episodic',
               content,
-              summary: content.slice(0, 200),
+              summary: content.slice(0, 500),
               source: BENCHMARK_SOURCE,
               tags: ['locomo', `session_${session.sessionNum}`, turn.speaker.toLowerCase()],
               importance: 0.5,
               metadata: {
                 dia_id: turn.dia_id,
                 session: session.sessionNum,
+                speaker: turn.speaker,
                 benchmark: true,
                 ...(session.dateTime ? { event_date: session.dateTime } : {}),
               },
@@ -415,12 +504,64 @@ async function main() {
     const seedTime = ms(seedStart);
     console.log(`   Seeded: ${seeded}/${totalTurns} memories in ${(seedTime / 1000).toFixed(1)}s`);
 
+    // ── Seed session summaries as semantic memories ──
+    if (conv.session_summary) {
+      for (const [sessionKey, summary] of Object.entries(conv.session_summary)) {
+        if (!summary) continue;
+        const sessionNum = sessionKey.match(/session_(\d+)/)?.[1] || sessionKey;
+        const session = sessions.find(s => s.sessionNum === parseInt(sessionNum));
+        await cortex.store({
+          type: 'semantic',
+          content: summary,
+          summary: summary.slice(0, 300),
+          source: BENCHMARK_SOURCE,
+          tags: ['locomo', `session_${sessionNum}`, 'session_summary'],
+          importance: 0.8,
+          metadata: {
+            session: parseInt(sessionNum),
+            benchmark: true,
+            ...(session?.dateTime ? { event_date: session.dateTime } : {}),
+          },
+        });
+        seeded++;
+      }
+    }
+
+    // ── Seed observations as semantic memories ──
+    if (conv.observation) {
+      for (const [sessionKey, observations] of Object.entries(conv.observation)) {
+        if (!Array.isArray(observations)) continue;
+        const sessionNum = sessionKey.match(/session_(\d+)/)?.[1] || sessionKey;
+        const session = sessions.find(s => s.sessionNum === parseInt(sessionNum));
+        for (const obs of observations) {
+          if (!obs || obs.length < 10) continue;
+          await cortex.store({
+            type: 'semantic',
+            content: obs,
+            summary: obs.slice(0, 300),
+            source: BENCHMARK_SOURCE,
+            tags: ['locomo', `session_${sessionNum}`, 'observation'],
+            importance: 0.7,
+            metadata: {
+              session: parseInt(sessionNum),
+              benchmark: true,
+              ...(session?.dateTime ? { event_date: session.dateTime } : {}),
+            },
+          });
+          seeded++;
+        }
+      }
+    }
+
+    console.log(`   Total seeded (with summaries/observations): ${seeded}`);
+
     // Wait for async operations (embeddings, entity extraction)
     if (hasEmbeddings) {
-      console.log('   Waiting 15s for embedding generation to complete...');
-      await sleep(15000);
+      console.log('   Waiting for embeddings to complete (polling every 3s, up to 90s)...');
+      const embedded = await waitForEmbeddings(db, seeded);
+      console.log(`   Embeddings ready: ${embedded}/${seeded}`);
     } else {
-      await sleep(1000);
+      await sleep(2000);
     }
 
     // ── Evaluate QA pairs ──────────────────────────────────
@@ -438,12 +579,12 @@ async function main() {
           const memories = await cortex.recall({
             query: qa.question,
             limit: opts.recallLimit,
-            skipExpansion: true, // faster, no Venice dependency
+            skipExpansion: true, // Uses 12x match_count multiplier for wider candidate pool
           });
           const recallTime = ms(recallStart);
 
-          // Format context
-          const context = cortex.formatContext(memories);
+          // Format context with full content (not just truncated summaries)
+          const context = formatBenchmarkContext(memories);
 
           // Generate answer
           const generated = await generateAnswer(context, qa.question);

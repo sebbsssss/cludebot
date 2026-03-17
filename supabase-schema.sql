@@ -137,7 +137,8 @@ CREATE OR REPLACE FUNCTION match_memories(
   filter_types text[] DEFAULT NULL,
   filter_user text DEFAULT NULL,
   min_decay float DEFAULT 0.1,
-  filter_owner text DEFAULT NULL
+  filter_owner text DEFAULT NULL,
+  filter_tags text[] DEFAULT NULL
 )
 RETURNS TABLE (id bigint, similarity float)
 LANGUAGE plpgsql AS $$
@@ -150,6 +151,7 @@ BEGIN
     AND (filter_types IS NULL OR m.memory_type = ANY(filter_types))
     AND (filter_user IS NULL OR m.related_user = filter_user)
     AND (filter_owner IS NULL OR m.owner_wallet = filter_owner)
+    AND (filter_tags IS NULL OR m.tags && filter_tags)
     AND (1 - (m.embedding <=> query_embedding)) > match_threshold
   ORDER BY m.embedding <=> query_embedding
   LIMIT match_count;

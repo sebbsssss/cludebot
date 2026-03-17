@@ -651,6 +651,8 @@ if (embeddedMode) {
   document.querySelector('nav').style.display = 'none';
   const psyche = document.getElementById('psycheCard');
   if (psyche) psyche.style.display = 'none';
+  // Hide all HUD overlays in embedded mode
+  document.querySelectorAll('.hud, .filter-bar, .detail, .activity, .toast-container').forEach(el => el.style.display = 'none');
   document.documentElement.style.background = 'transparent';
   document.body.style.background = 'transparent';
 }
