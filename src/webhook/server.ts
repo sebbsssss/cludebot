@@ -1092,10 +1092,9 @@ export function createServer(): express.Application {
     next();
   });
 
-  // Setup wizard at /setup
-  app.get('/setup', (req: Request, _res: Response, next: express.NextFunction) => {
-    req.url = '/setup.html';
-    next();
+  // Redirect /setup to dashboard setup page
+  app.get('/setup', (_req: Request, res: Response) => {
+    res.redirect('/dashboard/setup');
   });
 
   // Redirect old /dashboard-new to /dashboard
