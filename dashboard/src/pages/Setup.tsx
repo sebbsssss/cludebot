@@ -4,8 +4,6 @@ import { useAuthContext } from '../hooks/AuthContext';
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 const CORTEX_HOST = 'https://clude.io';
 
-type IDE = 'claude-code' | 'claude-desktop' | 'cursor';
-
 function getMcpConfig(apiKey: string): string {
   return JSON.stringify({
     mcpServers: {
@@ -19,14 +17,6 @@ function getMcpConfig(apiKey: string): string {
       },
     },
   }, null, 2);
-}
-
-function getConfigPath(ide: IDE): string {
-  switch (ide) {
-    case 'claude-code': return '.mcp.json (project root)';
-    case 'claude-desktop': return '~/Library/Application Support/Claude/claude_desktop_config.json';
-    case 'cursor': return '~/.cursor/mcp.json';
-  }
 }
 
 function CopyBtn({ text, label }: { text: string; label?: string }) {
@@ -56,6 +46,45 @@ function CopyBtn({ text, label }: { text: string; label?: string }) {
   );
 }
 
+function CodeBlock({ label, code, copyText }: { label: string; code: string; copyText?: string }) {
+  return (
+    <div style={{ border: '1px solid var(--border)', marginBottom: 12 }}>
+      <div style={{
+        padding: '8px 14px', borderBottom: '1px solid var(--border)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+          {label}
+        </span>
+        <CopyBtn text={copyText || code} label="Copy" />
+      </div>
+      <pre style={{
+        padding: 14, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6,
+        background: 'var(--bg-warm)', overflow: 'auto', maxHeight: 280,
+        margin: 0, whiteSpace: 'pre',
+      }}>
+        {code}
+      </pre>
+    </div>
+  );
+}
+
+function InlineCode({ code }: { code: string }) {
+  return (
+    <div style={{
+      display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12,
+    }}>
+      <code style={{
+        fontSize: 12, padding: '10px 14px', background: 'var(--bg-warm)',
+        border: '1px solid var(--border)', flex: 1, display: 'block',
+      }}>
+        {code}
+      </code>
+      <CopyBtn text={code} />
+    </div>
+  );
+}
+
 export function Setup() {
   const { authMode } = useAuthContext();
   const [agentName, setAgentName] = useState('');
@@ -63,10 +92,8 @@ export function Setup() {
   const [apiKey, setApiKey] = useState('');
   const [error, setError] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [selectedIde, setSelectedIde] = useState<IDE>('claude-code');
-  const [activeTab, setActiveTab] = useState<'mcp' | 'sdk' | 'cli'>('mcp');
+  const [activeTab, setActiveTab] = useState<'terminal' | 'config' | 'sdk' | 'openclaw'>('terminal');
 
-  // If user is in cortex mode, pre-fill their existing key
   const existingKey = authMode === 'cortex' ? (localStorage.getItem('cortex_api_key') || '') : '';
   const activeKey = apiKey || existingKey;
 
@@ -90,11 +117,8 @@ export function Setup() {
     finally { setRegistering(false); }
   }
 
-  const ides: { id: IDE; name: string; desc: string }[] = [
-    { id: 'claude-code', name: 'Claude Code', desc: 'CLI / VS Code' },
-    { id: 'claude-desktop', name: 'Claude Desktop', desc: 'macOS / Windows' },
-    { id: 'cursor', name: 'Cursor', desc: 'AI IDE' },
-  ];
+  const installCmd = `CORTEX_API_KEY=${activeKey || 'clk_...'} npx clude-bot mcp-install`;
+  const setupCmd = `npm install -g clude-bot\nclude-bot setup`;
 
   const sdkCode = `import { Cortex } from 'clude-bot';
 
@@ -116,9 +140,6 @@ const memories = await brain.recall({
   query: 'pricing',
   limit: 5,
 });`;
-
-  const cliCode = `npm install -g clude-bot
-clude-bot setup`;
 
   return (
     <div>
@@ -163,7 +184,7 @@ clude-bot setup`;
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '12px 14px', background: 'var(--bg-warm)',
-                border: '1px solid var(--border)', marginBottom: 8,
+                border: '1px solid var(--border)', marginBottom: 12,
               }}>
                 <code style={{ fontSize: 12, flex: 1, wordBreak: 'break-all' }}>
                   {showKey ? activeKey : `${'*'.repeat(16)}${activeKey.slice(-6)}`}
@@ -174,14 +195,18 @@ clude-bot setup`;
                 }}>{showKey ? 'Hide' : 'Show'}</button>
                 <CopyBtn text={activeKey} />
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-                Save this key — it won't be shown again.
+              <div style={{
+                fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.8,
+                padding: '12px 14px', background: 'rgba(34, 68, 255, 0.04)',
+                border: '1px solid rgba(34, 68, 255, 0.1)',
+              }}>
+                Save this key — you'll need it to install Clude in your agent, CLI, or OpenClaw skill.
               </div>
             </div>
           ) : (
             <div>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
-                Create a cloud-hosted memory cortex. No database, no infrastructure — works instantly.
+                Create a cloud-hosted memory cortex. No database needed — works instantly.
               </p>
               <div style={{ display: 'flex', gap: 8, maxWidth: 400 }}>
                 <input
@@ -232,152 +257,130 @@ clude-bot setup`;
             fontSize: 11, fontWeight: 700,
           }}>2</span>
           <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 600 }}>
-            Connect to Your Agent
+            Install
           </span>
         </div>
 
-        {/* Integration tabs */}
-        <div style={{
-          display: 'flex', borderBottom: '1px solid var(--border)',
-        }}>
-          {(['mcp', 'sdk', 'cli'] as const).map(tab => (
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+          {([
+            { id: 'terminal' as const, label: 'Terminal' },
+            { id: 'config' as const, label: 'Config File' },
+            { id: 'sdk' as const, label: 'SDK' },
+            { id: 'openclaw' as const, label: 'OpenClaw' },
+          ]).map(tab => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
               style={{
                 fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1,
                 textTransform: 'uppercase', padding: '12px 20px',
-                background: activeTab === tab ? 'var(--bg-warm)' : 'transparent',
-                color: activeTab === tab ? 'var(--text)' : 'var(--text-faint)',
-                border: 'none', borderBottom: activeTab === tab ? '2px solid var(--text)' : '2px solid transparent',
-                cursor: 'pointer', fontWeight: activeTab === tab ? 700 : 400,
+                background: activeTab === tab.id ? 'var(--bg-warm)' : 'transparent',
+                color: activeTab === tab.id ? 'var(--text)' : 'var(--text-faint)',
+                border: 'none',
+                borderBottom: activeTab === tab.id ? '2px solid var(--text)' : '2px solid transparent',
+                cursor: 'pointer', fontWeight: activeTab === tab.id ? 700 : 400,
               }}
             >
-              {tab === 'mcp' ? 'MCP (IDE)' : tab === 'sdk' ? 'SDK' : 'CLI'}
+              {tab.label}
             </button>
           ))}
         </div>
 
         <div style={{ padding: 20 }}>
-          {/* MCP Tab */}
-          {activeTab === 'mcp' && (
+          {/* Terminal — one-liner for Claude Code / any MCP agent */}
+          {activeTab === 'terminal' && (
             <div>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
-                Add memory tools to Claude Code, Claude Desktop, or Cursor. Copy the config below into your IDE's MCP configuration file.
+                Run this in your terminal to auto-install Clude into Claude Code, Claude Desktop, or Cursor.
+                The installer detects your IDE and configures everything.
               </p>
 
-              {/* IDE selector */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                {ides.map(ide => (
-                  <button
-                    key={ide.id}
-                    onClick={() => setSelectedIde(ide.id)}
-                    style={{
-                      fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1,
-                      padding: '10px 16px', textAlign: 'center',
-                      background: selectedIde === ide.id ? 'var(--text)' : 'transparent',
-                      color: selectedIde === ide.id ? 'var(--bg)' : 'var(--text-muted)',
-                      border: `1px solid ${selectedIde === ide.id ? 'var(--text)' : 'var(--border-strong)'}`,
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{ide.name}</div>
-                    <div style={{ fontSize: 9, opacity: 0.7, marginTop: 2 }}>{ide.desc}</div>
-                  </button>
-                ))}
+              <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8, fontWeight: 600 }}>
+                One-click install (auto-detects IDE)
               </div>
+              <InlineCode code={installCmd} />
 
-              <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 8 }}>
-                Paste into: <strong style={{ color: 'var(--text-muted)' }}>{getConfigPath(selectedIde)}</strong>
+              <div style={{
+                fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)',
+                marginBottom: 8, marginTop: 20, fontWeight: 600,
+              }}>
+                Or use the guided setup
               </div>
+              <CodeBlock label="terminal" code={setupCmd} />
 
-              <div style={{ border: '1px solid var(--border)', marginBottom: 12 }}>
-                <div style={{
-                  padding: '8px 14px', borderBottom: '1px solid var(--border)',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}>
-                  <span style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-                    mcp config
-                  </span>
-                  <CopyBtn text={getMcpConfig(activeKey)} label="Copy" />
-                </div>
-                <pre style={{
-                  padding: 14, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6,
-                  background: 'var(--bg-warm)', overflow: 'auto', maxHeight: 200,
-                  margin: 0, whiteSpace: 'pre',
-                }}>
-                  {getMcpConfig(activeKey)}
-                </pre>
-              </div>
-
-              <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-                Restart your IDE after adding the config. Your agent will have 4 tools: <strong>recall</strong>, <strong>store</strong>, <strong>stats</strong>, <strong>clinamen</strong>.
+              <div style={{ fontSize: 10, color: 'var(--text-faint)', lineHeight: 1.7 }}>
+                The setup wizard walks you through registration, IDE selection, and configuration.
+                Restart your IDE after installation.
               </div>
             </div>
           )}
 
-          {/* SDK Tab */}
+          {/* Config File — for advanced users (Claude Desktop, Cursor) */}
+          {activeTab === 'config' && (
+            <div>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
+                For manual setup, paste this JSON into your IDE's MCP configuration file.
+              </p>
+
+              <div style={{
+                display: 'grid', gap: 12, marginBottom: 16,
+                fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.8,
+              }}>
+                <div style={{ padding: '10px 14px', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
+                  <strong>Claude Desktop</strong>: ~/Library/Application Support/Claude/claude_desktop_config.json
+                </div>
+                <div style={{ padding: '10px 14px', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
+                  <strong>Cursor</strong>: ~/.cursor/mcp.json
+                </div>
+                <div style={{ padding: '10px 14px', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
+                  <strong>Claude Code</strong>: .mcp.json in your project root
+                </div>
+              </div>
+
+              <CodeBlock label="mcp config (json)" code={getMcpConfig(activeKey)} />
+
+              <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>
+                Restart your IDE after adding the config.
+              </div>
+            </div>
+          )}
+
+          {/* SDK */}
           {activeTab === 'sdk' && (
             <div>
-              <div style={{
-                display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16,
-              }}>
-                <code style={{
-                  fontSize: 12, padding: '10px 14px', background: 'var(--bg-warm)',
-                  border: '1px solid var(--border)', flex: 1,
-                }}>
-                  npm install clude-bot
-                </code>
-                <CopyBtn text="npm install clude-bot" />
-              </div>
-
-              <div style={{ border: '1px solid var(--border)', marginBottom: 12 }}>
-                <div style={{
-                  padding: '8px 14px', borderBottom: '1px solid var(--border)',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}>
-                  <span style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-                    typescript
-                  </span>
-                  <CopyBtn text={sdkCode} label="Copy" />
-                </div>
-                <pre style={{
-                  padding: 14, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6,
-                  background: 'var(--bg-warm)', overflow: 'auto', maxHeight: 300,
-                  margin: 0, whiteSpace: 'pre',
-                }}>
-                  {sdkCode}
-                </pre>
-              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
+                Use the SDK to add memory directly to your Node.js/TypeScript agent.
+              </p>
+              <InlineCode code="npm install clude-bot" />
+              <CodeBlock label="typescript" code={sdkCode} />
             </div>
           )}
 
-          {/* CLI Tab */}
-          {activeTab === 'cli' && (
+          {/* OpenClaw */}
+          {activeTab === 'openclaw' && (
             <div>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
-                The CLI handles everything — registration, MCP installation, and config generation.
+                Add Clude as a skill to your OpenClaw agent. The skill gives your agent persistent memory across conversations.
               </p>
-              <div style={{ border: '1px solid var(--border)', marginBottom: 12 }}>
-                <div style={{
-                  padding: '8px 14px', borderBottom: '1px solid var(--border)',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}>
-                  <span style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-                    terminal
-                  </span>
-                  <CopyBtn text={cliCode} label="Copy" />
-                </div>
-                <pre style={{
-                  padding: 14, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6,
-                  background: 'var(--bg-warm)', overflow: 'auto',
-                  margin: 0, whiteSpace: 'pre',
-                }}>
-                  {cliCode}
-                </pre>
+
+              <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8, fontWeight: 600 }}>
+                1. Install the skill
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-                The setup wizard will guide you through registration, MCP configuration, and optional self-hosted setup.
+              <InlineCode code="npx clude-bot mcp-serve" />
+
+              <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8, marginTop: 16, fontWeight: 600 }}>
+                2. Set your API key as an environment variable
+              </div>
+              <InlineCode code={`CORTEX_API_KEY=${activeKey || 'clk_...'}`} />
+
+              <div style={{
+                fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.8,
+                padding: '14px 16px', background: 'var(--bg-warm)', border: '1px solid var(--border)',
+                marginTop: 16,
+              }}>
+                The skill exposes 4 tools to your agent: <code>recall_memories</code>, <code>store_memory</code>, <code>get_memory_stats</code>, and <code>find_clinamen</code>.
+                Your agent can store and recall memories across sessions using these tools automatically.
               </div>
             </div>
           )}
@@ -393,22 +396,15 @@ clude-bot setup`;
           What Your Agent Gets
         </div>
         <div style={{ padding: 20 }}>
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16,
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {[
-              { title: 'recall_memories', desc: 'Search memories with hybrid scoring — vector, keyword, tags, importance' },
-              { title: 'store_memory', desc: 'Persist memories with type, importance, tags, and automatic embedding' },
-              { title: 'get_memory_stats', desc: 'Memory statistics — counts by type, decay averages, top tags' },
-              { title: 'find_clinamen', desc: 'Anomaly retrieval — surface unexpected connections for lateral thinking' },
+              { title: 'recall_memories', desc: 'Search with hybrid scoring — vector, keyword, tags, importance' },
+              { title: 'store_memory', desc: 'Persist memories with type, importance, and automatic embedding' },
+              { title: 'get_memory_stats', desc: 'Counts by type, decay averages, top tags and concepts' },
+              { title: 'find_clinamen', desc: 'Surface unexpected connections for lateral thinking' },
             ].map(tool => (
-              <div key={tool.title} style={{
-                padding: '14px 16px', border: '1px solid var(--border)',
-              }}>
-                <code style={{
-                  fontSize: 11, fontWeight: 600, color: 'var(--text)',
-                  display: 'block', marginBottom: 6,
-                }}>
+              <div key={tool.title} style={{ padding: '14px 16px', border: '1px solid var(--border)' }}>
+                <code style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6 }}>
                   {tool.title}
                 </code>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.6 }}>
