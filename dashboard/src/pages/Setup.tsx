@@ -4,21 +4,6 @@ import { useAuthContext } from '../hooks/AuthContext';
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 const CORTEX_HOST = 'https://clude.io';
 
-function getMcpConfig(apiKey: string): string {
-  return JSON.stringify({
-    mcpServers: {
-      'clude-memory': {
-        command: 'npx',
-        args: ['clude-bot', 'mcp-serve'],
-        env: {
-          CORTEX_API_KEY: apiKey,
-          CORTEX_HOST_URL: CORTEX_HOST,
-        },
-      },
-    },
-  }, null, 2);
-}
-
 function CopyBtn({ text, label }: { text: string; label?: string }) {
   const [ok, setOk] = useState(false);
   return (
@@ -39,6 +24,7 @@ function CopyBtn({ text, label }: { text: string; label?: string }) {
         textTransform: 'uppercase', padding: '6px 14px',
         background: ok ? '#10b981' : 'var(--text)', color: 'var(--bg)',
         border: 'none', cursor: 'pointer', transition: 'background 0.2s',
+        flexShrink: 0,
       }}
     >
       {ok ? 'Copied!' : label || 'Copy'}
@@ -46,42 +32,16 @@ function CopyBtn({ text, label }: { text: string; label?: string }) {
   );
 }
 
-function CodeBlock({ label, code, copyText }: { label: string; code: string; copyText?: string }) {
+function StepBadge({ n, done }: { n: number; done?: boolean }) {
   return (
-    <div style={{ border: '1px solid var(--border)', marginBottom: 12 }}>
-      <div style={{
-        padding: '8px 14px', borderBottom: '1px solid var(--border)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <span style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-          {label}
-        </span>
-        <CopyBtn text={copyText || code} label="Copy" />
-      </div>
-      <pre style={{
-        padding: 14, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6,
-        background: 'var(--bg-warm)', overflow: 'auto', maxHeight: 280,
-        margin: 0, whiteSpace: 'pre',
-      }}>
-        {code}
-      </pre>
-    </div>
-  );
-}
-
-function InlineCode({ code }: { code: string }) {
-  return (
-    <div style={{
-      display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12,
+    <span style={{
+      width: 22, height: 22, borderRadius: '50%',
+      background: done ? '#10b981' : 'var(--text)',
+      color: 'var(--bg)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: 11, fontWeight: 700, flexShrink: 0,
     }}>
-      <code style={{
-        fontSize: 12, padding: '10px 14px', background: 'var(--bg-warm)',
-        border: '1px solid var(--border)', flex: 1, display: 'block',
-      }}>
-        {code}
-      </code>
-      <CopyBtn text={code} />
-    </div>
+      {done ? '\u2713' : n}
+    </span>
   );
 }
 
@@ -92,14 +52,14 @@ export function Setup() {
   const [apiKey, setApiKey] = useState('');
   const [error, setError] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [activeTab, setActiveTab] = useState<'terminal' | 'config' | 'sdk' | 'openclaw'>('terminal');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const existingKey = authMode === 'cortex' ? (localStorage.getItem('cortex_api_key') || '') : '';
   const activeKey = apiKey || existingKey;
 
   async function handleRegister() {
     const name = agentName.trim();
-    if (!name || name.length < 2) { setError('Agent name must be at least 2 characters'); return; }
+    if (!name || name.length < 2) { setError('Name must be at least 2 characters'); return; }
     setError('');
     setRegistering(true);
     try {
@@ -117,32 +77,22 @@ export function Setup() {
     finally { setRegistering(false); }
   }
 
-  const installCmd = `CORTEX_API_KEY=${activeKey || 'clk_...'} npx clude-bot mcp-install`;
-  const setupCmd = `npm install -g clude-bot\nclude-bot setup`;
+  const installCmd = activeKey
+    ? `CORTEX_API_KEY=${activeKey} npx clude-bot setup`
+    : 'npx clude-bot setup';
 
-  const sdkCode = `import { Cortex } from 'clude-bot';
-
-const brain = new Cortex({
-  hosted: { apiKey: '${activeKey || 'clk_...'}' },
-});
-await brain.init();
-
-// Store a memory
-await brain.store({
-  type: 'episodic',
-  content: 'User asked about pricing.',
-  summary: 'Pricing question',
-  source: 'my-agent',
-});
-
-// Recall memories
-const memories = await brain.recall({
-  query: 'pricing',
-  limit: 5,
-});`;
+  const mcpConfig = JSON.stringify({
+    mcpServers: {
+      'clude-memory': {
+        command: 'npx', args: ['clude-bot', 'mcp-serve'],
+        env: { CORTEX_API_KEY: activeKey || 'clk_...', CORTEX_HOST_URL: CORTEX_HOST },
+      },
+    },
+  }, null, 2);
 
   return (
     <div>
+      {/* Header */}
       <div style={{ marginBottom: 40 }}>
         <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 12 }}>
           Get Started
@@ -151,32 +101,23 @@ const memories = await brain.recall({
           Setup
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>
-          Give your agent persistent memory in under a minute.
+          Give your agent persistent memory in 3 steps.
         </p>
       </div>
 
-      {/* Step 1: Get API Key */}
-      <div style={{ border: '1px solid var(--border)', marginBottom: 24 }}>
+      {/* ── Step 1: Create Agent ── */}
+      <div style={{ border: '1px solid var(--border)', marginBottom: 3 }}>
         <div style={{
           padding: '16px 20px', borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              width: 22, height: 22, borderRadius: '50%',
-              background: activeKey ? '#10b981' : 'var(--text)',
-              color: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 700,
-            }}>
-              {activeKey ? '\u2713' : '1'}
-            </span>
+            <StepBadge n={1} done={!!activeKey} />
             <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 600 }}>
-              {activeKey ? 'API Key Ready' : 'Create Your Agent'}
+              Create Your Agent
             </span>
           </div>
-          {activeKey && (
-            <span style={{ fontSize: 10, color: '#10b981', fontWeight: 600 }}>Complete</span>
-          )}
+          {activeKey && <span style={{ fontSize: 10, color: '#10b981', fontWeight: 600 }}>Done</span>}
         </div>
         <div style={{ padding: 20 }}>
           {activeKey ? (
@@ -184,7 +125,7 @@ const memories = await brain.recall({
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '12px 14px', background: 'var(--bg-warm)',
-                border: '1px solid var(--border)', marginBottom: 12,
+                border: '1px solid var(--border)',
               }}>
                 <code style={{ fontSize: 12, flex: 1, wordBreak: 'break-all' }}>
                   {showKey ? activeKey : `${'*'.repeat(16)}${activeKey.slice(-6)}`}
@@ -195,18 +136,11 @@ const memories = await brain.recall({
                 }}>{showKey ? 'Hide' : 'Show'}</button>
                 <CopyBtn text={activeKey} />
               </div>
-              <div style={{
-                fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.8,
-                padding: '12px 14px', background: 'rgba(34, 68, 255, 0.04)',
-                border: '1px solid rgba(34, 68, 255, 0.1)',
-              }}>
-                Save this key — you'll need it to install Clude in your agent, CLI, or OpenClaw skill.
-              </div>
             </div>
           ) : (
             <div>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
-                Create a cloud-hosted memory cortex. No database needed — works instantly.
+                Pick a name. We'll create a cloud memory for your agent instantly.
               </p>
               <div style={{ display: 'flex', gap: 8, maxWidth: 400 }}>
                 <input
@@ -214,7 +148,7 @@ const memories = await brain.recall({
                   value={agentName}
                   onChange={(e) => setAgentName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
-                  placeholder="Agent name"
+                  placeholder="my-agent"
                   autoFocus
                   style={{
                     fontFamily: 'var(--mono)', fontSize: 12, padding: '10px 12px',
@@ -236,185 +170,182 @@ const memories = await brain.recall({
                   {registering ? '...' : 'Create'}
                 </button>
               </div>
-              {error && (
-                <div style={{ fontSize: 11, color: '#ef4444', marginTop: 8 }}>{error}</div>
-              )}
+              {error && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 8 }}>{error}</div>}
             </div>
           )}
         </div>
       </div>
 
-      {/* Step 2: Install */}
-      <div style={{ border: '1px solid var(--border)', marginBottom: 24 }}>
+      {/* ── Step 2: Copy Command ── */}
+      <div style={{ border: '1px solid var(--border)', borderTop: 'none', marginBottom: 3 }}>
         <div style={{
           padding: '16px 20px', borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', gap: 10,
         }}>
-          <span style={{
-            width: 22, height: 22, borderRadius: '50%',
-            background: 'var(--text)', color: 'var(--bg)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: 700,
-          }}>2</span>
+          <StepBadge n={2} />
           <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 600 }}>
-            Install
+            Run This in Your Terminal
           </span>
         </div>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
-          {([
-            { id: 'terminal' as const, label: 'Terminal' },
-            { id: 'config' as const, label: 'Config File' },
-            { id: 'sdk' as const, label: 'SDK' },
-            { id: 'openclaw' as const, label: 'OpenClaw' },
-          ]).map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1,
-                textTransform: 'uppercase', padding: '12px 20px',
-                background: activeTab === tab.id ? 'var(--bg-warm)' : 'transparent',
-                color: activeTab === tab.id ? 'var(--text)' : 'var(--text-faint)',
-                border: 'none',
-                borderBottom: activeTab === tab.id ? '2px solid var(--text)' : '2px solid transparent',
-                cursor: 'pointer', fontWeight: activeTab === tab.id ? 700 : 400,
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
         <div style={{ padding: 20 }}>
-          {/* Terminal — one-liner for Claude Code / any MCP agent */}
-          {activeTab === 'terminal' && (
-            <div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
-                Run this in your terminal to auto-install Clude into Claude Code, Claude Desktop, or Cursor.
-                The installer detects your IDE and configures everything.
-              </p>
-
-              <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8, fontWeight: 600 }}>
-                One-click install (auto-detects IDE)
-              </div>
-              <InlineCode code={installCmd} />
-
-              <div style={{
-                fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)',
-                marginBottom: 8, marginTop: 20, fontWeight: 600,
-              }}>
-                Or use the guided setup
-              </div>
-              <CodeBlock label="terminal" code={setupCmd} />
-
-              <div style={{ fontSize: 10, color: 'var(--text-faint)', lineHeight: 1.7 }}>
-                The setup wizard walks you through registration, IDE selection, and configuration.
-                Restart your IDE after installation.
-              </div>
-            </div>
-          )}
-
-          {/* Config File — for advanced users (Claude Desktop, Cursor) */}
-          {activeTab === 'config' && (
-            <div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
-                For manual setup, paste this JSON into your IDE's MCP configuration file.
-              </p>
-
-              <div style={{
-                display: 'grid', gap: 12, marginBottom: 16,
-                fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.8,
-              }}>
-                <div style={{ padding: '10px 14px', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
-                  <strong>Claude Desktop</strong>: ~/Library/Application Support/Claude/claude_desktop_config.json
-                </div>
-                <div style={{ padding: '10px 14px', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
-                  <strong>Cursor</strong>: ~/.cursor/mcp.json
-                </div>
-                <div style={{ padding: '10px 14px', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
-                  <strong>Claude Code</strong>: .mcp.json in your project root
-                </div>
-              </div>
-
-              <CodeBlock label="mcp config (json)" code={getMcpConfig(activeKey)} />
-
-              <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-                Restart your IDE after adding the config.
-              </div>
-            </div>
-          )}
-
-          {/* SDK */}
-          {activeTab === 'sdk' && (
-            <div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
-                Use the SDK to add memory directly to your Node.js/TypeScript agent.
-              </p>
-              <InlineCode code="npm install clude-bot" />
-              <CodeBlock label="typescript" code={sdkCode} />
-            </div>
-          )}
-
-          {/* OpenClaw */}
-          {activeTab === 'openclaw' && (
-            <div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
-                Add Clude as a skill to your OpenClaw agent. The skill gives your agent persistent memory across conversations.
-              </p>
-
-              <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8, fontWeight: 600 }}>
-                1. Install the skill
-              </div>
-              <InlineCode code="npx clude-bot mcp-serve" />
-
-              <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8, marginTop: 16, fontWeight: 600 }}>
-                2. Set your API key as an environment variable
-              </div>
-              <InlineCode code={`CORTEX_API_KEY=${activeKey || 'clk_...'}`} />
-
-              <div style={{
-                fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.8,
-                padding: '14px 16px', background: 'var(--bg-warm)', border: '1px solid var(--border)',
-                marginTop: 16,
-              }}>
-                The skill exposes 4 tools to your agent: <code>recall_memories</code>, <code>store_memory</code>, <code>get_memory_stats</code>, and <code>find_clinamen</code>.
-                Your agent can store and recall memories across sessions using these tools automatically.
-              </div>
-            </div>
-          )}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '14px 16px', background: 'var(--bg-warm)',
+            border: '1px solid var(--border)',
+          }}>
+            <code style={{ fontSize: 12, flex: 1, wordBreak: 'break-all', lineHeight: 1.6 }}>
+              {installCmd}
+            </code>
+            <CopyBtn text={installCmd} />
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 10, lineHeight: 1.7 }}>
+            This installs Clude and walks you through connecting it to Claude Code, Claude Desktop, or Cursor.
+            It auto-detects your IDE.
+          </p>
         </div>
       </div>
 
-      {/* What you get */}
-      <div style={{ border: '1px solid var(--border)' }}>
+      {/* ── Step 3: Restart ── */}
+      <div style={{ border: '1px solid var(--border)', borderTop: 'none', marginBottom: 24 }}>
         <div style={{
           padding: '16px 20px', borderBottom: '1px solid var(--border)',
-          fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: 10,
         }}>
-          What Your Agent Gets
+          <StepBadge n={3} />
+          <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 600 }}>
+            Restart Your IDE
+          </span>
         </div>
         <div style={{ padding: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.8 }}>
+            That's it. Your agent now has 4 memory tools:
+          </p>
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
+            marginTop: 14,
+          }}>
             {[
-              { title: 'recall_memories', desc: 'Search with hybrid scoring — vector, keyword, tags, importance' },
-              { title: 'store_memory', desc: 'Persist memories with type, importance, and automatic embedding' },
-              { title: 'get_memory_stats', desc: 'Counts by type, decay averages, top tags and concepts' },
-              { title: 'find_clinamen', desc: 'Surface unexpected connections for lateral thinking' },
-            ].map(tool => (
-              <div key={tool.title} style={{ padding: '14px 16px', border: '1px solid var(--border)' }}>
-                <code style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6 }}>
-                  {tool.title}
-                </code>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  {tool.desc}
-                </div>
+              { name: 'recall_memories', desc: 'Search past memories' },
+              { name: 'store_memory', desc: 'Save new memories' },
+              { name: 'get_memory_stats', desc: 'View memory stats' },
+              { name: 'find_clinamen', desc: 'Find unexpected connections' },
+            ].map(t => (
+              <div key={t.name} style={{
+                padding: '10px 12px', border: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <code style={{ fontSize: 10, fontWeight: 600 }}>{t.name}</code>
+                <span style={{ fontSize: 9, color: 'var(--text-faint)' }}>{t.desc}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* ── Use Your Key Elsewhere ── */}
+      {activeKey && (
+        <div style={{ border: '1px solid var(--border)', marginBottom: 24 }}>
+          <div style={{
+            padding: '16px 20px', borderBottom: '1px solid var(--border)',
+            fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 600,
+          }}>
+            Use Your Key Elsewhere
+          </div>
+          <div style={{ padding: 20 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.7 }}>
+              You can also use your API key with:
+            </p>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div style={{
+                padding: '14px 16px', border: '1px solid var(--border)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>OpenClaw</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>Add as an agent skill — set <code>CORTEX_API_KEY</code> in your environment</div>
+                </div>
+                <CopyBtn text={`CORTEX_API_KEY=${activeKey}`} label="Copy Env" />
+              </div>
+              <div style={{
+                padding: '14px 16px', border: '1px solid var(--border)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>Node.js SDK</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-faint)' }}><code>npm install clude-bot</code> — use the Cortex SDK in your own agent</div>
+                </div>
+                <CopyBtn text="npm install clude-bot" label="Copy" />
+              </div>
+              <div style={{
+                padding: '14px 16px', border: '1px solid var(--border)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>REST API</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>Use from any language — pass <code>Authorization: Bearer {'{key}'}</code></div>
+                </div>
+                <CopyBtn text={`curl -H "Authorization: Bearer ${activeKey}" ${CORTEX_HOST}/api/cortex/stats`} label="Copy curl" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Advanced: Manual Config ── */}
+      <details
+        open={showAdvanced}
+        onToggle={(e) => setShowAdvanced((e.target as HTMLDetailsElement).open)}
+        style={{ border: '1px solid var(--border)' }}
+      >
+        <summary style={{
+          padding: '14px 20px', cursor: 'pointer',
+          fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
+          color: 'var(--text-faint)', fontWeight: 600,
+          listStyle: 'none',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span style={{ fontSize: 12, transition: 'transform 0.2s', transform: showAdvanced ? 'rotate(90deg)' : 'none' }}>
+            {'\u25B8'}
+          </span>
+          Manual MCP Config (Advanced)
+        </summary>
+        <div style={{ padding: '0 20px 20px' }}>
+          <p style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 12, lineHeight: 1.7 }}>
+            If you prefer to configure manually, paste this JSON into your IDE's config file.
+          </p>
+          <div style={{
+            fontSize: 10, color: 'var(--text-muted)', marginBottom: 4,
+          }}>
+            <strong>Claude Desktop</strong>: ~/Library/Application Support/Claude/claude_desktop_config.json
+          </div>
+          <div style={{
+            fontSize: 10, color: 'var(--text-muted)', marginBottom: 4,
+          }}>
+            <strong>Cursor</strong>: ~/.cursor/mcp.json
+          </div>
+          <div style={{
+            fontSize: 10, color: 'var(--text-muted)', marginBottom: 12,
+          }}>
+            <strong>Claude Code</strong>: .mcp.json in your project root
+          </div>
+          <div style={{ border: '1px solid var(--border)' }}>
+            <div style={{
+              padding: '8px 14px', borderBottom: '1px solid var(--border)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <span style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)' }}>json</span>
+              <CopyBtn text={mcpConfig} label="Copy" />
+            </div>
+            <pre style={{
+              padding: 14, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6,
+              background: 'var(--bg-warm)', overflow: 'auto', maxHeight: 200,
+              margin: 0, whiteSpace: 'pre',
+            }}>
+              {mcpConfig}
+            </pre>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }
