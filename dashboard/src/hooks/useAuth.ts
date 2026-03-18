@@ -95,6 +95,8 @@ export function useAuth(): AuthState {
   }, [walletAddress, authMode, tokenReady]);
 
   const loginWithApiKey = useCallback(async (apiKey: string, endpoint?: string): Promise<boolean> => {
+    // Clear any existing Privy wallet state when switching to cortex
+    api.setWalletAddress(null);
     api.setToken(apiKey);
     if (endpoint) api.setAgentEndpoint(endpoint);
     api.setMode('cortex');
@@ -105,35 +107,41 @@ export function useAuth(): AuthState {
       setCortexAuth(true);
       setAuthMode('cortex');
       setTokenReady(true);
+      hasRefreshed.current = false;
+      // Disconnect Privy if it was active
+      if (privyAuth) {
+        try { logout(); } catch {}
+      }
       hasRefreshed.current = true;
       api.emitRefresh();
     } else {
       api.setMode('legacy');
     }
     return valid;
-  }, []);
+  }, [privyAuth, logout]);
 
   const handleLogin = useCallback(() => {
     login();
   }, [login]);
 
   const handleLogout = useCallback(() => {
+    // Clear ALL state regardless of mode
     setTokenReady(false);
     hasRefreshed.current = false;
+    setCortexAuth(false);
+    setAuthMode(null);
     api.setWalletAddress(null);
-    if (authMode === 'cortex') {
-      localStorage.removeItem('cortex_api_key');
-      localStorage.removeItem('cortex_endpoint');
-      setCortexAuth(false);
-      setAuthMode(null);
-      api.setToken('');
-      api.setMode('legacy');
-    } else {
-      api.setToken('');
+    api.setToken('');
+    api.setMode('legacy');
+    api.setAgentEndpoint(import.meta.env.VITE_API_BASE || '');
+    localStorage.removeItem('cortex_api_key');
+    localStorage.removeItem('cortex_endpoint');
+    // Logout Privy session if active
+    if (privyAuth) {
       logout();
     }
     api.emitRefresh();
-  }, [authMode, logout]);
+  }, [privyAuth, logout]);
 
   const isAuthenticated = privyAuth || cortexAuth;
 
