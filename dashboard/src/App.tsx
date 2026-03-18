@@ -11,6 +11,7 @@ import { BrainView } from './pages/BrainView';
 import { DecayHeatmap } from './pages/DecayHeatmap';
 import { MemoryPacks } from './pages/MemoryPacks';
 import { Settings } from './pages/Settings';
+import { Setup } from './pages/Setup';
 
 export default function App() {
   const auth = useAuth();
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/brain" element={<BrainView />} />
             <Route path="/decay" element={<DecayHeatmap />} />
             <Route path="/packs" element={<MemoryPacks />} />
+            <Route path="/setup" element={<Setup />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

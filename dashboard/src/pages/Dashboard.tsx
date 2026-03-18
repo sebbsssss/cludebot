@@ -251,7 +251,7 @@ export function Dashboard() {
   const [stats, setStats] = useState<MemoryStats | null>(null);
   const [veniceStats, setVeniceStats] = useState<any>(null);
   const [recentMemories, setRecentMemories] = useState<Memory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const uptime = useMemo(() => {
     if (!stats?.newestMemory) return '—';
     const ms = Date.now() - new Date(stats.newestMemory).getTime();
@@ -264,42 +264,64 @@ export function Dashboard() {
   }, [stats?.newestMemory]);
   const { agents, selectedAgent } = useAgentContext();
 
-  const fetchData = useCallback(() => {
-    setLoading(true);
+  // Silently refresh individual data sources — no global loading flash
+  const refreshStats = useCallback(() => {
+    api.getStats().then(s => {
+      if (api.verifyScope(s)) setStats(s);
+    }).catch(() => {});
+  }, []);
+
+  const refreshMemories = useCallback(() => {
+    api.getMemories({ hours: 24, limit: 50 }).then(m => {
+      const result = m as { memories: Memory[]; scoped_to?: string | null };
+      if (api.verifyScope(result)) {
+        setRecentMemories(result.memories || []);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const refreshVenice = useCallback(() => {
+    api.getVeniceStats().then(v => setVeniceStats(v)).catch(() => {});
+  }, []);
+
+  // Initial load — show loading spinner only once
+  useEffect(() => {
     Promise.all([
       api.getStats().catch(() => null),
       api.getVeniceStats().catch(() => null),
       api.getMemories({ hours: 24, limit: 50 }).catch(() => ({ memories: [], scoped_to: null })),
     ]).then(([s, v, m]) => {
-      // Only display data that's verified as scoped to this user
       const memResult = m as { memories: Memory[]; scoped_to?: string | null };
       if (api.verifyScope(s || memResult)) {
         setStats(s);
         setRecentMemories(memResult.memories || []);
-      } else {
-        setStats(null);
-        setRecentMemories([]);
       }
       setVeniceStats(v);
-      setLoading(false);
+      setInitialLoad(false);
     });
   }, []);
 
+  // Silent polling — stats every 30s, memories every 15s, venice every 60s
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    const unsubscribe = api.onRefresh(() => {
-      setStats(null);
-      setRecentMemories([]);
-      setVeniceStats(null);
-      setLoading(true);
-      fetchData();
-    });
+    const statsInterval = setInterval(refreshStats, 30000);
+    const memInterval = setInterval(refreshMemories, 15000);
+    const veniceInterval = setInterval(refreshVenice, 60000);
     return () => {
-      clearInterval(interval);
-      unsubscribe();
+      clearInterval(statsInterval);
+      clearInterval(memInterval);
+      clearInterval(veniceInterval);
     };
-  }, [fetchData]);
+  }, [refreshStats, refreshMemories, refreshVenice]);
+
+  // Auth change — full refresh (but no loading flash)
+  useEffect(() => {
+    const unsubscribe = api.onRefresh(() => {
+      refreshStats();
+      refreshMemories();
+      refreshVenice();
+    });
+    return unsubscribe;
+  }, [refreshStats, refreshMemories, refreshVenice]);
 
   const agentMemories = filterByAgent(
     recentMemories,
@@ -336,7 +358,7 @@ export function Dashboard() {
   }).length || (isOnline ? 1 : 0);
 
   // ── Loading State ──
-  if (loading) {
+  if (initialLoad) {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
