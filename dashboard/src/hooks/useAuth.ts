@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
+import { useSolanaWallets } from '@privy-io/react-auth/solana';
 import { api } from '../lib/api';
 import type { AuthState, AuthMode } from './AuthContext';
 
 export function useAuth(): AuthState {
   const { ready, authenticated: privyAuth, login, logout, user, getAccessToken } = usePrivy();
-  const { wallets } = useWallets();
+  const { wallets: solanaWallets } = useSolanaWallets();
   const [cortexAuth, setCortexAuth] = useState(false);
   const [cortexReady, setCortexReady] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>(null);
@@ -17,29 +18,15 @@ export function useAuth(): AuthState {
   const getAccessTokenRef = useRef(getAccessToken);
   getAccessTokenRef.current = getAccessToken;
 
-  // Extract wallet address from connected wallets (prefer Solana)
+  // Extract Solana wallet address from useSolanaWallets (not useWallets which returns EVM)
   const walletAddress = useMemo(() => {
-    if (!wallets || wallets.length === 0) return null;
-    // Debug: log all wallets to understand what Privy returns
-    console.log('[useAuth] wallets:', wallets.map(w => ({
+    if (!solanaWallets || solanaWallets.length === 0) return null;
+    console.log('[useAuth] solana wallets:', solanaWallets.map(w => ({
       address: w.address?.slice(0, 8) + '...',
-      clientType: w.walletClientType,
-      chainType: (w as any).chainType,
-      connectorType: (w as any).connectorType,
-      type: (w as any).type,
+      type: (w as any).walletClientType || (w as any).type,
     })));
-    // Solana addresses are base58 (32-44 chars, no 0x prefix)
-    const solanaWallet = wallets.find(w =>
-      w.walletClientType === 'solana' ||
-      (w as any).chainType === 'solana' ||
-      (w.address && !w.address.startsWith('0x') && w.address.length >= 32 && w.address.length <= 44)
-    );
-    if (solanaWallet) return solanaWallet.address;
-    // Fallback: skip EVM addresses (0x...), return null instead
-    const nonEvm = wallets.find(w => w.address && !w.address.startsWith('0x'));
-    if (nonEvm) return nonEvm.address;
-    return null;
-  }, [wallets]);
+    return solanaWallets[0]?.address || null;
+  }, [solanaWallets]);
 
   const email = useMemo(() => {
     return user?.email?.address || null;
