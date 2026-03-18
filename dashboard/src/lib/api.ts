@@ -88,8 +88,10 @@ class CludeAPI {
    */
   verifyScope(response: any): boolean {
     if (this.mode === 'cortex') return true;
-    if (!this.token) return false;
-    return response?.scoped_to != null;
+    // In legacy mode, the server returns scoped_to when ?wallet= is provided.
+    // Check scoped_to first — it's the authoritative signal that data is user-specific.
+    if (response?.scoped_to != null) return true;
+    return false;
   }
 
   // Memory Stats
