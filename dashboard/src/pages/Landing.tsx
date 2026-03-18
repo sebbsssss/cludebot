@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuthContext } from '../hooks/AuthContext';
+import { CloudSetup } from '../components/CloudSetup';
 
 export function Landing() {
   const { login, loginWithApiKey } = useAuthContext();
@@ -7,6 +8,7 @@ export function Landing() {
   const [endpoint, setEndpoint] = useState('');
   const [error, setError] = useState('');
   const [connecting, setConnecting] = useState(false);
+  const [showCloudSetup, setShowCloudSetup] = useState(false);
 
   async function handleApiKeyLogin() {
     if (!apiKey.trim()) return;
@@ -17,6 +19,10 @@ export function Landing() {
       setError('Invalid API key or endpoint unreachable');
     }
     setConnecting(false);
+  }
+
+  if (showCloudSetup) {
+    return <CloudSetup onBack={() => setShowCloudSetup(false)} />;
   }
 
   return (
@@ -66,8 +72,9 @@ export function Landing() {
           across agents.
         </p>
 
+        {/* Primary CTA — One-click cloud setup */}
         <button
-          onClick={login}
+          onClick={() => setShowCloudSetup(true)}
           style={{
             fontFamily: 'var(--mono)',
             fontSize: 11,
@@ -79,6 +86,8 @@ export function Landing() {
             border: '2px solid var(--text)',
             cursor: 'pointer',
             transition: 'all 0.25s',
+            width: '100%',
+            maxWidth: 320,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'transparent';
@@ -89,50 +98,105 @@ export function Landing() {
             e.currentTarget.style.color = 'var(--bg)';
           }}
         >
-          Sign In with Wallet
+          Get Started Free
         </button>
+        <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 8, maxWidth: 320, margin: '8px auto 0' }}>
+          Create an agent in 10 seconds. No credit card, no infra.
+        </div>
 
         {/* Divider */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: 16,
-          margin: '32px 0',
+          margin: '32px auto',
           maxWidth: 320,
-          marginLeft: 'auto',
-          marginRight: 'auto',
         }}>
           <div style={{ flex: 1, height: 1, background: 'var(--border-strong)' }} />
-          <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)' }}>or</span>
+          <span style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-faint)' }}>or sign in</span>
           <div style={{ flex: 1, height: 1, background: 'var(--border-strong)' }} />
         </div>
 
-        {/* API Key Login */}
-        <div style={{ maxWidth: 320, margin: '0 auto', textAlign: 'left' }}>
-          <label style={{ display: 'block', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 6 }}>
-            Cortex API Key
-          </label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="clk_..."
-            onKeyDown={(e) => e.key === 'Enter' && handleApiKeyLogin()}
+        {/* Existing auth options */}
+        <div style={{
+          display: 'flex',
+          gap: 12,
+          maxWidth: 320,
+          margin: '0 auto 24px',
+        }}>
+          <button
+            onClick={login}
             style={{
               fontFamily: 'var(--mono)',
-              fontSize: 12,
-              padding: '10px 12px',
-              border: '1px solid var(--border-strong)',
+              fontSize: 10,
+              letterSpacing: 1,
+              textTransform: 'uppercase' as const,
+              padding: '12px 16px',
               background: 'transparent',
-              width: '100%',
-              outline: 'none',
-              marginBottom: 12,
+              color: 'var(--text)',
+              border: '1px solid var(--border-strong)',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              flex: 1,
             }}
-          />
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--text)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border-strong)';
+            }}
+          >
+            Wallet
+          </button>
+          <div style={{ flex: 2 }}>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="clk_... (API key)"
+              onKeyDown={(e) => e.key === 'Enter' && handleApiKeyLogin()}
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                padding: '12px 12px',
+                border: '1px solid var(--border-strong)',
+                background: 'transparent',
+                width: '100%',
+                outline: 'none',
+              }}
+            />
+          </div>
+          <button
+            onClick={handleApiKeyLogin}
+            disabled={!apiKey.trim() || connecting}
+            style={{
+              fontFamily: 'var(--mono)',
+              fontSize: 10,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              padding: '12px 14px',
+              background: apiKey.trim() ? 'var(--text)' : 'var(--border-strong)',
+              color: apiKey.trim() ? 'var(--bg)' : 'var(--text-faint)',
+              border: 'none',
+              cursor: apiKey.trim() ? 'pointer' : 'not-allowed',
+            }}
+          >
+            {connecting ? '...' : 'Go'}
+          </button>
+        </div>
 
-          <label style={{ display: 'block', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 6 }}>
-            Endpoint
-          </label>
+        {/* Endpoint (collapsed) */}
+        <details style={{ maxWidth: 320, margin: '0 auto', textAlign: 'left' }}>
+          <summary style={{
+            fontSize: 10,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+            color: 'var(--text-faint)',
+            cursor: 'pointer',
+            marginBottom: 8,
+          }}>
+            Custom endpoint
+          </summary>
           <input
             type="text"
             value={endpoint}
@@ -141,45 +205,21 @@ export function Landing() {
             onKeyDown={(e) => e.key === 'Enter' && handleApiKeyLogin()}
             style={{
               fontFamily: 'var(--mono)',
-              fontSize: 12,
-              padding: '10px 12px',
+              fontSize: 11,
+              padding: '8px 12px',
               border: '1px solid var(--border-strong)',
               background: 'transparent',
               width: '100%',
               outline: 'none',
-              marginBottom: 16,
             }}
           />
+        </details>
 
-          {error && (
-            <div style={{ fontSize: 11, color: '#ef4444', marginBottom: 12 }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            onClick={handleApiKeyLogin}
-            disabled={!apiKey.trim() || connecting}
-            style={{
-              fontFamily: 'var(--mono)',
-              fontSize: 10,
-              letterSpacing: 2,
-              textTransform: 'uppercase',
-              padding: '12px 24px',
-              background: apiKey.trim() ? 'var(--text)' : 'var(--border-strong)',
-              color: apiKey.trim() ? 'var(--bg)' : 'var(--text-faint)',
-              border: 'none',
-              cursor: apiKey.trim() ? 'pointer' : 'not-allowed',
-              width: '100%',
-            }}
-          >
-            {connecting ? 'Connecting...' : 'Connect with API Key'}
-          </button>
-
-          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 8, textAlign: 'center' }}>
-            Get a key with <span style={{ fontFamily: 'var(--mono)' }}>npx clude-bot register</span>
+        {error && (
+          <div style={{ fontSize: 11, color: '#ef4444', marginTop: 12, maxWidth: 320, margin: '12px auto 0' }}>
+            {error}
           </div>
-        </div>
+        )}
 
         <div style={{
           marginTop: 48,

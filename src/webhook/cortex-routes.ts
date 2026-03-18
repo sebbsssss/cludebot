@@ -9,6 +9,7 @@
  * Isolation: withOwnerWallet() sets per-request scope via AsyncLocalStorage.
  */
 import { Router, Request, Response, NextFunction } from 'express';
+import { randomUUID, createHash } from 'crypto';
 import { authenticateAgent, registerAgent, recordAgentInteraction, type AgentRegistration } from '../features/agent-tier';
 import { withOwnerWallet } from '../core/owner-context';
 import {
@@ -22,6 +23,7 @@ import {
   createMemoryLink,
   type MemoryType,
 } from '../core/memory';
+import { findClinamen } from '../features/clinamen';
 import type { MemoryLinkType } from '../utils/constants';
 import { checkRateLimit, getDb } from '../core/database';
 import { createChildLogger } from '../core/logger';
@@ -56,7 +58,6 @@ async function cortexAuth(req: Request, res: Response, next: NextFunction): Prom
   let ownerWallet = agent.owner_wallet;
   if (!ownerWallet) {
     // Auto-assign a deterministic wallet-like ID so memories are scoped from the start
-    const { createHash } = require('crypto');
     ownerWallet = createHash('sha256').update(`cortex:${agent.agent_id}`).digest('hex').slice(0, 44);
     const db = getDb();
     await db.from('agent_keys').update({ owner_wallet: ownerWallet }).eq('id', agent.id);
@@ -149,9 +150,9 @@ export function cortexRoutes(): Router {
 
           // Unique constraint violation = wallet was just claimed by another request
           if (updateError.code === '23505') {
-          res.status(409).json({ error: 'Wallet already registered. Contact support for key recovery.' });
-          return;
-        }
+            res.status(409).json({ error: 'Wallet already registered. Contact support for key recovery.' });
+            return;
+          }
 
           log.error({ err: updateError, agentId }, 'Failed to set owner_wallet');
           res.status(500).json({ error: 'Registration failed — could not link wallet' });
@@ -483,7 +484,6 @@ export function cortexRoutes(): Router {
         return;
       }
 
-      const { findClinamen } = require('../features/clinamen');
       const memories = await withOwnerWallet(cortexReq.ownerWallet!, async () => {
         return findClinamen({
           context,
@@ -522,14 +522,11 @@ export function cortexRoutes(): Router {
         return;
       }
 
-      let memories: any[];
-      await withOwnerWallet(cortexReq.ownerWallet!, async () => {
+      const memories = await withOwnerWallet(cortexReq.ownerWallet!, async () => {
         if (memory_ids && Array.isArray(memory_ids)) {
-          const { hydrateMemories } = require('../core/memory');
-          memories = await hydrateMemories(memory_ids);
+          return hydrateMemories(memory_ids);
         } else {
-          const { recallMemories } = require('../core/memory');
-          memories = await recallMemories({
+          return recallMemories({
             query,
             memoryTypes: types,
             limit: limit || 50,
@@ -538,10 +535,10 @@ export function cortexRoutes(): Router {
       });
 
       const pack = {
-        id: require('crypto').randomUUID(),
+        id: randomUUID(),
         name,
         description: description || '',
-        memories: (memories! || []).map((m: any) => ({
+        memories: (memories || []).map((m: any) => ({
           content: m.content,
           summary: m.summary,
           type: m.memory_type,
@@ -595,7 +592,6 @@ export function cortexRoutes(): Router {
       let skipped = 0;
 
       await withOwnerWallet(cortexReq.ownerWallet!, async () => {
-        const { storeMemory } = require('../core/memory');
         for (const mem of pack.memories) {
           if (types && !types.includes(mem.type)) {
             skipped++;

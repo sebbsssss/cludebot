@@ -106,10 +106,12 @@ export function accumulateImportance(importance: number): void {
     // Clear owner wallet context so dream cycle memories aren't tagged with a request-scoped owner
     // (accumulateImportance may be called from within withOwnerWallet() during API requests)
     const { withOwnerWallet } = require('../core/owner-context');
-    withOwnerWallet(null, () => {
-      triggerReflection().catch((err: Error) =>
-        log.error({ err }, 'Event-driven reflection failed')
-      );
+    void withOwnerWallet(null, async () => {
+      try {
+        await triggerReflection();
+      } catch (err) {
+        log.error({ err }, 'Event-driven reflection failed');
+      }
     });
   }
 }

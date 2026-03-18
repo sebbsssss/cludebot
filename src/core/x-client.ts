@@ -1,7 +1,7 @@
 import { TwitterApi, TweetV2, UserV2 } from 'twitter-api-v2';
 import { config } from '../config';
 import { createChildLogger } from './logger';
-import { BOT_X_HANDLE } from '../utils/constants';
+import { BOT_X_HANDLE, TWEET_MAX_LENGTH } from '../utils/constants';
 
 const log = createChildLogger('x-client');
 
@@ -48,7 +48,7 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 // X Premium allows up to 4000 characters (was 280 for standard accounts)
-const MAX_TWEET_LENGTH = 4000;
+const MAX_TWEET_LENGTH = TWEET_MAX_LENGTH;
 
 /**
  * Strip em-dashes and replace with comma or period.

@@ -3,6 +3,7 @@ import { config } from '../config';
 import { createChildLogger } from './logger';
 import { checkOutput } from './guardrails';
 import { isVeniceEnabled, generateVeniceResponse, type CognitiveFunction } from './venice-client';
+import { TWEET_MAX_LENGTH } from '../utils/constants';
 
 const log = createChildLogger('claude-client');
 
@@ -21,18 +22,24 @@ export function _setResponsePostProcessor(fn: (text: string) => string): void {
   _responsePostProcessor = fn;
 }
 
-let anthropic: Anthropic;
+let anthropic: Anthropic | null = null;
 try {
-  anthropic = new Anthropic({ apiKey: config.anthropic.apiKey || '' });
+  if (config.anthropic.apiKey) {
+    anthropic = new Anthropic({ apiKey: config.anthropic.apiKey });
+  }
 } catch {
-  anthropic = null as unknown as Anthropic;
+  anthropic = null;
 }
 
 let _anthropicOverride: Anthropic | null = null;
 let _modelOverride: string | null = null;
 
 function getClient(): Anthropic {
-  return _anthropicOverride || anthropic;
+  const client = _anthropicOverride || anthropic;
+  if (!client) {
+    throw new Error('Anthropic client not configured — set ANTHROPIC_API_KEY');
+  }
+  return client;
 }
 
 function getModel(): string {
@@ -192,5 +199,5 @@ export async function generateThread(options: GenerateOptions): Promise<string[]
     .split('---')
     .map(t => t.trim())
     .filter(t => t.length > 0)
-    .map(t => t.slice(0, 4000)); // X Premium limit
+    .map(t => t.slice(0, TWEET_MAX_LENGTH));
 }
