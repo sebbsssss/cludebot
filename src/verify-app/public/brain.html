@@ -1911,14 +1911,12 @@ createRiverSystem();
 createNodeSystems();
 createSignalSystem();
 createSpawnBurstSystem();
+// Always fetch data — embedded mode also needs it (dashboard doesn't send postMessage)
+fetchBrain();
+fetchConsciousness();
 if (!embeddedMode) {
-  fetchBrain();
-  fetchConsciousness();
   setInterval(fetchBrain, 15000);
   setInterval(fetchConsciousness, 30000);
-} else {
-  // Signal parent that we're ready to receive data
-  try { window.parent.postMessage({ type: 'BRAIN_READY' }, '*'); } catch {}
 }
 renderLoop();
 
