@@ -253,11 +253,15 @@ export function Dashboard() {
   const [recentMemories, setRecentMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
   const uptime = useMemo(() => {
-    const hrs = stats?.oldestMemory
-      ? Math.floor((Date.now() - new Date(stats.oldestMemory).getTime()) / 3600000)
-      : 0;
-    return `${Math.floor(hrs / 24)}d ${hrs % 24}h`;
-  }, [stats?.oldestMemory]);
+    if (!stats?.newestMemory) return '—';
+    const ms = Date.now() - new Date(stats.newestMemory).getTime();
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  }, [stats?.newestMemory]);
   const { agents, selectedAgent } = useAgentContext();
 
   const fetchData = useCallback(() => {
@@ -531,7 +535,7 @@ export function Dashboard() {
             value={isOnline ? 'Running' : 'Stopped'}
             dot={isOnline ? '#10b981' : '#ef4444'}
           />
-          <StatusRow label="Uptime" value={uptime} />
+          <StatusRow label="Last Active" value={uptime} />
           <StatusRow
             label="Avg Decay"
             value={`${((stats?.avgDecay || 0) * 100).toFixed(0)}%`}

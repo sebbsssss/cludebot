@@ -150,10 +150,14 @@ export function useAuth(): AuthState {
 
   const isAuthenticated = privyAuth || cortexAuth;
 
+  // For Privy mode: wait for wallet to be available before marking ready.
+  // This prevents the dashboard from fetching data without ?wallet= scoping.
+  const privyReady = authMode === 'privy' ? (tokenReady && !!walletAddress) : tokenReady;
+
   return {
     authenticated: isAuthenticated,
-    // Ready when: (1) not authenticated and Privy+cortex init done, or (2) authenticated and token is set
-    ready: isAuthenticated ? (tokenReady && cortexReady) : (ready && cortexReady),
+    // Ready when: (1) not authenticated and Privy+cortex init done, or (2) authenticated and token + wallet set
+    ready: isAuthenticated ? (privyReady && cortexReady) : (ready && cortexReady),
     walletAddress,
     userId: user?.id || null,
     email,
