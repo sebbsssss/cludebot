@@ -25,7 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           walletList: ['phantom', 'solflare', 'backpack', 'detected_wallets'],
           walletChainType: 'solana-only',
         },
-        loginMethods: ['wallet', 'email'],
+        loginMethods: ['wallet'],
         solanaClusters: [
           { name: 'mainnet-beta', rpcUrl: 'https://api.mainnet-beta.solana.com' },
         ],
