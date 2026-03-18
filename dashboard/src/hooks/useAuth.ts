@@ -12,19 +12,16 @@ export function useAuth(): AuthState {
   const [authMode, setAuthMode] = useState<AuthMode>(null);
   const [tokenReady, setTokenReady] = useState(false);
 
-  // Ref to prevent emitRefresh from firing more than once per auth session
   const hasRefreshed = useRef(false);
-  // Ref to hold getAccessToken so the effect doesn't re-fire on every render
   const getAccessTokenRef = useRef(getAccessToken);
   getAccessTokenRef.current = getAccessToken;
 
-  // Extract Solana wallet address from useSolanaWallets (not useWallets which returns EVM)
+  // Track whether cortex init is in progress — blocks Privy from overriding
+  const cortexInitRef = useRef(false);
+
+  // Extract Solana wallet address
   const walletAddress = useMemo(() => {
     if (!solanaWallets || solanaWallets.length === 0) return null;
-    console.log('[useAuth] solana wallets:', solanaWallets.map(w => ({
-      address: w.address?.slice(0, 8) + '...',
-      type: (w as any).walletClientType || (w as any).type,
-    })));
     return solanaWallets[0]?.address || null;
   }, [solanaWallets]);
 
@@ -37,9 +34,12 @@ export function useAuth(): AuthState {
     const savedKey = localStorage.getItem('cortex_api_key');
     const savedEndpoint = localStorage.getItem('cortex_endpoint');
     if (savedKey) {
+      // Block Privy from overriding while we validate
+      cortexInitRef.current = true;
       api.setToken(savedKey);
       if (savedEndpoint) api.setAgentEndpoint(savedEndpoint);
       api.setMode('cortex');
+      api.setWalletAddress(null);
       api.validateApiKey().then(valid => {
         if (valid) {
           setCortexAuth(true);
@@ -50,6 +50,7 @@ export function useAuth(): AuthState {
             api.emitRefresh();
           }
         } else {
+          cortexInitRef.current = false;
           localStorage.removeItem('cortex_api_key');
           localStorage.removeItem('cortex_endpoint');
           api.setMode('legacy');
@@ -61,9 +62,10 @@ export function useAuth(): AuthState {
     }
   }, []);
 
-  // Privy auth: set token, but DON'T refresh until wallet is available
+  // Privy auth: ONLY if cortex is not active or initializing
   useEffect(() => {
-    if (privyAuth && !cortexAuth && !tokenReady) {
+    if (cortexInitRef.current || cortexAuth) return;
+    if (privyAuth && !tokenReady) {
       setAuthMode('privy');
       api.setMode('legacy');
       getAccessTokenRef.current().then(token => {
@@ -71,7 +73,6 @@ export function useAuth(): AuthState {
           api.setToken(token);
           api.setWalletAddress(walletAddress);
           setTokenReady(true);
-          // Only refresh if wallet is already available; otherwise wait for wallet effect
           if (walletAddress && !hasRefreshed.current) {
             hasRefreshed.current = true;
             api.emitRefresh();
@@ -81,12 +82,10 @@ export function useAuth(): AuthState {
     }
   }, [privyAuth, cortexAuth, tokenReady, walletAddress]);
 
-  // Update wallet on API when it changes (Privy wallets load async)
-  // This is the primary refresh trigger — fires once wallet address is resolved
+  // Update wallet when it loads (Privy wallets are async)
   useEffect(() => {
     if (authMode === 'privy' && walletAddress) {
       api.setWalletAddress(walletAddress);
-      // Always re-fetch when wallet becomes available (even if hasRefreshed was set)
       if (tokenReady) {
         hasRefreshed.current = true;
         api.emitRefresh();
@@ -95,7 +94,8 @@ export function useAuth(): AuthState {
   }, [walletAddress, authMode, tokenReady]);
 
   const loginWithApiKey = useCallback(async (apiKey: string, endpoint?: string): Promise<boolean> => {
-    // Clear any existing Privy wallet state when switching to cortex
+    // Fully switch to cortex — clear all privy state
+    cortexInitRef.current = true;
     api.setWalletAddress(null);
     api.setToken(apiKey);
     if (endpoint) api.setAgentEndpoint(endpoint);
@@ -107,14 +107,13 @@ export function useAuth(): AuthState {
       setCortexAuth(true);
       setAuthMode('cortex');
       setTokenReady(true);
-      hasRefreshed.current = false;
-      // Disconnect Privy if it was active
       if (privyAuth) {
         try { logout(); } catch {}
       }
       hasRefreshed.current = true;
       api.emitRefresh();
     } else {
+      cortexInitRef.current = false;
       api.setMode('legacy');
     }
     return valid;
@@ -125,7 +124,8 @@ export function useAuth(): AuthState {
   }, [login]);
 
   const handleLogout = useCallback(() => {
-    // Clear ALL state regardless of mode
+    // Clear everything
+    cortexInitRef.current = false;
     setTokenReady(false);
     hasRefreshed.current = false;
     setCortexAuth(false);
@@ -136,7 +136,6 @@ export function useAuth(): AuthState {
     api.setAgentEndpoint(import.meta.env.VITE_API_BASE || '');
     localStorage.removeItem('cortex_api_key');
     localStorage.removeItem('cortex_endpoint');
-    // Logout Privy session if active
     if (privyAuth) {
       logout();
     }
@@ -147,7 +146,6 @@ export function useAuth(): AuthState {
 
   return {
     authenticated: isAuthenticated,
-    // Ready when: (1) not authenticated and Privy+cortex init done, or (2) authenticated and token is set
     ready: isAuthenticated ? (tokenReady && cortexReady) : (ready && cortexReady),
     walletAddress,
     userId: user?.id || null,
