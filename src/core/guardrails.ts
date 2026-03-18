@@ -194,6 +194,60 @@ export interface ContentFilterResult {
  * Filter user-submitted input content (demo store, public endpoints).
  * Blocks hate speech, slurs, violence, and spam.
  */
+// ── CA Spoof Detection (merged from input-guardrails.ts) ──
+
+const CA_INJECTION_PATTERNS = [
+  /(?:your|the|clude'?s?)\s+(?:ca|contract|address|mint)\s+(?:is|was|should be|=)/i,
+  /(?:ca|contract|address)\s*[:=]\s*[1-9A-HJ-NP-Za-km-z]{32,44}/i,
+  /(?:remember|store|save|update|change|set)\s+(?:the\s+)?(?:ca|contract|address)/i,
+  /(?:new|real|actual|correct|official)\s+(?:ca|contract|address)/i,
+  /(?:here'?s?|this is)\s+(?:the|your|my)\s+(?:ca|contract|address)/i,
+];
+
+export interface InputGuardrailResult {
+  safe: boolean;
+  reason?: string;
+  isCASpoofAttempt?: boolean;
+  spoofedAddress?: string;
+}
+
+/**
+ * Check incoming message for CA spoofing / manipulation attempts.
+ * Returns { safe: false } if the message is trying to spoof the contract address.
+ */
+export function checkInput(text: string): InputGuardrailResult {
+  for (const pattern of CA_INJECTION_PATTERNS) {
+    if (pattern.test(text)) {
+      const addresses = text.match(SOLANA_ADDRESS_RE) || [];
+      const foreignAddresses = addresses.filter(addr => addr !== CLUDE_CA);
+
+      if (foreignAddresses.length > 0) {
+        log.warn({
+          text: text.slice(0, 200),
+          spoofedAddress: foreignAddresses[0],
+          pattern: pattern.source,
+        }, 'INPUT GUARDRAIL: CA spoofing attempt detected');
+
+        return {
+          safe: false,
+          reason: 'ca_spoof_attempt',
+          isCASpoofAttempt: true,
+          spoofedAddress: foreignAddresses[0],
+        };
+      }
+    }
+  }
+
+  return { safe: true };
+}
+
+/**
+ * Get a response to a CA spoofing attempt.
+ */
+export function getCASpoofResponse(): string {
+  return `Nice try. The only CA I recognize is ${CLUDE_CA}. That's hardcoded, not up for debate.`;
+}
+
 export function checkInputContent(text: string): ContentFilterResult {
   const lower = text.toLowerCase();
 

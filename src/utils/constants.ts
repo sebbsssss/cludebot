@@ -89,7 +89,7 @@ export const EXTERNAL_MEMORY_SOURCES = new Set([
 export const INTERNAL_REINFORCEMENT_GATE = 0.3;          // Internal sources get 30% of normal reinforcement
 export const INTERNAL_IMPORTANCE_BOOST = 0.005;          // +0.5% per retrieval (vs 2% for external)
 
-export type MemoryLinkType = 'supports' | 'contradicts' | 'elaborates' | 'causes' | 'follows' | 'relates' | 'resolves';
+export type MemoryLinkType = 'supports' | 'contradicts' | 'elaborates' | 'causes' | 'follows' | 'relates' | 'resolves' | 'happens_before' | 'happens_after' | 'concurrent_with';
 
 // Embedding system
 export const EMBEDDING_DIMENSIONS = 1024;

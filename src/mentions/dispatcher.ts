@@ -19,7 +19,7 @@ import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 import { loadInstruction } from '../utils/env-persona';
 import { getVestingInfo, getCAResponse, CLUDE_CA, getTokenStatus } from '../knowledge/tokenomics';
-import { checkInput, getCASpoofResponse } from '../core/input-guardrails';
+import { checkInput, getCASpoofResponse } from '../core/guardrails';
 import { generateVeniceResponseWithSearch, isVeniceEnabled } from '../core/venice-client';
 import { checkRateLimit } from '../core/database';
 
