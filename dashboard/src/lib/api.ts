@@ -236,7 +236,8 @@ class CludeAPI {
     if (this.mode === 'cortex') {
       throw new Error('Memory packs require self-hosted mode');
     }
-    return this.fetch('/api/memory-packs/export', {
+    const url = this.appendWallet('/api/memory-packs/export');
+    return this.fetch(url, {
       method: 'POST',
       body: JSON.stringify(opts),
     });
