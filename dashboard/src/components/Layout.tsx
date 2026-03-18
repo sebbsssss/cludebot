@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../hooks/AuthContext';
 import { AgentSelector } from './AgentSelector';
 import styles from './Layout.module.css';
@@ -10,12 +10,12 @@ const NAV_ITEMS = [
   { path: '/brain', label: 'Brain', icon: '◈' },
   { path: '/decay', label: 'Decay', icon: '◇' },
   { path: '/packs', label: 'Memory Packs', icon: '▦' },
-  { path: '/setup', label: 'Setup', icon: '▸' },
   { path: '/settings', label: 'Settings', icon: '⚙' },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { walletAddress, email, logout } = useAuthContext();
+  const navigate = useNavigate();
   const displayName = email
     ? email
     : walletAddress
@@ -28,6 +28,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className={styles.logo}>
           <a href="https://clude.io" target="_blank" rel="noopener">CLUDE</a>
           <span className={styles.badge}>Dashboard</span>
+        </div>
+
+        <div style={{ padding: '0 8px', marginBottom: 12 }}>
+          <button
+            onClick={() => navigate('/setup')}
+            style={{
+              fontFamily: 'var(--mono)',
+              fontSize: 10,
+              letterSpacing: 2,
+              textTransform: 'uppercase',
+              padding: '10px 14px',
+              background: 'var(--text)',
+              color: 'var(--bg)',
+              border: 'none',
+              cursor: 'pointer',
+              width: '100%',
+              fontWeight: 700,
+              transition: 'opacity 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+          >
+            + New Agent
+          </button>
         </div>
 
         <AgentSelector />

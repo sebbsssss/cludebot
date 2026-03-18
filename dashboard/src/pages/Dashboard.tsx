@@ -262,28 +262,8 @@ export function Dashboard() {
   }, [stats?.newestMemory]);
   const { agents, selectedAgent } = useAgentContext();
 
-  // Silently refresh individual data sources — no global loading flash
-  const refreshStats = useCallback(() => {
-    api.getStats().then(s => {
-      if (api.verifyScope(s)) setStats(s);
-    }).catch(() => {});
-  }, []);
-
-  const refreshMemories = useCallback(() => {
-    api.getMemories({ hours: 24, limit: 50 }).then(m => {
-      const result = m as { memories: Memory[]; scoped_to?: string | null };
-      if (api.verifyScope(result)) {
-        setRecentMemories(result.memories || []);
-      }
-    }).catch(() => {});
-  }, []);
-
-  const refreshVenice = useCallback(() => {
-    api.getVeniceStats().then(v => setVeniceStats(v)).catch(() => {});
-  }, []);
-
-  // Initial load — show loading spinner only once
-  useEffect(() => {
+  // Fetch all data (used for initial load and auth refresh)
+  const fetchAll = useCallback(() => {
     Promise.all([
       api.getStats().catch(() => null),
       api.getVeniceStats().catch(() => null),
@@ -299,8 +279,31 @@ export function Dashboard() {
     });
   }, []);
 
+  // Initial load — triggered by onRefresh (fires when wallet is ready)
+  // Also fetch immediately in case wallet is already available
+  useEffect(() => {
+    fetchAll();
+    const unsubscribe = api.onRefresh(fetchAll);
+    return unsubscribe;
+  }, [fetchAll]);
+
   // Silent polling — stats every 30s, memories every 15s, venice every 60s
   useEffect(() => {
+    const refreshStats = () => {
+      api.getStats().then(s => {
+        if (api.verifyScope(s)) setStats(s);
+      }).catch(() => {});
+    };
+    const refreshMemories = () => {
+      api.getMemories({ hours: 24, limit: 50 }).then(m => {
+        const result = m as { memories: Memory[]; scoped_to?: string | null };
+        if (api.verifyScope(result)) setRecentMemories(result.memories || []);
+      }).catch(() => {});
+    };
+    const refreshVenice = () => {
+      api.getVeniceStats().then(v => setVeniceStats(v)).catch(() => {});
+    };
+
     const statsInterval = setInterval(refreshStats, 30000);
     const memInterval = setInterval(refreshMemories, 15000);
     const veniceInterval = setInterval(refreshVenice, 60000);
@@ -309,17 +312,7 @@ export function Dashboard() {
       clearInterval(memInterval);
       clearInterval(veniceInterval);
     };
-  }, [refreshStats, refreshMemories, refreshVenice]);
-
-  // Auth change — full refresh (but no loading flash)
-  useEffect(() => {
-    const unsubscribe = api.onRefresh(() => {
-      refreshStats();
-      refreshMemories();
-      refreshVenice();
-    });
-    return unsubscribe;
-  }, [refreshStats, refreshMemories, refreshVenice]);
+  }, []);
 
   const agentMemories = filterByAgent(
     recentMemories,
