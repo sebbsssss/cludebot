@@ -1708,7 +1708,8 @@ const _walletParam = _urlParams.get('wallet') || '5vK6WRCq5V6BCte8cQvaNeNv2KzErC
 
 function fetchBrain() {
   fetch('/api/brain?limit=500&wallet=' + encodeURIComponent(_walletParam)).then(r => r.json()).then(data => {
-    if (!data.nodes?.length) {
+    const nodes = data.nodes || data.memories || [];
+    if (!nodes.length) {
       if (!initialLoadDone) {
         document.querySelector('.loading-text').textContent = 'NO MEMORIES FOUND';
       }
@@ -1718,11 +1719,11 @@ function fetchBrain() {
     if (data.total) totalMemoryCount = data.total;
 
     if (!initialLoadDone) {
-      buildMemoryNodes(data.nodes);
+      buildMemoryNodes(nodes);
       document.getElementById('loading').classList.add('gone');
       initialLoadDone = true;
     } else {
-      for (const rawNode of data.nodes) {
+      for (const rawNode of nodes) {
         if (!knownIds.has(rawNode.id)) {
           const node = spawnNode(rawNode);
           if (node) {

@@ -422,15 +422,17 @@ export function EntityMap() {
 
         const edgeOpacity = Math.min(s.opacity, t.opacity);
 
-        const baseAlpha = isHighlightMode
-          ? (isConnected ? 0.35 : 0.015)
-          : 0.04 + (edge.weight || 0.5) * 0.08;
+        const edgeOpacityFinal = Math.min(s.opacity, t.opacity);
 
-        // Curved edges
+        // Neural network style: prominent dendrite-like edges
+        const baseAlpha = isHighlightMode
+          ? (isConnected ? 0.5 : 0.03)
+          : 0.08 + (edge.weight || 0.5) * 0.12;
+
         const dx = t.x - s.x;
         const dy = t.y - s.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const curvature = Math.min(0.15, 30 / (dist + 1));
+        const curvature = Math.min(0.12, 20 / (dist + 1));
         const midX = (s.x + t.x) / 2 + (s.y - t.y) * curvature;
         const midY = (s.y + t.y) / 2 + (t.x - s.x) * curvature;
 
@@ -438,20 +440,36 @@ export function EntityMap() {
         ctx.moveTo(s.x, s.y);
         ctx.quadraticCurveTo(midX, midY, t.x, t.y);
 
-        if (isConnected) {
-          // Gradient edge between the two node types
-          const sRgb = hexToRgb(ENTITY_COLORS[s.type]?.color || '#666');
-          const tRgb = hexToRgb(ENTITY_COLORS[t.type]?.color || '#666');
-          const grad = ctx.createLinearGradient(s.x, s.y, t.x, t.y);
-          grad.addColorStop(0, `rgba(${sRgb.r}, ${sRgb.g}, ${sRgb.b}, ${baseAlpha * edgeOpacity})`);
-          grad.addColorStop(1, `rgba(${tRgb.r}, ${tRgb.g}, ${tRgb.b}, ${baseAlpha * edgeOpacity})`);
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = 1.8;
-        } else {
-          ctx.strokeStyle = `rgba(0, 0, 0, ${baseAlpha * edgeOpacity})`;
-          ctx.lineWidth = 0.6;
-        }
+        const sRgb = hexToRgb(ENTITY_COLORS[s.type]?.color || '#666');
+        const tRgb = hexToRgb(ENTITY_COLORS[t.type]?.color || '#666');
+        const grad = ctx.createLinearGradient(s.x, s.y, t.x, t.y);
+        const alpha = baseAlpha * edgeOpacityFinal;
+        grad.addColorStop(0, `rgba(${sRgb.r}, ${sRgb.g}, ${sRgb.b}, ${alpha})`);
+        grad.addColorStop(1, `rgba(${tRgb.r}, ${tRgb.g}, ${tRgb.b}, ${alpha})`);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = isConnected ? 1.5 : 0.7;
         ctx.stroke();
+
+        // Traveling signal pulse along edge (neural firing effect)
+        if (isConnected || Math.random() < 0.002) {
+          const signalT = (time * 0.5 + dist * 0.001) % 1;
+          const sx = s.x + (midX - s.x) * signalT * 2 * (signalT < 0.5 ? 1 : 0) + (midX + (t.x - midX) * (signalT * 2 - 1)) * (signalT >= 0.5 ? 1 : 0) - s.x * (signalT >= 0.5 ? 1 : 0);
+          const sy = s.y + (midY - s.y) * signalT * 2 * (signalT < 0.5 ? 1 : 0) + (midY + (t.y - midY) * (signalT * 2 - 1)) * (signalT >= 0.5 ? 1 : 0) - s.y * (signalT >= 0.5 ? 1 : 0);
+          // Simplified: interpolate along the curve
+          const pt = signalT;
+          const px = (1-pt)*(1-pt)*s.x + 2*(1-pt)*pt*midX + pt*pt*t.x;
+          const py = (1-pt)*(1-pt)*s.y + 2*(1-pt)*pt*midY + pt*pt*t.y;
+          const signalGlow = ctx.createRadialGradient(px, py, 0, px, py, 4);
+          const avgR = (sRgb.r + tRgb.r) >> 1;
+          const avgG = (sRgb.g + tRgb.g) >> 1;
+          const avgB = (sRgb.b + tRgb.b) >> 1;
+          signalGlow.addColorStop(0, `rgba(${avgR}, ${avgG}, ${avgB}, ${0.6 * edgeOpacityFinal})`);
+          signalGlow.addColorStop(1, `rgba(${avgR}, ${avgG}, ${avgB}, 0)`);
+          ctx.beginPath();
+          ctx.arc(px, py, 4, 0, Math.PI * 2);
+          ctx.fillStyle = signalGlow;
+          ctx.fill();
+        }
       }
 
       // ── Nodes ──
@@ -460,7 +478,7 @@ export function EntityMap() {
 
         const ec = ENTITY_COLORS[node.type] || { color: '#6b7280', label: node.type };
         const rgb = hexToRgb(ec.color);
-        const baseRadius = Math.max(3.5, node.size / 2.2);
+        const baseRadius = Math.max(2, Math.min(6, 1.5 + node.size / 4));
         const hoverAmt = hoverAmountRef.current.get(node.id) || 0;
         const isSelected = selectedNodeRef.current?.id === node.id;
 
@@ -477,9 +495,9 @@ export function EntityMap() {
         // Dimming in highlight mode
         const dimFactor = isHighlightMode ? (hoverAmt > 0.05 ? 1 : 0.15) : 1;
 
-        // Outer bloom/glow (always, subtle)
-        const glowRadius = radius * (2.5 + hoverAmt * 2);
-        const glowAlpha = (0.08 + hoverAmt * 0.15) * nodeAlpha * dimFactor;
+        // Subtle soma glow (not bubbly — tight and neural)
+        const glowRadius = radius * (1.8 + hoverAmt * 1.5);
+        const glowAlpha = (0.12 + hoverAmt * 0.25) * nodeAlpha * dimFactor;
         const glow = ctx.createRadialGradient(node.x, node.y, radius * 0.5, node.x, node.y, glowRadius);
         glow.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${glowAlpha})`);
         glow.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
@@ -502,32 +520,18 @@ export function EntityMap() {
           ctx.lineDashOffset = 0;
         }
 
-        // Node body with gradient
-        const bodyGrad = ctx.createRadialGradient(
-          node.x - radius * 0.25, node.y - radius * 0.25, 0,
-          node.x, node.y, radius
-        );
-        const mainAlpha = (0.7 + hoverAmt * 0.3) * nodeAlpha * dimFactor;
-        const coreAlpha = Math.min(1, mainAlpha + 0.2);
-        bodyGrad.addColorStop(0, `rgba(${Math.min(255, rgb.r + 60)}, ${Math.min(255, rgb.g + 60)}, ${Math.min(255, rgb.b + 60)}, ${coreAlpha})`);
-        bodyGrad.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${mainAlpha})`);
+        // Node body — solid colored dot
+        const mainAlpha = (0.8 + hoverAmt * 0.2) * nodeAlpha * dimFactor;
         ctx.beginPath();
         ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = bodyGrad;
+        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${mainAlpha})`;
         ctx.fill();
 
-        // Specular highlight
-        if (dimFactor > 0.5) {
-          const specR = radius * 0.35;
-          const specGrad = ctx.createRadialGradient(
-            node.x - radius * 0.2, node.y - radius * 0.3, 0,
-            node.x - radius * 0.2, node.y - radius * 0.3, specR
-          );
-          specGrad.addColorStop(0, `rgba(255, 255, 255, ${0.5 * nodeAlpha * dimFactor})`);
-          specGrad.addColorStop(1, `rgba(255, 255, 255, 0)`);
+        // Bright core (neuron soma center)
+        if (dimFactor > 0.3) {
           ctx.beginPath();
-          ctx.arc(node.x - radius * 0.2, node.y - radius * 0.3, specR, 0, Math.PI * 2);
-          ctx.fillStyle = specGrad;
+          ctx.arc(node.x, node.y, radius * 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * nodeAlpha * dimFactor})`;
           ctx.fill();
         }
 
