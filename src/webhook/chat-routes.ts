@@ -143,6 +143,126 @@ export function chatRoutes(): Router {
     res.json(CHAT_MODELS);
   });
 
+  // POST /guest — free tier, no auth, no memory, qwen3-5-9b only, 10 msgs/day per IP
+  router.post('/guest', async (req: Request, res: Response) => {
+    try {
+      const { content } = req.body;
+      if (!content || typeof content !== 'string') {
+        res.status(400).json({ error: 'content is required' });
+        return;
+      }
+
+      // Rate limit by IP — 10 messages per day
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const allowed = await checkRateLimit('chat:guest:' + ip, 10, 1440); // 10 per 24h
+      if (!allowed) {
+        res.status(429).json({
+          error: 'Free limit reached. Sign in with your wallet for unlimited access.',
+          requireAuth: true,
+        });
+        return;
+      }
+
+      // Content filter
+      const contentCheck = checkInputContent(content);
+      if (!contentCheck.allowed) {
+        res.status(400).json({ error: 'Content rejected.', reason: contentCheck.reason });
+        return;
+      }
+
+      const veniceApiKey = config.venice?.apiKey || process.env.VENICE_API_KEY;
+      if (!veniceApiKey) {
+        res.status(500).json({ error: 'Chat not configured' });
+        return;
+      }
+
+      // Build simple messages (no memory, no conversation history)
+      const messages = req.body.history || [];
+      const allMessages = [
+        { role: 'system', content: 'You are Clude, a helpful AI assistant with persistent memory. This user is not signed in yet — they have limited free messages. Be helpful and encourage them to sign up for full memory features.' },
+        ...messages.slice(-10), // last 10 messages from client-side history
+        { role: 'user', content },
+      ];
+
+      // SSE headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      const abortController = new AbortController();
+      req.on('close', () => abortController.abort());
+
+      const veniceRes = await fetch('https://api.venice.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${veniceApiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'qwen3-5-9b',
+          messages: allMessages,
+          max_tokens: 2048,
+          temperature: 0.7,
+          stream: true,
+        }),
+        signal: abortController.signal,
+      });
+
+      if (!veniceRes.ok) {
+        res.write(`data: ${JSON.stringify({ error: 'Model inference failed' })}\n\n`);
+        res.end();
+        return;
+      }
+
+      const reader = veniceRes.body?.getReader();
+      if (!reader) { res.end(); return; }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullContent = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith('data: ')) continue;
+            const data = trimmed.slice(6);
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) {
+                fullContent += delta;
+                res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
+              }
+            } catch {}
+          }
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        throw err;
+      }
+
+      res.write(`data: ${JSON.stringify({ done: true, model: 'qwen3-5-9b', guest: true })}\n\n`);
+      res.end();
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      log.error({ err }, 'Guest chat error');
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Chat failed' });
+      } else {
+        res.write(`data: ${JSON.stringify({ error: 'Stream interrupted' })}\n\n`);
+        res.end();
+      }
+    }
+  });
+
   // All routes below require auth
   router.use(chatAuth);
 
