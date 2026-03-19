@@ -35,14 +35,24 @@ export function MemoryPacks() {
     setCopied(false);
     setLastExportText('');
     try {
+      const slug = exportName.replace(/\s+/g, '-').toLowerCase();
+
+      // Smart export — AI-synthesized context brief (server-side)
+      if (exportFormat === 'smart') {
+        const result = await api.smartExport(exportName);
+        setExportResult(result);
+        setLastExportText(result.content);
+        downloadText(result.content, `${slug}${getFileExtension('smart')}`);
+        setExporting(false);
+        return;
+      }
+
       const pack = await api.exportMemoryPack({
         name: exportName,
         description: exportDesc,
         tags: exportTags ? exportTags.split(',').map(t => t.trim()) : undefined,
       });
       setExportResult(pack);
-
-      const slug = exportName.replace(/\s+/g, '-').toLowerCase();
 
       if (isProviderFormat(exportFormat)) {
         const text = formatForProvider(pack.memories, exportFormat);

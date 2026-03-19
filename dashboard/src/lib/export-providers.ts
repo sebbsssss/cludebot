@@ -209,9 +209,10 @@ export function wordCount(text: string): number {
 }
 
 export type ProviderFormat = 'chatgpt' | 'claude' | 'gemini';
-export type ExportFormat = 'json' | 'md' | ProviderFormat;
+export type ExportFormat = 'json' | 'md' | 'smart' | ProviderFormat;
 
 export const FORMAT_LABELS: Record<ExportFormat, string> = {
+  smart: 'Smart Export (AI-synthesized)',
   json: 'JSON (agents)',
   md: 'Markdown',
   chatgpt: 'ChatGPT',
@@ -220,7 +221,7 @@ export const FORMAT_LABELS: Record<ExportFormat, string> = {
 };
 
 export const PROVIDER_FORMATS: ProviderFormat[] = ['chatgpt', 'claude', 'gemini'];
-export const DATA_FORMATS: ExportFormat[] = ['json', 'md'];
+export const DATA_FORMATS: ExportFormat[] = ['smart', 'json', 'md'];
 
 export function isProviderFormat(fmt: ExportFormat): fmt is ProviderFormat {
   return PROVIDER_FORMATS.includes(fmt as ProviderFormat);
@@ -236,6 +237,7 @@ export function formatForProvider(memories: Memory[], format: ProviderFormat): s
 
 export function getFileExtension(format: ExportFormat): string {
   switch (format) {
+    case 'smart': return '.context-brief.txt';
     case 'json': return '.clude-pack.json';
     case 'md': return '.clude-pack.md';
     case 'chatgpt': return '.chatgpt-prompt.txt';

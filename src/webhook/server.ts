@@ -668,6 +668,114 @@ export function createServer(): express.Application {
     }
   });
 
+  // Smart export (AI-synthesized context brief)
+  app.post('/api/memory-packs/smart-export', requirePrivyAuth, async (req: Request, res: Response) => {
+    try {
+      const { name } = req.body;
+      if (!name) { res.status(400).json({ error: 'name is required' }); return; }
+
+      const owner = getRequestOwner(req);
+      if (!owner) { res.status(401).json({ error: 'Authentication required' }); return; }
+
+      const veniceApiKey = process.env.VENICE_API_KEY;
+      if (!veniceApiKey) { res.status(500).json({ error: 'Venice API not configured' }); return; }
+
+      // Paginate all memories
+      const db = getDb();
+      let allMemories: any[] = [];
+      const PAGE = 1000;
+      let offset = 0;
+      while (true) {
+        const { data, error: dbErr } = await db.from('memories')
+          .select('memory_type, summary, content, importance, tags, created_at')
+          .eq('owner_wallet', owner)
+          .order('importance', { ascending: false })
+          .range(offset, offset + PAGE - 1);
+        if (dbErr || !data || data.length === 0) break;
+        allMemories = allMemories.concat(data);
+        offset += data.length;
+        if (allMemories.length >= 50000 || data.length < PAGE) break;
+      }
+
+      if (allMemories.length === 0) {
+        res.status(404).json({ error: 'No memories found' });
+        return;
+      }
+
+      // Build condensed input grouped by type
+      const byType: Record<string, any[]> = {};
+      for (const m of allMemories) {
+        (byType[m.memory_type || 'episodic'] ??= []).push(m);
+      }
+
+      const sections: string[] = [];
+      for (const [type, mems] of Object.entries(byType)) {
+        const sorted = mems.sort((a: any, b: any) => (b.importance || 0) - (a.importance || 0));
+        const top = sorted.slice(0, type === 'episodic' ? 200 : 100);
+        sections.push(`\n## ${type.toUpperCase()} (${mems.length} total, showing top ${top.length})\n`);
+        for (const m of top) {
+          const date = m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : '';
+          sections.push(`- [${date}] ${m.summary || m.content?.slice(0, 200)}`);
+        }
+      }
+
+      const typeCounts = Object.entries(byType).map(([t, arr]) => `${t}: ${arr.length}`).join(', ');
+
+      const veniceRes = await fetch('https://api.venice.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${veniceApiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          messages: [
+            { role: 'system', content: 'You are an expert at synthesizing information into structured context documents.' },
+            { role: 'user', content: `Analyze this user's ${allMemories.length} memories (${typeCounts}) and create a comprehensive context document.
+
+Sections needed:
+1. **User Profile** — Who they are, role, background, expertise
+2. **Active Projects** — Current work with status and details
+3. **Key Decisions & Reasoning** — Important choices and WHY
+4. **Technical Knowledge** — Tools, stack, preferences, lessons
+5. **Working Style** — Communication preferences, work patterns
+6. **Important Relationships** — People, teams, partners
+7. **Recent Timeline** — Last 2 weeks chronologically
+
+Rules: Third person, be specific (names, dates, numbers), explain relationships between facts, under 3000 words, use XML tags for sections.
+
+Memories:
+${sections.join('\n')}` },
+          ],
+          max_tokens: 4096,
+          temperature: 0.3,
+        }),
+      });
+
+      if (!veniceRes.ok) {
+        log.error({ status: veniceRes.status }, 'Venice synthesis failed');
+        res.status(500).json({ error: 'Synthesis failed' });
+        return;
+      }
+
+      const veniceData = await veniceRes.json() as any;
+      const synthesis = veniceData.choices?.[0]?.message?.content;
+      if (!synthesis) { res.status(500).json({ error: 'Empty synthesis' }); return; }
+
+      res.json({
+        name,
+        format: 'smart',
+        memory_count: allMemories.length,
+        type_breakdown: Object.fromEntries(Object.entries(byType).map(([t, arr]) => [t, arr.length])),
+        content: `<context>\nSynthesized from ${allMemories.length} memories by Clude.\nGenerated: ${new Date().toISOString().slice(0, 10)}\n\n${synthesis}\n</context>`,
+        generated_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Smart export error');
+      res.status(500).json({ error: 'Smart export failed' });
+    }
+  });
+
   // List memory packs (stub — packs aren't persisted yet, returns empty)
   app.get('/api/memory-packs', optionalPrivyAuth, async (_req: Request, res: Response) => {
     res.json([]);

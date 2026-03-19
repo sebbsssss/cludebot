@@ -271,6 +271,21 @@ class CludeAPI {
     });
   }
 
+  // Smart export — AI-synthesized context brief
+  async smartExport(name: string): Promise<{ content: string; memory_count: number; type_breakdown: Record<string, number> }> {
+    if (this.mode === 'cortex') {
+      return this.fetch('/api/cortex/packs/smart-export', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      });
+    }
+    const url = this.appendWallet('/api/memory-packs/smart-export');
+    return this.fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
   // List available packs
   async listMemoryPacks(): Promise<MemoryPack[]> {
     if (this.mode === 'cortex') {
