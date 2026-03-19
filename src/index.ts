@@ -112,6 +112,11 @@ if (require.main === module) {
     await startDreamCycle();
     log.info('Dream cycle started — memory consolidation active');
 
+    // Start hosted dream worker — runs dream cycles for all cortex agents
+    const { startHostedDreamSchedule } = require('./features/hosted-dreams');
+    startHostedDreamSchedule();
+    log.info('Hosted dream worker started — all agents get dream cycles');
+
     await startActiveReflection();
     log.info('Active reflection started — meditation cycle active');
 
