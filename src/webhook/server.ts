@@ -1040,6 +1040,25 @@ export function createServer(): express.Application {
     res.redirect('/dashboard/');
   });
 
+  // Chat interface at /chat (SPA with client-side routing)
+  const chatDir = path.join(publicDir, 'chat');
+  const distChatDir = path.join(distPublicDir, 'chat');
+  app.use('/chat', express.static(chatDir));
+  app.use('/chat', express.static(distChatDir));
+  app.get('/chat/*', (_req: Request, res: Response) => {
+    const indexPath = path.join(chatDir, 'index.html');
+    const distIndexPath = path.join(distChatDir, 'index.html');
+    if (require('fs').existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.sendFile(distIndexPath);
+    }
+  });
+  // Redirect bare /chat to /chat/
+  app.get('/chat', (_req: Request, res: Response) => {
+    res.redirect('/chat/');
+  });
+
   // Register page — Cortex API key registration
   app.get('/register', (req: Request, _res: Response, next: express.NextFunction) => {
     req.url = '/register.html';

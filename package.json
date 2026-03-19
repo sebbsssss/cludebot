@@ -37,7 +37,9 @@
     "prepublishOnly": "npm run build:sdk",
     "mcp": "MCP_MODE=1 tsx src/mcp/server.ts",
     "dashboard": "cd dashboard && npm run dev",
-    "dashboard:build": "cd dashboard && npm run build"
+    "dashboard:build": "cd dashboard && npm run build",
+    "chat": "cd chat && npm run dev",
+    "chat:build": "cd chat && npm run build"
   },
   "keywords": [
     "ai-agent",
