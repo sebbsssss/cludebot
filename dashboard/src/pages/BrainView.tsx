@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { BrainVisualization } from '../components/BrainVisualization';
 import { useAgentContext } from '../context/AgentContext';
+import { useAuthContext } from '../hooks/AuthContext';
 import type { Memory, MemoryType } from '../types/memory';
 
 const TYPE_LABELS: Record<MemoryType, string> = {
@@ -12,6 +13,7 @@ const TYPE_LABELS: Record<MemoryType, string> = {
 };
 
 export function BrainView() {
+  const { authMode, walletAddress } = useAuthContext();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [consciousness, setConsciousness] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,13 @@ export function BrainView() {
   const { selectedAgent } = useAgentContext();
 
   useEffect(() => {
+    if (authMode === 'cortex') {
+      const key = localStorage.getItem('cortex_api_key');
+      if (key) { api.setMode('cortex'); api.setToken(key); }
+    } else if (authMode === 'privy' && walletAddress) {
+      api.setMode('legacy'); api.setWalletAddress(walletAddress);
+    }
+
     function load() {
       setLoading(true);
       api.getBrain().then((d) => {

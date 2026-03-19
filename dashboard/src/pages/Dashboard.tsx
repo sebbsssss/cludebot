@@ -669,7 +669,7 @@ export function Dashboard() {
           </CardHeader>
           <div style={{ flex: 1, position: 'relative', minHeight: 240 }}>
             <iframe
-              src="/brain.html?embedded=1"
+              src={`/brain.html?embedded=1${walletAddress ? '&wallet=' + encodeURIComponent(walletAddress) : ''}`}
               style={{
                 width: '100%', height: '100%',
                 border: 'none', display: 'block',

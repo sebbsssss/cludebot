@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { NeuralCanvas } from '../components/NeuralCanvas';
 import { useAgentContext } from '../context/AgentContext';
+import { useAuthContext } from '../hooks/AuthContext';
 import type { Memory, MemoryType } from '../types/memory';
 
 const TYPE_COLORS: Record<MemoryType, string> = {
@@ -28,6 +29,7 @@ function filterByAgent(memories: Memory[], agentId: string | null, agentName: st
 }
 
 export function Timeline() {
+  const { authMode, walletAddress } = useAuthContext();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<MemoryType | 'all'>('all');
@@ -36,6 +38,14 @@ export function Timeline() {
   const { selectedAgent } = useAgentContext();
 
   useEffect(() => {
+    // Sync api mode with current auth context
+    if (authMode === 'cortex') {
+      const key = localStorage.getItem('cortex_api_key');
+      if (key) { api.setMode('cortex'); api.setToken(key); }
+    } else if (authMode === 'privy' && walletAddress) {
+      api.setMode('legacy'); api.setWalletAddress(walletAddress);
+    }
+
     function load() {
       setLoading(true);
       api.getMemories({ hours, limit: 50 }).then((data) => {
