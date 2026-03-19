@@ -689,17 +689,22 @@ export function cortexRoutes(): Router {
         (byType[t] = byType[t] || []).push(m);
       }
 
-      // Build full memory dump — all memories, sorted by importance
-      const sections: string[] = [];
-      const allBullets: string[] = [];
+      // Build two versions: condensed for LLM synthesis, full for appendix
+      const sections: string[] = [];  // condensed (top per type, for LLM)
+      const allBullets: string[] = []; // full (every memory, for appendix)
       for (const [type, mems] of Object.entries(byType)) {
         const sorted = mems.sort((a: any, b: any) => (b.importance || 0) - (a.importance || 0));
-        sections.push(`\n## ${type.toUpperCase()} (${sorted.length})\n`);
+        // Condensed: top 300 episodic, 150 others (fits in LLM context)
+        const forLLM = sorted.slice(0, type === 'episodic' ? 300 : 150);
+        sections.push(`\n## ${type.toUpperCase()} (${mems.length} total, top ${forLLM.length} shown)\n`);
+        for (const m of forLLM) {
+          const date = m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : '';
+          sections.push(`- [${date}] ${m.summary || m.content?.slice(0, 200)}`);
+        }
+        // Full: every memory for the raw appendix
         for (const m of sorted) {
           const date = m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : '';
-          const line = `- [${date}] ${m.summary || m.content?.slice(0, 200)}`;
-          sections.push(line);
-          allBullets.push(`[${type}] ${line}`);
+          allBullets.push(`[${type}] - [${date}] ${m.summary || m.content?.slice(0, 200)}`);
         }
       }
 

@@ -715,12 +715,15 @@ export function createServer(): express.Application {
       const allBullets: string[] = [];
       for (const [type, mems] of Object.entries(byType)) {
         const sorted = mems.sort((a: any, b: any) => (b.importance || 0) - (a.importance || 0));
-        sections.push(`\n## ${type.toUpperCase()} (${sorted.length})\n`);
+        const forLLM = sorted.slice(0, type === 'episodic' ? 300 : 150);
+        sections.push(`\n## ${type.toUpperCase()} (${mems.length} total, top ${forLLM.length} shown)\n`);
+        for (const m of forLLM) {
+          const date = m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : '';
+          sections.push(`- [${date}] ${m.summary || m.content?.slice(0, 200)}`);
+        }
         for (const m of sorted) {
           const date = m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : '';
-          const line = `- [${date}] ${m.summary || m.content?.slice(0, 200)}`;
-          sections.push(line);
-          allBullets.push(`[${type}] ${line}`);
+          allBullets.push(`[${type}] - [${date}] ${m.summary || m.content?.slice(0, 200)}`);
         }
       }
 
