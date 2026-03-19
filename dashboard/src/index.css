@@ -133,6 +133,11 @@ button {
   animation: glowHighlight 2s ease-out;
 }
 
+.loading-dots::after {
+  content: '.';
+  animation: processingDots 1.2s infinite;
+}
+
 /* Responsive helpers */
 @media (max-width: 900px) {
   .bento-grid { grid-template-columns: 1fr !important; }

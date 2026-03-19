@@ -209,7 +209,7 @@ export function MemoryPacks() {
                 flex: 1,
               }}
             >
-              {exporting ? 'Synthesizing with AI...' : `Export for ${currentProvider.name}`}
+              {exporting ? <span>Synthesizing<span className="loading-dots" /></span> : `Export for ${currentProvider.name}`}
             </button>
 
             {lastExportText && (
