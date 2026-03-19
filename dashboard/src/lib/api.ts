@@ -224,7 +224,7 @@ class CludeAPI {
     return Array.isArray(result) ? result : (result?.memories || []);
   }
 
-  // Export Memory Pack
+  // Export Memory Pack (works in both cortex and legacy mode)
   async exportMemoryPack(opts: {
     name: string;
     description: string;
@@ -234,7 +234,25 @@ class CludeAPI {
     types?: string[];
   }): Promise<MemoryPack> {
     if (this.mode === 'cortex') {
-      throw new Error('Memory packs require self-hosted mode');
+      // Use cortex pack export endpoint
+      const result = await this.fetch<any>('/api/cortex/packs/export', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: opts.name,
+          description: opts.description,
+          memory_ids: opts.memoryIds,
+          types: opts.types,
+          limit: 200,
+        }),
+      });
+      // Normalize cortex response to MemoryPack shape
+      return {
+        ...result,
+        memories: (result.memories || []).map((m: any) => ({
+          ...m,
+          memory_type: m.type || m.memory_type,
+        })),
+      };
     }
     const url = this.appendWallet('/api/memory-packs/export');
     return this.fetch(url, {
