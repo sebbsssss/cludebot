@@ -689,16 +689,17 @@ export function cortexRoutes(): Router {
         (byType[t] = byType[t] || []).push(m);
       }
 
+      // Build full memory dump — all memories, sorted by importance
       const sections: string[] = [];
+      const allBullets: string[] = [];
       for (const [type, mems] of Object.entries(byType)) {
         const sorted = mems.sort((a: any, b: any) => (b.importance || 0) - (a.importance || 0));
-        // Take top memories per type (most important)
-        const top = sorted.slice(0, type === 'episodic' ? 200 : 100);
-        sections.push(`\n## ${type.toUpperCase()} (${mems.length} total, showing top ${top.length})\n`);
-        for (const m of top) {
+        sections.push(`\n## ${type.toUpperCase()} (${sorted.length})\n`);
+        for (const m of sorted) {
           const date = m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : '';
-          const imp = m.importance ? ` [imp:${m.importance.toFixed(1)}]` : '';
-          sections.push(`- [${date}]${imp} ${m.summary || m.content?.slice(0, 200)}`);
+          const line = `- [${date}] ${m.summary || m.content?.slice(0, 200)}`;
+          sections.push(line);
+          allBullets.push(`[${type}] ${line}`);
         }
       }
 
@@ -782,9 +783,12 @@ ${memoryDump}`;
         return;
       }
 
+      // Build full export: synthesis + raw memories
+      const rawSection = `\n\n---\n\n# Full Memory Log (${allMemories.length} memories)\n\n${allBullets.join('\n')}`;
+
       const contextBrief = targetProvider === 'claude'
-        ? `<context>\nSynthesized from ${allMemories.length} memories by Clude. Generated: ${new Date().toISOString().slice(0, 10)}\n\n${synthesis}\n</context>`
-        : `${synthesis}\n\n---\nSynthesized from ${allMemories.length} memories by Clude. Generated: ${new Date().toISOString().slice(0, 10)}`;
+        ? `<context>\nSynthesized from ${allMemories.length} memories by Clude. Generated: ${new Date().toISOString().slice(0, 10)}\n\n${synthesis}\n</context>\n${rawSection}`
+        : `${synthesis}\n\n---\nSynthesized from ${allMemories.length} memories by Clude. Generated: ${new Date().toISOString().slice(0, 10)}\n${rawSection}`;
 
       res.json({
         name,

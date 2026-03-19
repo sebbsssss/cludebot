@@ -712,13 +712,15 @@ export function createServer(): express.Application {
       }
 
       const sections: string[] = [];
+      const allBullets: string[] = [];
       for (const [type, mems] of Object.entries(byType)) {
         const sorted = mems.sort((a: any, b: any) => (b.importance || 0) - (a.importance || 0));
-        const top = sorted.slice(0, type === 'episodic' ? 200 : 100);
-        sections.push(`\n## ${type.toUpperCase()} (${mems.length} total, showing top ${top.length})\n`);
-        for (const m of top) {
+        sections.push(`\n## ${type.toUpperCase()} (${sorted.length})\n`);
+        for (const m of sorted) {
           const date = m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : '';
-          sections.push(`- [${date}] ${m.summary || m.content?.slice(0, 200)}`);
+          const line = `- [${date}] ${m.summary || m.content?.slice(0, 200)}`;
+          sections.push(line);
+          allBullets.push(`[${type}] ${line}`);
         }
       }
 
@@ -780,9 +782,10 @@ ${sections.join('\n')}` },
         format: 'smart',
         memory_count: allMemories.length,
         type_breakdown: Object.fromEntries(Object.entries(byType).map(([t, arr]) => [t, arr.length])),
-        content: targetProvider === 'claude'
+        content: (targetProvider === 'claude'
           ? `<context>\nSynthesized from ${allMemories.length} memories by Clude. Generated: ${new Date().toISOString().slice(0, 10)}\n\n${synthesis}\n</context>`
-          : `${synthesis}\n\n---\nSynthesized from ${allMemories.length} memories by Clude. Generated: ${new Date().toISOString().slice(0, 10)}`,
+          : `${synthesis}\n\n---\nSynthesized from ${allMemories.length} memories by Clude. Generated: ${new Date().toISOString().slice(0, 10)}`)
+          + `\n\n---\n\n# Full Memory Log (${allMemories.length} memories)\n\n${allBullets.join('\n')}`,
         generated_at: new Date().toISOString(),
       });
     } catch (err) {
