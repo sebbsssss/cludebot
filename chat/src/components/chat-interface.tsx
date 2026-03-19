@@ -73,35 +73,35 @@ export function ChatInterface() {
   const hasMessages = messages.length > 0
 
   return (
-    <div className="flex flex-col min-h-screen p-4">
-      <div className="w-full max-w-4xl mx-auto flex-1 flex flex-col">
+    <div className="flex flex-col min-h-screen items-center justify-center px-4 py-6">
+      <div className="w-full max-w-2xl flex flex-col">
         {/* Messages Area */}
         <AnimatePresence>
           {hasMessages && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
-              className="flex-1 overflow-y-auto mb-4 space-y-4 max-h-[60vh]"
+              className="overflow-y-auto mb-3 space-y-3 max-h-[50vh]"
             >
               {messages.map((message) => (
                 <motion.div
                   key={message.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: 0.25 }}
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {message.role === "assistant" && (
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2">
                       {/* Mini shader avatar for assistant */}
-                      <div className="relative flex items-center justify-center w-8 h-8 flex-shrink-0">
-                        <div className="z-10 absolute bg-white/5 h-6 w-6 rounded-full backdrop-blur-[2px]">
-                          <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-2 left-2 blur-[0.5px]" />
-                          <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-1.5 left-3.5 blur-[0.4px]" />
-                          <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-4 left-1 blur-[0.5px]" />
+                      <div className="relative flex items-center justify-center w-6 h-6 flex-shrink-0 mt-0.5">
+                        <div className="z-10 absolute bg-white/5 h-5 w-5 rounded-full backdrop-blur-[2px]">
+                          <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-1.5 left-1.5 blur-[0.5px]" />
+                          <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-1 left-3 blur-[0.4px]" />
+                          <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-3 left-1 blur-[0.5px]" />
                         </div>
                         <LiquidMetal
-                          style={{ height: 32, width: 32, filter: "blur(6px)", position: "absolute" }}
+                          style={{ height: 24, width: 24, filter: "blur(5px)", position: "absolute" }}
                           colorBack="hsl(0, 0%, 0%, 0)"
                           colorTint="hsl(220, 100%, 45%)"
                           repetition={4}
@@ -118,7 +118,7 @@ export function ChatInterface() {
                           speed={5}
                         />
                         <LiquidMetal
-                          style={{ height: 32, width: 32 }}
+                          style={{ height: 24, width: 24 }}
                           colorBack="hsl(0, 0%, 0%, 0)"
                           colorTint="hsl(220, 100%, 45%)"
                           repetition={4}
@@ -135,14 +135,14 @@ export function ChatInterface() {
                           speed={5}
                         />
                       </div>
-                      <div className="bg-zinc-900/80 border border-blue-500/20 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%]">
-                        <p className="text-white/90 text-sm">{message.content}</p>
+                      <div className="bg-zinc-900/80 border border-blue-500/20 rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%]">
+                        <p className="text-white/90 text-[13px] leading-relaxed">{message.content}</p>
                       </div>
                     </div>
                   )}
                   {message.role === "user" && (
-                    <div className="bg-blue-600/20 border border-blue-500/30 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[80%]">
-                      <p className="text-white text-sm">{message.content}</p>
+                    <div className="bg-blue-600/20 border border-blue-500/30 rounded-xl rounded-tr-sm px-3 py-2 max-w-[80%]">
+                      <p className="text-white text-[13px] leading-relaxed">{message.content}</p>
                     </div>
                   )}
                 </motion.div>
@@ -151,19 +151,19 @@ export function ChatInterface() {
               {/* Typing indicator */}
               {isTyping && (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-start"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="relative flex items-center justify-center w-8 h-8 flex-shrink-0">
-                      <div className="z-10 absolute bg-white/5 h-6 w-6 rounded-full backdrop-blur-[2px]">
-                        <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-2 left-2 blur-[0.5px]" />
-                        <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-1.5 left-3.5 blur-[0.4px]" />
-                        <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-4 left-1 blur-[0.5px]" />
+                  <div className="flex items-start gap-2">
+                    <div className="relative flex items-center justify-center w-6 h-6 flex-shrink-0 mt-0.5">
+                      <div className="z-10 absolute bg-white/5 h-5 w-5 rounded-full backdrop-blur-[2px]">
+                        <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-1.5 left-1.5 blur-[0.5px]" />
+                        <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-1 left-3 blur-[0.4px]" />
+                        <div className="h-[1px] w-[1px] bg-white rounded-full absolute top-3 left-1 blur-[0.5px]" />
                       </div>
                       <LiquidMetal
-                        style={{ height: 32, width: 32, filter: "blur(6px)", position: "absolute" }}
+                        style={{ height: 24, width: 24, filter: "blur(5px)", position: "absolute" }}
                         colorBack="hsl(0, 0%, 0%, 0)"
                         colorTint="hsl(220, 100%, 45%)"
                         repetition={4}
@@ -180,7 +180,7 @@ export function ChatInterface() {
                         speed={5}
                       />
                       <LiquidMetal
-                        style={{ height: 32, width: 32 }}
+                        style={{ height: 24, width: 24 }}
                         colorBack="hsl(0, 0%, 0%, 0)"
                         colorTint="hsl(220, 100%, 45%)"
                         repetition={4}
@@ -197,20 +197,20 @@ export function ChatInterface() {
                         speed={5}
                       />
                     </div>
-                    <div className="bg-zinc-900/80 border border-blue-500/20 rounded-2xl rounded-tl-sm px-4 py-3">
+                    <div className="bg-zinc-900/80 border border-blue-500/20 rounded-xl rounded-tl-sm px-3 py-2">
                       <div className="flex gap-1">
                         <motion.div
-                          className="w-2 h-2 bg-blue-500/60 rounded-full"
+                          className="w-1.5 h-1.5 bg-blue-500/60 rounded-full"
                           animate={{ opacity: [0.4, 1, 0.4] }}
                           transition={{ duration: 1, repeat: Infinity, delay: 0 }}
                         />
                         <motion.div
-                          className="w-2 h-2 bg-blue-500/60 rounded-full"
+                          className="w-1.5 h-1.5 bg-blue-500/60 rounded-full"
                           animate={{ opacity: [0.4, 1, 0.4] }}
                           transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
                         />
                         <motion.div
-                          className="w-2 h-2 bg-blue-500/60 rounded-full"
+                          className="w-1.5 h-1.5 bg-blue-500/60 rounded-full"
                           animate={{ opacity: [0.4, 1, 0.4] }}
                           transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
                         />
@@ -228,7 +228,7 @@ export function ChatInterface() {
         <AnimatePresence>
           {!hasMessages && (
             <motion.div
-              className="flex flex-row items-center mb-2"
+              className="flex flex-row items-center mb-2 gap-1"
               initial={{ opacity: 1 }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
@@ -238,7 +238,7 @@ export function ChatInterface() {
                 id="circle-ball"
                 className="relative flex items-center justify-center z-10"
                 animate={{
-                  y: isFocused ? 50 : 0,
+                  y: isFocused ? 30 : 0,
                   opacity: isFocused ? 0 : 100,
                   filter: isFocused ? "blur(4px)" : "blur(0px)",
                   rotate: isFocused ? 180 : 0,
@@ -250,15 +250,15 @@ export function ChatInterface() {
                   damping: 20,
                 }}
               >
-                <div className="z-10 absolute bg-white/5 h-11 w-11 rounded-full backdrop-blur-[3px]">
-                  <div className="h-[2px] w-[2px] bg-white rounded-full absolute top-4 left-4  blur-[1px]" />
-                  <div className="h-[2px] w-[2px] bg-white rounded-full absolute top-3 left-7  blur-[0.8px]" />
-                  <div className="h-[2px] w-[2px] bg-white rounded-full absolute top-8 left-2  blur-[1px]" />
-                  <div className="h-[2px] w-[2px] bg-white rounded-full absolute top-5 left-9 blur-[0.8px]" />
-                  <div className="h-[2px] w-[2px] bg-white rounded-full absolute top-7 left-7  blur-[1px]" />
+                <div className="z-10 absolute bg-white/5 h-8 w-8 rounded-full backdrop-blur-[3px]">
+                  <div className="h-[1.5px] w-[1.5px] bg-white rounded-full absolute top-3 left-3 blur-[0.8px]" />
+                  <div className="h-[1.5px] w-[1.5px] bg-white rounded-full absolute top-2 left-5 blur-[0.6px]" />
+                  <div className="h-[1.5px] w-[1.5px] bg-white rounded-full absolute top-6 left-1.5 blur-[0.8px]" />
+                  <div className="h-[1.5px] w-[1.5px] bg-white rounded-full absolute top-4 left-6.5 blur-[0.6px]" />
+                  <div className="h-[1.5px] w-[1.5px] bg-white rounded-full absolute top-5.5 left-5 blur-[0.8px]" />
                 </div>
                 <LiquidMetal
-                  style={{ height: 80, width: 80, filter: "blur(14px)", position: "absolute" }}
+                  style={{ height: 56, width: 56, filter: "blur(10px)", position: "absolute" }}
                   colorBack="hsl(0, 0%, 0%, 0)"
                   colorTint="hsl(220, 100%, 45%)"
                   repetition={4}
@@ -275,7 +275,7 @@ export function ChatInterface() {
                   speed={5}
                 />
                 <LiquidMetal
-                  style={{ height: 80, width: 80 }}
+                  style={{ height: 56, width: 56 }}
                   colorBack="hsl(0, 0%, 0%, 0)"
                   colorTint="hsl(220, 100%, 45%)"
                   repetition={4}
@@ -295,9 +295,9 @@ export function ChatInterface() {
 
               {/* Greeting Text */}
               <motion.p
-                className="text-white/40 text-sm font-light z-10"
+                className="text-white/40 text-[13px] font-light z-10"
                 animate={{
-                  y: isFocused ? 50 : 0,
+                  y: isFocused ? 30 : 0,
                   opacity: isFocused ? 0 : 100,
                   filter: isFocused ? "blur(4px)" : "blur(0px)",
                 }}
@@ -314,17 +314,18 @@ export function ChatInterface() {
           )}
         </AnimatePresence>
 
-        <div className="relative">
+        <div className="relative overflow-visible">
           <motion.div
-            className="absolute w-full h-full z-0 flex items-center justify-center"
+            className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-visible"
             initial={{ opacity: 0 }}
             animate={{ opacity: isFocused ? 1 : 0 }}
             transition={{
               duration: 0.8,
             }}
+            style={{ overflow: "visible" }}
           >
             <PulsingBorder
-              style={{ height: "146.5%", minWidth: "143%" }}
+              style={{ height: "146.5%", minWidth: "143%", position: "absolute" }}
               colorBack="hsl(0, 0%, 0%)"
               roundness={0.18}
               thickness={0}
@@ -352,7 +353,7 @@ export function ChatInterface() {
           </motion.div>
 
           <motion.div
-            className="relative bg-[#040404] rounded-2xl p-4 z-10"
+            className="relative bg-[#040404] rounded-xl p-3 z-10"
             animate={{
               borderColor: isFocused ? "#1E50E6" : "#3D3D3D",
             }}
@@ -366,13 +367,13 @@ export function ChatInterface() {
             }}
           >
             {/* Message Input */}
-            <div className="relative mb-6">
+            <div className="relative mb-4">
               <Textarea
                 placeholder="Ask me anything..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="min-h-[80px] resize-none bg-transparent border-none text-white text-base placeholder:text-zinc-500 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none [&:focus]:ring-0 [&:focus]:outline-none [&:focus-visible]:ring-0 [&:focus-visible]:outline-none"
+                className="min-h-[60px] resize-none bg-transparent border-none text-white text-[13px] placeholder:text-zinc-500 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none [&:focus]:ring-0 [&:focus]:outline-none [&:focus-visible]:ring-0 [&:focus-visible]:outline-none"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
               />
@@ -380,38 +381,38 @@ export function ChatInterface() {
 
             <div className="flex items-center justify-between">
               {/* Left side icons */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-9 w-9 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 hover:text-white p-0"
+                  className="h-7 w-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 hover:text-white p-0"
                 >
-                  <Brain className="h-4 w-4" />
+                  <Brain className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-9 w-9 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white p-0"
+                  className="h-7 w-7 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white p-0"
                 >
-                  <Link className="h-4 w-4" />
+                  <Link className="h-3.5 w-3.5" />
                 </Button>
                 {/* Center model selector */}
                 <div className="flex items-center">
                   <Select defaultValue="gpt-4">
-                    <SelectTrigger className="bg-zinc-900 border-[#3D3D3D] text-white hover:bg-zinc-700 text-xs rounded-full px-2 h-8 min-w-[150px]">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs">⚡</span>
+                    <SelectTrigger className="bg-zinc-900 border-[#3D3D3D] text-white hover:bg-zinc-700 text-[11px] rounded-full px-2 h-7 min-w-[130px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px]">⚡</span>
                         <SelectValue />
                       </div>
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 z-30 border-[#3D3D3D] rounded-xl z-30">
-                      <SelectItem value="gemini-2.5-pro" className="text-white hover:bg-zinc-700 rounded-lg">
+                    <SelectContent className="bg-zinc-900 z-30 border-[#3D3D3D] rounded-lg">
+                      <SelectItem value="gemini-2.5-pro" className="text-white hover:bg-zinc-700 rounded-md text-xs">
                         Gemini 2.5 Pro
                       </SelectItem>
-                      <SelectItem value="gpt-4" className="text-white hover:bg-zinc-700 rounded-lg">
+                      <SelectItem value="gpt-4" className="text-white hover:bg-zinc-700 rounded-md text-xs">
                         GPT-4
                       </SelectItem>
-                      <SelectItem value="claude-3" className="text-white hover:bg-zinc-700 rounded-lg">
+                      <SelectItem value="claude-3" className="text-white hover:bg-zinc-700 rounded-md text-xs">
                         Claude 3
                       </SelectItem>
                     </SelectContent>
@@ -420,29 +421,29 @@ export function ChatInterface() {
               </div>
 
               {/* Right side icons */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-10 w-10 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white p-0"
+                  className="h-8 w-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white p-0"
                 >
-                  <Folder className="h-5 w-5" />
+                  <Folder className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-10 w-10 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white p-0"
+                  className="h-8 w-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white p-0"
                 >
-                  <Mic className="h-5 w-5" />
+                  <Mic className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleSend}
                   disabled={!inputValue.trim() || isTyping}
-                  className="h-10 w-10 rounded-full bg-blue-600/25 hover:bg-blue-600/35 text-blue-500 p-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-8 w-8 rounded-full bg-blue-600/25 hover:bg-blue-600/35 text-blue-500 p-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4" />
                 </Button>
               </div>
             </div>
