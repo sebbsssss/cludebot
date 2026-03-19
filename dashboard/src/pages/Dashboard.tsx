@@ -281,7 +281,7 @@ export function Dashboard() {
     Promise.all([
       api.getStats().catch(() => null),
       api.getVeniceStats().catch(() => null),
-      api.getMemories({ hours: 24, limit: 50 }).catch(() => ({ memories: [], scoped_to: null })),
+      api.getMemories({ hours: 168, limit: 50 }).catch(() => ({ memories: [], scoped_to: null })),
     ]).then(([s, v, m]) => {
       const memResult = m as { memories: Memory[]; scoped_to?: string | null };
       if (api.verifyScope(s || memResult)) {
@@ -311,19 +311,32 @@ export function Dashboard() {
   }, [fetchAll]);
 
   // Silent polling — stats every 30s, memories every 15s, venice every 60s
+  // Each poll syncs api mode first to prevent stale endpoint issues
   useEffect(() => {
+    function syncMode() {
+      if (authMode === 'cortex') {
+        const key = localStorage.getItem('cortex_api_key');
+        if (key) { api.setMode('cortex'); api.setToken(key); }
+      } else if (authMode === 'privy' && walletAddress) {
+        api.setMode('legacy'); api.setWalletAddress(walletAddress);
+      }
+    }
+
     const refreshStats = () => {
+      syncMode();
       api.getStats().then(s => {
         if (api.verifyScope(s)) setStats(s);
       }).catch(() => {});
     };
     const refreshMemories = () => {
-      api.getMemories({ hours: 24, limit: 50 }).then(m => {
+      syncMode();
+      api.getMemories({ hours: 168, limit: 50 }).then(m => {
         const result = m as { memories: Memory[]; scoped_to?: string | null };
         if (api.verifyScope(result)) setRecentMemories(result.memories || []);
       }).catch(() => {});
     };
     const refreshVenice = () => {
+      syncMode();
       api.getVeniceStats().then(v => setVeniceStats(v)).catch(() => {});
     };
 
@@ -335,7 +348,7 @@ export function Dashboard() {
       clearInterval(memInterval);
       clearInterval(veniceInterval);
     };
-  }, []);
+  }, [authMode, walletAddress]);
 
   const agentMemories = filterByAgent(
     recentMemories,
