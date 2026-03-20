@@ -22,10 +22,14 @@ Wire the existing `/chat` SPA to the real backend and build the full chat experi
 ### Privy Login Flow
 - User clicks a locked model or a "Sign in" button in the chat header.
 - Privy modal opens (wallet connect — same `PRIVY_APP_ID` as dashboard).
-- On successful login, frontend sends Privy JWT to `POST /api/chat/auto-register`.
-- Backend checks if a Cortex key exists for that wallet. If not, calls existing `/api/cortex/register` logic internally and returns the `clk_*` key.
+- On successful login, frontend sends Privy JWT + wallet address to `POST /api/chat/auto-register`.
+- Endpoint is protected by `requirePrivyAuth`. Wallet address is sent in the request body and validated as a valid Solana address.
+- Backend checks if a Cortex key exists for that wallet in `agent_keys` table.
+  - **First login:** No key exists — calls `registerAgent()` with name derived from truncated wallet (e.g., `"chat-AbCd...xYz1"`), stores the plaintext key in an **encrypted column** (`encrypted_key`) alongside the existing hash, returns the `clk_*` key.
+  - **Returning user:** Key exists — decrypts and returns the existing `clk_*` key from the `encrypted_key` column.
 - Frontend stores the key in localStorage and switches to authenticated mode.
 - **Every user always gets a Cortex API key** — auto-created on first Privy login.
+- **Note:** The Privy JWT is only used for the `auto-register` call. All subsequent chat API calls use `Authorization: Bearer clk_*` via the Cortex key path in `chatAuth`.
 
 ### Cortex Key Flow (Power Users)
 - Settings/gear icon in chat header opens a panel to paste a `clk_*` key.
@@ -33,7 +37,7 @@ Wire the existing `/chat` SPA to the real backend and build the full chat experi
 
 ### Auth State in Requests
 - Authenticated requests use `Authorization: Bearer clk_*` header.
-- Works with existing `chatAuth` middleware — no backend auth changes needed.
+- Works with existing `chatAuth` middleware's Cortex key path — no changes to `chatAuth` needed.
 
 ### Session Management
 - **On Privy login:** store Cortex key + wallet address in localStorage, clear any existing guest messages from state.
@@ -51,7 +55,7 @@ Wire the existing `/chat` SPA to the real backend and build the full chat experi
 - Frontend fetches `GET /api/chat/models` on load (already exists).
 - Each model gets a `tier` field: `"free"` or `"pro"`.
 - **Free:** `qwen3-5-9b` only.
-- **Pro:** all other 12 models (7 private + 5 anonymized).
+- **Pro:** all other 12 models (8 private + 5 anonymized, minus the free one).
 
 ### UI Behavior
 - Dropdown shows all models grouped by privacy level (Private / Anonymized).
@@ -90,6 +94,7 @@ Wire the existing `/chat` SPA to the real backend and build the full chat experi
 - New chat: `POST /api/chat/conversations` with selected model.
 - Messages sent via `POST /api/chat/conversations/:id/messages` (SSE streaming).
 - Sidebar auto-updates when new conversations are created or title changes.
+- Delete conversation: `DELETE /api/chat/conversations/:id` (already exists, cascades via FK constraint).
 
 ### Mobile
 - Sidebar becomes an overlay drawer (slides over content).
@@ -104,7 +109,7 @@ Wire the existing `/chat` SPA to the real backend and build the full chat experi
 - "Import Pack" button — opens modal with file upload (drag-and-drop / picker for `.json`) or paste pack ID.
 - "View in Dashboard" link opens `/dashboard` with wallet pre-authed.
 - No memory editing/deletion in chat — stays in dashboard.
-- Data: `GET /api/cortex/stats`, `GET /api/cortex/recent`, `POST /api/cortex/packs/import`.
+- Data: `GET /api/cortex/stats`, `GET /api/cortex/recent`, `POST /api/cortex/packs/import`. **Note:** These Cortex endpoints require the `clk_*` key (not Privy JWT) — the auto-registered key is used.
 
 ---
 
@@ -112,19 +117,20 @@ Wire the existing `/chat` SPA to the real backend and build the full chat experi
 
 ### Guest Message Flow
 1. User types message, hits send.
-2. `POST /api/chat/guest` with `{ content, model: "qwen3-5-9b" }`.
-3. SSE stream renders tokens in real-time with fluid typewriter.
-4. Rate limit counter shown subtly: "7 of 10 free messages remaining".
-5. At limit, input disables with "Sign in for unlimited" prompt.
+2. `POST /api/chat/guest` with `{ content, history }`. Model is hardcoded server-side to `qwen3-5-9b`.
+3. Frontend maintains a temporary message array and sends the last 10 messages as `history` for multi-turn coherence.
+4. SSE stream renders tokens in real-time with fluid typewriter.
+5. Rate limit counter shown subtly: "7 of 10 free messages remaining".
+6. At limit, input disables with "Sign in for unlimited" prompt.
 
 ### Authenticated Message Flow
 1. User sends message in a conversation.
 2. `POST /api/chat/conversations/:id/messages` with `{ content, model }`.
 3. Backend recalls up to 10 memories, injects into system prompt.
 4. SSE stream renders response.
-5. On completion, response metadata includes `memory_ids` — frontend stores per message.
+5. On completion, SSE done event includes `memory_ids` array — frontend stores per message. **(Backend change: current done event only sends `memories_used` count; must add the actual `memory_ids` array.)**
 6. Brain button toggles memory annotations on all messages.
-7. Conversation title auto-generates after first exchange.
+7. Conversation title auto-generates after first exchange (fire-and-forget). Frontend polls `GET /api/chat/conversations/:id` after first assistant response to pick up the generated title.
 
 ### Streaming UX
 - Tokens appear smoothly, no jarring chunks.
@@ -158,7 +164,7 @@ Wire the existing `/chat` SPA to the real backend and build the full chat experi
 
 ### Memory Context (Backend — Already Built)
 - Memories injected as `<knowledge>`, `<behaviors>`, `<identity>`, `<recent>` XML sections.
-- Frontend surfaces what was used via `memory_ids` in response metadata.
+- Frontend surfaces what was used via `memory_ids` in SSE done event (backend change required — see Section 4).
 
 ---
 
@@ -186,7 +192,7 @@ Display inference cost comparison in the chat UI to highlight Clude's value prop
 ### Key Messaging
 - "Chat with 13 models. Zero data retention. A fraction of the cost."
 - Highlight that Venice private models have **zero data retention** — your prompts are never stored or trained on.
-- Show the multiplier: "25x cheaper than GPT-5.4" / "250x cheaper than Claude Opus 4.6" for equivalent-class models.
+- Show the multiplier: "25x cheaper than GPT-5.4" / "250x cheaper than Claude Opus 4.6" for comparable tasks (note: these are open-source models vs frontier proprietary — the comparison is on cost-per-conversation, not model capability parity).
 - For the anonymized models (Claude, GPT, Grok via Venice): note that these are proxied through Venice with no user identity attached.
 
 ### Implementation
@@ -238,9 +244,10 @@ The chat should feel premium. Lean into the existing `@paper-design/shaders-reac
 └── Sidebar "Chat" link → /chat (auth carries over via Privy)
 
 Backend changes:
-├── POST /api/chat/auto-register — auto-create Cortex key on Privy login
+├── POST /api/chat/auto-register — auto-create Cortex key on Privy login (new endpoint)
+├── Add encrypted_key column to agent_keys table (for key retrieval on return visits)
 ├── GET /api/chat/models — add tier + cost fields to model registry
-└── No other backend changes needed
+└── POST /api/chat/conversations/:id/messages — add memory_ids array to SSE done event
 ```
 
 ---
