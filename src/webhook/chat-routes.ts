@@ -249,7 +249,19 @@ export function chatRoutes(): Router {
         throw err;
       }
 
-      res.write(`data: ${JSON.stringify({ done: true, model: 'qwen3-5-9b', guest: true })}\n\n`);
+      // Count today's usage for this IP to compute remaining messages
+      const db = getDb();
+      const guestKey = 'chat:guest:' + ip;
+      const windowCutoff = new Date(Date.now() - 1440 * 60 * 1000).toISOString();
+      const { data: rlRow } = await db
+        .from('rate_limits')
+        .select('count, window_start')
+        .eq('key', guestKey)
+        .single();
+      const usedCount = (rlRow && rlRow.window_start >= windowCutoff) ? rlRow.count : 1;
+      const remaining = Math.max(0, 10 - usedCount);
+
+      res.write(`data: ${JSON.stringify({ done: true, model: 'qwen3-5-9b', guest: true, remaining })}\n\n`);
       res.end();
     } catch (err: any) {
       if (err.name === 'AbortError') return;
