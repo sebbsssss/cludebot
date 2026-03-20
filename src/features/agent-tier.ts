@@ -77,3 +77,36 @@ export async function registerAgent(
   log.info({ agentId, name, tier }, 'Agent registered');
   return { agentId, apiKey };
 }
+
+/**
+ * Find existing agent key for a wallet, or create one.
+ * Returns the plaintext API key.
+ */
+export async function findOrCreateAgentForWallet(wallet: string): Promise<{ apiKey: string; agentId: string; isNew: boolean }> {
+  const db = getDb();
+
+  // Check if wallet already has an agent
+  const { data: existing } = await db
+    .from('agent_keys')
+    .select('agent_id, api_key')
+    .eq('owner_wallet', wallet)
+    .eq('is_active', true)
+    .limit(1)
+    .single();
+
+  if (existing) {
+    return { apiKey: existing.api_key, agentId: existing.agent_id, isNew: false };
+  }
+
+  // Create new agent for this wallet
+  const name = `chat-${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
+  const { agentId, apiKey } = await registerAgent(name, 'AGENT_VERIFIED');
+
+  // Set the owner_wallet
+  await db
+    .from('agent_keys')
+    .update({ owner_wallet: wallet })
+    .eq('agent_id', agentId);
+
+  return { apiKey, agentId, isNew: true };
+}
