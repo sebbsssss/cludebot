@@ -22,6 +22,7 @@ import {
   LINK_CO_RETRIEVAL_BOOST,
   INTERNAL_MEMORY_SOURCES,
   INTERNAL_IMPORTANCE_BOOST,
+  BOND_TYPE_WEIGHTS,
 } from '../utils';
 import type { MemoryLinkType } from '../utils/constants';
 import { generateImportanceScore } from './claude-client';
@@ -850,16 +851,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
     }
 
     // Phase 6: Bond-typed graph traversal — follow strong bonds first
-    // Bond weight multipliers: causal/supports > elaborates > relates > follows
-    const BOND_TYPE_WEIGHTS: Record<string, number> = {
-      causes: 1.0,
-      supports: 0.9,
-      resolves: 0.8,
-      elaborates: 0.7,
-      contradicts: 0.6,
-      relates: 0.4,
-      follows: 0.3,
-    };
+    // Bond weight multipliers include temporal link types (happens_before, happens_after, concurrent_with)
 
     if (results.length > 0) {
       try {
@@ -890,7 +882,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
               // Build link map with bond-type-weighted strength
               const linkBoostMap = new Map<number, number>();
               for (const l of linked) {
-                const bondWeight = BOND_TYPE_WEIGHTS[l.link_type] ?? 0.4;
+                const bondWeight = BOND_TYPE_WEIGHTS[l.link_type as MemoryLinkType] ?? 0.4;
                 const weightedStrength = (l.strength || 0.5) * bondWeight;
                 const current = linkBoostMap.get(l.memory_id) || 0;
                 linkBoostMap.set(l.memory_id, Math.max(current, weightedStrength));
@@ -1470,6 +1462,80 @@ export async function decayMemories(): Promise<number> {
     log.error({ err }, 'Memory decay failed');
     return 0;
   }
+}
+
+// ---- DELETE / UPDATE / LIST ---- //
+
+export async function deleteMemory(id: number): Promise<boolean> {
+  const db = getDb();
+  let query = db.from('memories').delete().eq('id', id);
+  query = scopeToOwner(query);
+  const { error } = await query;
+  if (error) {
+    log.error({ error: error.message, id }, 'Failed to delete memory');
+    return false;
+  }
+  return true;
+}
+
+export async function updateMemory(
+  id: number,
+  patches: {
+    summary?: string;
+    content?: string;
+    tags?: string[];
+    importance?: number;
+    memory_type?: MemoryType;
+  }
+): Promise<boolean> {
+  const db = getDb();
+  const updates: Record<string, unknown> = {};
+  if (patches.summary !== undefined) updates['summary'] = patches.summary.slice(0, 500);
+  if (patches.content !== undefined) updates['content'] = patches.content.slice(0, 5000);
+  if (patches.tags !== undefined) updates['tags'] = patches.tags;
+  if (patches.importance !== undefined) updates['importance'] = Math.max(0, Math.min(1, patches.importance));
+  if (patches.memory_type !== undefined) updates['memory_type'] = patches.memory_type;
+  if (Object.keys(updates).length === 0) return true;
+
+  let query = db.from('memories').update(updates).eq('id', id);
+  query = scopeToOwner(query);
+  const { error } = await query;
+  if (error) {
+    log.error({ error: error.message, id }, 'Failed to update memory');
+    return false;
+  }
+  return true;
+}
+
+export async function listMemories(opts: {
+  page?: number;
+  page_size?: number;
+  memory_type?: MemoryType;
+  min_importance?: number;
+  order?: 'created_at' | 'importance' | 'last_accessed';
+}): Promise<{ memories: Memory[]; total: number }> {
+  const db = getDb();
+  const pageSize = Math.min(opts.page_size ?? 20, 100);
+  const page = Math.max((opts.page ?? 1) - 1, 0);
+  const orderCol = opts.order ?? 'created_at';
+
+  let countQ = db.from('memories').select('id', { count: 'exact', head: true });
+  countQ = scopeToOwner(countQ);
+  if (opts.memory_type) countQ = countQ.eq('memory_type', opts.memory_type);
+  if (opts.min_importance !== undefined) countQ = countQ.gte('importance', opts.min_importance);
+  const { count } = await countQ;
+
+  let dataQ = db.from('memories').select('*').order(orderCol, { ascending: false })
+    .range(page * pageSize, (page + 1) * pageSize - 1);
+  dataQ = scopeToOwner(dataQ);
+  if (opts.memory_type) dataQ = dataQ.eq('memory_type', opts.memory_type);
+  if (opts.min_importance !== undefined) dataQ = dataQ.gte('importance', opts.min_importance);
+  const { data, error } = await dataQ;
+  if (error) {
+    log.error({ error: error.message }, 'Failed to list memories');
+    return { memories: [], total: 0 };
+  }
+  return { memories: decryptMemoryBatch(data || []), total: count ?? 0 };
 }
 
 // ---- STATS ---- //

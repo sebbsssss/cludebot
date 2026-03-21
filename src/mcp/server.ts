@@ -72,6 +72,10 @@ interface MemoryResult {
 let _recallMemories: any;
 let _storeMemory: any;
 let _getMemoryStats: any;
+let _evaluateConfidence: any;
+let _deleteMemory: any;
+let _updateMemory: any;
+let _listMemories: any;
 
 function loadSelfHosted() {
   if (!_recallMemories) {
@@ -80,6 +84,13 @@ function loadSelfHosted() {
       _recallMemories = memory.recallMemories;
       _storeMemory = memory.storeMemory;
       _getMemoryStats = memory.getMemoryStats;
+      _deleteMemory = memory.deleteMemory;
+      _updateMemory = memory.updateMemory;
+      _listMemories = memory.listMemories;
+      try {
+        const confidenceGate = require('../experimental/confidence-gate');
+        _evaluateConfidence = confidenceGate.evaluateConfidence;
+      } catch {}
     } catch (err) {
       console.error('[clude-mcp] Failed to load memory module:', err);
       throw new Error('Self-hosted mode requires Supabase configuration. Set SUPABASE_URL and SUPABASE_SERVICE_KEY, or use CORTEX_API_KEY for hosted mode.');
@@ -161,12 +172,22 @@ server.tool(
         });
       }
 
+      // Evaluate evidence confidence when scores are available
+      let confidence: { score: number; sufficient: boolean } | undefined;
+      if (_evaluateConfidence && memories.some((m: any) => typeof m._score === 'number')) {
+        try {
+          const result = _evaluateConfidence(memories);
+          confidence = { score: Math.round(result.score * 1000) / 1000, sufficient: result.sufficient };
+        } catch {}
+      }
+
       return {
         content: [{
           type: 'text' as const,
           text: JSON.stringify({
             count: memories.length,
-            memories: memories.map(m => ({
+            ...(confidence ? { confidence } : {}),
+            memories: memories.map((m: any) => ({
               id: m.id,
               type: m.memory_type,
               summary: m.summary,
@@ -176,6 +197,7 @@ server.tool(
               decay_factor: m.decay_factor,
               created_at: m.created_at,
               access_count: m.access_count,
+              relevance_score: typeof m._score === 'number' ? Math.round(m._score * 1000) / 1000 : undefined,
             })),
           }, null, 2),
         }],
@@ -393,6 +415,266 @@ server.tool(
       };
     } catch (err: any) {
       console.error('[clude-mcp] find_clinamen error:', err.message);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ error: err.message }) }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// --- Tool: delete_memory ---
+server.tool(
+  'delete_memory',
+  'Permanently delete a memory by its numeric ID. Use with caution — this is irreversible.',
+  {
+    memory_id: z.number().int().positive().describe('Numeric ID of the memory to delete'),
+  },
+  async (args) => {
+    try {
+      let deleted: boolean;
+
+      if (isLocalMode) {
+        const { localDelete } = require('./local-store');
+        deleted = localDelete(args.memory_id);
+      } else if (isHostedMode) {
+        const result = await cortexFetch<{ deleted: boolean }>('DELETE', `/api/cortex/memories/${args.memory_id}`);
+        deleted = result.deleted;
+      } else {
+        loadSelfHosted();
+        deleted = await _deleteMemory(args.memory_id);
+      }
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ deleted, memory_id: args.memory_id }),
+        }],
+      };
+    } catch (err: any) {
+      console.error('[clude-mcp] delete_memory error:', err.message);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ error: err.message }) }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// --- Tool: update_memory ---
+server.tool(
+  'update_memory',
+  'Update fields of an existing memory by its numeric ID. Only provided fields are changed.',
+  {
+    memory_id: z.number().int().positive().describe('Numeric ID of the memory to update'),
+    summary: z.string().max(500).optional().describe('New summary text'),
+    content: z.string().max(5000).optional().describe('New full content'),
+    tags: z.array(z.string()).optional().describe('Replacement tag list'),
+    importance: z.number().min(0).max(1).optional().describe('New importance score 0-1'),
+    memory_type: z.enum(MEMORY_TYPES).optional().describe('New memory type'),
+  },
+  async (args) => {
+    try {
+      const patches = {
+        summary: args.summary,
+        content: args.content,
+        tags: args.tags,
+        importance: args.importance,
+        memory_type: args.memory_type,
+      };
+      let updated: boolean;
+
+      if (isLocalMode) {
+        const { localUpdate } = require('./local-store');
+        updated = localUpdate(args.memory_id, patches);
+      } else if (isHostedMode) {
+        const result = await cortexFetch<{ updated: boolean }>('PATCH', `/api/cortex/memories/${args.memory_id}`, patches);
+        updated = result.updated;
+      } else {
+        loadSelfHosted();
+        updated = await _updateMemory(args.memory_id, patches);
+      }
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ updated, memory_id: args.memory_id }),
+        }],
+      };
+    } catch (err: any) {
+      console.error('[clude-mcp] update_memory error:', err.message);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ error: err.message }) }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// --- Tool: list_memories ---
+server.tool(
+  'list_memories',
+  'Browse memories without a search query. Paginated, sorted by recency, importance, or last access.',
+  {
+    page: z.number().int().min(1).optional().describe('Page number (1-based, default 1)'),
+    page_size: z.number().int().min(1).max(100).optional().describe('Items per page (default 20, max 100)'),
+    memory_type: z.enum(MEMORY_TYPES).optional().describe('Filter by memory type'),
+    min_importance: z.number().min(0).max(1).optional().describe('Minimum importance threshold'),
+    order: z.enum(['created_at', 'importance', 'last_accessed']).optional()
+      .describe('Sort order (default: created_at descending)'),
+  },
+  async (args) => {
+    try {
+      let result: { memories: any[]; total: number };
+
+      if (isLocalMode) {
+        const { localList } = require('./local-store');
+        result = localList({
+          page: args.page,
+          page_size: args.page_size,
+          memory_type: args.memory_type,
+          min_importance: args.min_importance,
+          order: args.order,
+        });
+      } else if (isHostedMode) {
+        const params = new URLSearchParams();
+        if (args.page) params.set('page', String(args.page));
+        if (args.page_size) params.set('page_size', String(args.page_size));
+        if (args.memory_type) params.set('memory_type', args.memory_type);
+        if (args.min_importance !== undefined) params.set('min_importance', String(args.min_importance));
+        if (args.order) params.set('order', args.order);
+        result = await cortexFetch<{ memories: any[]; total: number }>('GET', `/api/cortex/memories?${params}`);
+      } else {
+        loadSelfHosted();
+        result = await _listMemories({
+          page: args.page,
+          page_size: args.page_size,
+          memory_type: args.memory_type,
+          min_importance: args.min_importance,
+          order: args.order,
+        });
+      }
+
+      const pageSize = args.page_size ?? 20;
+      const page = args.page ?? 1;
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            total: result.total,
+            page,
+            page_size: pageSize,
+            pages: Math.ceil(result.total / pageSize),
+            memories: result.memories.map((m: any) => ({
+              id: m.id,
+              type: m.memory_type,
+              summary: m.summary,
+              tags: m.tags,
+              importance: m.importance,
+              decay_factor: m.decay_factor,
+              created_at: m.created_at,
+              last_accessed: m.last_accessed,
+              access_count: m.access_count,
+            })),
+          }, null, 2),
+        }],
+      };
+    } catch (err: any) {
+      console.error('[clude-mcp] list_memories error:', err.message);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({ error: err.message }) }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// --- Tool: batch_store_memories ---
+server.tool(
+  'batch_store_memories',
+  'Store up to 50 memories in a single call. Returns an array of results with memory IDs.',
+  {
+    memories: z.array(z.object({
+      type: z.enum(MEMORY_TYPES).describe('Memory type'),
+      content: z.string().max(5000).describe('Full memory content'),
+      summary: z.string().max(500).describe('Short summary'),
+      tags: z.array(z.string()).optional(),
+      concepts: z.array(z.string()).optional(),
+      importance: z.number().min(0).max(1).optional(),
+      emotional_valence: z.number().min(-1).max(1).optional(),
+      source: z.string().describe('Origin of this memory'),
+      source_id: z.string().optional(),
+      related_user: z.string().optional(),
+      related_wallet: z.string().optional(),
+      metadata: z.record(z.string(), z.unknown()).optional(),
+    })).min(1).max(50).describe('Array of memories to store (max 50)'),
+  },
+  async (args) => {
+    try {
+      const results: Array<{ index: number; stored: boolean; memory_id: number | null; error?: string }> = [];
+
+      for (let i = 0; i < args.memories.length; i++) {
+        const m = args.memories[i];
+        try {
+          let memoryId: number | null;
+
+          if (isLocalMode) {
+            const { localStore } = require('./local-store');
+            memoryId = localStore(m);
+          } else if (isHostedMode) {
+            const result = await cortexFetch<{ stored: boolean; memory_id: number | null }>('POST', '/api/cortex/store', {
+              type: m.type,
+              content: m.content,
+              summary: m.summary,
+              tags: m.tags,
+              concepts: m.concepts,
+              importance: m.importance,
+              emotional_valence: m.emotional_valence,
+              source: m.source,
+              source_id: m.source_id,
+              related_user: m.related_user,
+              related_wallet: m.related_wallet,
+              metadata: m.metadata,
+            });
+            memoryId = result.memory_id;
+          } else {
+            loadSelfHosted();
+            memoryId = await _storeMemory({
+              type: m.type,
+              content: m.content,
+              summary: m.summary,
+              tags: m.tags,
+              concepts: m.concepts,
+              importance: m.importance,
+              emotionalValence: m.emotional_valence,
+              source: m.source,
+              sourceId: m.source_id,
+              relatedUser: m.related_user,
+              relatedWallet: m.related_wallet,
+              metadata: m.metadata,
+            });
+          }
+
+          results.push({ index: i, stored: memoryId !== null, memory_id: memoryId });
+        } catch (err: any) {
+          results.push({ index: i, stored: false, memory_id: null, error: err.message });
+        }
+      }
+
+      const storedCount = results.filter(r => r.stored).length;
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            total: args.memories.length,
+            stored: storedCount,
+            failed: args.memories.length - storedCount,
+            results,
+          }, null, 2),
+        }],
+      };
+    } catch (err: any) {
+      console.error('[clude-mcp] batch_store_memories error:', err.message);
       return {
         content: [{ type: 'text' as const, text: JSON.stringify({ error: err.message }) }],
         isError: true,

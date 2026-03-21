@@ -301,3 +301,62 @@ export function localClinamen(opts: {
     .sort((a, b) => b._divergence - a._divergence)
     .slice(0, limit);
 }
+
+export function localDelete(id: number): boolean {
+  const store = loadStore();
+  const idx = store.memories.findIndex(m => m.id === id);
+  if (idx === -1) return false;
+  store.memories.splice(idx, 1);
+  saveStore(store);
+  return true;
+}
+
+export function localUpdate(id: number, patches: {
+  summary?: string;
+  content?: string;
+  tags?: string[];
+  importance?: number;
+  memory_type?: MemoryType;
+}): boolean {
+  const store = loadStore();
+  const mem = store.memories.find(m => m.id === id);
+  if (!mem) return false;
+  if (patches.summary !== undefined) mem.summary = patches.summary;
+  if (patches.content !== undefined) mem.content = patches.content;
+  if (patches.tags !== undefined) mem.tags = patches.tags;
+  if (patches.importance !== undefined) mem.importance = Math.max(0, Math.min(1, patches.importance));
+  if (patches.memory_type !== undefined) mem.memory_type = patches.memory_type;
+  saveStore(store);
+  return true;
+}
+
+export function localList(opts: {
+  page?: number;
+  page_size?: number;
+  memory_type?: MemoryType;
+  min_importance?: number;
+  order?: 'created_at' | 'importance' | 'last_accessed';
+}): { memories: LocalMemory[]; total: number } {
+  const store = loadStore();
+  let memories = [...store.memories];
+
+  if (opts.memory_type) {
+    memories = memories.filter(m => m.memory_type === opts.memory_type);
+  }
+  if (opts.min_importance !== undefined) {
+    memories = memories.filter(m => m.importance >= opts.min_importance!);
+  }
+
+  const order = opts.order ?? 'created_at';
+  memories.sort((a, b) => {
+    if (order === 'importance') return b.importance - a.importance;
+    if (order === 'last_accessed') return b.last_accessed.localeCompare(a.last_accessed);
+    return b.created_at.localeCompare(a.created_at);
+  });
+
+  const total = memories.length;
+  const pageSize = Math.min(opts.page_size ?? 20, 100);
+  const page = Math.max(opts.page ?? 1, 1);
+  const start = (page - 1) * pageSize;
+  return { memories: memories.slice(start, start + pageSize), total };
+}
