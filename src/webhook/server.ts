@@ -1181,10 +1181,12 @@ ${sections.join('\n')}` },
   // Chat interface at /chat (SPA with client-side routing)
   const chatDir = path.join(publicDir, 'chat');
   const distChatDir = path.join(distPublicDir, 'chat');
-  app.use('/chat', express.static(chatDir, { maxAge: '1h', setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
-  app.use('/chat', express.static(distChatDir, { maxAge: '1h', setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
-  app.get('/chat/*', (_req: Request, res: Response) => {
+  // Serve chat SPA index.html with no-cache (prevents Railway edge from caching stale HTML)
+  const serveChatIndex = (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
     const indexPath = path.join(chatDir, 'index.html');
     const distIndexPath = path.join(distChatDir, 'index.html');
     if (require('fs').existsSync(indexPath)) {
@@ -1192,11 +1194,15 @@ ${sections.join('\n')}` },
     } else {
       res.sendFile(distIndexPath);
     }
-  });
-  // Redirect bare /chat to /chat/
-  app.get('/chat', (_req: Request, res: Response) => {
-    res.redirect('/chat/');
-  });
+  };
+  // Catch /chat/ and all SPA routes BEFORE static middleware
+  app.get('/chat/', serveChatIndex);
+  app.get('/chat', (_req: Request, res: Response) => { res.redirect('/chat/'); });
+  // Static assets (JS, CSS, images) — long cache is fine, filenames are hashed
+  app.use('/chat', express.static(chatDir, { maxAge: '7d' }));
+  app.use('/chat', express.static(distChatDir, { maxAge: '7d' }));
+  // SPA fallback for client-side routes
+  app.get('/chat/*', serveChatIndex);
 
   // Register page — Cortex API key registration
   app.get('/register', (req: Request, _res: Response, next: express.NextFunction) => {
