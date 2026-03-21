@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { ExternalLink, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { CompoundMarket, CompoundPrediction } from '../lib/types';
 import { isPrediction } from '../lib/types';
@@ -119,8 +120,8 @@ export function MarketCard({ market }: Props) {
   const volume = pred ? null : (market as any).volume;
   const odds = pred ? pred.marketOdds : (market as any).currentOdds;
 
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3 hover:border-zinc-700 transition-colors">
+  const card = (
+    <div className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3 transition-colors ${pred ? 'hover:border-zinc-600 cursor-pointer' : 'hover:border-zinc-700'}`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -170,4 +171,13 @@ export function MarketCard({ market }: Props) {
       </div>
     </div>
   );
+
+  if (pred) {
+    return (
+      <Link to={`/compound/markets/${pred.memoryId}`} className="block">
+        {card}
+      </Link>
+    );
+  }
+  return card;
 }

@@ -1,4 +1,4 @@
-import type { ChatModel, Conversation, Message, MemoryStats, MemorySummary, CompoundMarketsResponse, CompoundAccuracy, CompoundTimeline, MarketCategory } from './types';
+import type { ChatModel, Conversation, Message, MemoryStats, MemorySummary, CompoundMarketsResponse, CompoundAccuracy, CompoundTimeline, MarketCategory, MarketDetailResponse, CompoundPredictionsResponse } from './types';
 
 const API_BASE = '';
 
@@ -151,6 +151,28 @@ class ChatAPI {
     if (params.interval) qs.set('interval', params.interval);
     const res = await fetch(`${API_BASE}/api/compound/stats/timeline?${qs}`);
     if (!res.ok) throw new Error('Failed to fetch timeline');
+    return res.json();
+  }
+
+  async getMarketDetail(memoryId: number): Promise<MarketDetailResponse> {
+    const res = await fetch(`${API_BASE}/api/compound/markets/${memoryId}`);
+    if (!res.ok) throw new Error('Failed to fetch market detail');
+    return res.json();
+  }
+
+  async getCompoundPredictions(params: {
+    category?: MarketCategory;
+    limit?: number;
+    offset?: number;
+    resolved?: boolean;
+  } = {}): Promise<CompoundPredictionsResponse> {
+    const qs = new URLSearchParams();
+    if (params.category) qs.set('category', params.category);
+    if (params.limit != null) qs.set('limit', String(params.limit));
+    if (params.offset != null) qs.set('offset', String(params.offset));
+    if (params.resolved != null) qs.set('resolved', String(params.resolved));
+    const res = await fetch(`${API_BASE}/api/compound/predictions?${qs}`);
+    if (!res.ok) throw new Error('Failed to fetch predictions');
     return res.json();
   }
 

@@ -135,6 +135,68 @@ export interface CompoundTimeline {
   timestamp: string;
 }
 
+export interface MarketResolution {
+  outcome: string;
+  resolvedAt: string;
+  brierScore: number;
+  correct: boolean;
+  resolutionMemoryId: number;
+}
+
+export interface MarketDetailResponse {
+  memoryId: number;
+  question: string;
+  content: string;
+  source: MarketSource;
+  sourceId: string;
+  marketOdds: number;
+  estimatedProbability: number;
+  confidence: number;
+  edge: number;
+  isValue: boolean;
+  category: MarketCategory;
+  marketUrl: string;
+  closeDate: string;
+  analyzedAt: string;
+  reasoning: string | null;
+  evidence: string[];
+  tags: string[];
+  importance: number;
+  decayFactor: number;
+  resolution: MarketResolution | null;
+  timestamp: string;
+}
+
+export interface CompoundPredictionRecord {
+  memoryId: number;
+  question: string;
+  source: MarketSource;
+  sourceId: string;
+  marketOdds: number;
+  estimatedProbability: number;
+  confidence: number;
+  edge: number;
+  isValue: boolean;
+  category: MarketCategory;
+  marketUrl: string;
+  closeDate: string;
+  analyzedAt: string;
+  resolution: {
+    outcome: string;
+    resolvedAt: string;
+    brierScore: number;
+    correct: boolean;
+  } | null;
+}
+
+export interface CompoundPredictionsResponse {
+  predictions: CompoundPredictionRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+  timestamp: string;
+}
+
 export interface GuestResponse {
   content: string;
   done: boolean;
