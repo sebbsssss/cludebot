@@ -1,0 +1,25 @@
+{
+  "name": "@clude/local-memory",
+  "version": "0.1.0",
+  "description": "Offline-first local memory system using SQLite-vec + Ollama",
+  "private": true,
+  "main": "dist/local-memory.js",
+  "scripts": {
+    "build": "tsc",
+    "demo": "ts-node src/demo.ts",
+    "benchmark": "ts-node src/benchmark.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "sqlite-vec": "^0.1.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
