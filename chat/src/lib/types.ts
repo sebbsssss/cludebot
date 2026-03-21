@@ -114,6 +114,27 @@ export interface CompoundAccuracy {
   timestamp: string;
 }
 
+export interface TimelinePeriod {
+  period: string;
+  predictions: number;
+  resolved: number;
+  correct: number;
+  accuracy: number | null;
+  avgBrierScore: number | null;
+  cumulativeAccuracy: number | null;
+  cumulativeAvgBrier: number | null;
+}
+
+export interface CompoundTimeline {
+  timeline: TimelinePeriod[];
+  interval: string;
+  totalPredictions: number;
+  totalResolved: number;
+  from: string | null;
+  to: string | null;
+  timestamp: string;
+}
+
 export interface GuestResponse {
   content: string;
   done: boolean;

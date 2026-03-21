@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth'
 import { AuthContext } from './hooks/AuthContext'
 import { ChatInterface } from './components/chat-interface'
 import { CompoundDashboard } from './components/CompoundDashboard'
+import { CompoundAccuracyScorecard } from './components/CompoundAccuracyScorecard'
 
 export function App() {
   const auth = useAuth();
@@ -19,6 +20,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<ChatInterface />} />
           <Route path="/compound" element={<CompoundDashboard />} />
+          <Route path="/compound/accuracy" element={<CompoundAccuracyScorecard />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

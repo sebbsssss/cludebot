@@ -1,4 +1,4 @@
-import type { ChatModel, Conversation, Message, MemoryStats, MemorySummary, CompoundMarketsResponse, CompoundAccuracy, MarketCategory } from './types';
+import type { ChatModel, Conversation, Message, MemoryStats, MemorySummary, CompoundMarketsResponse, CompoundAccuracy, CompoundTimeline, MarketCategory } from './types';
 
 const API_BASE = '';
 
@@ -137,6 +137,20 @@ class ChatAPI {
   async getCompoundAccuracy(): Promise<CompoundAccuracy> {
     const res = await fetch(`${API_BASE}/api/compound/accuracy`);
     if (!res.ok) throw new Error('Failed to fetch accuracy');
+    return res.json();
+  }
+
+  async getCompoundTimeline(params: {
+    from?: string;
+    to?: string;
+    interval?: 'week' | 'month' | 'day';
+  } = {}): Promise<CompoundTimeline> {
+    const qs = new URLSearchParams();
+    if (params.from) qs.set('from', params.from);
+    if (params.to) qs.set('to', params.to);
+    if (params.interval) qs.set('interval', params.interval);
+    const res = await fetch(`${API_BASE}/api/compound/stats/timeline?${qs}`);
+    if (!res.ok) throw new Error('Failed to fetch timeline');
     return res.json();
   }
 

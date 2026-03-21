@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { RefreshCw, MessageSquare, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
+import { RefreshCw, MessageSquare, TrendingUp, AlertCircle, Loader2, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMarkets } from '../hooks/useMarkets';
 import { MarketCard } from './MarketCard';
@@ -49,6 +49,14 @@ export function CompoundDashboard() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            to="/compound/accuracy"
+            className="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors"
+            title="Accuracy Scorecard"
+          >
+            <Target className="h-3.5 w-3.5" />
+            Accuracy
+          </Link>
           {lastUpdated && (
             <span className="text-[10px] text-zinc-600">Updated {lastUpdated}</span>
           )}
