@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Plus, PanelLeftClose, PanelLeft, TrendingUp } from 'lucide-react';
 import { ConversationList } from './ConversationList';
 import { MemoryPanel } from './MemoryPanel';
 import { MemoryImportModal } from './MemoryImportModal';
@@ -48,12 +49,21 @@ export function Sidebar({ conversations, activeId, stats, recentMemories, onSele
               >
                 <Plus className="h-3 w-3" /> New Chat
               </button>
-              <button
-                onClick={() => setCollapsed(true)}
-                className="text-zinc-600 hover:text-zinc-400 transition-colors"
-              >
-                <PanelLeftClose className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <Link
+                  to="/compound"
+                  className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-800"
+                  title="Compound Markets"
+                >
+                  <TrendingUp className="h-3.5 w-3.5" />
+                </Link>
+                <button
+                  onClick={() => setCollapsed(true)}
+                  className="text-zinc-600 hover:text-zinc-400 transition-colors"
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <ConversationList

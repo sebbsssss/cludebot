@@ -20,6 +20,7 @@ import rateLimit from 'express-rate-limit';
 import { requirePrivyAuth, optionalPrivyAuth } from './privy-auth';
 import { traceMemory, explainMemory } from '../features/memory-trace';
 import { dashboardRoutes, autoRegisterClude } from './dashboard-routes';
+import { compoundRoutes } from './compound-routes';
 
 const log = createChildLogger('server');
 
@@ -467,6 +468,9 @@ export function createServer(): express.Application {
 
   // Campaign: 10 Days of Growing a Blockchain Brain
   app.use('/api/campaign', apiLimiter, campaignRoutes());
+
+  // Compound: Prediction Market Intelligence
+  app.use('/api/compound', compoundRoutes());
 
   // ---- DASHBOARD ENDPOINTS (Privy-authenticated) ---- //
 

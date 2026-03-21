@@ -48,6 +48,72 @@ export interface MemorySummary {
   created_at: string;
 }
 
+// Compound prediction market types
+export type MarketSource = 'polymarket' | 'manifold';
+export type MarketCategory = 'politics' | 'crypto' | 'sports' | 'tech' | 'science' | 'entertainment' | 'other';
+export type MarketSortKey = 'edge' | 'confidence' | 'closeDate' | 'volume';
+
+/** Market with Compound analysis (source=memory) */
+export interface CompoundPrediction {
+  memoryId: number;
+  question: string;
+  source: MarketSource;
+  sourceId: string;
+  marketOdds: number;
+  estimatedProbability: number;
+  confidence: number;
+  edge: number;
+  isValue: boolean;
+  category: MarketCategory;
+  marketUrl: string;
+  closeDate: string;
+  analyzedAt: string;
+}
+
+/** Raw live market without analysis (source=live) */
+export interface LiveMarket {
+  sourceId: string;
+  source: MarketSource;
+  question: string;
+  currentOdds: number;
+  volume: number;
+  liquidity: number;
+  closeDate: string;
+  category: MarketCategory;
+  active: boolean;
+  url: string;
+}
+
+export type CompoundMarket = CompoundPrediction | LiveMarket;
+
+export function isPrediction(m: CompoundMarket): m is CompoundPrediction {
+  return 'estimatedProbability' in m;
+}
+
+export interface CompoundMarketsResponse {
+  markets: CompoundMarket[];
+  count: number;
+  source: 'memory' | 'live';
+  timestamp: string;
+}
+
+export interface AccuracyByCategory {
+  count: number;
+  correct: number;
+  avgBrier: number;
+}
+
+export interface CompoundAccuracy {
+  totalPredictions: number;
+  totalResolved: number;
+  correctCount: number;
+  accuracy: number;
+  avgBrierScore: number;
+  byCategory: Record<string, AccuracyByCategory>;
+  engineRunning: boolean;
+  timestamp: string;
+}
+
 export interface GuestResponse {
   content: string;
   done: boolean;

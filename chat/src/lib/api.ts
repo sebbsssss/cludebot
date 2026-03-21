@@ -1,4 +1,4 @@
-import type { ChatModel, Conversation, Message, MemoryStats, MemorySummary } from './types';
+import type { ChatModel, Conversation, Message, MemoryStats, MemorySummary, CompoundMarketsResponse, CompoundAccuracy, MarketCategory } from './types';
 
 const API_BASE = '';
 
@@ -115,6 +115,28 @@ class ChatAPI {
       body: JSON.stringify({ pack }),
     });
     if (!res.ok) throw new Error('Failed to import memory pack');
+    return res.json();
+  }
+
+  async getCompoundMarkets(params: {
+    source?: 'memory' | 'live';
+    category?: MarketCategory;
+    limit?: number;
+    minVolume?: number;
+  } = {}): Promise<CompoundMarketsResponse> {
+    const qs = new URLSearchParams();
+    if (params.source) qs.set('source', params.source);
+    if (params.category) qs.set('category', params.category);
+    if (params.limit) qs.set('limit', String(params.limit));
+    if (params.minVolume) qs.set('minVolume', String(params.minVolume));
+    const res = await fetch(`${API_BASE}/api/compound/markets?${qs}`);
+    if (!res.ok) throw new Error('Failed to fetch markets');
+    return res.json();
+  }
+
+  async getCompoundAccuracy(): Promise<CompoundAccuracy> {
+    const res = await fetch(`${API_BASE}/api/compound/accuracy`);
+    if (!res.ok) throw new Error('Failed to fetch accuracy');
     return res.json();
   }
 

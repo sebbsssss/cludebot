@@ -1,6 +1,8 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { AuthContext } from './hooks/AuthContext'
 import { ChatInterface } from './components/chat-interface'
+import { CompoundDashboard } from './components/CompoundDashboard'
 
 export function App() {
   const auth = useAuth();
@@ -14,7 +16,11 @@ export function App() {
   return (
     <AuthContext.Provider value={auth} key={identity}>
       <div className="min-h-screen bg-black">
-        <ChatInterface />
+        <Routes>
+          <Route path="/" element={<ChatInterface />} />
+          <Route path="/compound" element={<CompoundDashboard />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
     </AuthContext.Provider>
   );
