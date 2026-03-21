@@ -1161,9 +1161,10 @@ ${sections.join('\n')}` },
   // React dashboard at /dashboard (SPA with client-side routing)
   const dashboardDir = path.join(publicDir, 'dashboard');
   const distDashboardDir = path.join(distPublicDir, 'dashboard');
-  app.use('/dashboard', express.static(dashboardDir));
-  app.use('/dashboard', express.static(distDashboardDir));
+  app.use('/dashboard', express.static(dashboardDir, { maxAge: '1h', setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
+  app.use('/dashboard', express.static(distDashboardDir, { maxAge: '1h', setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
   app.get('/dashboard/*', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const indexPath = path.join(dashboardDir, 'index.html');
     const distIndexPath = path.join(distDashboardDir, 'index.html');
     if (require('fs').existsSync(indexPath)) {
@@ -1180,9 +1181,10 @@ ${sections.join('\n')}` },
   // Chat interface at /chat (SPA with client-side routing)
   const chatDir = path.join(publicDir, 'chat');
   const distChatDir = path.join(distPublicDir, 'chat');
-  app.use('/chat', express.static(chatDir));
-  app.use('/chat', express.static(distChatDir));
+  app.use('/chat', express.static(chatDir, { maxAge: '1h', setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
+  app.use('/chat', express.static(distChatDir, { maxAge: '1h', setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
   app.get('/chat/*', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const indexPath = path.join(chatDir, 'index.html');
     const distIndexPath = path.join(distChatDir, 'index.html');
     if (require('fs').existsSync(indexPath)) {
