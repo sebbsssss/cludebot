@@ -15,6 +15,7 @@ export { evaluateConfidence, filterLowConfidenceMemories, type ConfidenceResult,
 export { computeRRFScores, rrfMerge, computeWeightedRRFScores, type RankableMemory } from './rrf-merge';
 export { bm25SearchMemories } from './bm25-search';
 export { runIRCoT, isMultiHopQuery, type IRCoTResult } from './ircot';
+export { ensembleAnswer, parseSpecialistResponse, type EnsembleResult, type SpecialistResult } from './ensemble-answer';
 
 // Config
 export { getExperimentalConfig, type ExperimentalConfig } from './config';

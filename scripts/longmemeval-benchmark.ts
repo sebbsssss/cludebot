@@ -1164,7 +1164,8 @@ async function main() {
           contextMemories = filtered.slice(0, contextLimit);
         }
         const context = formatBenchmarkContext(contextMemories, q.question_type);
-        const generated = await generateAnswerCoN(context, q.question, q.question_type, opts.readerModel, q.question_date);
+        const answerFn = (globalThis as any).__generateAnswerOverride || generateAnswerCoN;
+        const generated = await answerFn(context, q.question, q.question_type, opts.readerModel, q.question_date);
 
         // Judge
         const goldAnswer = String(q.answer || '');

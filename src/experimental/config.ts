@@ -19,6 +19,8 @@ export interface ExperimentalConfig {
   bm25Search: boolean;
   /** Exp 4: IRCoT iterative retrieval for multi-hop questions */
   ircot: boolean;
+  /** Phase 2: Multi-prompt ensemble answering (3 specialists + aggregator) */
+  ensembleAnswer: boolean;
 
   /** Reranking provider: 'voyage' (preferred — same account as embeddings) or 'cohere' */
   rerankProvider: 'voyage' | 'cohere';
@@ -46,6 +48,7 @@ export function getExperimentalConfig(): ExperimentalConfig {
     rrfMerge: envBool('EXP_RRF_MERGE', false),
     bm25Search: envBool('EXP_BM25_SEARCH', false),
     ircot: envBool('EXP_IRCOT', false),
+    ensembleAnswer: envBool('EXP_ENSEMBLE_ANSWER', false),
 
     rerankProvider: (process.env.EXP_RERANK_PROVIDER || 'voyage') as 'voyage' | 'cohere',
     cohereApiKey: process.env.COHERE_API_KEY || '',
