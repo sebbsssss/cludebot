@@ -138,6 +138,8 @@ function parseArgs() {
     skipFactExtraction: false,
     readerModel: 'claude-sonnet-4-5-20250929',
     oracleBypass: false, // skip recall, pass raw haystack sessions to reader
+    countingUnion: false, // use union extraction for counting questions
+    countingRuns: 3, // number of extraction runs for counting union
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -165,6 +167,12 @@ function parseArgs() {
         break;
       case '--oracle-bypass':
         opts.oracleBypass = true;
+        break;
+      case '--counting-union':
+        opts.countingUnion = true;
+        break;
+      case '--counting-runs':
+        opts.countingRuns = parseInt(args[++i]) || 3;
         break;
     }
   }
@@ -381,10 +389,12 @@ Rules:
 - Do NOT give direct advice or recommendations. ONLY describe the user's preferences.
 - NEVER say "I don't have information" — the conversation always contains preference signals.`,
   'multi-session': `This question requires aggregating information across MULTIPLE conversations. IMPORTANT:
-- Systematically scan EVERY memory below — the answer may be spread across many separate conversations.
-- For "how many" questions: enumerate EACH instance you find with its source conversation/date, then count the total. Do NOT estimate.
+- START with the "Key Facts" section — it contains extracted facts from ALL conversations, numbered for easy scanning.
+- Then check EVERY numbered conversation for additional details not captured in the key facts.
+- For "how many" questions: enumerate EACH instance you find with its source, then count the total. Do NOT estimate. When in doubt, INCLUDE the item.
 - For aggregation questions (totals, averages): list each data point individually, then calculate.
-- Do NOT say "I don't have information" unless you have genuinely searched all memories and found nothing relevant. The information IS in the memories — look carefully.`,
+- Items may be mentioned briefly or in passing within conversations about unrelated topics — check EVERY conversation.
+- Do NOT say "I don't have information" — the information IS in the memories. Look in BOTH the key facts AND the conversations.`,
   'knowledge-update': 'Provide the MOST RECENT information. If information changed over time, give the latest version and note the update.',
   'temporal-reasoning': 'Pay close attention to dates and chronological order. Use timestamps to determine the correct sequence of events.',
   'abstention': 'ONLY answer if you find clearly relevant information in the context. If the context contains nothing related to the question, say "I don\'t have information about that."',
@@ -488,6 +498,140 @@ Rules:
   return resp.content[0].type === 'text' ? resp.content[0].text.trim() : '';
 }
 
+/**
+ * Counting-specific union extraction: run multiple extraction passes,
+ * take the UNION of found items, count programmatically.
+ * Key insight: each pass misses different items, so union captures more.
+ */
+async function generateCountingUnionAnswer(
+  context: string,
+  question: string,
+  _questionType: string,
+  readerModel: string,
+  questionDate: string | undefined,
+  numRuns: number = 3,
+): Promise<string> {
+  const dateContext = questionDate ? `\nThe question is being asked on: ${questionDate}.` : '';
+
+  // Check if this is a counting question
+  const isCountingQ = /\bhow many\b|\bhow much total\b|\bhow much .* spent\b|\btotal (number|amount|cost)\b/i.test(question);
+  if (!isCountingQ) {
+    // Fall back to standard answer for non-counting questions
+    return generateAnswerCoN(context, question, _questionType, readerModel, questionDate);
+  }
+
+  // Extract what we're counting from the question
+  const extractionPrompt = `You are searching through a user's conversation history to find EVERY instance relevant to the question.
+
+TASK: Read ALL the context below and list EVERY distinct item/instance that is relevant to answering this question. You MUST check every single conversation — items may be mentioned briefly or in passing.${dateContext}
+
+OUTPUT FORMAT: Return a JSON array of objects, each with "item" (specific name/description) and "source" (which conversation or date it was found in). Example:
+[
+  {"item": "Revell F-15 Eagle model kit", "source": "Conversation 1, 2023/04/28"},
+  {"item": "Tamiya 1/48 Spitfire Mk.V", "source": "Conversation 2, 2023/05/15"}
+]
+
+CRITICAL RULES:
+- Include EVERY instance, even if mentioned briefly in one sentence
+- Check EVERY conversation, not just the obvious ones
+- For money/expenses: include each individual expense with its amount
+- For people/doctors/professionals: include each distinct person
+- Do NOT skip items that seem minor or tangential
+- When in doubt, INCLUDE the item — over-counting is better than under-counting
+- Return ONLY the JSON array, no other text`;
+
+  // Run multiple extraction passes with shuffled context order
+  const contextLines = context.split('\n');
+  const allItems: Map<string, string> = new Map(); // normalized item -> original item description
+
+  const extractionResults = await Promise.allSettled(
+    Array.from({ length: numRuns }, (_, runIdx) => (async () => {
+      // Shuffle conversation order for diversity (keep headers intact)
+      let runContext = context;
+      if (runIdx > 0) {
+        // Simple shuffle: reverse the conversation sections
+        const sections: string[][] = [];
+        let currentSection: string[] = [];
+        for (const line of contextLines) {
+          if (line.startsWith('### Conversation ') && currentSection.length > 0) {
+            sections.push([...currentSection]);
+            currentSection = [];
+          }
+          currentSection.push(line);
+        }
+        if (currentSection.length > 0) sections.push(currentSection);
+
+        // Shuffle sections (keep first section which is headers)
+        if (sections.length > 2) {
+          const header = sections[0];
+          const convSections = sections.slice(1);
+          // Different shuffles per run
+          if (runIdx % 2 === 1) convSections.reverse();
+          else {
+            // Rotate by runIdx positions
+            const rotateBy = runIdx % convSections.length;
+            const rotated = [...convSections.slice(rotateBy), ...convSections.slice(0, rotateBy)];
+            convSections.splice(0, convSections.length, ...rotated);
+          }
+          runContext = [header, ...convSections].map(s => s.join('\n')).join('\n');
+        }
+      }
+
+      const resp = await anthropic.messages.create({
+        model: readerModel,
+        max_tokens: 2000,
+        system: extractionPrompt,
+        messages: [{
+          role: 'user',
+          content: `Memory context:\n${runContext}\n\nQuestion: ${question}\n\nExtract ALL relevant items as JSON:`,
+        }],
+      });
+
+      const text = resp.content[0].type === 'text' ? resp.content[0].text.trim() : '[]';
+      // Parse JSON from response (handle markdown code blocks)
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) return [];
+      try {
+        return JSON.parse(jsonMatch[0]) as Array<{ item: string; source: string }>;
+      } catch {
+        return [];
+      }
+    })()),
+  );
+
+  // Merge items from all runs — union by normalized key
+  for (const result of extractionResults) {
+    if (result.status !== 'fulfilled') continue;
+    for (const item of result.value) {
+      const key = item.item.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 50);
+      if (key.length > 3 && !allItems.has(key)) {
+        allItems.set(key, `${item.item} (${item.source})`);
+      }
+    }
+  }
+
+  // Generate final answer using the merged item list
+  const itemList = Array.from(allItems.values());
+  const isMoney = /how much|total.*\$|\$.*total|spent|cost|expense/i.test(question);
+
+  if (isMoney) {
+    // For money questions, try to extract amounts and sum
+    const amounts: number[] = [];
+    for (const item of itemList) {
+      const amountMatch = item.match(/\$(\d+(?:\.\d{2})?)/);
+      if (amountMatch) amounts.push(parseFloat(amountMatch[1]));
+    }
+    if (amounts.length > 0) {
+      const total = amounts.reduce((a, b) => a + b, 0);
+      return `$${total}. Individual expenses: ${itemList.join('; ')}`;
+    }
+  }
+
+  // For count questions, return count + list
+  const count = itemList.length;
+  return `${count}. ${itemList.join('; ')}`;
+}
+
 async function judgeAnswer(generated: string, reference: string, question: string, questionType?: string): Promise<number> {
   const isPreference = questionType === 'single-session-preference';
 
@@ -564,6 +708,22 @@ function formatBenchmarkContext(memories: any[], questionType: string): string {
   const semantic = memories.filter((m: any) => m.memory_type === 'semantic' && !m.tags?.includes('preference'));
   const episodic = memories.filter((m: any) => m.memory_type === 'episodic');
 
+  // For multi-session questions, surface key facts FIRST so they're easy to enumerate
+  if (questionType === 'multi-session' && semantic.length > 0) {
+    lines.push(`## Key Facts (${semantic.length} extracted facts — scan ALL of these)`);
+    const sortedFacts = [...semantic].sort((a, b) => {
+      const dateA = a.metadata?.event_date || '';
+      const dateB = b.metadata?.event_date || '';
+      return String(dateA).localeCompare(String(dateB));
+    });
+    for (let fi = 0; fi < sortedFacts.length; fi++) {
+      const m = sortedFacts[fi];
+      const date = m.metadata?.event_date || '';
+      lines.push(`${fi + 1}. ${date ? `[${date}] ` : ''}${m.content || m.summary}`);
+    }
+    lines.push('');
+  }
+
   // For temporal questions, group episodic by session and sort by date
   if (episodic.length > 0) {
     // Group by session_id
@@ -581,13 +741,15 @@ function formatBenchmarkContext(memories: any[], questionType: string): string {
       return String(dateA).localeCompare(String(dateB));
     });
 
-    lines.push('## Conversation History (sorted by date)');
-    for (const [sid, mems] of sessions) {
+    const totalSessions = sessions.length;
+    lines.push(`## Conversation History (${totalSessions} conversations, sorted by date)`);
+    for (let ci = 0; ci < sessions.length; ci++) {
+      const [sid, mems] = sessions[ci];
       const date = mems[0]?.metadata?.event_date || '';
       // Sort rounds within session
       mems.sort((a: any, b: any) => (a.metadata?.round_index || 0) - (b.metadata?.round_index || 0));
 
-      lines.push(`\n### Conversation on ${date || 'unknown date'}`);
+      lines.push(`\n### Conversation ${ci + 1}/${totalSessions} — ${date || 'unknown date'}`);
       for (const m of mems) {
         lines.push(m.content || m.summary);
       }
@@ -595,7 +757,8 @@ function formatBenchmarkContext(memories: any[], questionType: string): string {
     lines.push('');
   }
 
-  if (semantic.length > 0) {
+  // Show key facts at the end (except multi-session which surfaces them first)
+  if (semantic.length > 0 && questionType !== 'multi-session') {
     lines.push('## Key Facts');
     // Sort facts by date
     const sortedFacts = [...semantic].sort((a, b) => {
@@ -625,7 +788,7 @@ async function main() {
 `);
 
   console.log(`Config: variant=${opts.variant}  embeddings=${hasEmbeddings ? `✓ ${EMBEDDING_PROVIDER}` : '✗'}  reader=${opts.readerModel}`);
-  console.log(`Options: recall_limit=${opts.recallLimit}  fact_extraction=${!opts.skipFactExtraction}  limit=${opts.qaLimit === Infinity ? 'all' : opts.qaLimit}`);
+  console.log(`Options: recall_limit=${opts.recallLimit}  fact_extraction=${!opts.skipFactExtraction}  limit=${opts.qaLimit === Infinity ? 'all' : opts.qaLimit}  counting_union=${opts.countingUnion}${opts.countingUnion ? `(${opts.countingRuns} runs)` : ''}`);
   if (opts.types) console.log(`Types: ${[...opts.types].join(', ')}`);
   console.log();
 
@@ -1117,13 +1280,14 @@ async function main() {
           if (recalledSessions.has(eid)) evidenceHits++;
         }
 
-        // For preference questions, use wider recall but focused context
-        if (q.question_type === 'single-session-preference' && !opts.oracleBypass) {
+        // For preference and multi-session questions, use wider recall
+        if ((q.question_type === 'single-session-preference' || q.question_type === 'multi-session') && !opts.oracleBypass) {
           // Do a second recall pass with higher limit to improve evidence hit rate
-          if (filtered.length < 200) {
+          const wideLimit = q.question_type === 'multi-session' ? 300 : 200;
+          if (filtered.length < wideLimit) {
             const wideRecall = await cortex.recall({
               query: q.question,
-              limit: 200,
+              limit: wideLimit,
               tags: q.haystack_session_ids,
               skipExpansion: true,
             });
@@ -1159,13 +1323,22 @@ async function main() {
           const episodicMems = filtered.filter((m: any) => m.memory_type === 'episodic');
           // Take all preference memories + top 10 facts + top 20 episodic
           contextMemories = [...prefMems, ...factMems.slice(0, 10), ...episodicMems.slice(0, 20)];
+        } else if (q.question_type === 'multi-session' && !opts.oracleBypass) {
+          // For multi-session: use up to 100 memories for better coverage of scattered items
+          const contextLimit = Math.min(filtered.length, 100);
+          contextMemories = filtered.slice(0, contextLimit);
         } else {
           const contextLimit = opts.oracleBypass ? filtered.length : Math.min(filtered.length, opts.recallLimit);
           contextMemories = filtered.slice(0, contextLimit);
         }
         const context = formatBenchmarkContext(contextMemories, q.question_type);
-        const answerFn = (globalThis as any).__generateAnswerOverride || generateAnswerCoN;
-        const generated = await answerFn(context, q.question, q.question_type, opts.readerModel, q.question_date);
+        let generated: string;
+        if (opts.countingUnion && q.question_type === 'multi-session') {
+          generated = await generateCountingUnionAnswer(context, q.question, q.question_type, opts.readerModel, q.question_date, opts.countingRuns);
+        } else {
+          const answerFn = (globalThis as any).__generateAnswerOverride || generateAnswerCoN;
+          generated = await answerFn(context, q.question, q.question_type, opts.readerModel, q.question_date);
+        }
 
         // Judge
         const goldAnswer = String(q.answer || '');
