@@ -3,12 +3,21 @@ import { useAuthContext } from './AuthContext';
 import { api } from '../lib/api';
 import type { Message } from '../lib/types';
 
+export interface MessageCost {
+  total: number;
+  input?: number;
+  output?: number;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   memoryIds?: number[];
   streaming?: boolean;
+  model?: string;
+  cost?: MessageCost;
+  isGreeting?: boolean;
 }
 
 export function useChat() {
@@ -18,6 +27,44 @@ export function useChat() {
   const [guestRemaining, setGuestRemaining] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const fetchGreeting = useCallback(async () => {
+    const greetingId = `greeting-${Date.now()}`;
+    setMessages([{ id: greetingId, role: 'assistant', content: '', streaming: true, isGreeting: true }]);
+    setStreaming(true);
+
+    const abort = new AbortController();
+    abortRef.current = abort;
+
+    try {
+      await api.greet(
+        (chunk) => {
+          setMessages((prev) =>
+            prev.map((m) => m.id === greetingId ? { ...m, content: m.content + chunk } : m)
+          );
+        },
+        (data) => {
+          setMessages((prev) =>
+            prev.map((m) => m.id === greetingId
+              ? { ...m, streaming: false, cost: data?.cost }
+              : m)
+          );
+        },
+        abort.signal,
+      );
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        setMessages((prev) =>
+          prev.map((m) => m.id === greetingId
+            ? { ...m, content: m.content || 'Hey! How can I help you today?', streaming: false }
+            : m)
+        );
+      }
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
+    }
+  }, []);
 
   const sendMessage = useCallback(async (
     content: string,
@@ -54,7 +101,7 @@ export function useChat() {
           (remaining) => {
             if (remaining !== undefined) setGuestRemaining(remaining);
             setMessages((prev) =>
-              prev.map((m) => m.id === assistantId ? { ...m, streaming: false } : m)
+              prev.map((m) => m.id === assistantId ? { ...m, streaming: false, model: 'qwen3-5-9b', cost: { total: 0 } } : m)
             );
           },
           abort.signal,
@@ -72,7 +119,14 @@ export function useChat() {
           (data) => {
             setMessages((prev) =>
               prev.map((m) => m.id === assistantId
-                ? { ...m, id: data?.message_id || m.id, streaming: false, memoryIds: data?.memory_ids }
+                ? {
+                    ...m,
+                    id: data?.message_id || m.id,
+                    streaming: false,
+                    memoryIds: data?.memory_ids,
+                    model: data?.model,
+                    cost: data?.cost,
+                  }
                 : m)
             );
           },
@@ -126,5 +180,6 @@ export function useChat() {
     stopStreaming,
     clearMessages,
     loadMessages,
+    fetchGreeting,
   };
 }

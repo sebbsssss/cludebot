@@ -1,6 +1,6 @@
 import { Button } from "./ui/button.tsx"
 import { Textarea } from "./ui/textarea.tsx"
-import { Brain, Send, Square } from "lucide-react"
+import { Brain, Send, Square, HelpCircle } from "lucide-react"
 import { LiquidMetal, PulsingBorder } from "@paper-design/shaders-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState, useRef, useEffect, useCallback } from "react"
@@ -19,7 +19,8 @@ const MODEL_STORAGE_KEY = "chat_selected_model"
 
 export function ChatInterface() {
   const { authenticated } = useAuthContext()
-  const { messages, streaming, guestRemaining, error, sendMessage, stopStreaming, clearMessages, loadMessages } = useChat()
+  const { messages, streaming, guestRemaining, error, sendMessage, stopStreaming, clearMessages, loadMessages, fetchGreeting } = useChat()
+  const greetedRef = useRef(false)
   const { conversations, activeId, createConversation, selectConversation, deleteConversation, refreshTitle, setActiveId } = useConversations()
   const { stats, recent, importPack } = useMemory()
 
@@ -39,6 +40,14 @@ export function ChatInterface() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Fetch personalized greeting when user authenticates
+  useEffect(() => {
+    if (authenticated && !greetedRef.current && messages.length === 0) {
+      greetedRef.current = true
+      fetchGreeting()
+    }
+  }, [authenticated, messages.length, fetchGreeting])
 
   // After streaming ends, refresh title if this was the first message in a new conversation
   useEffect(() => {
@@ -224,6 +233,24 @@ export function ChatInterface() {
                             )}
                           </div>
                           <MemoryPills memoryIds={message.memoryIds} visible={showMemoryPills} />
+                          {!message.streaming && message.content && message.cost !== undefined && (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[10px] text-white/30">
+                                {message.cost.total === 0 ? (
+                                  <>◆ Free · would cost ~$0.05 on Claude Opus</>
+                                ) : (
+                                  <>◆ ${message.cost.total < 0.0001 ? '<0.0001' : message.cost.total.toFixed(4)} · {Math.round(0.045 / Math.max(message.cost.total, 0.0001))}x cheaper than Claude Opus</>
+                                )}
+                              </span>
+                              <button
+                                onClick={() => setShowCostModal(true)}
+                                className="text-white/20 hover:text-white/50 transition-colors"
+                                title="Compare costs"
+                              >
+                                <HelpCircle className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

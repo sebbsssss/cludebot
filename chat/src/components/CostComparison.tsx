@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingDown } from 'lucide-react';
+import { X, TrendingDown, Shield, ShieldOff } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -7,50 +7,79 @@ interface Props {
 }
 
 const COMPARISONS = [
-  { provider: 'Clude', model: 'qwen3-5-9b', cost: 'Free', note: 'Private, zero retention' },
-  { provider: 'Clude', model: 'llama-3.3-70b', cost: '~$0.0002/msg', note: 'Private, zero retention' },
-  { provider: 'Clude', model: 'deepseek-v3.2', cost: '~$0.0002/msg', note: 'Private, zero retention' },
-  { provider: 'OpenAI', model: 'GPT-5.4', cost: '~$0.005/msg', note: 'Direct API pricing' },
-  { provider: 'Anthropic', model: 'Claude Opus 4.6', cost: '~$0.05/msg', note: 'Direct API pricing' },
-];
+  { provider: 'Clude', model: 'Qwen 3.5 9B', cost: 'Free', perMsg: 0, privacy: 'private' as const, note: 'Zero data retention' },
+  { provider: 'Clude', model: 'Llama 3.3 70B', cost: '$0.20/M', perMsg: 0.0002, privacy: 'private' as const, note: 'Zero data retention' },
+  { provider: 'Clude', model: 'DeepSeek V3.2', cost: '$0.20/M', perMsg: 0.0002, privacy: 'private' as const, note: 'Zero data retention' },
+  { provider: 'Clude', model: 'Kimi K2 Thinking', cost: '$0.40/M', perMsg: 0.0004, privacy: 'private' as const, note: 'Zero data retention' },
+  { divider: true },
+  { provider: 'Clude', model: 'Claude Sonnet 4.6', cost: '$3–15/M', perMsg: 0.009, privacy: 'anonymized' as const, note: 'Via Venice proxy' },
+  { provider: 'Clude', model: 'GPT-5.4', cost: '$2–8/M', perMsg: 0.005, privacy: 'anonymized' as const, note: 'Via Venice proxy' },
+  { divider: true },
+  { provider: 'Direct', model: 'Claude Opus 4.6', cost: '$15–75/M', perMsg: 0.045, privacy: 'direct' as const, note: 'Anthropic API direct' },
+  { provider: 'Direct', model: 'GPT-5.4', cost: '$2–8/M', perMsg: 0.005, privacy: 'direct' as const, note: 'OpenAI API direct' },
+] as const;
 
 export function CostComparison({ open, onClose }: Props) {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
-          className="absolute bottom-full mb-2 right-0 w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl z-50 p-4"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-1.5 text-[11px] text-white font-medium">
-              <TrendingDown className="h-3.5 w-3.5 text-green-400" /> Cost Comparison
-            </div>
-            <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-1.5">
-            {COMPARISONS.map((c, i) => (
-              <div key={i} className={`flex items-center justify-between text-[10px] py-1 ${
-                c.provider === 'Clude' ? 'text-zinc-300' : 'text-zinc-500'
-              }`}>
-                <div>
-                  <span className="font-medium">{c.model}</span>
-                  <span className="text-zinc-600 ml-1.5">{c.note}</span>
-                </div>
-                <span className={c.provider === 'Clude' ? 'text-green-400 font-medium' : ''}>{c.cost}</span>
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[360px] bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 p-5"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-sm text-white font-medium">
+                <TrendingDown className="h-4 w-4 text-green-400" /> Cost + Privacy Comparison
               </div>
-            ))}
-          </div>
+              <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-          <div className="mt-3 pt-2 border-t border-zinc-800 text-[9px] text-zinc-500">
-            Private models: up to 250x cheaper. Zero data retention. Your prompts are never stored.
-          </div>
-        </motion.div>
+            <div className="space-y-1">
+              {COMPARISONS.map((c, i) => {
+                if ('divider' in c) {
+                  return <div key={i} className="border-t border-zinc-800 my-2" />;
+                }
+                const isClude = c.provider === 'Clude';
+                const isPrivate = c.privacy === 'private';
+                return (
+                  <div key={i} className={`flex items-center justify-between text-[11px] py-1.5 px-2 rounded ${
+                    isClude && isPrivate ? 'bg-green-500/5' : ''
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {isPrivate ? (
+                        <Shield className="w-3 h-3 text-green-400 shrink-0" />
+                      ) : (
+                        <ShieldOff className="w-3 h-3 text-zinc-600 shrink-0" />
+                      )}
+                      <div>
+                        <span className={isClude ? 'text-zinc-200 font-medium' : 'text-zinc-400'}>{c.model}</span>
+                        <span className="text-zinc-600 ml-1.5 text-[9px]">{c.note}</span>
+                      </div>
+                    </div>
+                    <span className={`font-mono text-[10px] ${
+                      c.cost === 'Free' ? 'text-green-400 font-bold' :
+                      isClude && isPrivate ? 'text-green-400/80' :
+                      'text-zinc-500'
+                    }`}>{c.cost}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-zinc-800">
+              <div className="text-[10px] text-zinc-500 space-y-1">
+                <p><Shield className="w-3 h-3 text-green-400 inline mr-1" />Private models run on Venice infrastructure. Zero data retention — your prompts are never stored or trained on.</p>
+                <p className="text-green-400/70 font-medium">Clude retrieves your memories at near-zero cost. The same recall on GPT-5 or Claude Opus would cost 100–250x more per message.</p>
+              </div>
+            </div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

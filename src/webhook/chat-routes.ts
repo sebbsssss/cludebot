@@ -97,7 +97,7 @@ async function chatAuth(req: Request, res: Response, next: NextFunction): Promis
 
 // ---- Helpers ---- //
 
-function buildSystemPrompt(memories: any[]): string {
+function buildSystemPrompt(memories: any[], opts?: { totalMemoryCount?: number; isGreeting?: boolean }): string {
   const semantic = memories.filter(m => m.memory_type === 'semantic');
   const procedural = memories.filter(m => m.memory_type === 'procedural');
   const selfModel = memories.filter(m => m.memory_type === 'self_model');
@@ -121,12 +121,28 @@ function buildSystemPrompt(memories: any[]): string {
     }).join('\n') + '\n</recent>');
   }
 
-  const memoryBlock = memories.length > 0
-    ? `\n\n<memories count="${memories.length}">\n${sections.join('\n')}\n</memories>`
-    : '';
+  let memoryContext: string;
+  if (memories.length > 0) {
+    memoryContext = `\n\nYou have recalled ${memories.length} relevant memories for this user${opts?.totalMemoryCount ? ` (out of ${opts.totalMemoryCount} total stored)` : ''}.\n\n<memories count="${memories.length}">\n${sections.join('\n')}\n</memories>`;
+  } else if (opts?.totalMemoryCount && opts.totalMemoryCount > 0) {
+    memoryContext = `\n\nThis user has ${opts.totalMemoryCount} stored memories, but none matched this specific query. You still know them — offer to help with anything they need.`;
+  } else {
+    memoryContext = `\n\nThis is a new user with no stored memories yet. Welcome them and let them know you'll remember everything from your conversations going forward.`;
+  }
 
-  return `You are a helpful AI assistant with persistent memory powered by Clude.
-You remember previous conversations with this user. Use the memories below naturally — don't explicitly say "I remember" unless asked.${memoryBlock}`;
+  if (opts?.isGreeting) {
+    return `You are Clude — an AI with persistent, long-term memory. You remember everything users tell you across conversations.
+
+This user just signed in. Greet them warmly and personally. If you have their memories, give a brief recap of what you remember about them and what they were last working on. Be conversational, not robotic. Don't list memories mechanically — weave them into a natural greeting. Keep it to 2-3 sentences.
+
+Never mention Venice, infrastructure, or technical details about how you work. You ARE the memory system — you don't "query" it, you simply remember.${memoryContext}`;
+  }
+
+  return `You are Clude — an AI with persistent, long-term memory. You remember everything users tell you across conversations.
+
+Use your memories naturally in conversation. Don't say "according to my records" or "I recall from my database" — just reference what you know like a person would. If a user asks about their memories, you can describe what you remember.
+
+Never mention Venice, infrastructure providers, or technical details about how you work. Never tell users to "check Venice.ai" or any external service. You ARE the memory system.${memoryContext}`;
 }
 
 function resolveVeniceModel(modelId: string): string | null {
@@ -180,7 +196,7 @@ export function chatRoutes(): Router {
       // Build simple messages (no memory, no conversation history)
       const messages = req.body.history || [];
       const allMessages = [
-        { role: 'system', content: 'You are Clude, a helpful AI assistant with persistent memory. This user is not signed in yet — they have limited free messages. Be helpful and encourage them to sign up for full memory features.' },
+        { role: 'system', content: 'You are Clude — an AI with persistent, long-term memory. This user is not signed in yet and has limited free messages. Be helpful and naturally mention that signing in unlocks persistent memory across conversations. Never mention Venice or infrastructure details.' },
         ...messages.slice(-10), // last 10 messages from client-side history
         { role: 'user', content },
       ];
@@ -279,7 +295,7 @@ export function chatRoutes(): Router {
       const usedCount = (rlRow && rlRow.window_start >= windowCutoff) ? rlRow.count : 1;
       const remaining = Math.max(0, 10 - usedCount);
 
-      res.write(`data: ${JSON.stringify({ done: true, model: usedModel, guest: true, remaining })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true, model: usedModel, guest: true, remaining, cost: { total: 0 } })}\n\n`);
       res.end();
     } catch (err: any) {
       if (err.name === 'AbortError') return;
@@ -323,6 +339,126 @@ export function chatRoutes(): Router {
 
   // All routes below require auth
   router.use(chatAuth);
+
+  // POST /greet — personalized greeting on login, streams memory-aware welcome
+  router.post('/greet', async (req: Request, res: Response) => {
+    try {
+      const chatReq = req as ChatRequest;
+      const veniceApiKey = config.venice?.apiKey || process.env.VENICE_API_KEY;
+      if (!veniceApiKey) {
+        res.status(500).json({ error: 'Chat not configured' });
+        return;
+      }
+
+      const db = getDb();
+
+      // Recall recent memories broadly and get total count
+      const [memories, countResult] = await Promise.all([
+        withOwnerWallet(chatReq.ownerWallet!, () =>
+          recallMemories({ query: 'recent activity summary overview', limit: 15, skipExpansion: true })
+        ),
+        db.from('memories')
+          .select('id', { count: 'exact', head: true })
+          .eq('owner_wallet', chatReq.ownerWallet!),
+      ]);
+      const totalMemoryCount = countResult.count || 0;
+
+      const systemPrompt = buildSystemPrompt(memories, { totalMemoryCount, isGreeting: true });
+
+      // SSE headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      // Send memory stats event first
+      res.write(`data: ${JSON.stringify({ memories_recalled: memories.length, total_memories: totalMemoryCount })}\n\n`);
+
+      const abortController = new AbortController();
+      req.on('close', () => abortController.abort());
+
+      // Try models with fallback
+      const greetModels = ['qwen3-5-9b', 'qwen3-4b', 'mistral-31-24b'];
+      let veniceRes: globalThis.Response | null = null;
+
+      for (const model of greetModels) {
+        const attempt = await fetch('https://api.venice.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${veniceApiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: 'greet me' },
+            ],
+            max_tokens: 512,
+            temperature: 0.8,
+            stream: true,
+          }),
+          signal: abortController.signal,
+        });
+
+        if (attempt.ok) {
+          veniceRes = attempt;
+          break;
+        }
+        await attempt.text().catch(() => {});
+      }
+
+      if (!veniceRes) {
+        res.write(`data: ${JSON.stringify({ error: 'Models unavailable' })}\n\n`);
+        res.end();
+        return;
+      }
+
+      const reader = veniceRes.body?.getReader();
+      if (!reader) { res.end(); return; }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith('data: ')) continue;
+            const data = trimmed.slice(6);
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) {
+                res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
+              }
+            } catch {}
+          }
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        throw err;
+      }
+
+      res.write(`data: ${JSON.stringify({ done: true, memories_recalled: memories.length, total_memories: totalMemoryCount })}\n\n`);
+      res.end();
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      log.error({ err }, 'Greeting error');
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Greeting failed' });
+      } else {
+        res.write(`data: ${JSON.stringify({ error: 'Greeting interrupted' })}\n\n`);
+        res.end();
+      }
+    }
+  });
 
   // POST /conversations — create conversation
   router.post('/conversations', async (req: Request, res: Response) => {
@@ -531,14 +667,22 @@ export function chatRoutes(): Router {
         return;
       }
 
-      // 5. Recall memories
+      // 5. Recall memories + get total count
       let memories: any[] = [];
       let memoryIds: number[] = [];
+      let totalMemoryCount = 0;
       try {
-        memories = await withOwnerWallet(chatReq.ownerWallet!, () =>
-          recallMemories({ query: content, limit: 10, skipExpansion: true })
-        );
+        const [recalled, countResult] = await Promise.all([
+          withOwnerWallet(chatReq.ownerWallet!, () =>
+            recallMemories({ query: content, limit: 10, skipExpansion: true })
+          ),
+          db.from('memories')
+            .select('id', { count: 'exact', head: true })
+            .eq('owner_wallet', chatReq.ownerWallet!),
+        ]);
+        memories = recalled;
         memoryIds = memories.map(m => m.id);
+        totalMemoryCount = countResult.count || 0;
       } catch (err) {
         log.warn({ err }, 'Memory recall failed, continuing without memories');
       }
@@ -552,7 +696,7 @@ export function chatRoutes(): Router {
         .limit(30);
 
       // 7. Build messages array
-      const systemPrompt = buildSystemPrompt(memories);
+      const systemPrompt = buildSystemPrompt(memories, { totalMemoryCount });
       const messagesArray: Array<{ role: string; content: string }> = [
         { role: 'system', content: systemPrompt },
         ...(history || []).map(m => ({ role: m.role, content: m.content })),
@@ -666,14 +810,20 @@ export function chatRoutes(): Router {
         throw err;
       }
 
-      // 11. Send done event
+      // 11. Send done event with cost data
       const assistantMsgId = crypto.randomUUID();
+      const modelDef = CHAT_MODELS.find(m => m.id === modelId);
+      const costInput = modelDef ? (tokensPrompt / 1_000_000) * modelDef.cost.input : 0;
+      const costOutput = modelDef ? (tokensCompletion / 1_000_000) * modelDef.cost.output : 0;
+      const totalCost = costInput + costOutput;
       res.write(`data: ${JSON.stringify({
         done: true,
         message_id: assistantMsgId,
         model: modelId,
         memories_used: memoryIds.length,
         memory_ids: memoryIds,
+        tokens: { prompt: tokensPrompt, completion: tokensCompletion },
+        cost: { total: totalCost, input: costInput, output: costOutput },
       })}\n\n`);
       res.end();
 

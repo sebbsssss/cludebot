@@ -81,6 +81,20 @@ class ChatAPI {
     if (!res.ok) throw new Error('Failed to delete conversation');
   }
 
+  async greet(onChunk: (text: string) => void, onDone: (data: any) => void, signal?: AbortSignal): Promise<void> {
+    const res = await fetch(`${API_BASE}/api/chat/greet`, {
+      method: 'POST',
+      headers: this.headers(),
+      body: JSON.stringify({}),
+      signal,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Greeting failed' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    await this.readSSE(res, onChunk, onDone);
+  }
+
   async sendMessage(conversationId: string, content: string, model: string, onChunk: (text: string) => void, onDone: (data: any) => void, signal?: AbortSignal): Promise<void> {
     const res = await fetch(`${API_BASE}/api/chat/conversations/${conversationId}/messages`, {
       method: 'POST',
