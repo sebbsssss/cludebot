@@ -42,7 +42,7 @@ export function getExperimentalConfig(): ExperimentalConfig {
   return {
     temporalBonds: envBool('EXP_TEMPORAL_BONDS', true),
     reranking: envBool('EXP_RERANKING', false),
-    confidenceGate: envBool('EXP_CONFIDENCE_GATE', true),
+    confidenceGate: envBool('EXP_CONFIDENCE_GATE', false),
     rrfMerge: envBool('EXP_RRF_MERGE', false),
     bm25Search: envBool('EXP_BM25_SEARCH', false),
     ircot: envBool('EXP_IRCOT', false),

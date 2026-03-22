@@ -12,7 +12,7 @@
 
 // Set experimental feature flags before any imports
 process.env.EXP_TEMPORAL_BONDS = 'true';
-process.env.EXP_CONFIDENCE_GATE = 'true';
+process.env.EXP_CONFIDENCE_GATE = 'false';
 process.env.EXP_RERANKING = 'false';
 process.env.EXP_IRCOT = 'false';
 process.env.EXP_RRF_MERGE = 'false';
@@ -30,7 +30,7 @@ async function run() {
     return result.memories;
   };
 
-  console.log('[EXPERIMENTAL] Enhanced recall active: temporal_bonds + confidence_gate');
+  console.log('[EXPERIMENTAL] Enhanced recall active: temporal_bonds (confidence_gate OFF)');
   console.log();
 
   // Import the benchmark — auto-runs main()

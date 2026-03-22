@@ -422,6 +422,77 @@ export async function initDatabase(): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_dashboard_activity_action ON dashboard_activity(action);
         CREATE INDEX IF NOT EXISTS idx_dashboard_activity_created ON dashboard_activity(created_at DESC);
 
+        -- Migration: temporal indexing (Exp 9)
+        ALTER TABLE memories ADD COLUMN IF NOT EXISTS event_date TIMESTAMPTZ DEFAULT NULL;
+        ALTER TABLE memories ADD COLUMN IF NOT EXISTS event_date_precision TEXT DEFAULT NULL;
+        CREATE INDEX IF NOT EXISTS idx_memories_event_date ON memories(event_date)
+          WHERE event_date IS NOT NULL;
+
+        -- Temporal-aware semantic search RPC (Exp 9)
+        CREATE OR REPLACE FUNCTION match_memories_temporal(
+          query_embedding vector(1024),
+          match_threshold float DEFAULT 0.3,
+          match_count int DEFAULT 20,
+          start_date timestamptz DEFAULT NULL,
+          end_date timestamptz DEFAULT NULL,
+          filter_types text[] DEFAULT NULL,
+          filter_user text DEFAULT NULL,
+          min_decay float DEFAULT 0.1,
+          filter_owner text DEFAULT NULL,
+          filter_tags text[] DEFAULT NULL
+        )
+        RETURNS TABLE (id bigint, similarity float)
+        LANGUAGE plpgsql AS $$
+        BEGIN
+          RETURN QUERY
+          SELECT m.id, (1 - (m.embedding <=> query_embedding))::float AS similarity
+          FROM memories m
+          WHERE m.embedding IS NOT NULL
+            AND m.decay_factor >= min_decay
+            AND (filter_types IS NULL OR m.memory_type = ANY(filter_types))
+            AND (filter_user IS NULL OR m.related_user = filter_user)
+            AND (filter_owner IS NULL OR m.owner_wallet = filter_owner)
+            AND (filter_tags IS NULL OR m.tags && filter_tags)
+            AND (1 - (m.embedding <=> query_embedding)) > match_threshold
+            AND (start_date IS NULL OR COALESCE(m.event_date, m.created_at) >= start_date)
+            AND (end_date IS NULL OR COALESCE(m.event_date, m.created_at) <= end_date)
+          ORDER BY m.embedding <=> query_embedding
+          LIMIT match_count;
+        END;
+        $$;
+
+        -- BM25-ranked full-text search RPC (Exp 8)
+        -- Note: ts_summary column requires manual migration (GENERATED ALWAYS AS is not ALTER-able)
+        CREATE OR REPLACE FUNCTION bm25_search_memories(
+          search_query text,
+          match_count int DEFAULT 20,
+          min_decay float DEFAULT 0.1,
+          filter_owner text DEFAULT NULL,
+          filter_types text[] DEFAULT NULL,
+          filter_tags text[] DEFAULT NULL
+        )
+        RETURNS TABLE (id bigint, rank float)
+        LANGUAGE plpgsql AS $$
+        DECLARE
+          tsquery_val tsquery;
+        BEGIN
+          tsquery_val := plainto_tsquery('english', search_query);
+          IF tsquery_val IS NULL OR tsquery_val = ''::tsquery THEN
+            RETURN;
+          END IF;
+          RETURN QUERY
+          SELECT m.id, ts_rank_cd(m.ts_summary, tsquery_val, 32)::float AS rank
+          FROM memories m
+          WHERE m.ts_summary @@ tsquery_val
+            AND m.decay_factor >= min_decay
+            AND (filter_owner IS NULL OR m.owner_wallet = filter_owner)
+            AND (filter_types IS NULL OR m.memory_type = ANY(filter_types))
+            AND (filter_tags IS NULL OR m.tags && filter_tags)
+          ORDER BY rank DESC
+          LIMIT match_count;
+        END;
+        $$;
+
         -- Chat: conversations and messages for memory-augmented chat
         CREATE TABLE IF NOT EXISTS chat_conversations (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -36,7 +36,7 @@ const result = await enhancedRecallMemories(opts);
 |----------|---------|-------------|
 | `EXP_TEMPORAL_BONDS` | `true` | Exp 9: Temporal link types in graph traversal |
 | `EXP_RERANKING` | `false` | Exp 3: Cross-encoder reranking (requires `COHERE_API_KEY`) |
-| `EXP_CONFIDENCE_GATE` | `true` | Exp 6: Confidence-gated responses |
+| `EXP_CONFIDENCE_GATE` | `false` | Exp 6: Confidence-gated responses |
 | `EXP_RRF_MERGE` | `false` | Exp 1: RRF fusion (requires core pipeline changes) |
 | `EXP_BM25_SEARCH` | `false` | Exp 8: tsvector search (requires SQL migration) |
 | `EXP_IRCOT` | `false` | Exp 4: IRCoT multi-hop (adds latency) |

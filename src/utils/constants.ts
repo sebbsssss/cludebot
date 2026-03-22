@@ -66,6 +66,23 @@ export const MEMORY_CONCEPTS = [
 ] as const;
 export type MemoryConcept = typeof MEMORY_CONCEPTS[number];
 
+// Bond-typed graph traversal weights (all 10 link types)
+// Higher weight = more influence when traversing memory associations.
+// Temporal link types (happens_before, happens_after, concurrent_with) enable
+// temporal reasoning in the recall pipeline.
+export const BOND_TYPE_WEIGHTS: Record<MemoryLinkType, number> = {
+  causes:          1.0,
+  supports:        0.9,
+  concurrent_with: 0.8,
+  resolves:        0.8,
+  happens_before:  0.7,
+  happens_after:   0.7,
+  elaborates:      0.7,
+  contradicts:     0.6,
+  relates:         0.4,
+  follows:         0.3,
+};
+
 // Memory association graph
 export const RETRIEVAL_WEIGHT_GRAPH = 1.5;              // Graph-linked memory boost in scoring
 export const RETRIEVAL_WEIGHT_COOCCURRENCE = 0.4;        // Co-occurring entity memory boost (below direct entity 0.6)

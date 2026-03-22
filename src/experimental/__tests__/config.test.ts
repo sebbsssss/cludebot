@@ -26,7 +26,7 @@ describe('config', () => {
       const config = getExperimentalConfig();
       expect(config.temporalBonds).toBe(true);
       expect(config.reranking).toBe(false);
-      expect(config.confidenceGate).toBe(true);
+      expect(config.confidenceGate).toBe(false);
       expect(config.rrfMerge).toBe(false);
       expect(config.bm25Search).toBe(false);
       expect(config.ircot).toBe(false);

@@ -2,6 +2,8 @@ import { generateResponse, generateThread, GenerateOptions } from '../core/claud
 import { getCurrentMood } from '../core/price-oracle';
 import { getMoodModifier } from '../character/mood-modifiers';
 import { recallMemories, formatMemoryContext, type RecallOptions } from '../core/memory';
+import { enhancedRecallMemories, buildEnhancedContext } from '../experimental/enhanced-recall';
+import { getExperimentalConfig } from '../experimental/config';
 import { createChildLogger } from '../core/logger';
 
 const log = createChildLogger('response-service');
@@ -46,12 +48,14 @@ async function buildGenerateOptions(opts: ContextOptions): Promise<GenerateOptio
   const moodModifier = mood ? getMoodModifier(mood) : undefined;
 
   let memoryContext: string | undefined;
+  let hedgingInstruction: string | undefined;
+  let activeExperiments: string[] = [];
   if (opts.memory) {
     const recallStart = Date.now();
 
-    // Parallel recall: main memories + top procedural strategies (guaranteed slots)
-    const [mainMemories, strategies] = await Promise.all([
-      recallMemories(opts.memory),
+    // Parallel recall: enhanced pipeline + top procedural strategies (guaranteed slots)
+    const [enhancedResult, strategies] = await Promise.all([
+      enhancedRecallMemories(opts.memory),
       recallMemories({
         memoryTypes: ['procedural'],
         limit: 3,
@@ -60,9 +64,18 @@ async function buildGenerateOptions(opts: ContextOptions): Promise<GenerateOptio
       }),
     ]);
 
+    const mainMemories = enhancedResult.memories;
+    activeExperiments = enhancedResult.activeExperiments;
+
+    // Extract hedging instruction if confidence gate fired
+    const config = getExperimentalConfig();
+    if (config.confidenceGate && enhancedResult.confidence.hedgingInstruction) {
+      hedgingInstruction = enhancedResult.confidence.hedgingInstruction;
+    }
+
     // Merge procedural strategies into main results, deduplicating by ID
     const seen = new Set(mainMemories.map(m => m.id));
-    const memories = [...mainMemories];
+    const memories = [...mainMemories] as typeof strategies;
     for (const s of strategies) {
       if (!seen.has(s.id)) {
         memories.push(s);
@@ -73,8 +86,20 @@ async function buildGenerateOptions(opts: ContextOptions): Promise<GenerateOptio
     const recallMs = Date.now() - recallStart;
     const formatted = formatMemoryContext(memories);
     if (formatted) memoryContext = formatted;
-    log.info({ recallMs, memoriesFound: memories.length, strategiesFound: strategies.length, user: opts.memory.relatedUser || opts.memory.relatedWallet || 'none' }, 'Memory recall completed');
+    log.info({
+      recallMs,
+      memoriesFound: memories.length,
+      strategiesFound: strategies.length,
+      activeExperiments,
+      confidence: enhancedResult.confidence.score.toFixed(3),
+      user: opts.memory.relatedUser || opts.memory.relatedWallet || 'none',
+    }, 'Memory recall completed');
   }
+
+  // If confidence gate produced a hedging instruction, append to feature instruction
+  const instruction = hedgingInstruction
+    ? `${opts.instruction}\n\n${hedgingInstruction}`
+    : opts.instruction;
 
   return {
     userMessage: opts.message,
@@ -82,7 +107,7 @@ async function buildGenerateOptions(opts: ContextOptions): Promise<GenerateOptio
     moodModifier,
     tierModifier: opts.tierModifier,
     agentModifier: opts.agentModifier,
-    featureInstruction: opts.instruction,
+    featureInstruction: instruction,
     memoryContext,
     maxTokens: opts.maxTokens,
     forTwitter: opts.forTwitter,
