@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../hooks/AuthContext';
 import { AgentSelector } from './AgentSelector';
@@ -18,6 +19,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { walletAddress, email, logout } = useAuthContext();
   const navigate = useNavigate();
   const { isDark, toggle } = useTheme();
+  const [chatOpen, setChatOpen] = useState(false);
   const displayName = email
     ? email
     : walletAddress
@@ -107,6 +109,64 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className={styles.main}>
         {children}
       </main>
+
+      {/* Floating chat button */}
+      <button
+        onClick={() => setChatOpen(!chatOpen)}
+        style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          width: 48,
+          height: 48,
+          borderRadius: '50%',
+          background: chatOpen ? 'var(--text-faint)' : 'var(--blue)',
+          color: '#fff',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          zIndex: 1001,
+          transition: 'background 0.2s, transform 0.2s',
+          transform: chatOpen ? 'rotate(45deg)' : 'none',
+        }}
+        title={chatOpen ? 'Close chat' : 'Chat with Clude'}
+      >
+        {chatOpen ? '✕' : '💬'}
+      </button>
+
+      {/* Chat slide-out panel */}
+      {chatOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 84,
+            right: 24,
+            width: 400,
+            height: 'calc(100vh - 120px)',
+            maxHeight: 700,
+            borderRadius: 16,
+            overflow: 'hidden',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+            zIndex: 1000,
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <iframe
+            src="/chat/"
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              background: '#000',
+            }}
+            title="Clude Chat"
+          />
+        </div>
+      )}
     </div>
   );
 }
