@@ -352,26 +352,34 @@ export function chatRoutes(): Router {
 
       const db = getDb();
 
-      // Recall recent memories with timeout (5s max) + get total count
+      // Fast greeting: skip full recall pipeline, use direct DB queries
+      // 1. Synthesized semantic memories (dream cycle outputs) — highest importance
+      // 2. Recent episodic memories — what user was last doing
+      // 3. Total count for context
       let memories: any[] = [];
       let totalMemoryCount = 0;
       try {
-        const timeoutMs = 5000;
-        const recallPromise = withOwnerWallet(chatReq.ownerWallet!, () =>
-          recallMemories({ query: 'recent activity summary overview', limit: 10, skipExpansion: true })
-        );
-        const countPromise = db.from('memories')
-          .select('id', { count: 'exact', head: true })
-          .eq('owner_wallet', chatReq.ownerWallet!);
-
-        const [recallResult, countResult] = await Promise.all([
-          Promise.race([recallPromise, new Promise<any[]>((resolve) => setTimeout(() => resolve([]), timeoutMs))]),
-          Promise.race([countPromise, new Promise<any>((resolve) => setTimeout(() => resolve({ count: 0 }), timeoutMs))]),
+        const [semanticResult, episodicResult, countResult] = await Promise.all([
+          db.from('memories')
+            .select('id, summary, memory_type, importance, created_at')
+            .eq('owner_wallet', chatReq.ownerWallet!)
+            .in('memory_type', ['semantic', 'self_model', 'procedural'])
+            .order('importance', { ascending: false })
+            .limit(8),
+          db.from('memories')
+            .select('id, summary, memory_type, importance, created_at')
+            .eq('owner_wallet', chatReq.ownerWallet!)
+            .eq('memory_type', 'episodic')
+            .order('created_at', { ascending: false })
+            .limit(5),
+          db.from('memories')
+            .select('id', { count: 'exact', head: true })
+            .eq('owner_wallet', chatReq.ownerWallet!),
         ]);
-        memories = recallResult || [];
+        memories = [...(semanticResult.data || []), ...(episodicResult.data || [])];
         totalMemoryCount = countResult.count || 0;
       } catch (err) {
-        log.warn({ err }, 'Greeting memory recall failed, continuing without memories');
+        log.warn({ err }, 'Greeting memory query failed, continuing without memories');
       }
 
       const systemPrompt = buildSystemPrompt(memories, { totalMemoryCount, isGreeting: true });

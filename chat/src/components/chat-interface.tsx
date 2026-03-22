@@ -234,22 +234,18 @@ export function ChatInterface() {
                           </div>
                           <MemoryPills memoryIds={message.memoryIds} visible={showMemoryPills} />
                           {!message.streaming && message.content && message.cost !== undefined && (
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[10px] text-white/30">
-                                {message.cost.total === 0 ? (
-                                  <>◆ Free · would cost ~$0.05 on Claude Opus</>
-                                ) : (
-                                  <>◆ ${message.cost.total < 0.0001 ? '<0.0001' : message.cost.total.toFixed(4)} · {Math.round(0.045 / Math.max(message.cost.total, 0.0001))}x cheaper than Claude Opus</>
-                                )}
+                            <button
+                              onClick={() => setShowCostModal(true)}
+                              className="flex items-center gap-1 mt-0.5 group"
+                              title="Compare costs"
+                            >
+                              <span className="text-[10px] text-white/25 group-hover:text-white/40 transition-colors whitespace-nowrap">
+                                {message.cost.total === 0
+                                  ? '◆ Free · $0.05 on Opus'
+                                  : `◆ $${message.cost.total < 0.001 ? message.cost.total.toFixed(5) : message.cost.total.toFixed(4)} · ${Math.round(0.045 / Math.max(message.cost.total, 0.0001))}x cheaper`}
                               </span>
-                              <button
-                                onClick={() => setShowCostModal(true)}
-                                className="text-white/20 hover:text-white/50 transition-colors"
-                                title="Compare costs"
-                              >
-                                <HelpCircle className="w-3 h-3" />
-                              </button>
-                            </div>
+                              <HelpCircle className="w-2.5 h-2.5 text-white/15 group-hover:text-white/40 transition-colors shrink-0" />
+                            </button>
                           )}
                         </div>
                       </div>
