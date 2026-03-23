@@ -136,6 +136,7 @@ export function useAuth(): AuthState {
     api.setAgentEndpoint(import.meta.env.VITE_API_BASE || '');
     localStorage.removeItem('cortex_api_key');
     localStorage.removeItem('cortex_endpoint');
+    localStorage.removeItem('cortex_wallet');
     if (privyAuth) {
       logout();
     }

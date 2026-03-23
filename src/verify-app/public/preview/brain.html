@@ -572,15 +572,19 @@ scene.add(nodeGroup);
 let evidenceLineMesh = null;
 let tagLineMesh = null;
 
+const _urlParams = new URLSearchParams(window.location.search);
+const _walletParam = _urlParams.get('wallet') || '';
+
 function fetchBrain() {
-  fetch('/api/brain?limit=200')
+  fetch('/api/brain?limit=200' + (_walletParam ? '&wallet=' + encodeURIComponent(_walletParam) : ''))
     .then(r => r.json())
     .then(data => {
-      if (!data.nodes || data.nodes.length === 0) {
+      const nodes = data.nodes || data.memories || [];
+      if (nodes.length === 0) {
         document.querySelector('.loading-text').textContent = 'NO MEMORIES FOUND';
         return;
       }
-      buildGraph(data.nodes);
+      buildGraph(nodes);
       document.getElementById('loading').classList.add('gone');
     })
     .catch(() => {

@@ -5,6 +5,12 @@ import { api } from '../lib/api';
 import type { AuthState } from './AuthContext';
 
 const STORAGE_KEYS = {
+  cortexKey: 'cortex_api_key',
+  wallet: 'cortex_wallet',
+} as const;
+
+// Legacy keys from before chat/dashboard unification — migrate on first load
+const LEGACY_KEYS = {
   cortexKey: 'chat_cortex_key',
   wallet: 'chat_wallet',
 } as const;
@@ -21,8 +27,18 @@ export function useAuth(): AuthState {
   const cortexInitRef = useRef(false);
   const loggingOutRef = useRef(false);
 
-  // Restore saved cortex key on mount
+  // Restore saved cortex key on mount (with legacy key migration)
   useEffect(() => {
+    // Migrate legacy chat-specific keys to shared keys
+    const legacyKey = localStorage.getItem(LEGACY_KEYS.cortexKey);
+    const legacyWallet = localStorage.getItem(LEGACY_KEYS.wallet);
+    if (legacyKey && !localStorage.getItem(STORAGE_KEYS.cortexKey)) {
+      localStorage.setItem(STORAGE_KEYS.cortexKey, legacyKey);
+      if (legacyWallet) localStorage.setItem(STORAGE_KEYS.wallet, legacyWallet);
+    }
+    if (legacyKey) localStorage.removeItem(LEGACY_KEYS.cortexKey);
+    if (legacyWallet) localStorage.removeItem(LEGACY_KEYS.wallet);
+
     const savedKey = localStorage.getItem(STORAGE_KEYS.cortexKey);
     const savedWallet = localStorage.getItem(STORAGE_KEYS.wallet);
     if (savedKey) {
@@ -91,6 +107,7 @@ export function useAuth(): AuthState {
     api.setKey(null);
     localStorage.removeItem(STORAGE_KEYS.cortexKey);
     localStorage.removeItem(STORAGE_KEYS.wallet);
+    localStorage.removeItem('cortex_endpoint');
     localStorage.removeItem('chat_selected_model');
     if (privyAuth) {
       privyLogout().finally(() => {
