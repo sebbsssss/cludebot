@@ -624,6 +624,9 @@ RULES:
 - For money: exact dollar amounts for each item, no rounding or estimating
 - For counting: each distinct instance counts separately (3 separate bike repairs = 3 items)
 - For ownership ("how many X do I have"): include acquired items, subtract any sold/given away/lost
+- For comparison ("which X most/least/best"): extract ALL candidates with their values so they can be compared
+- For change/increase/decrease: extract BOTH the before-value and after-value so the delta can be computed
+- For time/date questions: extract ALL mentioned times/dates for the relevant event, noting which is arrival vs departure, start vs end, submission vs acceptance
 - When in doubt, INCLUDE the item — over-extraction is far better than missing items
 - NUMBER each extracted item so you can count them precisely at the end
 - Do NOT answer the question yet — just extract the raw data`,
@@ -648,14 +651,18 @@ PROCESS:
 3. For counting/totals, list EVERY item with its source before giving the final number
 
 Rules:
-- For "how many" questions: NUMBER each item you're counting. Example: "1. blue dress (Conv 3), 2. red scarf (Conv 5), 3. boots (Conv 7) = 3 items"
+- For "how many" questions: NUMBER each item. Example: "1. blue dress (Conv 3), 2. red scarf (Conv 5), 3. boots (Conv 7) = 3 items"
 - For "how much total/spent" questions: list each amount then sum. Example: "$50 + $120 + $15 = $185"
-- For "average" questions: list all values, sum, divide by count
-- For comparison (most, least, first, last): compare all extracted items
+- For "average" questions: list all values, sum, divide by count. Show the math.
+- For comparison (most, least, first, last): list ALL candidates with values, then pick the winner. Example: "Walmart $120, Costco $85, Thrive Market $200 → Thrive Market (most)"
+- For "increase/decrease/change" questions: find the BEFORE and AFTER values, compute the difference. Example: "started with 250 followers, ended with 350 → increase of 100"
+- For duration questions ("how long"): find start date and end/current date, compute the difference
+- For time-specific questions ("what time did X"): match the EXACT action asked about (arrival ≠ departure, submission ≠ acceptance)
 - ALWAYS cross-check the original context if the extraction found fewer items than expected
 - Keep the final answer concise (1-3 sentences) but include the specific count/amount
-- If the extraction found NO relevant data AND the original context confirms nothing relevant, say "The information provided is not enough"
-- If ANY relevant data was found, USE it — do not say "I don't have information"`,
+- If the question asks about something NOT mentioned in ANY source, say "The information provided is not enough" — but ONLY if truly nothing relevant was extracted
+- If ANY relevant data was found, USE it — do not say "I don't have information"
+- If the question asks about something the user NEVER did (and no evidence exists), it is correct to say "not enough information" — do not fabricate an answer`,
       messages: [{
         role: 'user',
         content: `Extracted data:\n${extraction}\n\nOriginal memory context:\n${context}\n\nQuestion: ${question}\n\nAnswer:`,
