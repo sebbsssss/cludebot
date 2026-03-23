@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { createChildLogger } from '../core/logger';
 import { getAccuracyStats, isCompoundRunning } from '../features/compound';
 import { createAdapters, fetchAllMarkets } from '../features/compound/market-adapters';
-import { hydrateMemories } from '../core/memory';
+import { hydrateMemories, recallMemories } from '../core/memory';
 import { getDb } from '../core/database';
 
 const log = createChildLogger('compound-routes');

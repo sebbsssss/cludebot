@@ -6,6 +6,7 @@
 
 import { createChildLogger } from '../../core/logger';
 import { storeMemory, recallMemories, createMemoryLink } from '../../core/memory';
+import { getDb } from '../../core/database';
 import type { CompoundAnalysis, MarketResolution, PredictionRecord } from './types';
 
 const log = createChildLogger('compound:memory');
@@ -177,19 +178,21 @@ export async function getAccuracyStats(): Promise<{
   avgBrierScore: number;
   byCategory: Record<string, { count: number; correct: number; avgBrier: number }>;
 }> {
-  const resolutions = await recallMemories({
-    tags: ['compound', 'resolution'],
-    limit: 50,
-    trackAccess: false,
-    skipExpansion: true,
-  });
+  // Direct DB queries — avoids full recall pipeline (vector search hangs on large memory stores)
+  const db = getDb();
+  const [resResult, predResult] = await Promise.all([
+    db.from('memories')
+      .select('metadata')
+      .contains('tags', ['compound', 'resolution'])
+      .limit(200),
+    db.from('memories')
+      .select('id')
+      .contains('tags', ['compound', 'prediction'])
+      .limit(200),
+  ]);
 
-  const predictions = await recallMemories({
-    tags: ['compound', 'prediction'],
-    limit: 50,
-    trackAccess: false,
-    skipExpansion: true,
-  });
+  const resolutions = resResult.data || [];
+  const predictions = predResult.data || [];
 
   const byCategory: Record<string, { count: number; correct: number; totalBrier: number }> = {};
   let correctCount = 0;
