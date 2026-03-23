@@ -552,7 +552,8 @@ Rules:
     let temporalAnswer = stage2.content[0].type === 'text' ? stage2.content[0].text.trim() : '';
 
     // If temporal two-stage gives IDK, fall back to single-pass with IDK retry
-    if (/i don't have|cannot (find|answer)|no.*information|not.*in the timeline|only (find|identify) (one|no)/i.test(temporalAnswer)) {
+    const temporalIdkPattern = /i don't (have|see|find)|cannot (find|answer)|no.*(information|record|mention).*(about|of|for)|not.*in the timeline|only (find|identify) (one|no)|does not (include|contain)/i;
+    if (temporalIdkPattern.test(temporalAnswer)) {
       // Fall through to standard single-pass approach below (don't return early)
     } else {
       return temporalAnswer;
@@ -622,7 +623,8 @@ Rules:
     let kuAnswer = stage2.content[0].type === 'text' ? stage2.content[0].text.trim() : '';
 
     // If KU two-stage gives IDK, fall back to single-pass with IDK retry
-    if (/i don't have|cannot (find|answer)|no.*information|not.*mentioned/i.test(kuAnswer)) {
+    const kuIdkPattern = /i don't (have|see|find)|cannot (find|answer)|no.*(information|record|mention).*(about|of|for)|not.*mentioned|does not (include|contain)/i;
+    if (kuIdkPattern.test(kuAnswer)) {
       // Fall through to standard single-pass approach below
     } else {
       return kuAnswer;
@@ -661,7 +663,9 @@ Rules:
   let answer = resp.content[0].type === 'text' ? resp.content[0].text.trim() : '';
 
   // Retry if the reader gives up — the evidence IS in the context
-  if (/i don't have (information|enough)|no.*information.*about|cannot find|not.*mentioned/i.test(answer)) {
+  // Broad IDK detection: catches "I don't see", "no record", "does not include", etc.
+  const idkPattern = /i don't (have|see|find|recall)|cannot (find|answer|determine)|no.*(information|record|mention|content).*(about|of|for|provided)|does not (include|contain|mention)|not.*in (the|our) (context|conversation|provided)|there is (no|actually no)/i;
+  if (idkPattern.test(answer)) {
     const retry = await anthropic.messages.create({
       model: readerModel,
       max_tokens: 600,
@@ -680,7 +684,7 @@ You MUST provide a specific answer. Do NOT say "I don't have information."${date
     });
     const retryAnswer = retry.content[0].type === 'text' ? retry.content[0].text.trim() : '';
     // Use retry answer if it's not another refusal
-    if (!/i don't have (information|enough)|no.*information.*about/i.test(retryAnswer)) {
+    if (!idkPattern.test(retryAnswer)) {
       answer = retryAnswer;
     }
   }
