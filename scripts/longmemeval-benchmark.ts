@@ -294,8 +294,8 @@ async function extractFacts(turns: SessionTurn[]): Promise<string[]> {
   try {
     const resp = await anthropic.messages.create({
       model: JUDGE_MODEL,
-      max_tokens: 500,
-      system: 'Extract 2-5 key facts from this conversation. Focus on: specific names, dates, places, numbers, user preferences, personal details, events, recommendations. Output one fact per line, starting with "- ". Be specific and factual.',
+      max_tokens: 800,
+      system: 'Extract 5-10 key facts from this conversation. Focus on: specific names, dates, places, numbers, user preferences, personal details, events, recommendations, and assistant suggestions. Include BOTH user-stated facts AND assistant-provided information (recommendations, explanations, specific details the assistant gave). Output one fact per line, starting with "- ". Be specific and factual — include exact names, numbers, and details.',
       messages: [{ role: 'user', content: conv.slice(0, 4000) }],
     });
 
@@ -1498,10 +1498,18 @@ async function main() {
           if (recalledSessions.has(eid)) evidenceHits++;
         }
 
-        // For preference and multi-session questions, use wider recall
-        if ((q.question_type === 'single-session-preference' || q.question_type === 'multi-session') && !opts.oracleBypass) {
+        // For types with known retrieval gaps, use wider recall
+        const wideRecallTypes = ['single-session-preference', 'multi-session', 'single-session-assistant', 'temporal-reasoning', 'knowledge-update'];
+        if (wideRecallTypes.includes(q.question_type) && !opts.oracleBypass) {
           // Do a second recall pass with higher limit to improve evidence hit rate
-          const wideLimit = q.question_type === 'multi-session' ? 300 : 200;
+          const wideLimits: Record<string, number> = {
+            'multi-session': 300,
+            'single-session-preference': 200,
+            'single-session-assistant': 150,
+            'temporal-reasoning': 100,
+            'knowledge-update': 100,
+          };
+          const wideLimit = wideLimits[q.question_type] || 100;
           if (filtered.length < wideLimit) {
             const wideRecall = await cortex.recall({
               query: q.question,
@@ -1545,6 +1553,9 @@ async function main() {
           // For multi-session: use up to 100 memories for better coverage of scattered items
           const contextLimit = Math.min(filtered.length, 100);
           contextMemories = filtered.slice(0, contextLimit);
+        } else if (q.question_type === 'single-session-assistant' && !opts.oracleBypass) {
+          // For SS-Asst: include all recalled memories — assistant details often in later turns
+          contextMemories = filtered;
         } else {
           const contextLimit = opts.oracleBypass ? filtered.length : Math.min(filtered.length, opts.recallLimit);
           contextMemories = filtered.slice(0, contextLimit);
