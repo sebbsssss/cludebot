@@ -358,16 +358,27 @@ export function chatRoutes(): Router {
       let totalMemoryCount = 0;
       try {
         const [recentResult, countResult] = await Promise.all([
+          // Fetch episodic + semantic memories (skip dream reflections/self_model)
           db.from('memories')
             .select('summary, memory_type')
             .eq('owner_wallet', chatReq.ownerWallet!)
+            .in('memory_type', ['episodic', 'semantic'])
+            .not('source', 'in', '("consolidation","compaction","reflection","emergence","contradiction_resolution","active_reflection")')
             .order('created_at', { ascending: false })
-            .limit(5),
+            .limit(10),
           db.from('memories')
             .select('id', { count: 'exact', head: true })
             .eq('owner_wallet', chatReq.ownerWallet!),
         ]);
-        recentSummaries = (recentResult.data || []).map((m: any) => m.summary);
+        // Pick up to 3 distinct, meaningful summaries
+        const seen = new Set<string>();
+        for (const m of recentResult.data || []) {
+          const s = (m.summary || '').trim();
+          if (s && !seen.has(s) && recentSummaries.length < 3) {
+            seen.add(s);
+            recentSummaries.push(s);
+          }
+        }
         totalMemoryCount = countResult.count || 0;
       } catch (err) {
         log.warn({ err }, 'Greeting query failed');
@@ -378,8 +389,12 @@ export function chatRoutes(): Router {
       if (totalMemoryCount === 0) {
         greeting = "Welcome to Clude! I'm your AI with persistent memory — everything we talk about, I'll remember for next time. What's on your mind?";
       } else if (recentSummaries.length > 0) {
-        const recapItems = recentSummaries.slice(0, 3)
-          .map(s => s.length > 80 ? s.slice(0, 77) + '...' : s);
+        const recapItems = recentSummaries.map(s => {
+          // Truncate at last whole word before 100 chars
+          if (s.length <= 100) return s;
+          const cut = s.lastIndexOf(' ', 100);
+          return s.slice(0, cut > 60 ? cut : 100) + '…';
+        });
         greeting = `Hey, welcome back! I've got ${totalMemoryCount.toLocaleString()} memories loaded. Here's what I remember recently:\n\n${recapItems.map(s => `• ${s}`).join('\n')}\n\nWhat would you like to work on?`;
       } else {
         greeting = `Welcome back! I've got ${totalMemoryCount.toLocaleString()} memories loaded and ready. How can I help?`;
