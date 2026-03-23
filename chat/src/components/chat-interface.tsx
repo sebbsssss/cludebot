@@ -14,6 +14,7 @@ import { ChatHeader } from "./ChatHeader"
 import { GuestRateLimit } from "./GuestRateLimit"
 import { MemoryPills } from "./MemoryPills"
 import { CostComparison } from "./CostComparison"
+import { Markdown } from "./Markdown"
 
 const MODEL_STORAGE_KEY = "chat_selected_model"
 
@@ -218,9 +219,11 @@ export function ChatInterface() {
                         {renderAvatar(!!message.streaming)}
                         <div className="flex flex-col gap-1 max-w-[80%]">
                           <div className="bg-zinc-900/80 border border-blue-500/20 rounded-xl rounded-tl-sm px-3 py-2">
-                            <p className="text-white/90 text-[13px] leading-relaxed whitespace-pre-wrap">
-                              {message.content || (message.streaming ? "" : "Failed to get response")}
-                            </p>
+                            {message.content ? (
+                              <Markdown content={message.content} />
+                            ) : (
+                              !message.streaming && <p className="text-white/90 text-[13px]">Failed to get response</p>
+                            )}
                             {message.streaming && !message.content && (
                               <div className="flex gap-1">
                                 <motion.div
