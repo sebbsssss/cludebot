@@ -295,6 +295,7 @@ async function extractFacts(turns: SessionTurn[]): Promise<string[]> {
     const resp = await anthropic.messages.create({
       model: JUDGE_MODEL,
       max_tokens: 800,
+      temperature: 0,
       system: 'Extract 5-10 key facts from this conversation. Focus on: specific names, dates, places, numbers, user preferences, personal details, events, recommendations, and assistant suggestions. Include BOTH user-stated facts AND assistant-provided information (recommendations, explanations, specific details the assistant gave). Output one fact per line, starting with "- ". Be specific and factual — include exact names, numbers, and details.',
       messages: [{ role: 'user', content: conv.slice(0, 4000) }],
     });
@@ -316,6 +317,7 @@ async function extractPreferences(turns: SessionTurn[]): Promise<string[]> {
     const resp = await anthropic.messages.create({
       model: JUDGE_MODEL,
       max_tokens: 600,
+      temperature: 0,
       system: `Extract the user's preferences, tastes, and personal details from this conversation. Focus on:
 - What the user LIKES, wants, or is interested in (specific brands, styles, items, activities)
 - What the user DISLIKES, avoids, or rejected
@@ -444,6 +446,7 @@ async function generateAnswerCoN(
     const stage1 = await anthropic.messages.create({
       model: readerModel,
       max_tokens: 1000,
+      temperature: 0,
       system: `You are searching conversation memories to find the user's preferences relevant to a question.
 
 STEP 1: Identify the ONE conversation most relevant to the question's topic. The question asks about a specific domain (e.g., photography, cooking, travel). Find the conversation where the user discussed that exact topic.
@@ -475,6 +478,7 @@ If you cannot find a relevant conversation, write "NO RELEVANT CONVERSATION FOUN
     const stage2 = await anthropic.messages.create({
       model: readerModel,
       max_tokens: 400,
+      temperature: 0,
       system: `You describe a user's preferences based on extracted quotes from their conversations.
 
 Answer in this EXACT format:
@@ -501,6 +505,7 @@ CRITICAL RULES:
     const stage1 = await anthropic.messages.create({
       model: readerModel,
       max_tokens: 1500,
+      temperature: 0,
       system: `You are extracting a timeline of events from conversation memories.
 
 Read ALL the context below and extract EVERY event mentioned, with its exact date.
@@ -529,6 +534,7 @@ CRITICAL:
     const stage2 = await anthropic.messages.create({
       model: readerModel,
       max_tokens: 600,
+      temperature: 0,
       system: `You answer temporal reasoning questions using an extracted timeline of events.
 ${dateContext}
 
@@ -566,6 +572,7 @@ Rules:
     const stage1 = await anthropic.messages.create({
       model: readerModel,
       max_tokens: 1000,
+      temperature: 0,
       system: `You are tracking how a piece of information has CHANGED over time in conversation memories.
 
 Read ALL the context and find EVERY mention of the topic asked about. List ALL versions with dates.
@@ -610,6 +617,7 @@ Rules:
     const stage2 = await anthropic.messages.create({
       model: readerModel,
       max_tokens: 400,
+      temperature: 0,
       system: `Answer the question using the version history below. ${versionInstruction}
 
 - Answer directly and concisely (1-2 sentences)
@@ -634,6 +642,7 @@ Rules:
   const resp = await anthropic.messages.create({
     model: readerModel,
     max_tokens: 600,
+    temperature: 0,
     system: `You answer questions about a user's conversation history using recalled memory context.
 
 Process:
@@ -669,6 +678,7 @@ Rules:
     const retry = await anthropic.messages.create({
       model: readerModel,
       max_tokens: 600,
+      temperature: 0,
       system: `The user's conversation history below DOES contain the answer to this question. A previous attempt said "I don't have information" but that was wrong — the answer IS there.
 
 Search EVERY conversation carefully. The answer may be:
@@ -774,6 +784,7 @@ CRITICAL RULES:
       const resp = await anthropic.messages.create({
         model: readerModel,
         max_tokens: 2000,
+        temperature: 0,
         system: extractionPrompt,
         messages: [{
           role: 'user',
@@ -870,6 +881,7 @@ Reply with ONLY "1" or "0".`;
   const resp = await anthropic.messages.create({
     model: JUDGE_MODEL,
     max_tokens: 10,
+    temperature: 0,
     system: systemPrompt,
     messages: [{
       role: 'user',
