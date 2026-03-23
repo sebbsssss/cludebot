@@ -19,6 +19,7 @@ export function useAuth(): AuthState {
   const [ready, setReady] = useState(false);
 
   const cortexInitRef = useRef(false);
+  const loggingOutRef = useRef(false);
 
   // Restore saved cortex key on mount
   useEffect(() => {
@@ -47,7 +48,7 @@ export function useAuth(): AuthState {
 
   // Privy auth → auto-register
   useEffect(() => {
-    if (cortexInitRef.current || !privyReady || !privyAuth || cortexKey) return;
+    if (cortexInitRef.current || loggingOutRef.current || !privyReady || !privyAuth || cortexKey) return;
 
     const wallet = wallets?.[0]?.address;
     if (!wallet) return;
@@ -83,6 +84,7 @@ export function useAuth(): AuthState {
   }, [privyLogin]);
 
   const logout = useCallback(() => {
+    loggingOutRef.current = true;
     setCortexKey(null);
     setWalletAddress(null);
     setAuthMode(null);
@@ -91,7 +93,11 @@ export function useAuth(): AuthState {
     localStorage.removeItem(STORAGE_KEYS.wallet);
     localStorage.removeItem('chat_selected_model');
     if (privyAuth) {
-      privyLogout();
+      privyLogout().finally(() => {
+        loggingOutRef.current = false;
+      });
+    } else {
+      loggingOutRef.current = false;
     }
   }, [privyAuth, privyLogout]);
 
