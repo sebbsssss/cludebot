@@ -115,6 +115,24 @@ export function createServer(): express.Application {
     }
   });
 
+  // Solana RPC proxy — keeps the Helius API key server-side.
+  // The chat frontend uses this endpoint instead of calling Helius directly.
+  app.post('/api/solana-rpc', async (req: Request, res: Response) => {
+    const rpcUrl = config.solana.rpcUrl;
+    try {
+      const response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+      });
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } catch (err) {
+      log.error({ err }, 'Solana RPC proxy error');
+      res.status(502).json({ error: 'RPC proxy error' });
+    }
+  });
+
   // Apply rate limiting to all API routes
   app.use('/api', apiLimiter);
 
