@@ -21,7 +21,7 @@ import { loadInstruction } from '../utils/env-persona';
 import { getVestingInfo, getCAResponse, CLUDE_CA, getTokenStatus } from '../knowledge/tokenomics';
 import { checkInput, getCASpoofResponse, getTokenDeployResponse } from '../core/guardrails';
 import { generateVeniceResponseWithSearch, isVeniceEnabled } from '../core/venice-client';
-import { checkRateLimit } from '../core/database';
+import { checkRateLimit, getDb } from '../core/database';
 
 const log = createChildLogger('dispatcher');
 
@@ -34,6 +34,12 @@ const GLOBAL_REPLY_LIMIT = 30;
 const GLOBAL_REPLY_WINDOW_MIN = 60;
 // Max mentions to process per poll cycle (prevent backlog floods)
 export const MAX_PER_CYCLE = 8;
+
+// ── Bot loop protection ─────────────────────────────────────────────
+// Max replies CludeBot will send in a single conversation thread
+const MAX_REPLIES_PER_CONVERSATION = 3;
+// Max replies to the same user in the same conversation
+const MAX_REPLIES_PER_USER_PER_CONVERSATION = 2;
 
 // Tweets/conversations to ignore completely (even if Clude is tagged).
 // Add tweet IDs or conversation IDs here to block engagement.
@@ -53,9 +59,15 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   const tweetId = tweet.id;
   const text = tweet.text || '';
   const authorId = tweet.author_id || '';
+  const conversationId = (tweet as any).conversation_id || '';
+
+  // Wrap markProcessed/replyAndMark to always include conversation context
+  const mark = (feature: string) => markProcessed(tweetId, feature, undefined, { conversationId, authorId });
+  const replyMark = (text: string, feature: string) =>
+    replyAndMark(tweetId, text, feature, { conversationId, authorId });
 
   // Atomically claim this tweet — if another process got it first, skip
-  const claimed = await claimForProcessing(tweetId);
+  const claimed = await claimForProcessing(tweetId, { conversationId, authorId });
   if (!claimed) {
     log.debug({ tweetId }, 'Tweet already claimed by another process');
     return;
@@ -66,7 +78,7 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   const globalOk = await checkRateLimit('x:replies:global', GLOBAL_REPLY_LIMIT, GLOBAL_REPLY_WINDOW_MIN);
   if (!globalOk) {
     log.warn({ tweetId }, 'Global reply rate limit reached, skipping');
-    await markProcessed(tweetId, 'rate-limited');
+    await mark('rate-limited');
     return;
   }
   // Per-user cooldown (skip for creator)
@@ -74,7 +86,7 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
     const userOk = await checkRateLimit(`x:replies:user:${authorId}`, USER_REPLY_LIMIT, USER_REPLY_WINDOW_MIN);
     if (!userOk) {
       log.info({ tweetId, authorId }, 'Per-user reply cooldown, skipping');
-      await markProcessed(tweetId, 'user-rate-limited');
+      await mark('user-rate-limited');
       return;
     }
   }
@@ -82,41 +94,78 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   // Check blocked tweets/conversations
   if (BLOCKED_TWEET_IDS.has(tweetId)) {
     log.info({ tweetId }, 'Tweet is in blocked list, skipping');
-    await markProcessed(tweetId, 'blocked');
+    await mark('blocked');
     return;
   }
-  const conversationId = (tweet as any).conversation_id;
   if (conversationId && BLOCKED_CONVERSATION_IDS.has(conversationId)) {
     log.info({ tweetId, conversationId }, 'Tweet is in blocked conversation, skipping');
-    await markProcessed(tweetId, 'blocked-conversation');
+    await mark('blocked-conversation');
     return;
   }
   // Also block replies TO blocked tweets
   const inReplyTo = (tweet as any).in_reply_to_user_id ? (tweet as any).referenced_tweets?.find((r: any) => r.type === 'replied_to')?.id : null;
   if (inReplyTo && BLOCKED_TWEET_IDS.has(inReplyTo)) {
     log.info({ tweetId, inReplyTo }, 'Tweet replies to blocked tweet, skipping');
-    await markProcessed(tweetId, 'blocked-reply');
+    await mark('blocked-reply');
     return;
   }
 
   log.info({ tweetId, text: text.slice(0, 100) }, 'Processing mention');
+
+  // ── Bot loop detection ──
+  // Check if we're in a bot-to-bot loop by counting our replies in this conversation
+  if (conversationId) {
+    try {
+      const db = getDb();
+      // Count how many times we've already replied in this conversation
+      const { count: convReplyCount } = await db
+        .from('processed_mentions')
+        .select('tweet_id', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId)
+        .not('feature', 'in', '("rate-limited","user-rate-limited","blocked","blocked-conversation","blocked-reply","input-blocked","error")');
+
+      if ((convReplyCount || 0) >= MAX_REPLIES_PER_CONVERSATION) {
+        log.warn({ tweetId, conversationId, convReplyCount }, 'Bot loop protection: max replies per conversation reached');
+        await mark('bot-loop-blocked');
+        return;
+      }
+
+      // Count replies to this specific user in this conversation
+      if (authorId) {
+        const { count: userConvCount } = await db
+          .from('processed_mentions')
+          .select('tweet_id', { count: 'exact', head: true })
+          .eq('conversation_id', conversationId)
+          .eq('author_id', authorId)
+          .not('feature', 'in', '("rate-limited","user-rate-limited","blocked","blocked-conversation","blocked-reply","input-blocked","error")');
+
+        if ((userConvCount || 0) >= MAX_REPLIES_PER_USER_PER_CONVERSATION) {
+          log.warn({ tweetId, conversationId, authorId, userConvCount }, 'Bot loop protection: max replies to user in conversation reached');
+          await mark('bot-loop-blocked');
+          return;
+        }
+      }
+    } catch (err) {
+      log.warn({ err, tweetId }, 'Bot loop check failed, proceeding with caution');
+    }
+  }
 
   // Check for manipulation attempts (CA spoofing, prompt injection)
   const inputCheck = checkInput(text);
   if (!inputCheck.safe) {
     if (inputCheck.isCASpoofAttempt) {
       log.warn({ tweetId, spoofedAddress: inputCheck.spoofedAddress }, 'CA spoof attempt blocked');
-      await replyAndMark(tweetId, getCASpoofResponse(), 'ca-spoof-blocked');
+      await replyMark(getCASpoofResponse(), 'ca-spoof-blocked');
       return;
     }
     if (inputCheck.reason === 'token_deploy_request') {
       log.warn({ tweetId }, 'Token deployment request blocked');
-      await replyAndMark(tweetId, getTokenDeployResponse(), 'token-deploy-blocked');
+      await replyMark(getTokenDeployResponse(), 'token-deploy-blocked');
       return;
     }
     // Other unsafe input types
     log.warn({ tweetId, reason: inputCheck.reason }, 'Unsafe input blocked');
-    await markProcessed(tweetId, 'input-blocked');
+    await mark('input-blocked');
     return;
   }
 
@@ -157,7 +206,7 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
   } catch (err) {
     log.error({ tweetId, err }, 'Failed to dispatch mention');
     // Mark as processed to avoid retrying bad tweets forever — but don't post an empty reply
-    await markProcessed(tweetId, 'error').catch(markErr => log.warn({ markErr }, 'Failed to mark errored tweet'));
+    await mark('error').catch(markErr => log.warn({ markErr }, 'Failed to mark errored tweet'));
   }
 }
 

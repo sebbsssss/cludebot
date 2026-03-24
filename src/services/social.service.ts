@@ -17,11 +17,14 @@ export async function replyAndMark(
   tweetId: string,
   text: string,
   feature: string,
-  context?: { trigger?: string; reasoning?: string; relatedUser?: string }
+  context?: { trigger?: string; reasoning?: string; relatedUser?: string; conversationId?: string; authorId?: string }
 ): Promise<string> {
   // x-client handles smart truncation
   const replyId = await postReply(tweetId, text);
-  await markProcessed(tweetId, feature, replyId);
+  await markProcessed(tweetId, feature, replyId, {
+    conversationId: context?.conversationId,
+    authorId: context?.authorId,
+  });
   log.info({ tweetId, replyId, feature }, 'Reply posted and marked');
 
   // Log action for self-learning (fire-and-forget)

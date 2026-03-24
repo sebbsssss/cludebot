@@ -12,8 +12,18 @@ CREATE TABLE IF NOT EXISTS processed_mentions (
   tweet_id TEXT PRIMARY KEY,
   feature TEXT NOT NULL,
   response_tweet_id TEXT,
+  conversation_id TEXT,
+  author_id TEXT,
   processed_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_processed_conv ON processed_mentions(conversation_id) WHERE conversation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_processed_conv_author ON processed_mentions(conversation_id, author_id) WHERE conversation_id IS NOT NULL;
+
+-- Migration for existing deployments:
+-- ALTER TABLE processed_mentions ADD COLUMN IF NOT EXISTS conversation_id TEXT;
+-- ALTER TABLE processed_mentions ADD COLUMN IF NOT EXISTS author_id TEXT;
+-- CREATE INDEX IF NOT EXISTS idx_processed_conv ON processed_mentions(conversation_id) WHERE conversation_id IS NOT NULL;
+-- CREATE INDEX IF NOT EXISTS idx_processed_conv_author ON processed_mentions(conversation_id, author_id) WHERE conversation_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS opinion_commits (
   id BIGSERIAL PRIMARY KEY,
@@ -477,3 +487,43 @@ CREATE TABLE IF NOT EXISTS dashboard_activity (
 CREATE INDEX IF NOT EXISTS idx_dashboard_activity_agent ON dashboard_activity(agent_id);
 CREATE INDEX IF NOT EXISTS idx_dashboard_activity_action ON dashboard_activity(action);
 CREATE INDEX IF NOT EXISTS idx_dashboard_activity_created ON dashboard_activity(created_at DESC);
+
+-- ============================================================
+-- Chat Billing: balances, top-ups, per-message usage
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS chat_balances (
+  wallet_address TEXT PRIMARY KEY,
+  balance_usdc NUMERIC(20,8) NOT NULL DEFAULT 0,
+  total_deposited NUMERIC(20,8) NOT NULL DEFAULT 0,
+  total_spent NUMERIC(20,8) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS chat_topups (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  wallet_address TEXT NOT NULL,
+  amount_usdc NUMERIC(20,8) NOT NULL,
+  chain TEXT NOT NULL DEFAULT 'solana',
+  tx_hash TEXT UNIQUE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'failed')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  confirmed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_topups_wallet ON chat_topups(wallet_address, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_topups_tx ON chat_topups(tx_hash);
+
+CREATE TABLE IF NOT EXISTS chat_usage (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  wallet_address TEXT NOT NULL,
+  conversation_id UUID REFERENCES chat_conversations(id) ON DELETE SET NULL,
+  message_id UUID,
+  model TEXT NOT NULL,
+  tokens_prompt INTEGER,
+  tokens_completion INTEGER,
+  cost_usdc NUMERIC(20,8) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_usage_wallet ON chat_usage(wallet_address, created_at DESC);

@@ -498,7 +498,7 @@ export async function initDatabase(): Promise<void> {
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           owner_wallet TEXT NOT NULL,
           title TEXT,
-          model TEXT NOT NULL DEFAULT 'qwen3-5-9b',
+          model TEXT NOT NULL DEFAULT 'kimi-k2-thinking',
           message_count INTEGER DEFAULT 0,
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -517,6 +517,41 @@ export async function initDatabase(): Promise<void> {
           created_at TIMESTAMPTZ DEFAULT NOW()
         );
         CREATE INDEX IF NOT EXISTS idx_chat_msg_conv ON chat_messages(conversation_id, created_at);
+
+        -- Chat billing: balances, top-ups, and per-message usage
+        CREATE TABLE IF NOT EXISTS chat_balances (
+          wallet_address TEXT PRIMARY KEY,
+          balance_usdc NUMERIC(20,8) NOT NULL DEFAULT 0,
+          total_deposited NUMERIC(20,8) NOT NULL DEFAULT 0,
+          total_spent NUMERIC(20,8) NOT NULL DEFAULT 0,
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS chat_topups (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          wallet_address TEXT NOT NULL,
+          amount_usdc NUMERIC(20,8) NOT NULL,
+          chain TEXT NOT NULL DEFAULT 'solana',
+          tx_hash TEXT UNIQUE,
+          status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'failed')),
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          confirmed_at TIMESTAMPTZ
+        );
+        CREATE INDEX IF NOT EXISTS idx_chat_topups_wallet ON chat_topups(wallet_address, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_chat_topups_tx ON chat_topups(tx_hash);
+
+        CREATE TABLE IF NOT EXISTS chat_usage (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          wallet_address TEXT NOT NULL,
+          conversation_id UUID REFERENCES chat_conversations(id) ON DELETE SET NULL,
+          message_id UUID,
+          model TEXT NOT NULL,
+          tokens_prompt INTEGER,
+          tokens_completion INTEGER,
+          cost_usdc NUMERIC(20,8) NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_chat_usage_wallet ON chat_usage(wallet_address, created_at DESC);
       `
     });
 
@@ -574,9 +609,12 @@ export async function isAlreadyProcessed(tweetId: string): Promise<boolean> {
  * This prevents race conditions where two processes see isAlreadyProcessed=false
  * before either has a chance to mark it.
  */
-export async function claimForProcessing(tweetId: string): Promise<boolean> {
+export async function claimForProcessing(
+  tweetId: string,
+  extra?: { conversationId?: string; authorId?: string },
+): Promise<boolean> {
   const db = getDb();
-  
+
   // Insert with onConflict=ignore — only succeeds if no row exists
   const { error } = await db
     .from('processed_mentions')
@@ -584,6 +622,8 @@ export async function claimForProcessing(tweetId: string): Promise<boolean> {
       tweet_id: tweetId,
       feature: 'processing',
       response_tweet_id: null,
+      conversation_id: extra?.conversationId || null,
+      author_id: extra?.authorId || null,
       processed_at: new Date().toISOString(),
     });
   
@@ -596,7 +636,12 @@ export async function claimForProcessing(tweetId: string): Promise<boolean> {
   return true;
 }
 
-export async function markProcessed(tweetId: string, feature: string, responseTweetId?: string): Promise<void> {
+export async function markProcessed(
+  tweetId: string,
+  feature: string,
+  responseTweetId?: string,
+  extra?: { conversationId?: string; authorId?: string },
+): Promise<void> {
   const db = getDb();
   await db
     .from('processed_mentions')
@@ -604,6 +649,8 @@ export async function markProcessed(tweetId: string, feature: string, responseTw
       tweet_id: tweetId,
       feature,
       response_tweet_id: responseTweetId || null,
+      conversation_id: extra?.conversationId || null,
+      author_id: extra?.authorId || null,
       processed_at: new Date().toISOString(),
     });
 }
