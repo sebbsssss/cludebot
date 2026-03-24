@@ -535,10 +535,16 @@ export async function initDatabase(): Promise<void> {
           tx_hash TEXT UNIQUE,
           status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'failed')),
           created_at TIMESTAMPTZ DEFAULT NOW(),
-          confirmed_at TIMESTAMPTZ
+          confirmed_at TIMESTAMPTZ,
+          reference TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_chat_topups_wallet ON chat_topups(wallet_address, created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_chat_topups_tx ON chat_topups(tx_hash);
+        CREATE INDEX IF NOT EXISTS idx_chat_topups_reference ON chat_topups(reference);
+
+        -- Migration: add reference column if table already existed without it (CLU-173)
+        ALTER TABLE chat_topups ADD COLUMN IF NOT EXISTS reference TEXT;
+        CREATE INDEX IF NOT EXISTS idx_chat_topups_reference ON chat_topups(reference);
 
         CREATE TABLE IF NOT EXISTS chat_usage (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

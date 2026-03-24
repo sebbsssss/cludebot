@@ -27,7 +27,7 @@ const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ
 const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJe1bJ8');
 const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 const USDC_DECIMALS = 6;
-const SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
+const SOLANA_RPC = import.meta.env.VITE_SOLANA_RPC_URL ?? `${window.location.origin}/api/solana-rpc`;
 const BASE_DEST = '0x48346152f7AaF4c645e939fC21Db0F9da287975d';
 
 /** Detect mobile by touch support + screen width */

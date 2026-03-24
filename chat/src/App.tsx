@@ -13,7 +13,12 @@ const MarketDetail = lazy(() => import('./components/MarketDetail').then(m => ({
 export function App() {
   const auth = useAuth();
 
-  if (!auth.ready) return null;
+  if (!auth.ready) return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-zinc-500 gap-3">
+      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+      <span className="text-xs tracking-[0.3em] uppercase text-zinc-600">CLUDE</span>
+    </div>
+  );
 
   const identity = auth.authenticated
     ? `${auth.authMode}-${auth.cortexKey?.slice(-8) || ''}`

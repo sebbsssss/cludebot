@@ -21,12 +21,13 @@ createRoot(document.getElementById('root')!).render(
         appearance: {
           theme: 'dark',
           accentColor: '#2244ff',
+          showWalletLoginFirst: true,
           walletList: ['phantom', 'solflare', 'backpack', 'detected_wallets'],
         },
         loginMethods: ['wallet'],
         walletChainType: 'solana-only',
         embeddedWallets: { createOnLogin: 'off' },
-        solanaClusters: [{ name: 'mainnet-beta', rpcUrl: 'https://api.mainnet-beta.solana.com' }],
+        solanaClusters: [{ name: 'mainnet-beta', rpcUrl: import.meta.env.VITE_SOLANA_RPC_URL ?? `${window.location.origin}/api/solana-rpc` }],
         externalWallets: {
           solana: { connectors: solanaConnectors },
         },

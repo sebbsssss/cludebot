@@ -27,6 +27,19 @@ export function useAuth(): AuthState {
   const cortexInitRef = useRef(false);
   const loggingOutRef = useRef(false);
 
+  // Timeout: if Privy SDK never becomes ready (e.g. Cloudflare Turnstile
+  // blocked by network/browser), proceed as guest after 5 seconds.
+  useEffect(() => {
+    if (ready) return;
+    const timer = setTimeout(() => {
+      if (!ready) {
+        console.warn('[auth] Privy init timed out after 5s — proceeding as guest');
+        setReady(true);
+      }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [ready]);
+
   // Restore saved cortex key on mount (with legacy key migration)
   useEffect(() => {
     // Migrate legacy chat-specific keys to shared keys
