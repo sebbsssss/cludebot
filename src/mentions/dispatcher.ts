@@ -19,7 +19,7 @@ import { buildAndGenerate } from '../services/response.service';
 import { replyAndMark } from '../services/social.service';
 import { loadInstruction } from '../utils/env-persona';
 import { getVestingInfo, getCAResponse, CLUDE_CA, getTokenStatus } from '../knowledge/tokenomics';
-import { checkInput, getCASpoofResponse } from '../core/guardrails';
+import { checkInput, getCASpoofResponse, getTokenDeployResponse } from '../core/guardrails';
 import { generateVeniceResponseWithSearch, isVeniceEnabled } from '../core/venice-client';
 import { checkRateLimit } from '../core/database';
 
@@ -109,7 +109,12 @@ export async function dispatchMention(tweet: TweetV2): Promise<void> {
       await replyAndMark(tweetId, getCASpoofResponse(), 'ca-spoof-blocked');
       return;
     }
-    // Other unsafe input types can be handled here
+    if (inputCheck.reason === 'token_deploy_request') {
+      log.warn({ tweetId }, 'Token deployment request blocked');
+      await replyAndMark(tweetId, getTokenDeployResponse(), 'token-deploy-blocked');
+      return;
+    }
+    // Other unsafe input types
     log.warn({ tweetId, reason: inputCheck.reason }, 'Unsafe input blocked');
     await markProcessed(tweetId, 'input-blocked');
     return;

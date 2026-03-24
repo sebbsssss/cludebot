@@ -60,6 +60,14 @@ const CA_PATTERNS = [
   /\b(?:CA|contract[\s_-]?address|mint[\s_-]?address|token[\s_-]?mint)\s*[:=]?\s*[1-9A-HJ-NP-Za-km-z]{32,44}\b/i,
 ];
 
+// Token deployment / launch patterns — social engineering vector
+const TOKEN_DEPLOY_OUTPUT_PATTERNS = [
+  /\b(?:deploy(?:ing|ed)?|launch(?:ing|ed)?|creat(?:e|ing|ed))\s+(?:a\s+)?(?:new\s+)?(?:token|coin|meme\s*coin)\b/i,
+  /\b(?:clank[re]?|bankr|pump\.?fun|dex\s*screener|raydium|jupiter)\s+.*(?:deploy|launch|create|mint)\b/i,
+  /\b(?:deploy|launch|create|mint)\s+.*\b(?:clank[re]?|bankr|pump\.?fun)\b/i,
+  /\bticker\s*[:=]?\s*\$[A-Z]{2,10}\b.*\b(?:deploy|launch|supply|liquidity)\b/i,
+];
+
 // The bot's own wallet address — never leak this in replies
 let BOT_ADDRESS: string | null = null;
 
@@ -95,7 +103,15 @@ export function checkOutput(text: string): GuardrailResult {
     }
   }
 
-  // 3. Check for contract address patterns (but allow whitelisted addresses)
+  // 3. Check for token deployment instructions
+  for (const pattern of TOKEN_DEPLOY_OUTPUT_PATTERNS) {
+    if (pattern.test(text)) {
+      log.warn({ pattern: pattern.source, text: text.slice(0, 200) }, 'GUARDRAIL: Token deployment language detected in output');
+      return { safe: false, reason: 'token_deployment' };
+    }
+  }
+
+  // 5. Check for contract address patterns (but allow whitelisted addresses)
   for (const pattern of CA_PATTERNS) {
     if (pattern.test(text)) {
       // Check if the text contains only whitelisted addresses
@@ -109,7 +125,7 @@ export function checkOutput(text: string): GuardrailResult {
     }
   }
 
-  // 4. Check if output contains what looks like a Solana address (strip known safe ones)
+  // 6. Check if output contains what looks like a Solana address (strip known safe ones)
   const addresses = text.match(SOLANA_ADDRESS_RE) || [];
   for (const addr of addresses) {
     // Allow whitelisted addresses (official token CA, etc.)
@@ -123,7 +139,7 @@ export function checkOutput(text: string): GuardrailResult {
     }
   }
 
-  // 5. Check for URLs / links in output (blocks prompt injection via text reversal, decoding, etc.)
+  // 7. Check for URLs / links in output (blocks prompt injection via text reversal, decoding, etc.)
   for (const pattern of URL_PATTERNS) {
     const match = text.match(pattern);
     if (match) {
@@ -196,6 +212,15 @@ export interface ContentFilterResult {
  */
 // ── CA Spoof Detection (merged from input-guardrails.ts) ──
 
+// Token deployment / launch requests — social engineering via X mentions
+const TOKEN_DEPLOY_INPUT_PATTERNS = [
+  /\b(?:deploy|launch|create|mint|make)\s+(?:a\s+)?(?:new\s+)?(?:token|coin|meme\s*coin)\b/i,
+  /\b(?:clank[re]?|bankr|pump\.?fun)\b/i,
+  /\b(?:deploy|launch)\s+.*\b(?:on|via|using|through)\s+(?:solana|raydium|jupiter)\b/i,
+  /\bticker\s*[:=]?\s*\$[A-Z]{2,10}\b/i,
+  /\b(?:token\s*name|supply|liquidity\s*pool|bonding\s*curve)\s*[:=]/i,
+];
+
 const CA_INJECTION_PATTERNS = [
   /(?:your|the|clude'?s?)\s+(?:ca|contract|address|mint)\s+(?:is|was|should be|=)/i,
   /(?:ca|contract|address)\s*[:=]\s*[1-9A-HJ-NP-Za-km-z]{32,44}/i,
@@ -216,6 +241,21 @@ export interface InputGuardrailResult {
  * Returns { safe: false } if the message is trying to spoof the contract address.
  */
 export function checkInput(text: string): InputGuardrailResult {
+  // Check for token deployment / launch requests (social engineering)
+  for (const pattern of TOKEN_DEPLOY_INPUT_PATTERNS) {
+    if (pattern.test(text)) {
+      log.warn({
+        text: text.slice(0, 200),
+        pattern: pattern.source,
+      }, 'INPUT GUARDRAIL: Token deployment request detected');
+
+      return {
+        safe: false,
+        reason: 'token_deploy_request',
+      };
+    }
+  }
+
   for (const pattern of CA_INJECTION_PATTERNS) {
     if (pattern.test(text)) {
       const addresses = text.match(SOLANA_ADDRESS_RE) || [];
@@ -246,6 +286,18 @@ export function checkInput(text: string): InputGuardrailResult {
  */
 export function getCASpoofResponse(): string {
   return `Nice try. The only CA I recognize is ${CLUDE_CA}. That's hardcoded, not up for debate.`;
+}
+
+/**
+ * Get a response to a token deployment request.
+ */
+export function getTokenDeployResponse(): string {
+  const responses = [
+    "I don't deploy tokens. Not via Clankr, Bankr, pump.fun, or anything else. That's not what I do.",
+    "Nah. I'm a memory system, not a token launcher. I won't deploy or create tokens for anyone.",
+    "I don't create, deploy, or launch tokens. Period. The only token I know is $CLUDE.",
+  ];
+  return responses[Math.floor(Math.random() * responses.length)];
 }
 
 export function checkInputContent(text: string): ContentFilterResult {
