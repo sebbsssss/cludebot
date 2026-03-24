@@ -29,14 +29,14 @@ export const CHAT_MODELS = [
   { id: 'llama-3.3-70b', name: 'Llama 3.3 70B', openrouterId: 'meta-llama/llama-3.3-70b-instruct', privacy: 'private', context: 128000, tier: 'pro' as const, cost: { input: 0.20, output: 0.20 } },
   { id: 'deepseek-v3.2', name: 'DeepSeek V3.2', openrouterId: 'deepseek/deepseek-chat-v3-0324', privacy: 'private', context: 160000, tier: 'pro' as const, cost: { input: 0.20, output: 0.20 } },
   { id: 'mistral-31-24b', name: 'Mistral 31 24B', openrouterId: 'mistralai/mistral-small-3.1-24b-instruct', privacy: 'private', context: 128000, tier: 'pro' as const, cost: { input: 0.15, output: 0.15 } },
-  { id: 'llama-uncensored', name: 'Llama Uncensored', openrouterId: 'meta-llama/llama-3.3-70b-instruct', privacy: 'private', context: 32000, tier: 'pro' as const, cost: { input: 0.15, output: 0.15 } },
-  { id: 'qwen-235b', name: 'Qwen 235B', openrouterId: 'qwen/qwen3-235b-a22b', privacy: 'private', context: 128000, tier: 'pro' as const, cost: { input: 0.50, output: 0.50 } },
+  { id: 'llama-uncensored', name: 'Venice Uncensored', openrouterId: 'meta-llama/llama-3.3-70b-instruct', privacy: 'private', context: 32000, tier: 'pro' as const, cost: { input: 0.15, output: 0.15 } },
+  { id: 'qwen-235b', name: 'GPT OSS 120B', openrouterId: 'qwen/qwen3-235b-a22b', privacy: 'private', context: 128000, tier: 'pro' as const, cost: { input: 0.50, output: 0.50 } },
   // Frontier models (via OpenRouter)
-  { id: 'claude-sonnet-4.6', name: 'Claude Sonnet 4.6', openrouterId: 'anthropic/claude-sonnet-4.6', privacy: 'standard', context: 1000000, tier: 'pro' as const, cost: { input: 3.00, output: 15.00 } },
-  { id: 'claude-opus-4.6', name: 'Claude Opus 4.6', openrouterId: 'anthropic/claude-opus-4.6', privacy: 'standard', context: 1000000, tier: 'pro' as const, cost: { input: 15.00, output: 75.00 } },
-  { id: 'gpt-5.4', name: 'GPT-5.4', openrouterId: 'openai/gpt-5.2', privacy: 'standard', context: 1000000, tier: 'pro' as const, cost: { input: 2.00, output: 8.00 } },
-  { id: 'grok-4.1-fast', name: 'Grok 4.1 Fast', openrouterId: 'x-ai/grok-4.1-fast', privacy: 'standard', context: 1000000, tier: 'pro' as const, cost: { input: 3.00, output: 15.00 } },
-  { id: 'gemini-3-pro', name: 'Gemini 3 Pro', openrouterId: 'google/gemini-3-pro-preview', privacy: 'standard', context: 198000, tier: 'pro' as const, cost: { input: 1.25, output: 5.00 } },
+  { id: 'claude-sonnet-4.6', name: 'Claude Sonnet 4.6', openrouterId: 'anthropic/claude-sonnet-4.6', privacy: 'anonymized', context: 1000000, tier: 'pro' as const, cost: { input: 3.00, output: 15.00 } },
+  { id: 'claude-opus-4.6', name: 'Claude Opus 4.6', openrouterId: 'anthropic/claude-opus-4.6', privacy: 'anonymized', context: 1000000, tier: 'pro' as const, cost: { input: 15.00, output: 75.00 } },
+  { id: 'gpt-5.4', name: 'GPT-5.4', openrouterId: 'openai/gpt-5.2', privacy: 'anonymized', context: 1000000, tier: 'pro' as const, cost: { input: 2.00, output: 8.00 } },
+  { id: 'grok-4.1-fast', name: 'Grok 4.1 Fast', openrouterId: 'x-ai/grok-4.1-fast', privacy: 'anonymized', context: 1000000, tier: 'pro' as const, cost: { input: 3.00, output: 15.00 } },
+  { id: 'gemini-3-pro', name: 'Gemini 3 Pro', openrouterId: 'google/gemini-3-pro-preview', privacy: 'anonymized', context: 198000, tier: 'pro' as const, cost: { input: 1.25, output: 5.00 } },
 ];
 
 const DEFAULT_MODEL = CHAT_MODELS.find(m => (m as any).default)?.id || 'kimi-k2-thinking';
