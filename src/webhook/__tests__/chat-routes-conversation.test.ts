@@ -61,7 +61,8 @@ vi.mock('../../experimental/temporal-bonds', () => ({
 vi.mock('../../config', () => ({
   config: {
     privy: { appId: null, jwksUrl: null },
-    venice: { apiKey: 'test-venice-key' },
+    openrouter: { apiKey: 'test-openrouter-key' },
+    chat: { llmTimeoutSec: 60, maxContextTokens: 128000 },
   },
 }));
 
@@ -387,6 +388,24 @@ describe('Chat conversation routes', () => {
       expect(res.body.error).toMatch(/Rate limit/);
     });
 
+    it('insufficient balance for pro model → 402 with descriptive message', async () => {
+      authAs();
+      // DB call 1: conversation lookup (pro model)
+      mockDbQueue.push({ data: { id: 'conv-1', model: 'claude-sonnet-4.6' }, error: null });
+      // rate limit passes (default mock)
+      // content filter passes (default mock)
+      // DB call 2: balance check — nearly zero
+      mockDbQueue.push({ data: { balance_usdc: '0.00001' }, error: null });
+
+      const res = await request('POST', '/api/chat/conversations/conv-1/messages', {
+        body: { content: 'Hello' },
+        headers: AUTH_HEADER,
+      });
+      expect(res.status).toBe(402);
+      expect(res.body.error).toMatch(/Insufficient balance.*Top up/);
+      expect(res.body.model).toBe('claude-sonnet-4.6');
+    });
+
     it('memories are recalled when sending a message', async () => {
       const memories = [
         { id: 1, summary: 'User likes TypeScript', memory_type: 'semantic', content: '...', tags: [] },
@@ -405,7 +424,7 @@ describe('Chat conversation routes', () => {
       // Set up memory recall
       mockRecallMemories.mockResolvedValueOnce(memories);
 
-      // Note: after memory recall, the route calls Venice AI (SSE).
+      // Note: after memory recall, the route calls OpenRouter AI (SSE).
       // We interrupt the SSE connection immediately — we only care that recall happened.
       const controller = new AbortController();
       const fetchPromise = fetch(`${baseUrl}/api/chat/conversations/conv-1/messages`, {
