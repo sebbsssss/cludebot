@@ -4,7 +4,6 @@ const API_BASE = '';
 
 class ChatAPI {
   private cortexKey: string | null = null;
-  private modelsCache: ChatModel[] | null = null;
 
   setKey(key: string | null) {
     this.cortexKey = key;
@@ -19,12 +18,9 @@ class ChatAPI {
   }
 
   async getModels(): Promise<ChatModel[]> {
-    if (this.modelsCache) return this.modelsCache;
     const res = await fetch(`${API_BASE}/api/chat/models`);
     if (!res.ok) throw new Error('Failed to fetch models');
-    const models = await res.json();
-    this.modelsCache = models;
-    return models;
+    return res.json();
   }
 
   async autoRegister(privyToken: string, wallet: string): Promise<{ api_key: string; agent_id: string; created: boolean }> {

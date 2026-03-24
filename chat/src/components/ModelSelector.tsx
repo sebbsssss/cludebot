@@ -5,10 +5,12 @@ import { useAuthContext } from '../hooks/AuthContext';
 import { api } from '../lib/api';
 import type { ChatModel } from '../lib/types';
 
-// Fetch once per session — deduplicates concurrent mount calls
+// Dedup concurrent mount calls, expire after 60s so deploys propagate
 let _modelsPromise: Promise<ChatModel[]> | null = null;
+let _modelsFetchedAt = 0;
 function fetchModelsOnce(): Promise<ChatModel[]> {
-  if (!_modelsPromise) {
+  if (!_modelsPromise || Date.now() - _modelsFetchedAt > 60_000) {
+    _modelsFetchedAt = Date.now();
     _modelsPromise = api.getModels().catch((err) => {
       _modelsPromise = null; // allow retry on error
       throw err;
