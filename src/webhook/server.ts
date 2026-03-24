@@ -794,7 +794,7 @@ export function createServer(): express.Application {
           'Authorization': `Bearer ${openrouterApiKey}`,
         },
         body: JSON.stringify({
-          model: 'anthropic/claude-sonnet-4-6',
+          model: 'anthropic/claude-sonnet-4.6',
           messages: [
             { role: 'system', content: 'You are an expert at synthesizing information into structured context documents.' },
             { role: 'user', content: `Analyze this user's ${allMemories.length} memories (${typeCounts}) and create a comprehensive context document optimized for ${targetName}.

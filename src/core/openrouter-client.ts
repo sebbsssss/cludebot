@@ -46,8 +46,8 @@ export interface OpenRouterResponse {
 // OpenRouter model IDs — provider/model format
 export const OPENROUTER_MODELS = {
   // Frontier (Anthropic)
-  'claude-opus-4.6': 'anthropic/claude-opus-4-6',
-  'claude-sonnet-4.6': 'anthropic/claude-sonnet-4-6',
+  'claude-opus-4.6': 'anthropic/claude-opus-4.6',
+  'claude-sonnet-4.6': 'anthropic/claude-sonnet-4.6',
   'claude-opus-4.5': 'anthropic/claude-opus-4-5-20250514',
   'claude-sonnet-4.5': 'anthropic/claude-sonnet-4-5-20250514',
 
