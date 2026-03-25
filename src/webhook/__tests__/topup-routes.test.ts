@@ -80,7 +80,10 @@ vi.mock('../../core/database', () => ({
 }));
 
 import { topupWebhookRoutes, topupApiRoutes } from '../topup-routes';
-import { config as mockConfig } from '../../config';
+import { config as _mockConfig } from '../../config';
+
+type Mutable<T> = { -readonly [K in keyof T]: Mutable<T[K]> };
+const mockConfig = _mockConfig as Mutable<typeof _mockConfig>;
 
 // ---- Test infrastructure ----
 

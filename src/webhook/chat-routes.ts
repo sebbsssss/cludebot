@@ -295,6 +295,8 @@ export function chatRoutes(): Router {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${openrouterApiKey}`,
+            'HTTP-Referer': 'https://clude.fun',
+            'X-Title': 'Clude Chat',
           },
           body: JSON.stringify({
             model,
@@ -936,6 +938,8 @@ export function chatRoutes(): Router {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${openrouterApiKey}`,
+          'HTTP-Referer': 'https://clude.fun',
+          'X-Title': 'Clude Chat',
         },
         body: JSON.stringify({
           model: openrouterModelId,
@@ -952,9 +956,21 @@ export function chatRoutes(): Router {
         const errBody = await llmRes.text().catch(() => 'Unknown error');
         log.error({ status: llmRes.status, body: errBody, model: openrouterModelId }, 'OpenRouter API error');
         const modelName = CHAT_MODELS.find(m => m.id === modelId)?.name || modelId;
+        // Parse OpenRouter error detail if available
+        let providerDetail = '';
+        try {
+          const parsed = JSON.parse(errBody);
+          providerDetail = parsed?.error?.message || parsed?.message || '';
+        } catch { /* not JSON */ }
         let userMsg: string;
-        if (llmRes.status === 402) {
+        if (llmRes.status === 401) {
+          userMsg = 'API authentication failed. Please contact support.';
+        } else if (llmRes.status === 402) {
           userMsg = 'Insufficient balance for this model. Top up to continue.';
+        } else if (llmRes.status === 403) {
+          userMsg = `${modelName} is not available on this account. Try a different model.`;
+        } else if (llmRes.status === 404) {
+          userMsg = `Model ${modelName} was not found. It may have been renamed or removed.`;
         } else if (llmRes.status === 429) {
           userMsg = 'Rate limit reached. Please wait a moment and try again.';
         } else if (llmRes.status === 503 || errBody.includes('overloaded')) {
@@ -962,7 +978,9 @@ export function chatRoutes(): Router {
         } else if (llmRes.status >= 500) {
           userMsg = 'The model provider is temporarily unavailable. Try again or switch models.';
         } else {
-          userMsg = `Something went wrong with ${modelName}. Try a different model.`;
+          userMsg = providerDetail
+            ? `${modelName} error: ${providerDetail}`
+            : `Something went wrong with ${modelName} (HTTP ${llmRes.status}). Try a different model.`;
         }
         res.write(`data: ${JSON.stringify({ error: userMsg, status: llmRes.status })}\n\n`);
         res.end();
@@ -1245,6 +1263,8 @@ async function autoGenerateTitle(conversationId: string, firstMessage: string, o
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${openrouterApiKey}`,
+        'HTTP-Referer': 'https://clude.fun',
+        'X-Title': 'Clude Chat',
       },
       body: JSON.stringify({
         model: 'mistralai/mistral-small-3.1-24b-instruct-2503',

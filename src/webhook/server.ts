@@ -792,6 +792,8 @@ export function createServer(): express.Application {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${openrouterApiKey}`,
+          'HTTP-Referer': 'https://clude.fun',
+          'X-Title': 'Clude Bot',
         },
         body: JSON.stringify({
           model: 'anthropic/claude-sonnet-4.6',

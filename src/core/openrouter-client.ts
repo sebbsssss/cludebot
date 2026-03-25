@@ -260,6 +260,8 @@ export async function generateOpenRouterResponse(opts: {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.apiKey}`,
+        'HTTP-Referer': 'https://clude.fun',
+        'X-Title': 'Clude Bot',
       },
       body: JSON.stringify({
         model,
