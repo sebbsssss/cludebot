@@ -367,3 +367,65 @@ export async function verifyMemoryOnChain(
     return false;
   }
 }
+
+/**
+ * Parse the content hash from a clude-memory memo string.
+ * Supports both v1 (legacy) and v2 formats:
+ *   v1: "clude-memory | id: 123 | type: episodic | hash: cb504566cc3fa6e9 | ..."
+ *   v2: "clude-memory | v2 | <64-char sha256 hex>"
+ * Returns the hex hash string or null if the memo doesn't match.
+ */
+export function parseMemoContentHash(memo: string): string | null {
+  if (!memo.startsWith('clude-memory |')) return null;
+
+  // v2 format: "clude-memory | v2 | <64-char hex>"
+  const v2Match = memo.match(/^clude-memory \| v2 \| ([a-f0-9]{64})$/);
+  if (v2Match) return v2Match[1];
+
+  // v1 format: "clude-memory | id: ... | type: ... | hash: <16-char hex> | ..."
+  const v1Match = memo.match(/^clude-memory \| id: \d+ \| type: \w+ \| hash: ([a-f0-9]{16}) \|/);
+  if (v1Match) return v1Match[1];
+
+  return null;
+}
+
+/**
+ * Verify a memory's content hash against a memo transaction on-chain.
+ * Fetches the transaction by signature and checks the memo data matches.
+ * Handles both v1 (truncated 16-char hash) and v2 (full 64-char hash) formats.
+ */
+export async function verifyMemoTransaction(
+  signature: string,
+  contentHash: Buffer,
+): Promise<boolean> {
+  const conn = getConnection();
+  try {
+    const tx = await conn.getTransaction(signature, { maxSupportedTransactionVersion: 0 });
+    if (!tx?.meta || !tx.transaction.message) return false;
+
+    const memoProgram = MEMO_PROGRAM_ID.toBase58();
+    const message = tx.transaction.message;
+    const accountKeys = message.staticAccountKeys?.map(k => k.toBase58()) ?? [];
+
+    // Find memo instruction
+    const compiledIxs = message.compiledInstructions;
+    for (const ix of compiledIxs) {
+      if (accountKeys[ix.programIdIndex] !== memoProgram) continue;
+      const memoStr = Buffer.from(ix.data).toString('utf-8');
+      const parsedHash = parseMemoContentHash(memoStr);
+      if (!parsedHash) continue;
+
+      const contentHashHex = contentHash.toString('hex');
+      // v2 = full 64-char hash, v1 = truncated 16-char prefix
+      if (parsedHash.length === 64) {
+        return parsedHash === contentHashHex;
+      }
+      return contentHashHex.startsWith(parsedHash);
+    }
+
+    return false;
+  } catch (err) {
+    log.warn({ err, signature: signature.slice(0, 16) }, 'Failed to verify memo transaction');
+    return false;
+  }
+}

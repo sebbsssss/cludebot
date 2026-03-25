@@ -142,7 +142,7 @@ export const ERC20_BALANCE_ABI = [
 ];
 
 // Memo max length for on-chain calldata
-export const MEMO_MAX_LENGTH = 566;
+export const MEMO_MAX_LENGTH = 100;
 
 // Token lists for market monitoring
 export const MAJOR_TOKENS = new Set([

@@ -371,7 +371,7 @@ async function commitMemoryToChain(memoryId: number, opts: StoreMemoryOptions): 
   // Fallback to memo if registry unavailable or failed
   if (!signature) {
     const contentHashHex = contentHashBuf.toString('hex');
-    const memo = `clude-memory | id: ${memoryId} | type: ${opts.type} | hash: ${contentHashHex.slice(0, 16)} | ${opts.summary.slice(0, 400)}`;
+    const memo = `clude-memory | v2 | ${contentHashHex}`;
     signature = await writeMemo(memo);
   }
 
