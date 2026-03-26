@@ -177,13 +177,14 @@ class CludeAPI {
     return this.fetch(this.appendWallet('/api/graph/stats'));
   }
 
-  // Venice Stats
-  async getVeniceStats(): Promise<{
-    venice: {
+  // Inference Stats
+  async getInferenceStats(): Promise<{
+    inference: {
       totalInferenceCalls: number;
       totalTokensProcessed: number;
       callsByFunction: Record<string, number>;
     };
+    webSearch: { provider: string | null };
     decentralization: {
       inference: string;
       memory: string;
@@ -194,7 +195,7 @@ class CludeAPI {
     if (this.mode === 'cortex') {
       return null;
     }
-    return this.fetch('/api/venice-stats');
+    return this.fetch('/api/inference-stats');
   }
 
   // Memory Recall

@@ -5,7 +5,7 @@ import { verifyRoutes } from '../verify-app/routes';
 import { getMarketSnapshot } from '../core/allium-client';
 import { getMemoryStats, getRecentMemories, storeMemory, recallMemories } from '../core/memory';
 import { getDb, checkRateLimit } from '../core/database';
-import { writeMemo, solscanTxUrl } from '../core/solana-client';
+import { writeMemo, solscanTxUrl, verifyMemoTransaction } from '../core/solana-client';
 import { createHash } from 'crypto';
 import { agentRoutes } from './agent-routes';
 import { cortexRoutes } from './cortex-routes';
@@ -363,6 +363,72 @@ export function createServer(): express.Application {
       });
     } catch (err) {
       log.error({ err }, 'Memory verify error');
+      res.status(500).json({ error: 'Failed to verify memory' });
+    }
+  });
+
+  // Verify a memory by its Solana transaction signature (CLU-238)
+  // Lets users "unhash" their on-chain memories: look up by tx sig, verify SHA256 matches on-chain
+  app.get('/api/memories/verify', async (req: Request, res: Response) => {
+    try {
+      const tx = req.query.tx as string;
+      const wallet = req.query.wallet as string;
+
+      if (!tx || !wallet) {
+        res.status(400).json({ error: 'Both tx and wallet query params are required' });
+        return;
+      }
+
+      const allowed = await checkRateLimit(`verify:${wallet}`, 20, 1);
+      if (!allowed) {
+        res.status(429).json({ error: 'Rate limited. 20 verifications per minute max.' });
+        return;
+      }
+
+      const db = getDb();
+      const { data: mem, error } = await db.from('memories')
+        .select('id, content, summary, memory_type, tags, created_at, owner_wallet, solana_signature')
+        .eq('solana_signature', tx)
+        .single();
+
+      if (error || !mem) {
+        res.status(404).json({ error: 'No memory found for this transaction signature' });
+        return;
+      }
+
+      if (mem.owner_wallet !== wallet) {
+        res.status(403).json({ error: 'Not authorized — wallet does not own this memory' });
+        return;
+      }
+
+      const contentHashBuf = createHash('sha256').update(mem.content || '').digest();
+      const computedHash = contentHashBuf.toString('hex');
+
+      // Verify against on-chain memo
+      let onChainVerified = false;
+      try {
+        onChainVerified = await verifyMemoTransaction(tx, contentHashBuf);
+      } catch {
+        // Solana RPC may be unavailable — still return the memory with verification = false
+      }
+
+      res.json({
+        verified: onChainVerified,
+        memory: {
+          id: mem.id,
+          type: mem.memory_type,
+          summary: mem.summary,
+          content: mem.content,
+          tags: mem.tags || [],
+          created_at: mem.created_at,
+        },
+        onChainHash: onChainVerified ? computedHash : null,
+        computedHash,
+        transactionSignature: tx,
+        explorer: `https://solscan.io/tx/${tx}`,
+      });
+    } catch (err) {
+      log.error({ err }, 'Memory verify-by-tx error');
       res.status(500).json({ error: 'Failed to verify memory' });
     }
   });

@@ -25,10 +25,10 @@ export function CostComparison({ open, onClose }: Props) {
         <>
           <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[360px] bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 p-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed z-50 bg-zinc-900 border border-zinc-700 shadow-2xl p-5 max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:rounded-t-2xl max-md:max-h-[90vh] max-md:overflow-y-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[360px] md:rounded-xl"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-sm text-white font-medium">

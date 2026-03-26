@@ -237,44 +237,76 @@ export function TopUpModal({ open, onClose, currentBalance, onSuccess }: Props) 
     setErrorMsg('');
     setWalletRejected(false);
 
+    // 1. Create intent on backend
+    let intent: Awaited<ReturnType<typeof api.createTopupIntent>>;
     try {
-      // 1. Create intent on backend
-      const intent = await api.createTopupIntent(effectiveAmount, 'solana');
+      intent = await api.createTopupIntent(effectiveAmount, 'solana');
+    } catch (err: any) {
+      console.error('[TopUp] Intent creation failed:', err);
+      setErrorMsg(err?.message || 'Failed to create payment intent. Please try again.');
+      setTxState('error');
+      return;
+    }
 
-      // 2. Build unsigned transaction
-      const txBytes = await buildSolanaUsdcTx(walletAddress, intent.dest_address, effectiveAmount);
+    // 2. Build unsigned transaction (requires Solana RPC for blockhash)
+    let txBytes: Uint8Array;
+    try {
+      txBytes = await buildSolanaUsdcTx(walletAddress, intent.dest_address, effectiveAmount);
+    } catch (err: any) {
+      console.error('[TopUp] Transaction build failed (RPC/blockhash):', err);
+      setErrorMsg('Failed to connect to Solana network. Please try the QR code method instead.');
+      setTxState('error');
+      return;
+    }
 
-      // 3. Sign & send via Privy wallet — isolated catch so rejection never bleeds into confirm error
-      setTxState('signing');
-      let signature: Uint8Array;
-      try {
-        ({ signature } = await wallet.signAndSendTransaction({
-          transaction: txBytes,
-          chain: 'solana:mainnet',
-        }));
-      } catch (sigErr: unknown) {
-        if (isWalletRejection(sigErr)) {
-          setWalletRejected(true);
-          setErrorMsg('Your wallet blocked this transaction. Try the QR code instead.');
-        } else {
-          const e = sigErr as { message?: string };
-          setErrorMsg(e?.message ?? 'Signing failed. Please try again.');
-        }
-        setTxState('error');
-        return; // Never call /topup/confirm when signing fails
+    // 3. Sign & send via Privy wallet — isolated catch so rejection never bleeds into confirm error
+    setTxState('signing');
+    let rawSignature: unknown;
+    try {
+      ({ signature: rawSignature } = await wallet.signAndSendTransaction({
+        transaction: txBytes,
+        chain: 'solana:mainnet',
+      }));
+    } catch (sigErr: unknown) {
+      console.error('[TopUp] Wallet sign/send failed:', sigErr);
+      if (isWalletRejection(sigErr)) {
+        setWalletRejected(true);
+        setErrorMsg('Your wallet blocked this transaction. Try the QR code instead.');
+      } else {
+        setErrorMsg('Wallet failed to send transaction. Try the QR code method instead.');
       }
+      setTxState('error');
+      return; // Never call /topup/confirm when signing fails
+    }
 
-      const hash = bs58.encode(signature);
-      setTxHash(hash);
+    // 4. Encode signature — Privy may return base58 string OR Uint8Array depending on version
+    let hash: string;
+    try {
+      if (typeof rawSignature === 'string') {
+        hash = rawSignature; // Already a base58 tx hash string
+      } else if (rawSignature instanceof Uint8Array) {
+        hash = bs58.encode(rawSignature);
+      } else {
+        throw new Error('Unexpected signature type: ' + typeof rawSignature);
+      }
+    } catch (err: any) {
+      console.error('[TopUp] Signature encoding failed:', err, 'signature type:', typeof rawSignature, 'value:', rawSignature);
+      setErrorMsg('Wallet returned an unexpected response. Please try again.');
+      setTxState('error');
+      return;
+    }
+    setTxHash(hash);
 
-      // 4. Confirm with backend (only reached when signing succeeded)
-      setTxState('confirming');
+    // 5. Confirm with backend (only reached when signing succeeded)
+    setTxState('confirming');
+    try {
       await api.confirmTopup(hash, intent.id);
-
       setTxState('success');
       onSuccess(currentBalance ?? 0);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Transaction failed. Please try again.');
+      console.error('[TopUp] Backend confirmation failed:', err);
+      // Transaction was sent on-chain — balance will update via webhook even if confirm fails
+      setErrorMsg('Transaction sent but confirmation pending. Your balance will update shortly.');
       setTxState('error');
     }
   }, [walletAddress, wallets, effectiveAmount, isValidAmount, currentBalance, onSuccess]);

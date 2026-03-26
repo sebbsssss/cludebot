@@ -247,9 +247,9 @@ function CardHeader({ children, right, noBorder }: {
 // ── Main Dashboard ───────────────────────────────
 
 export function Dashboard() {
-  const { authMode, walletAddress } = useAuthContext();
+  const { authMode, walletAddress, ready } = useAuthContext();
   const [stats, setStats] = useState<MemoryStats | null>(null);
-  const [veniceStats, setVeniceStats] = useState<any>(null);
+  const [inferenceStats, setInferenceStats] = useState<any>(null);
   const [recentMemories, setRecentMemories] = useState<Memory[]>([]);
   const [initialLoad, setInitialLoad] = useState(true);
   const uptime = useMemo(() => {
@@ -264,8 +264,10 @@ export function Dashboard() {
   }, [stats?.newestMemory]);
   const { agents, selectedAgent } = useAgentContext();
 
-  // Fetch all data — re-runs when authMode or wallet changes
+  // Fetch all data — re-runs when authMode, wallet, or ready changes
   const fetchAll = useCallback(() => {
+    if (!ready) return;
+
     // Ensure api mode matches current auth context
     if (authMode === 'cortex') {
       const savedKey = localStorage.getItem('cortex_api_key');
@@ -273,14 +275,17 @@ export function Dashboard() {
         api.setMode('cortex');
         api.setToken(savedKey);
       }
-    } else if (authMode === 'privy' && walletAddress) {
+    } else if (authMode === 'privy') {
       api.setMode('legacy');
       api.setWalletAddress(walletAddress);
+      if (!walletAddress) return;
+    } else {
+      return;
     }
 
     Promise.all([
       api.getStats().catch(() => null),
-      api.getVeniceStats().catch(() => null),
+      api.getInferenceStats().catch(() => null),
       api.getMemories({ hours: 168, limit: 50 }).catch(() => ({ memories: [], scoped_to: null })),
     ]).then(([s, v, m]) => {
       const memResult = m as { memories: Memory[]; scoped_to?: string | null };
@@ -288,22 +293,22 @@ export function Dashboard() {
         setStats(s);
         setRecentMemories(memResult.memories || []);
       }
-      setVeniceStats(v);
+      setInferenceStats(v);
       setInitialLoad(false);
     });
-  }, [authMode, walletAddress]);
+  }, [authMode, walletAddress, ready]);
 
   // Clear and re-fetch on mount, auth changes, and refresh signals
   useEffect(() => {
     setStats(null);
     setRecentMemories([]);
-    setVeniceStats(null);
+    setInferenceStats(null);
     setInitialLoad(true);
     fetchAll();
     const unsubscribe = api.onRefresh(() => {
       setStats(null);
       setRecentMemories([]);
-      setVeniceStats(null);
+      setInferenceStats(null);
       setInitialLoad(true);
       fetchAll();
     });
@@ -314,6 +319,7 @@ export function Dashboard() {
   // Each poll syncs api mode first to prevent stale endpoint issues
   useEffect(() => {
     function syncMode() {
+      if (!ready) return;
       if (authMode === 'cortex') {
         const key = localStorage.getItem('cortex_api_key');
         if (key) { api.setMode('cortex'); api.setToken(key); }
@@ -335,20 +341,20 @@ export function Dashboard() {
         if (api.verifyScope(result)) setRecentMemories(result.memories || []);
       }).catch(() => {});
     };
-    const refreshVenice = () => {
+    const refreshInference = () => {
       syncMode();
-      api.getVeniceStats().then(v => setVeniceStats(v)).catch(() => {});
+      api.getInferenceStats().then(v => setInferenceStats(v)).catch(() => {});
     };
 
     const statsInterval = setInterval(refreshStats, 30000);
     const memInterval = setInterval(refreshMemories, 15000);
-    const veniceInterval = setInterval(refreshVenice, 60000);
+    const inferenceInterval = setInterval(refreshInference, 60000);
     return () => {
       clearInterval(statsInterval);
       clearInterval(memInterval);
-      clearInterval(veniceInterval);
+      clearInterval(inferenceInterval);
     };
-  }, [authMode, walletAddress]);
+  }, [authMode, walletAddress, ready]);
 
   const agentMemories = filterByAgent(
     recentMemories,
@@ -599,11 +605,11 @@ export function Dashboard() {
           />
           <StatusRow label="Dream Sessions" value={String(stats?.totalDreamSessions || 0)} />
           <StatusRow label="Unique Users" value={String(stats?.uniqueUsers || 0)} />
-          {veniceStats?.venice && (
-            <StatusRow label="Inference Calls" value={formatNum(veniceStats.venice.totalInferenceCalls || 0)} />
+          {inferenceStats?.inference && (
+            <StatusRow label="Inference Calls" value={formatNum(inferenceStats.inference.totalInferenceCalls || 0)} />
           )}
-          {veniceStats?.decentralization && (
-            <StatusRow label="On-Chain Proofs" value={String(veniceStats.decentralization.totalMemoriesOnChain || 0)} />
+          {inferenceStats?.decentralization && (
+            <StatusRow label="On-Chain Proofs" value={String(inferenceStats.decentralization.totalMemoriesOnChain || 0)} />
           )}
 
           <div style={{ flex: 1 }} />

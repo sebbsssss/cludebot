@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Menu } from 'lucide-react';
 import { useAuthContext } from '../hooks/AuthContext';
 import { useChat } from '../hooks/useChat';
 import { useConversations } from '../hooks/useConversations';
 import { useMemory } from '../hooks/useMemory';
 import { useBalance } from '../hooks/useBalance';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { Sidebar } from './Sidebar';
 import { ChatHeader } from './ChatHeader';
 import { GuestRateLimit } from './GuestRateLimit';
@@ -20,6 +22,8 @@ export function ChatInterface() {
     sendMessage, stopStreaming, clearMessages, loadMessages, prependMessages, fetchGreeting, scrollRef,
   } = useChat();
   const { balance: balanceInfo } = useBalance();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const greetedRef = useRef(false);
   const {
     conversations, activeId, hasMoreMessages,
@@ -150,15 +154,33 @@ export function ChatInterface() {
           onDelete={deleteConversation}
           onNewChat={handleNewChat}
           onImportPack={importPack}
+          isMobile={isMobile}
+          mobileOpen={sidebarOpen}
+          onMobileClose={() => setSidebarOpen(false)}
         />
       )}
 
-      <div className={`flex flex-col min-h-screen items-center justify-center px-4 py-6 flex-1 transition-all duration-300 ${authenticated ? 'ml-[260px]' : 'ml-0'}`}>
-        <div className="fixed top-0 right-0 z-50 p-4" style={{ left: authenticated ? 260 : 0 }}>
-          <ChatHeader />
+      {/* Main content */}
+      <div
+        className={`flex flex-col min-h-screen items-center justify-center px-4 py-6 flex-1 transition-all duration-300 ${authenticated && !isMobile ? 'ml-[260px]' : 'ml-0'}`}
+      >
+        {/* Header */}
+        <div className="fixed top-0 right-0 z-50 p-4 flex items-center gap-2" style={{ left: authenticated && !isMobile ? 260 : 0 }}>
+          {isMobile && authenticated && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"
+              title="Open sidebar"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
+          <div className="flex-1">
+            <ChatHeader />
+          </div>
         </div>
 
-        <div className="w-full max-w-2xl flex flex-col">
+        <div className={`w-full max-w-2xl flex flex-col ${isMobile ? 'px-1' : ''}`} style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom, 0px)' } : undefined}>
           {/* Messages Area */}
           <AnimatePresence>
             {hasMessages && (
@@ -227,9 +249,9 @@ export function ChatInterface() {
               >
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 text-amber-400 text-xs flex items-center gap-2">
                   <span>Low balance: ${balance.toFixed(2)} remaining</span>
-                  <button className="ml-auto text-amber-300 hover:text-amber-200 text-[10px] font-medium underline underline-offset-2">
-                    Top Up
-                  </button>
+                  <span className="ml-auto text-zinc-500 text-[10px] font-medium">
+                    Top up coming soon
+                  </span>
                 </div>
               </motion.div>
             )}

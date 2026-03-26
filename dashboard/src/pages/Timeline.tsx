@@ -29,7 +29,7 @@ function filterByAgent(memories: Memory[], agentId: string | null, agentName: st
 }
 
 export function Timeline() {
-  const { authMode, walletAddress } = useAuthContext();
+  const { authMode, walletAddress, ready } = useAuthContext();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<MemoryType | 'all'>('all');
@@ -38,12 +38,15 @@ export function Timeline() {
   const { selectedAgent } = useAgentContext();
 
   useEffect(() => {
+    if (!ready) return;
     // Sync api mode with current auth context
     if (authMode === 'cortex') {
       const key = localStorage.getItem('cortex_api_key');
       if (key) { api.setMode('cortex'); api.setToken(key); }
     } else if (authMode === 'privy' && walletAddress) {
       api.setMode('legacy'); api.setWalletAddress(walletAddress);
+    } else {
+      return;
     }
 
     function load() {
@@ -68,7 +71,7 @@ export function Timeline() {
       load();
     });
     return () => { unsubscribe(); };
-  }, [hours]);
+  }, [hours, ready, authMode, walletAddress]);
 
   const agentMemories = filterByAgent(memories || [], selectedAgent?.id || null, selectedAgent?.name || null);
   const filtered = agentMemories

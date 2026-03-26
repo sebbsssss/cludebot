@@ -544,6 +544,7 @@ export function topupApiRoutes(): Router {
     const isSolanaTx = /^[1-9A-HJ-NP-Za-km-z]{87,88}$/.test(tx_hash);
     const isEvmTx = /^0x[0-9a-fA-F]{64}$/.test(tx_hash);
     if (!isSolanaTx && !isEvmTx) {
+      log.warn({ wallet, txHashLen: tx_hash.length, txHashHead: tx_hash.slice(0, 4), txHashTail: tx_hash.slice(-4) }, 'Rejected tx_hash: invalid format');
       res.status(400).json({ error: 'Invalid transaction hash format' });
       return;
     }

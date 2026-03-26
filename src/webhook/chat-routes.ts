@@ -1102,7 +1102,7 @@ export function chatRoutes(): Router {
             remainingBalance = newBalance;
           }
         } catch (balErr) {
-          log.warn({ err: balErr }, 'Balance deduction failed — message still delivered');
+          log.error({ err: balErr, wallet: chatReq.ownerWallet, amount: totalCost, model: modelId }, 'Balance deduction failed — message still delivered');
         }
       }
 

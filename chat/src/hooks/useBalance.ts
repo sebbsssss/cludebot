@@ -71,6 +71,18 @@ export function useBalance() {
     return () => clearInterval(interval);
   }, [authenticated, fetchBalance]);
 
+  // Instant update when useChat receives remaining_balance from SSE
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const amount = (e as CustomEvent).detail;
+      if (typeof amount === 'number') {
+        setBalance(prev => prev ? { ...prev, balance_usdc: amount } : null);
+      }
+    };
+    window.addEventListener('balance-updated', handler);
+    return () => window.removeEventListener('balance-updated', handler);
+  }, []);
+
   // Cleanup fast poll on unmount
   useEffect(() => {
     return () => {

@@ -19,7 +19,7 @@ import type {
 import { DECAY_RATES } from './types';
 
 export class LocalMemory {
-  private store: SqliteStore;
+  private db: SqliteStore;
   private embeddings: LocalEmbeddingProvider;
   private config: Required<LocalMemoryConfig>;
 
@@ -32,7 +32,7 @@ export class LocalMemory {
       useEmbeddings: true,
       ...config,
     };
-    this.store = new SqliteStore(config.dbPath);
+    this.db = new SqliteStore(config.dbPath);
     this.embeddings = new LocalEmbeddingProvider(
       this.config.ollamaUrl,
       this.config.embeddingModel,
@@ -40,7 +40,7 @@ export class LocalMemory {
   }
 
   async init(): Promise<void> {
-    await this.store.init();
+    await this.db.init();
     if (this.config.useEmbeddings) {
       await this.embeddings.checkAvailability();
     }
@@ -50,7 +50,7 @@ export class LocalMemory {
    * Store a new memory and generate its embedding asynchronously.
    */
   async store(memory: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'>): Promise<number> {
-    const id = this.store.insert({
+    const id = this.db.insert({
       ...memory,
       importance: Math.max(0, Math.min(1, memory.importance)),
     });
@@ -66,7 +66,7 @@ export class LocalMemory {
   private async embedMemory(id: number, text: string): Promise<void> {
     const embedding = await this.embeddings.embed(text);
     if (embedding) {
-      this.store.storeEmbedding(id, embedding);
+      this.db.storeEmbedding(id, embedding);
     }
   }
 
@@ -76,7 +76,7 @@ export class LocalMemory {
    */
   async recall(query: string, opts: RecallOptions = {}): Promise<RecallResult[]> {
     const limit = opts.limit ?? 10;
-    const allMemories = this.store.getAll({
+    const allMemories = this.db.getAll({
       types: opts.types,
       minImportance: opts.minImportance,
       limit: 500, // candidate pool
@@ -113,7 +113,7 @@ export class LocalMemory {
       // 3. Vector similarity (if embeddings available)
       let vectorScore = 0;
       if (queryEmbedding) {
-        const memEmbedding = this.store.getEmbedding(memory.id!);
+        const memEmbedding = this.db.getEmbedding(memory.id!);
         if (memEmbedding) {
           vectorScore = Math.max(0, cosineSimilarity(queryEmbedding, memEmbedding));
         }
@@ -155,7 +155,7 @@ export class LocalMemory {
 
     // Track access
     for (const r of results) {
-      this.store.incrementAccess(r.id!);
+      this.db.incrementAccess(r.id!);
     }
 
     return results;
@@ -165,21 +165,21 @@ export class LocalMemory {
    * Link two memories together.
    */
   link(link: MemoryLink): void {
-    this.store.addLink(link);
+    this.db.addLink(link);
   }
 
   /**
    * Get memories linked to a given memory.
    */
   getLinked(memoryId: number): { memory: Memory; linkType: string; strength: number }[] {
-    return this.store.getLinkedMemories(memoryId);
+    return this.db.getLinkedMemories(memoryId);
   }
 
   /**
    * Apply decay to all memories (run periodically, e.g., daily).
    */
   applyDecay(): void {
-    this.store.updateDecay();
+    this.db.updateDecay();
   }
 
   /**
@@ -190,7 +190,7 @@ export class LocalMemory {
     if (recentMemoryIds.length === 0) return null;
 
     const memories = recentMemoryIds
-      .map((id) => this.store.getById(id))
+      .map((id) => this.db.getById(id))
       .filter((m): m is Memory => m !== null);
 
     if (memories.length < 2) return null;
@@ -202,7 +202,7 @@ export class LocalMemory {
       const insight = await this.callLocalLLM(prompt);
       if (!insight) return null;
 
-      const id = await this.store.insert({
+      const id = await this.db.insert({
         type: 'semantic',
         summary: insight,
         content: `Consolidated from ${memories.length} memories. Sources: ${memories.map((m) => m.id).join(', ')}`,
@@ -210,7 +210,7 @@ export class LocalMemory {
         tags: [...new Set(memories.flatMap((m) => m.tags))].slice(0, 5),
       });
 
-      return this.store.getById(id);
+      return this.db.getById(id);
     } catch (err) {
       console.error('[LocalMemory] Consolidation failed:', err);
       return null;
@@ -239,7 +239,7 @@ export class LocalMemory {
   }
 
   close(): void {
-    this.store.close();
+    this.db.close();
   }
 }
 

@@ -209,6 +209,8 @@ export function useChat() {
             renderer.flush();
             if (data?.receipt?.remaining_balance !== null && data?.receipt?.remaining_balance !== undefined) {
               setBalance(data.receipt.remaining_balance);
+              // Notify useBalance instances so header updates instantly
+              window.dispatchEvent(new CustomEvent('balance-updated', { detail: data.receipt.remaining_balance }));
             }
             const final: SettledMessage = {
               kind: 'settled',

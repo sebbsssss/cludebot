@@ -63,6 +63,12 @@ if (command === 'setup') {
     console.error('Inject instructions failed:', err.message);
     process.exit(1);
   });
+} else if (command === 'extract') {
+  const { runExtract } = require('./extract');
+  runExtract().catch((err: Error) => {
+    console.error('Extract failed:', err.message);
+    process.exit(1);
+  });
 } else if (command === 'mcp-serve') {
   // Start the MCP server (used by IDE integrations)
   require('../mcp/server');
@@ -86,6 +92,7 @@ if (command === 'setup') {
   console.log(`    ${c.cyan}npx clude-bot register${c.reset}      Get an API key only`);
   console.log(`    ${c.cyan}npx clude-bot mcp-install${c.reset}   Install MCP server for your IDE`);
   console.log(`    ${c.cyan}npx clude-bot inject-instructions${c.reset}  Write usage instructions to CLAUDE.md`);
+  console.log(`    ${c.cyan}npx clude-bot extract${c.reset}       Extract domain knowledge into skills.md`);
   console.log(`    ${c.cyan}npx clude-bot export${c.reset}        Export memories (json/md/chatgpt/gemini)`);
   console.log(`    ${c.cyan}npx clude-bot import${c.reset}        Import from ChatGPT export, markdown, JSON`);
   console.log(`    ${c.cyan}npx clude-bot sync${c.reset}          Auto-update system prompt file`);

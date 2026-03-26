@@ -33,7 +33,7 @@ export function PromoSlideout({ show }: PromoSlideoutProps) {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: '100%', opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed bottom-6 right-6 w-72 bg-zinc-900 border border-violet-500/30 rounded-xl shadow-2xl z-50 p-4"
+          className="fixed z-50 bg-zinc-900 border border-violet-500/30 shadow-2xl p-4 max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:rounded-t-xl md:bottom-6 md:right-6 md:w-72 md:rounded-xl"
           role="dialog"
           aria-label="Free promo announcement"
         >

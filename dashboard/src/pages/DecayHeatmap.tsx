@@ -21,18 +21,21 @@ function filterByAgent(memories: Memory[], agentId: string | null, agentName: st
 }
 
 export function DecayHeatmap() {
-  const { authMode, walletAddress } = useAuthContext();
+  const { authMode, walletAddress, ready } = useAuthContext();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'decay' | 'importance' | 'age'>('decay');
   const { selectedAgent } = useAgentContext();
 
   useEffect(() => {
+    if (!ready) return;
     if (authMode === 'cortex') {
       const key = localStorage.getItem('cortex_api_key');
       if (key) { api.setMode('cortex'); api.setToken(key); }
     } else if (authMode === 'privy' && walletAddress) {
       api.setMode('legacy'); api.setWalletAddress(walletAddress);
+    } else {
+      return;
     }
 
     function load() {
@@ -57,7 +60,7 @@ export function DecayHeatmap() {
       load();
     });
     return () => { unsubscribe(); };
-  }, []);
+  }, [ready, authMode, walletAddress]);
 
   const agentMemories = filterByAgent(memories, selectedAgent?.id || null, selectedAgent?.name || null);
   const sorted = [...agentMemories].sort((a, b) => {
