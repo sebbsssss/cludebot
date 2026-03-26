@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-03-26T01:01:36.728Z",
+  "wallets": {
+    "total": 44,
+    "activeSpenders": 3
+  },
+  "conversations": {
+    "total": 60,
+    "last24h": 27,
+    "last7d": 60
+  },
+  "messages": {
+    "total": 388
+  },
+  "activeUsers": {
+    "last24h": 8,
+    "last7d": 11
+  },
+  "costByModel": [
+    {
+      "model": "claude-sonnet-4.6",
+      "messages": 30,
+      "tokensPrompt": 83344,
+      "tokensCompletion": 10018,
+      "costUsdc": 0.400302
+    },
+    {
+      "model": "claude-opus-4.6",
+      "messages": 2,
+      "tokensPrompt": 2294,
+      "tokensCompletion": 1849,
+      "costUsdc": 0.173085
+    },
+    {
+      "model": "gpt-5.4",
+      "messages": 5,
+      "tokensPrompt": 13763,
+      "tokensCompletion": 7227,
+      "costUsdc": 0.085342
+    }
+  ],
+  "topSpenders": [
+    {
+      "wallet": "HdKoTAPdHR3hKfaP1CBSMdjPVXfX2uD3PzBzXuX88GV4",
+      "costUsdc": 0.6304660000000001,
+      "messages": 32
+    },
+    {
+      "wallet": "5vK6WRCq5V6BCte8cQvaNeNv2KzErCfGzeBDwtBGGv2r",
+      "costUsdc": 0.026376,
+      "messages": 4
+    },
+    {
+      "wallet": "6HnHTpKtwdJGjprCu8S2JuX9SCzu21F9ocqU8dpm9qUb",
+      "costUsdc": 0.001887,
+      "messages": 1
+    }
+  ],
+  "balanceSegments": {
+    "whales": 2,
+    "promoUntouched": 41,
+    "partialSpend": 1,
+    "zeroBalance": 0
+  },
+  "topups": {
+    "confirmedCount": 2,
+    "confirmedTotal": 105,
+    "pendingCount": 14
+  }
+}
