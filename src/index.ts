@@ -138,9 +138,13 @@ if (require.main === module) {
       log.info('X sentiment monitor started — broadcasting to Telegram');
     }
 
-    // Start Compound — prediction market intelligence engine
-    startCompound();
-    log.info('Compound started — prediction market analysis active');
+    // Start Compound — prediction market intelligence engine (disabled by default)
+    if (process.env.COMPOUND_ENABLED === 'true') {
+      startCompound();
+      log.info('Compound started — prediction market analysis active');
+    } else {
+      log.info('Compound disabled (set COMPOUND_ENABLED=true to enable)');
+    }
 
     // Start task executor — picks up dashboard tasks and runs agents
     startTaskExecutor();
@@ -159,7 +163,7 @@ if (require.main === module) {
       stopActiveReflection();
       stopCampaignTracker();
       stopTaskExecutor();
-      stopCompound();
+      if (process.env.COMPOUND_ENABLED === 'true') stopCompound();
       if (config.features.telegramEnabled) {
         const { stopXSentimentMonitor } = require('./features/x-sentiment-monitor');
         stopXSentimentMonitor();

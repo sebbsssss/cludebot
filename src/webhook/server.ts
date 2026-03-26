@@ -581,8 +581,10 @@ export function createServer(): express.Application {
   // Campaign: 10 Days of Growing a Blockchain Brain
   app.use('/api/campaign', apiLimiter, campaignRoutes());
 
-  // Compound: Prediction Market Intelligence
-  app.use('/api/compound', compoundRoutes());
+  // Compound: Prediction Market Intelligence (disabled by default)
+  if (process.env.COMPOUND_ENABLED === 'true') {
+    app.use('/api/compound', compoundRoutes());
+  }
 
   // ---- DASHBOARD ENDPOINTS (Privy-authenticated) ---- //
 

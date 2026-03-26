@@ -5,10 +5,11 @@ import { AuthContext } from './hooks/AuthContext'
 import { ChatInterface } from './components/chat-interface'
 
 // Lazy-load non-critical routes — keeps initial bundle focused on chat
-const CompoundDashboard = lazy(() => import('./components/CompoundDashboard').then(m => ({ default: m.CompoundDashboard })))
-const CompoundAccuracyScorecard = lazy(() => import('./components/CompoundAccuracyScorecard').then(m => ({ default: m.CompoundAccuracyScorecard })))
-const CompoundChat = lazy(() => import('./components/CompoundChat').then(m => ({ default: m.CompoundChat })))
-const MarketDetail = lazy(() => import('./components/MarketDetail').then(m => ({ default: m.MarketDetail })))
+// Compound routes disabled (COMPOUND_ENABLED=false) — kept for future re-enable
+// const CompoundDashboard = lazy(() => import('./components/CompoundDashboard').then(m => ({ default: m.CompoundDashboard })))
+// const CompoundAccuracyScorecard = lazy(() => import('./components/CompoundAccuracyScorecard').then(m => ({ default: m.CompoundAccuracyScorecard })))
+// const CompoundChat = lazy(() => import('./components/CompoundChat').then(m => ({ default: m.CompoundChat })))
+// const MarketDetail = lazy(() => import('./components/MarketDetail').then(m => ({ default: m.MarketDetail })))
 
 export function App() {
   const auth = useAuth();
@@ -30,10 +31,7 @@ export function App() {
         <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-zinc-500">Loading…</div>}>
           <Routes>
             <Route path="/" element={<ChatInterface />} />
-            <Route path="/compound" element={<CompoundDashboard />} />
-            <Route path="/compound/accuracy" element={<CompoundAccuracyScorecard />} />
-            <Route path="/compound/chat" element={<CompoundChat />} />
-            <Route path="/compound/markets/:id" element={<MarketDetail />} />
+            {/* Compound routes disabled — redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+// Link import removed — Compound sidebar links disabled
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, PanelLeftClose, PanelLeft, TrendingUp, MessageCircle, X } from 'lucide-react';
+import { Plus, PanelLeftClose, PanelLeft, X } from 'lucide-react';
 import { ConversationList } from './ConversationList';
 import { MemoryPanel } from './MemoryPanel';
 import { MemoryImportModal } from './MemoryImportModal';
@@ -67,20 +67,6 @@ export function Sidebar({ conversations, activeId, stats, recentMemories, onSele
                     <Plus className="h-3 w-3" /> New Chat
                   </button>
                   <div className="flex items-center gap-1">
-                    <Link
-                      to="/compound"
-                      className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-800"
-                      title="Compound Markets"
-                    >
-                      <TrendingUp className="h-3.5 w-3.5" />
-                    </Link>
-                    <Link
-                      to="/compound/chat"
-                      className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-800"
-                      title="Compound Chat"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                    </Link>
                     <button
                       onClick={onMobileClose}
                       className="text-zinc-600 hover:text-zinc-400 transition-colors p-1"
@@ -148,20 +134,6 @@ export function Sidebar({ conversations, activeId, stats, recentMemories, onSele
                 <Plus className="h-3 w-3" /> New Chat
               </button>
               <div className="flex items-center gap-1">
-                <Link
-                  to="/compound"
-                  className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-800"
-                  title="Compound Markets"
-                >
-                  <TrendingUp className="h-3.5 w-3.5" />
-                </Link>
-                <Link
-                  to="/compound/chat"
-                  className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-800"
-                  title="Compound Chat"
-                >
-                  <MessageCircle className="h-3.5 w-3.5" />
-                </Link>
                 <button
                   onClick={() => setCollapsed(true)}
                   className="text-zinc-600 hover:text-zinc-400 transition-colors"
