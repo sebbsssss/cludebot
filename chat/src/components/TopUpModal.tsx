@@ -24,7 +24,7 @@ const MIN_AMOUNT = 1;
 
 // Solana constants
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJe1bJ8');
+const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
 const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 const USDC_DECIMALS = 6;
 const SOLANA_RPC = import.meta.env.VITE_SOLANA_RPC_URL ?? `${window.location.origin}/api/solana-rpc`;
@@ -77,6 +77,22 @@ function isWalletRejection(err: unknown): boolean {
   );
 }
 
+/** Idempotent create-ATA instruction (succeeds even if account already exists) */
+function createAtaIdempotentInstruction(payer: PublicKey, ata: PublicKey, owner: PublicKey, mint: PublicKey): TransactionInstruction {
+  return new TransactionInstruction({
+    programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+    keys: [
+      { pubkey: payer, isSigner: true, isWritable: true },
+      { pubkey: ata, isSigner: false, isWritable: true },
+      { pubkey: owner, isSigner: false, isWritable: false },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.from([1]), // CreateIdempotent instruction index
+  });
+}
+
 async function buildSolanaUsdcTx(senderAddress: string, destAddress: string, amountUsdc: number): Promise<Uint8Array> {
   const conn = new Connection(SOLANA_RPC, 'confirmed');
   const { blockhash } = await conn.getLatestBlockhash('confirmed');
@@ -87,6 +103,8 @@ async function buildSolanaUsdcTx(senderAddress: string, destAddress: string, amo
   const tx = new Transaction();
   tx.recentBlockhash = blockhash;
   tx.feePayer = sender;
+  // Ensure destination ATA exists (idempotent — no-op if already initialized)
+  tx.add(createAtaIdempotentInstruction(sender, destAta, dest, USDC_MINT));
   tx.add(createUsdcTransferInstruction(sourceAta, destAta, sender, amountUsdc));
   return tx.serialize({ requireAllSignatures: false });
 }

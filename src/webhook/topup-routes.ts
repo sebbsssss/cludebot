@@ -275,7 +275,9 @@ function extractUsdcTransfer(tx: any): {
   reason?: string;
 } {
   if (tx.meta?.err) {
-    return { valid: false, reason: 'Transaction failed on-chain' };
+    const errDetail = JSON.stringify(tx.meta.err);
+    log.warn({ txErr: tx.meta.err, logMessages: tx.meta.logMessages?.slice(-4) }, 'Transaction failed on-chain');
+    return { valid: false, reason: `Transaction failed on-chain: ${errDetail}` };
   }
 
   const preBalances = tx.meta?.preTokenBalances || [];
