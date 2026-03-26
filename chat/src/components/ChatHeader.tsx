@@ -6,11 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const TopUpModal = lazy(() => import('./TopUpModal').then(m => ({ default: m.TopUpModal })));
 
-// Flip to false to re-enable the top-up flow when CLU-245 is fixed
-const TOP_UP_DISABLED = true;
+// Wallets allowed to use the top-up flow (everyone else sees "coming soon")
+const TOP_UP_ALLOWLIST = ['5vK6WRCq5V6BCte8cQvaNeNv2KzErCfGzeBDwtBGGv2r'];
 
-function BalanceBadge({ balance, onClick }: { balance: Balance; onClick: () => void }) {
+function BalanceBadge({ balance, onClick, walletAddress }: { balance: Balance; onClick: () => void; walletAddress: string | null }) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const TOP_UP_DISABLED = !TOP_UP_ALLOWLIST.includes(walletAddress || '');
 
   const handleClick = TOP_UP_DISABLED ? undefined : onClick;
 
@@ -137,7 +138,7 @@ export function ChatHeader() {
         <>
           {/* Balance badge */}
           {balance !== null && (
-            <BalanceBadge balance={balance} onClick={() => setShowTopUp(true)} />
+            <BalanceBadge balance={balance} onClick={() => setShowTopUp(true)} walletAddress={walletAddress} />
           )}
 
           {/* Wallet address / auth mode */}
