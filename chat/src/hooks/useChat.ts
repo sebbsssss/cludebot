@@ -4,35 +4,57 @@ import { api } from '../lib/api';
 import type { Message } from '../lib/types';
 
 /**
- * Creates a buffered chunk handler that batches SSE text chunks and flushes
- * via requestAnimationFrame (~60fps). Prevents 100s of React re-renders per
- * second during streaming and instead batches into ~60 updates/sec.
+ * Creates a word-level reveal queue that smooths out bursty SSE delivery.
+ * SSE chunks arrive at irregular intervals (15-300ms, 1-8 words each).
+ * Instead of dumping each batch instantly, words are queued and drained
+ * at a steady 2-words-per-frame pace (~120 words/sec at 60fps).
+ * On stream end, remaining words flush immediately.
  */
 function createChunkBuffer(
   messageId: string,
-  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>,
+  setMessages: (fn: (prev: ChatMessage[]) => ChatMessage[]) => void,
 ) {
-  let pending = '';
+  let trailing = '';        // Partial word waiting for next space
+  const wordQueue: string[] = [];
+  let wordIndex = 0;
   let rafId = 0;
 
-  const flush = () => {
-    rafId = 0;
-    if (!pending) return;
-    const chunk = pending;
-    pending = '';
+  const drain = () => {
+    if (wordIndex >= wordQueue.length) { rafId = 0; return; }
+    const end = Math.min(wordIndex + 2, wordQueue.length);
+    const batch = wordQueue.slice(wordIndex, end).join(' ') + ' ';
+    wordIndex = end;
     setMessages((prev) =>
-      prev.map((m) => m.id === messageId ? { ...m, content: m.content + chunk } : m)
+      prev.map((m) => m.id === messageId ? { ...m, content: m.content + batch } : m)
     );
+    rafId = requestAnimationFrame(drain);
   };
 
   return {
     push(chunk: string) {
-      pending += chunk;
-      if (!rafId) rafId = requestAnimationFrame(flush);
+      const text = trailing + chunk;
+      // Split on spaces, keep trailing non-space text for next chunk
+      const parts = text.split(' ');
+      trailing = parts.pop() || '';
+      for (const word of parts) {
+        if (word) wordQueue.push(word);
+      }
+      if (!rafId && wordIndex < wordQueue.length) {
+        rafId = requestAnimationFrame(drain);
+      }
     },
     flush() {
       if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
-      flush();
+      // Push any trailing partial word
+      if (trailing) { wordQueue.push(trailing); trailing = ''; }
+      // Drain all remaining words immediately
+      if (wordIndex < wordQueue.length) {
+        const remaining = wordQueue.slice(wordIndex).join(' ');
+        wordIndex = wordQueue.length;
+        setMessages((prev) =>
+          prev.map((m) => m.id === messageId ? { ...m, content: m.content + remaining } : m)
+        );
+      }
     },
   };
 }

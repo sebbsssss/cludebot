@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Settings, LogOut, Key, Wallet } from 'lucide-react';
 import { useAuthContext } from '../hooks/AuthContext';
 import { useBalance } from '../hooks/useBalance';
-import { TopUpModal } from './TopUpModal';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const TopUpModal = lazy(() => import('./TopUpModal').then(m => ({ default: m.TopUpModal })));
 
 function BalanceBadge({ balance, onClick }: { balance: number; onClick: () => void }) {
   const colorClass =
@@ -110,13 +111,15 @@ export function ChatHeader() {
         )}
       </AnimatePresence>
 
-      {/* Top-up modal */}
-      <TopUpModal
-        open={showTopUp}
-        onClose={() => setShowTopUp(false)}
-        currentBalance={balance?.balance_usdc ?? null}
-        onSuccess={handleTopUpSuccess}
-      />
+      {/* Top-up modal — lazy-loaded to keep Solana deps out of main bundle */}
+      <Suspense fallback={null}>
+        <TopUpModal
+          open={showTopUp}
+          onClose={() => setShowTopUp(false)}
+          currentBalance={balance?.balance_usdc ?? null}
+          onSuccess={handleTopUpSuccess}
+        />
+      </Suspense>
     </div>
   );
 }
