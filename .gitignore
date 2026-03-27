@@ -12,3 +12,5 @@ scripts/.longmemeval-cache/
 .gstack/
 .mcp.json
 .DS_Store
+src/verify-app/public/chat/assets/
+src/verify-app/public/dashboard/assets/
