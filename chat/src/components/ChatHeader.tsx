@@ -7,7 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 const TopUpModal = lazy(() => import('./TopUpModal').then(m => ({ default: m.TopUpModal })));
 
 // Wallets allowed to use the top-up flow (everyone else sees "coming soon")
-const TOP_UP_ALLOWLIST = ['5vK6WRCq5V6BCte8cQvaNeNv2KzErCfGzeBDwtBGGv2r'];
+const TOP_UP_ALLOWLIST = [
+  '5vK6WRCq5V6BCte8cQvaNeNv2KzErCfGzeBDwtBGGv2r',
+  '91K7zE12yBQcwYwdBs6JSzt73sYv8SdRdSoYQME4rH1d',
+];
 
 function BalanceBadge({ balance, onClick, walletAddress }: { balance: Balance; onClick: () => void; walletAddress: string | null }) {
   const [showTooltip, setShowTooltip] = useState(false);
