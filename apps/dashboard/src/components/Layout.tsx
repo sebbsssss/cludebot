@@ -23,6 +23,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [hasUploadAccess, setHasUploadAccess] = useState(false);
 
+
   // Check if wallet has access to file upload feature
   useEffect(() => {
     if (walletAddress) {
@@ -85,15 +86,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </NavLink>
           ))}
           {hasUploadAccess && (
-            <NavLink
-              to="/file-memory"
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
-              }
-            >
-              <span className={styles.navIcon}>▧</span>
-              File Memory
-            </NavLink>
+            <>
+              <NavLink
+                to="/file-memory"
+                className={({ isActive }) =>
+                  `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
+                }
+              >
+                <span className={styles.navIcon}>▧</span>
+                File Memory
+              </NavLink>
+              <NavLink
+                to="/explore"
+                className={({ isActive }) =>
+                  `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
+                }
+              >
+                <span className={styles.navIcon}>◆</span>
+                Explore
+              </NavLink>
+            </>
           )}
         </nav>
 
