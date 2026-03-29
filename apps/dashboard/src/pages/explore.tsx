@@ -35,8 +35,6 @@ export function Explore() {
   const [highlightedIds, setHighlightedIds] = useState<Set<number>>(new Set());
   const [searchResults, setSearchResults] = useState<Array<{ id: number; _score?: number; [key: string]: any }>>([]);
   const [narrativeChain, setNarrativeChain] = useState<number[]>([]);
-  const [revealQueue, setRevealQueue] = useState<number[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
 
   // Filter nodes by type
   const filteredNodes = useMemo(
@@ -240,8 +238,6 @@ export function Explore() {
           highlightedIds={highlightedIds}
           searchResults={searchResults}
           narrativeChain={narrativeChain}
-          revealQueue={revealQueue}
-          controlsEnabled={!isStreaming}
           selectedId={selectedNode?.id || null}
           onNodeClick={setSelectedNode}
           onBackgroundClick={() => setSelectedNode(null)}
@@ -251,16 +247,11 @@ export function Explore() {
       {/* Chat panel — bottom */}
       <ExploreChat
         onHighlight={setHighlightedIds}
-        onNarrativeChain={(chain) => {
-          setNarrativeChain(chain);
-          if (chain.length === 0) setRevealQueue([]);
-        }}
+        onNarrativeChain={setNarrativeChain}
         onNodeReveal={(id) => {
-          setRevealQueue(prev => prev.includes(id) ? prev : [...prev, id]);
           setHighlightedIds(prev => new Set([...prev, id]));
-          setIsStreaming(true);
         }}
-        onStreamingDone={() => setIsStreaming(false)}
+        onStreamingDone={() => {}}
         onMemoryClick={handleMemoryClick}
         knownEntities={knownEntities}
         searchResults={searchResults}

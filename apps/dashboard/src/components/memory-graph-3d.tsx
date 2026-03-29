@@ -33,7 +33,16 @@ interface FGLink extends MemoryLink {
   target: any;
 }
 
+// Softer palette — works on light (#f5f5f0) and dark (#0a0a0f) backgrounds
 const TYPE_COLORS_CSS: Record<string, string> = {
+  episodic: '#6680cc',     // soft blue-gray
+  semantic: '#5aaa8a',     // muted teal
+  procedural: '#c49550',   // warm amber
+  self_model: '#9580c4',   // soft purple
+};
+
+// Highlighted versions — richer, used for chain/selected states
+const TYPE_COLORS_ACTIVE: Record<string, string> = {
   episodic: '#4466ff',
   semantic: '#10b981',
   procedural: '#f59e0b',
@@ -41,16 +50,16 @@ const TYPE_COLORS_CSS: Record<string, string> = {
 };
 
 const LINK_COLORS: Record<string, string> = {
-  supports: '#10b981',
-  contradicts: '#ef4444',
-  elaborates: '#4466ff',
-  causes: '#f59e0b',
-  follows: '#06b6d4',
-  relates: '#333344',
-  resolves: '#8b5cf6',
-  happens_before: '#a78bfa',
-  happens_after: '#a78bfa',
-  concurrent_with: '#ec4899',
+  supports: 'rgba(16, 185, 129, 0.6)',
+  contradicts: 'rgba(239, 68, 68, 0.6)',
+  elaborates: 'rgba(68, 102, 255, 0.55)',
+  causes: 'rgba(245, 158, 11, 0.6)',
+  follows: 'rgba(6, 182, 212, 0.55)',
+  relates: 'rgba(120, 120, 140, 0.35)',
+  resolves: 'rgba(139, 92, 246, 0.55)',
+  happens_before: 'rgba(167, 139, 250, 0.5)',
+  happens_after: 'rgba(167, 139, 250, 0.5)',
+  concurrent_with: 'rgba(236, 72, 153, 0.5)',
 };
 
 interface SearchResult {
@@ -65,14 +74,12 @@ interface Props {
   highlightedIds: Set<number>;
   searchResults: SearchResult[];
   narrativeChain: number[];
-  revealQueue: number[]; // IDs revealed one-by-one during streaming
-  controlsEnabled: boolean;
   selectedId: number | null;
   onNodeClick: (node: GraphNode) => void;
   onBackgroundClick: () => void;
 }
 
-export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, narrativeChain, revealQueue, controlsEnabled, selectedId, onNodeClick, onBackgroundClick }: Props) {
+export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, narrativeChain, selectedId, onNodeClick, onBackgroundClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
   const highlightRef = useRef<Set<number>>(highlightedIds);
@@ -83,7 +90,6 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
   selectedRef.current = selectedId;
   const narrativeRef = useRef<number[]>(narrativeChain);
   narrativeRef.current = narrativeChain;
-  const revealedCountRef = useRef(0);
 
   // Initialize graph
   useEffect(() => {
@@ -109,71 +115,77 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
           const n = node as FGNode;
           const hl = highlightRef.current;
           const sel = selectedRef.current;
-          if (n.id === sel) return '#ffffff'; // selected = white
-          if (hl.size > 0 && !hl.has(n.id)) return 'rgba(120,120,140,0.25)'; // dimmed but visible
-          return TYPE_COLORS_CSS[n.type] || '#6b7280';
+          // Selected: bright accent color
+          if (n.id === sel) return TYPE_COLORS_ACTIVE[n.type] || '#4466ff';
+          // Highlighted (in chain): richer color
+          if (hl.size > 0 && hl.has(n.id)) return TYPE_COLORS_ACTIVE[n.type] || '#4466ff';
+          // Dimmed (search active but not in results): ghostlike
+          if (hl.size > 0) return 'rgba(180, 180, 185, 0.18)';
+          // Default: visible, solid
+          return TYPE_COLORS_CSS[n.type] || '#9098a8';
         })
         .nodeVal((node: any) => {
           const n = node as FGNode;
           const sel = selectedRef.current;
-          if (n.id === sel) return 4 + n.importance * 12; // selected = bigger
-          return 1 + n.importance * 6;
+          const hl = highlightRef.current;
+          if (n.id === sel) return 3 + n.importance * 10;
+          if (hl.size > 0 && hl.has(n.id)) return 2.5 + n.importance * 8;
+          if (hl.size > 0) return 0.5 + n.importance * 2;
+          return 1.5 + n.importance * 6;
         })
-        .nodeOpacity(0.85)
-        .nodeResolution(12)
+        .nodeOpacity(1)
+        .nodeResolution(16)
         .nodeLabel((node: any) => {
           const n = node as FGNode;
           const s = n.summary || '';
-          return `<div style="max-width:280px;font-size:11px;font-family:monospace;padding:4px 8px;background:rgba(10,10,15,0.92);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:rgba(255,255,255,0.8)">${s.length > 120 ? s.slice(0, 120) + '...' : s}</div>`;
+          return `<div style="max-width:260px;font-size:10px;font-family:'JetBrains Mono',monospace;padding:5px 8px;background:rgba(255,255,252,0.95);border:1px solid rgba(0,0,0,0.08);border-radius:6px;color:#333;box-shadow:0 2px 12px rgba(0,0,0,0.08);line-height:1.4">${s.length > 100 ? s.slice(0, 100) + '...' : s}</div>`;
         })
         // ── Links ──
         .linkColor((link: any) => {
           const l = link as FGLink;
-          if (l.link_type === '__narrative__') return '#4466ff'; // narrative chain = app blue
           const hl = highlightRef.current;
+          // Narrative chain: clean accent line
+          if (l.link_type === '__narrative__') return 'rgba(68, 102, 255, 0.6)';
           if (hl.size > 0) {
             const srcId = typeof l.source === 'object' ? l.source.id : l.source;
             const tgtId = typeof l.target === 'object' ? l.target.id : l.target;
-            if (!hl.has(srcId) || !hl.has(tgtId)) return 'rgba(30,30,50,0.02)';
+            // Both ends highlighted: show link with moderate opacity
+            if (hl.has(srcId) && hl.has(tgtId)) return LINK_COLORS[l.link_type]?.replace('0.4', '0.6') || 'rgba(100,100,120,0.3)';
+            // Dimmed: nearly invisible
+            return 'rgba(180,180,185,0.04)';
           }
-          return LINK_COLORS[l.link_type] || '#222233';
+          // Default: clearly visible
+          return LINK_COLORS[l.link_type] || 'rgba(120,120,140,0.45)';
         })
         .linkWidth((link: any) => {
           const l = link as FGLink;
-          if (l.link_type === '__narrative__') return 2; // narrative chain
+          if (l.link_type === '__narrative__') return 2;
           const hl = highlightRef.current;
           if (hl.size > 0) {
             const srcId = typeof l.source === 'object' ? l.source.id : l.source;
             const tgtId = typeof l.target === 'object' ? l.target.id : l.target;
             if (hl.has(srcId) && hl.has(tgtId)) return 1 + l.strength * 2;
           }
-          return 0.2 + l.strength * 0.6;
+          return 0.5 + l.strength * 1;
         })
-        .linkOpacity(0.6)
+        .linkOpacity(0.8)
         .linkDirectionalArrowLength((link: any) => {
-          return (link as FGLink).link_type === '__narrative__' ? 4 : 0;
+          return (link as FGLink).link_type === '__narrative__' ? 3 : 0;
         })
         .linkDirectionalArrowRelPos(1)
         .linkDirectionalArrowColor((link: any) => {
-          return (link as FGLink).link_type === '__narrative__' ? '#4466ff' : '#6b7280';
+          return (link as FGLink).link_type === '__narrative__' ? 'rgba(68, 102, 255, 0.5)' : 'transparent';
         })
         .linkDirectionalParticles((link: any) => {
           const l = link as FGLink;
-          if (l.link_type === '__narrative__') return 4; // flowing particles on chain
-          const hl = highlightRef.current;
-          if (hl.size === 0) return 0;
-          const srcId = typeof l.source === 'object' ? l.source.id : l.source;
-          const tgtId = typeof l.target === 'object' ? l.target.id : l.target;
-          return (hl.has(srcId) && hl.has(tgtId)) ? 2 : 0;
+          // Narrative chain: small subtle particles
+          if (l.link_type === '__narrative__') return 2;
+          return 0;
         })
-        .linkDirectionalParticleWidth((link: any) => {
-          return (link as FGLink).link_type === '__narrative__' ? 3 : 1.5;
-        })
-        .linkDirectionalParticleSpeed(0.008)
+        .linkDirectionalParticleWidth(0.8)
+        .linkDirectionalParticleSpeed(0.005)
         .linkDirectionalParticleColor((link: any) => {
-          const l = link as FGLink;
-          if (l.link_type === '__narrative__') return '#7799ff';
-          return LINK_COLORS[l.link_type] || '#6b7280';
+          return (link as FGLink).link_type === '__narrative__' ? 'rgba(68, 102, 255, 0.7)' : 'transparent';
         })
         // ── Interaction ──
         .onNodeClick((node: any) => onNodeClick(node as GraphNode))
@@ -207,25 +219,24 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
         link.distance(30);
       }
 
-      // Add fog for depth
+      // Subtle fog — warm tint matching light background
       const scene = graph.scene();
-      scene.fog = new THREE.FogExp2(0x0a0a0f, 0.003);
+      scene.fog = new THREE.FogExp2(0xf5f5f0, 0.0004);
 
-      // Ambient dust particles
+      // Ambient dust — very faint, warm gray dots for depth
       const dustGeo = new THREE.BufferGeometry();
-      const dustPos = new Float32Array(400 * 3);
-      for (let i = 0; i < 400; i++) {
-        dustPos[i * 3] = (Math.random() - 0.5) * 500;
-        dustPos[i * 3 + 1] = (Math.random() - 0.5) * 500;
-        dustPos[i * 3 + 2] = (Math.random() - 0.5) * 500;
+      const dustPos = new Float32Array(200 * 3);
+      for (let i = 0; i < 200; i++) {
+        dustPos[i * 3] = (Math.random() - 0.5) * 400;
+        dustPos[i * 3 + 1] = (Math.random() - 0.5) * 400;
+        dustPos[i * 3 + 2] = (Math.random() - 0.5) * 400;
       }
       dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
       const dustMat = new THREE.PointsMaterial({
-        size: 0.4,
-        color: 0x334466,
+        size: 0.3,
+        color: 0xaaaaaa,
         transparent: true,
-        opacity: 0.25,
-        blending: THREE.AdditiveBlending,
+        opacity: 0.15,
         depthWrite: false,
       });
       scene.add(new THREE.Points(dustGeo, dustMat));
@@ -353,84 +364,12 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
     }
   }, [searchResults, arrangeChain, releaseChain]);
 
-  // ── Reveal nodes one-by-one during streaming ──
-  useEffect(() => {
-    if (!graphRef.current || revealQueue.length === 0) return;
-    if (revealQueue.length <= revealedCountRef.current) return;
-
-    const g = graphRef.current;
-    const graphData = g.graphData();
-    const spacing = 30;
-
-    // Process each new ID that hasn't been revealed yet
-    for (let i = revealedCountRef.current; i < revealQueue.length; i++) {
-      const id = revealQueue[i];
-      const node = graphData.nodes.find((n: any) => n.id === id) as FGNode | undefined;
-      if (!node) continue;
-
-      const idx = i;
-      const totalWidth = (revealQueue.length - 1) * spacing;
-      const targetX = -totalWidth / 2 + idx * spacing;
-
-      // Pin node to its chain position
-      node.fx = targetX;
-      node.fy = 0;
-      node.fz = 0;
-      pinnedNodesRef.current.add(id);
-    }
-
-    revealedCountRef.current = revealQueue.length;
-
-    // Rebuild narrative links for revealed nodes so far
-    const chainLinks: any[] = [];
-    for (let i = 0; i < revealQueue.length - 1; i++) {
-      chainLinks.push({
-        source_id: revealQueue[i],
-        target_id: revealQueue[i + 1],
-        link_type: '__narrative__',
-        strength: 1,
-      });
-    }
-
-    // Update graph with new chain links
-    g.graphData({
-      nodes: graphData.nodes,
-      links: [...links.map(l => ({ ...l })), ...chainLinks],
-    });
-
-    // Refresh visuals
-    g.nodeColor(g.nodeColor())
-     .linkColor(g.linkColor())
-     .linkWidth(g.linkWidth())
-     .linkDirectionalParticles(g.linkDirectionalParticles())
-     .linkDirectionalArrowLength(g.linkDirectionalArrowLength())
-     .refresh();
-
-    // Camera: pull back to see growing chain
-    const totalWidth = Math.max((revealQueue.length - 1) * spacing, 30);
-    const viewDist = Math.max(totalWidth * 1.5, 150);
-    g.cameraPosition(
-      { x: 0, y: viewDist * 0.3, z: viewDist * 0.6 },
-      { x: 0, y: 0, z: 0 },
-      800,
-    );
-  }, [revealQueue, links]);
-
-  // ── Toggle orbit controls ──
+  // Highlight nodes during streaming (just update colors, no graph rebuild)
   useEffect(() => {
     if (!graphRef.current) return;
-    const controls = graphRef.current.controls();
-    if (controls) {
-      controls.enabled = controlsEnabled;
-    }
-  }, [controlsEnabled]);
-
-  // ── Reset reveal counter when chain is cleared ──
-  useEffect(() => {
-    if (revealQueue.length === 0) {
-      revealedCountRef.current = 0;
-    }
-  }, [revealQueue]);
+    const g = graphRef.current;
+    g.nodeColor(g.nodeColor()).refresh();
+  }, [highlightedIds]);
 
   // Focus on selected node + refresh visuals
   useEffect(() => {

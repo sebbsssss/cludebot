@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../lib/api';
 
 interface ChatMessage {
@@ -39,6 +39,14 @@ interface Props {
 export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStreamingDone, onMemoryClick, onEntityClick, knownEntities, searchResults, setSearchResults }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+
+  // Memoize entity regex — only rebuild when knownEntities changes, not on every render
+  const entityRegex = useMemo(() => {
+    if (knownEntities.size === 0) return null;
+    const sorted = Array.from(knownEntities).sort((a, b) => b.length - a.length);
+    const escaped = sorted.map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    return new RegExp(`(\\b(?:${escaped.join('|')})\\b)`, 'gi');
+  }, [knownEntities]);
   const [streaming, setStreaming] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -161,12 +169,11 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStr
     contentRef.current = '';
   };
 
-  const renderContent = (text: string) => {
-    // First split by Memory #ID references
+  const renderContent = (text: string, isStreaming?: boolean) => {
+    // During streaming: only highlight Memory #IDs (fast), skip entity matching
     const memParts = text.split(/(\[Memory #\d+\])/g);
 
     return memParts.map((part, i) => {
-      // Check if this part is a memory reference
       const memMatch = part.match(/\[Memory #(\d+)\]/);
       if (memMatch) {
         const id = parseInt(memMatch[1]);
@@ -194,14 +201,10 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStr
         );
       }
 
-      // For non-memory parts, highlight known entities
-      if (knownEntities.size === 0) return <span key={`t${i}`}>{part}</span>;
+      // Skip entity highlighting during streaming for performance
+      if (isStreaming || !entityRegex) return <span key={`t${i}`}>{part}</span>;
 
-      // Build regex from known entities (sorted longest first to avoid partial matches)
-      const sorted = Array.from(knownEntities).sort((a, b) => b.length - a.length);
-      const escaped = sorted.map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      const entityRegex = new RegExp(`(\\b(?:${escaped.join('|')})\\b)`, 'gi');
-
+      // Settled message: highlight entities using memoized regex
       const entityParts = part.split(entityRegex);
       return entityParts.map((ep, j) => {
         const isEntity = knownEntities.has(ep) ||
@@ -299,7 +302,7 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStr
                 fontFamily: 'var(--mono)',
                 whiteSpace: 'pre-wrap',
               }}>
-                {msg.role === 'assistant' ? renderContent(msg.content) : msg.content}
+                {msg.role === 'assistant' ? renderContent(msg.content, msg.streaming) : msg.content}
                 {msg.streaming && <span style={{ opacity: 0.4, animation: 'blink 1s infinite' }}>|</span>}
               </div>
             </div>
