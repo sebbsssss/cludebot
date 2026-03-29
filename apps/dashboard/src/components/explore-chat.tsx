@@ -30,14 +30,14 @@ interface Props {
   onNarrativeChain: (chain: number[]) => void;
   onMemoryClick: (id: number) => void;
   onEntityClick?: (entity: string) => void;
-  entityFilters: string[];
-  onRemoveEntityFilter: (entity: string) => void;
+  activeEntity: string | null;
+  onClearEntity: () => void;
   knownEntities: Set<string>;
   searchResults: Array<{ id: number; _score?: number; [key: string]: any }>;
   setSearchResults: (results: Array<{ id: number; _score?: number; [key: string]: any }>) => void;
 }
 
-export function ExploreChat({ onHighlight, onNarrativeChain, onMemoryClick, onEntityClick, entityFilters, onRemoveEntityFilter, knownEntities, searchResults, setSearchResults }: Props) {
+export function ExploreChat({ onHighlight, onNarrativeChain, onMemoryClick, onEntityClick, activeEntity, onClearEntity, knownEntities, setSearchResults }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
 
@@ -74,7 +74,7 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onMemoryClick, onEn
       id: `user-${Date.now()}`,
       role: 'user',
       content: input.trim(),
-      entities: entityFilters.length > 0 ? [...entityFilters] : undefined,
+      entities: activeEntity ? [activeEntity] : undefined,
     };
 
     const assistantId = `assistant-${Date.now()}`;
@@ -95,8 +95,8 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onMemoryClick, onEn
     const history = messages.map(m => ({ role: m.role, content: m.content }));
 
     try {
-      // Prepend entity context to the query
-      const entityContext = entityFilters.length > 0 ? `[Context: focusing on ${entityFilters.join(', ')}] ` : '';
+      // Prepend entity perspective to the query
+      const entityContext = activeEntity ? `[Perspective: viewing from ${activeEntity}'s point of view] ` : '';
       await api.exploreChat(
         entityContext + userMsg.content,
         history,
@@ -348,41 +348,38 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onMemoryClick, onEn
         </div>
       )}
 
-      {/* Entity filter chips */}
-      {entityFilters.length > 0 && (
+      {/* Active entity perspective */}
+      {activeEntity && (
         <div style={{
           width: '100%',
           display: 'flex',
-          gap: 4,
-          flexWrap: 'wrap',
+          gap: 6,
+          alignItems: 'center',
           marginBottom: 6,
           paddingLeft: 4,
         }}>
-          {entityFilters.map(entity => (
-            <span
-              key={entity}
-              onClick={() => onRemoveEntityFilter(entity)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '2px 8px',
-                fontSize: 10,
-                fontFamily: 'var(--mono)',
-                fontWeight: 600,
-                background: 'rgba(16, 185, 129, 0.12)',
-                color: '#10b981',
-                borderRadius: 10,
-                cursor: 'pointer',
-                border: '1px solid rgba(16, 185, 129, 0.25)',
-              }}
-            >
-              {entity}
-              <span style={{ fontSize: 8, opacity: 0.6 }}>x</span>
-            </span>
-          ))}
-          <span style={{ fontSize: 9, color: 'var(--text-faint)', alignSelf: 'center' }}>
-            included in search
+          <span
+            onClick={onClearEntity}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '2px 10px',
+              fontSize: 10,
+              fontFamily: 'var(--mono)',
+              fontWeight: 600,
+              background: 'rgba(16, 185, 129, 0.12)',
+              color: '#10b981',
+              borderRadius: 10,
+              cursor: 'pointer',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+            }}
+          >
+            {activeEntity}
+            <span style={{ fontSize: 8, opacity: 0.6 }}>x</span>
+          </span>
+          <span style={{ fontSize: 9, color: 'var(--text-faint)' }}>
+            viewing from this perspective
           </span>
         </div>
       )}
@@ -403,7 +400,7 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onMemoryClick, onEn
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={entityFilters.length > 0 ? `Ask about ${entityFilters.join(', ')}...` : 'Ask about your memories...'}
+          placeholder={activeEntity ? `Ask from ${activeEntity}'s perspective...` : 'Ask about your memories...'}
           disabled={streaming}
           style={{
             flex: 1,
