@@ -75,11 +75,11 @@ export function ModelSelector({ selectedModel, onModelChange }: Props) {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-white text-[11px] rounded-full px-3 h-7 min-w-[140px] transition-colors"
+        className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-white text-[13px] rounded-full px-3 h-8 min-w-[150px] transition-colors"
       >
-        <Zap className="h-3 w-3 text-blue-400" />
+        <Zap className="h-3.5 w-3.5 text-blue-400" />
         <span className="truncate">{current?.name || 'Select model'}</span>
-        <ChevronDown className="h-3 w-3 ml-auto opacity-50" />
+        <ChevronDown className="h-3.5 w-3.5 ml-auto opacity-50" />
       </button>
 
       <AnimatePresence>
@@ -91,8 +91,8 @@ export function ModelSelector({ selectedModel, onModelChange }: Props) {
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             className="absolute bottom-full mb-2 left-0 w-72 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl z-50 overflow-hidden"
           >
-            <div className="px-3 py-1.5 text-[9px] tracking-widest uppercase text-zinc-500 border-b border-zinc-800 flex items-center gap-1.5">
-              <Shield className="h-3 w-3" /> Private — Zero Data Retention
+            <div className="px-3 py-1.5 text-[11px] tracking-widest uppercase text-zinc-400 border-b border-zinc-800 flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5" /> Private — Zero Data Retention
             </div>
             {privateModels.map((model) => (
               <ModelItem
@@ -104,8 +104,8 @@ export function ModelSelector({ selectedModel, onModelChange }: Props) {
               />
             ))}
 
-            <div className="px-3 py-1.5 text-[9px] tracking-widest uppercase text-zinc-500 border-b border-zinc-800 border-t flex items-center gap-1.5">
-              <Shield className="h-3 w-3 opacity-50" /> Anonymized — No Identity Attached
+            <div className="px-3 py-1.5 text-[11px] tracking-widest uppercase text-zinc-400 border-b border-zinc-800 border-t flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5 opacity-50" /> Anonymized — No Identity Attached
             </div>
             {anonymizedModels.map((model) => (
               <ModelItem
@@ -117,7 +117,7 @@ export function ModelSelector({ selectedModel, onModelChange }: Props) {
               />
             ))}
 
-            <div className="px-3 py-2 border-t border-zinc-800 text-[9px] text-zinc-500">
+            <div className="px-3 py-2 border-t border-zinc-800 text-[11px] text-zinc-400">
               Private models cost up to <span className="text-blue-400">250x less</span> than direct API access
             </div>
           </motion.div>
@@ -147,10 +147,10 @@ function ModelItem({ model, selected, locked, onClick }: {
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className={`text-[11px] truncate ${locked ? 'opacity-50' : ''}`}>{model.name}</span>
-          {locked && <Lock className="h-2.5 w-2.5 flex-shrink-0 text-zinc-600" />}
+          <span className={`text-[13px] truncate ${locked ? 'opacity-50' : ''}`}>{model.name}</span>
+          {locked && <Lock className="h-3 w-3 shrink-0 text-zinc-500" />}
         </div>
-        <div className="text-[9px] text-zinc-600 flex gap-2">
+        <div className="text-[11px] text-zinc-500 flex gap-2">
           <span>{(model.context / 1000).toFixed(0)}K ctx</span>
           <span>{costPerMsg}</span>
         </div>

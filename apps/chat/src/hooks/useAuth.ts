@@ -22,9 +22,7 @@ export function useAuth(): AuthState {
   const [cortexKey, setCortexKey] = useState<string | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'privy' | 'cortex' | null>(null);
-  // Start ready immediately — guest mode renders instantly while Privy loads in background.
-  // Auth upgrades in place when Privy resolves or saved key validates.
-  const [ready, setReady] = useState(true);
+  const [ready, setReady] = useState(false);
 
   const cortexInitRef = useRef(false);
   const loggingOutRef = useRef(false);
@@ -59,7 +57,7 @@ export function useAuth(): AuthState {
         setReady(true);
         cortexInitRef.current = false;
       });
-    } else if (privyReady) {
+    } else {
       setReady(true);
     }
   }, [privyReady]);

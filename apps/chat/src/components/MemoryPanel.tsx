@@ -26,12 +26,12 @@ export function MemoryPanel({ stats, recent, onImport }: Props) {
     <div className="border-t border-zinc-800 px-2 py-2">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-2 py-1.5 text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors"
+        className="w-full flex items-center gap-2 px-2 py-1.5 text-[13px] text-zinc-300 hover:text-zinc-200 transition-colors"
       >
-        <Brain className="h-3.5 w-3.5 text-blue-400" />
+        <Brain className="h-4 w-4 text-blue-400" />
         <span>Your Memory</span>
-        <span className="text-zinc-600 ml-auto mr-1">{stats.total}</span>
-        <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        <span className="text-zinc-500 ml-auto mr-1">{stats.total}</span>
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>
@@ -51,10 +51,10 @@ export function MemoryPanel({ stats, recent, onImport }: Props) {
                   <div key={type}>
                     <button
                       onClick={() => setExpandedType(expandedType === type ? null : type)}
-                      className="w-full flex items-center gap-2 py-0.5 text-[10px]"
+                      className="w-full flex items-center gap-2 py-0.5 text-[12px]"
                     >
                       <span className={TYPE_LABELS[type].color}>{TYPE_LABELS[type].label}</span>
-                      <span className="text-zinc-600 ml-auto">{count}</span>
+                      <span className="text-zinc-500 ml-auto">{count}</span>
                     </button>
                     <AnimatePresence>
                       {expandedType === type && typeRecent.length > 0 && (
@@ -65,7 +65,7 @@ export function MemoryPanel({ stats, recent, onImport }: Props) {
                           className="overflow-hidden pl-3"
                         >
                           {typeRecent.slice(0, 5).map((m) => (
-                            <div key={m.id} className="text-[9px] text-zinc-500 py-0.5 truncate">
+                            <div key={m.id} className="text-[11px] text-zinc-400 py-0.5 truncate">
                               {m.summary || 'Untitled memory'}
                             </div>
                           ))}
@@ -80,16 +80,16 @@ export function MemoryPanel({ stats, recent, onImport }: Props) {
             <div className="px-2 py-1.5 flex gap-2">
               <button
                 onClick={onImport}
-                className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 transition-colors"
+                className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
               >
-                <Upload className="h-2.5 w-2.5" /> Import Pack
+                <Upload className="h-3 w-3" /> Import Pack
               </button>
               <a
                 href="/dashboard"
                 target="_blank"
-                className="flex items-center gap-1 text-[9px] text-zinc-500 hover:text-zinc-400 transition-colors ml-auto"
+                className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors ml-auto"
               >
-                Dashboard <ExternalLink className="h-2.5 w-2.5" />
+                Dashboard <ExternalLink className="h-3 w-3" />
               </a>
             </div>
           </motion.div>

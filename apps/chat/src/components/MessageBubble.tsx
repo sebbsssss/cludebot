@@ -62,50 +62,50 @@ function ReceiptBadge({ message, onOpenComparison, onOpenHistory }: {
   return (
     <div className="mt-0.5">
       <button onClick={() => setExpanded(e => !e)} className="flex items-center gap-1 group">
-        <span className="text-[10px] text-white/25 group-hover:text-white/40 transition-colors whitespace-nowrap">
+        <span className="text-[12px] text-white/50 group-hover:text-white/65 transition-colors whitespace-nowrap">
           {collapsedLabel}
         </span>
-        <ChevronDown className={`w-2.5 h-2.5 text-white/15 group-hover:text-white/40 transition-all shrink-0 ${expanded ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 text-white/35 group-hover:text-white/55 transition-all shrink-0 ${expanded ? 'rotate-180' : ''}`} />
       </button>
 
       {expanded && (
-        <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 mt-1 text-[10px] space-y-1.5">
+        <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2 mt-1 text-[12px] space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-zinc-500">Cost</span>
+            <span className="text-zinc-400">Cost</span>
             <span className="text-green-400 font-medium font-mono">{formatCost(cost.total)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-zinc-500">Direct API (Opus)</span>
+            <span className="text-zinc-400">Direct API (Opus)</span>
             <span className="text-red-400/80 font-mono">{formatCost(opusCost)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-zinc-500">You saved</span>
+            <span className="text-zinc-400">You saved</span>
             <span className="text-green-400 font-medium">{savingsPct}%</span>
           </div>
           {tokens && (
             <div className="flex items-center justify-between pt-1 border-t border-zinc-700/50">
-              <span className="text-zinc-600">Tokens</span>
-              <span className="text-zinc-500 font-mono">
+              <span className="text-zinc-400">Tokens</span>
+              <span className="text-zinc-400 font-mono">
                 {tokens.prompt.toLocaleString()} in · {tokens.completion.toLocaleString()} out
               </span>
             </div>
           )}
           {receipt?.remaining_balance !== null && receipt?.remaining_balance !== undefined && (
             <div className="flex items-center justify-between pt-1 border-t border-zinc-700/50">
-              <span className="text-zinc-500">Balance</span>
+              <span className="text-zinc-400">Balance</span>
               <span className="text-zinc-300 font-mono">${receipt.remaining_balance.toFixed(2)}</span>
             </div>
           )}
           <div className="flex items-center gap-3 pt-0.5">
             <button
               onClick={(e) => { e.stopPropagation(); onOpenComparison(); }}
-              className="text-[9px] text-blue-400/60 hover:text-blue-400 transition-colors"
+              className="text-[11px] text-blue-400/70 hover:text-blue-400 transition-colors"
             >
               Model comparison →
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onOpenHistory(); }}
-              className="text-[9px] text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors"
             >
               History →
             </button>
@@ -129,22 +129,22 @@ function GreetingMetaBar({ meta }: { meta: GreetingMeta }) {
 
   return (
     <div className="flex flex-wrap gap-1.5 mt-1">
-      <span className="inline-flex items-center gap-1 text-[10px] text-blue-400/70 bg-blue-500/8 border border-blue-500/15 rounded-full px-2 py-0.5">
-        <span className="text-blue-300/50">◆</span>
+      <span className="inline-flex items-center gap-1 text-[12px] text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-1">
+        <span className="text-blue-300/60">◆</span>
         {meta.total_memories.toLocaleString()} memories
-        {spanLabel && <span className="text-blue-400/40">· {spanLabel}</span>}
+        {spanLabel && <span className="text-blue-400/50">· {spanLabel}</span>}
       </span>
       {meta.topics.slice(0, 4).map((topic) => (
         <span
           key={topic}
-          className="inline-flex items-center text-[10px] text-zinc-400/60 bg-zinc-800/60 border border-zinc-700/40 rounded-full px-2 py-0.5"
+          className="inline-flex items-center text-[12px] text-zinc-300 bg-zinc-800/60 border border-zinc-700/40 rounded-full px-2.5 py-1"
         >
           {topic}
         </span>
       ))}
-      <span className="inline-flex items-center gap-1 text-[10px] text-green-400/60 bg-green-500/5 border border-green-500/15 rounded-full px-2 py-0.5">
-        <span className="text-green-400/40">$0</span>
-        <span className="text-zinc-600">· GPT-4o ~$0.05</span>
+      <span className="inline-flex items-center gap-1 text-[12px] text-green-400/70 bg-green-500/8 border border-green-500/20 rounded-full px-2.5 py-1">
+        <span className="text-green-400/50">$0</span>
+        <span className="text-zinc-400">· GPT-4o ~$0.05</span>
       </span>
     </div>
   );
@@ -294,21 +294,21 @@ export function TransactionHistory({ open, onClose, messages }: {
 
         <div className="overflow-y-auto flex-1 space-y-1">
           {transactions.length === 0 ? (
-            <div className="text-zinc-500 text-xs text-center py-8">
+            <div className="text-zinc-400 text-xs text-center py-8">
               No paid messages yet this session.
               <br />
-              <span className="text-zinc-600 text-[10px]">Free model messages don't appear here.</span>
+              <span className="text-zinc-500 text-[12px]">Free model messages don't appear here.</span>
             </div>
           ) : (
             transactions.map((msg) => (
-              <div key={msg.id} className="flex items-center justify-between text-[11px] py-1.5 px-2 rounded hover:bg-zinc-800/50">
+              <div key={msg.id} className="flex items-center justify-between text-[13px] py-1.5 px-2 rounded hover:bg-zinc-800/50">
                 <div className="flex-1 min-w-0">
                   <span className="text-zinc-300 truncate block">{msg.model || 'unknown'}</span>
-                  <span className="text-zinc-600 text-[9px]">
+                  <span className="text-zinc-500 text-[11px]">
                     {msg.tokens ? `${msg.tokens.prompt.toLocaleString()} + ${msg.tokens.completion.toLocaleString()} tokens` : '—'}
                   </span>
                 </div>
-                <span className="text-green-400/80 font-mono text-[10px] ml-2 shrink-0">
+                <span className="text-green-400/80 font-mono text-[12px] ml-2 shrink-0">
                   ${msg.cost!.total < 0.001 ? msg.cost!.total.toFixed(5) : msg.cost!.total.toFixed(4)}
                 </span>
               </div>
@@ -317,7 +317,7 @@ export function TransactionHistory({ open, onClose, messages }: {
         </div>
 
         <div className="mt-3 pt-3 border-t border-zinc-800">
-          <div className="text-[10px] text-zinc-600">
+          <div className="text-[12px] text-zinc-500">
             Session usage only. Full history will be available once balance system is live.
           </div>
         </div>

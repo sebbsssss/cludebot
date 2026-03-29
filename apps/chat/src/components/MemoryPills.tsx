@@ -60,7 +60,7 @@ export const MemoryPills = memo(function MemoryPills({ memoryIds, visible }: Pro
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             onClick={() => setExpandedId(expandedId === mem.id ? null : mem.id)}
-            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] border transition-colors ${TYPE_COLORS[mem.memory_type]}`}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] border transition-colors ${TYPE_COLORS[mem.memory_type]}`}
           >
             <span className="font-bold">{TYPE_ICONS[mem.memory_type]}</span>
             <span className="truncate max-w-[120px]">{mem.summary}</span>
