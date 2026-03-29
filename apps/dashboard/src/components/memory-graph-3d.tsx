@@ -203,11 +203,11 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
           }
         })
         .enableNodeDrag(true)
-        // ── Physics ──
-        .d3AlphaDecay(0.02)
-        .d3VelocityDecay(0.3)
+        // ── Physics — keep simulation alive so nodes drift ──
+        .d3AlphaDecay(0.005)    // very slow decay — nodes keep moving longer
+        .d3VelocityDecay(0.15)  // less damping — more momentum
         .warmupTicks(80)
-        .cooldownTime(4000);
+        .cooldownTime(15000);   // 15s before settling
 
       // Tune forces
       const charge = graph.d3Force('charge');
@@ -217,6 +217,18 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
       const link = graph.d3Force('link');
       if (link && typeof link.distance === 'function') {
         link.distance(30);
+      }
+
+      // Slow auto-rotate when user isn't interacting
+      const controls = graph.controls();
+      if (controls) {
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+        // Stop auto-rotate when user drags, resume after
+        controls.addEventListener('start', () => { controls.autoRotate = false; });
+        controls.addEventListener('end', () => {
+          setTimeout(() => { controls.autoRotate = true; }, 3000);
+        });
       }
 
       // Subtle fog — warm tint matching light background
@@ -250,6 +262,125 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
           links: links.map(l => ({ ...l })),
         });
       }
+
+      // ── Fire/wave state per node ──
+      const fireMap = new Map<number, number>(); // nodeId -> fire level (0-1)
+
+      // Build adjacency map for wave propagation
+      const buildAdjacency = () => {
+        const adj = new Map<number, number[]>();
+        const gd = graph.graphData();
+        for (const link of gd.links) {
+          const srcId = typeof link.source === 'object' ? link.source.id : link.source_id || link.source;
+          const tgtId = typeof link.target === 'object' ? link.target.id : link.target_id || link.target;
+          if (!adj.has(srcId)) adj.set(srcId, []);
+          if (!adj.has(tgtId)) adj.set(tgtId, []);
+          adj.get(srcId)!.push(tgtId);
+          adj.get(tgtId)!.push(srcId);
+        }
+        return adj;
+      };
+
+      // Random fire event every 2-4 seconds — only when idle (no search active)
+      const fireInterval = setInterval(() => {
+        if (highlightRef.current.size > 0) return; // skip during search
+        const gd = graph.graphData();
+        if (gd.nodes.length === 0) return;
+        const randomNode = gd.nodes[Math.floor(Math.random() * gd.nodes.length)];
+        fireMap.set((randomNode as any).id, 1.0);
+
+        // Propagate wave to neighbors with delay
+        const adj = buildAdjacency();
+        const neighbors = adj.get((randomNode as any).id) || [];
+        neighbors.forEach((nId, i) => {
+          setTimeout(() => {
+            fireMap.set(nId, 0.6);
+            // Second hop
+            const hop2 = adj.get(nId) || [];
+            hop2.forEach((n2Id) => {
+              setTimeout(() => {
+                if ((fireMap.get(n2Id) || 0) < 0.3) fireMap.set(n2Id, 0.3);
+              }, 150);
+            });
+          }, 100 + i * 50);
+        });
+      }, 2500 + Math.random() * 1500);
+
+      // Periodically reheat physics so nodes keep gently drifting
+      const reheatInterval = setInterval(() => {
+        graph.d3ReheatSimulation();
+      }, 12000);
+
+      // ── Standalone animation loop ──
+      let animId = 0;
+      const animate = () => {
+        animId = requestAnimationFrame(animate);
+        const t = performance.now() * 0.001;
+        const renderer = graph.renderer();
+        const gScene = graph.scene();
+        const cam = graph.camera();
+
+        const gd = graph.graphData();
+        for (const node of gd.nodes) {
+          const obj = (node as any).__threeObj;
+          if (!obj) continue;
+          const id = (node as any).id;
+          const phase = (id * 0.17) % (Math.PI * 2);
+
+          // Fire decay
+          const fire = fireMap.get(id) || 0;
+          if (fire > 0) {
+            fireMap.set(id, fire * 0.96); // decay per frame
+            if (fire < 0.01) fireMap.delete(id);
+          }
+
+          // Breathing — subtle when search active, more when idle
+          const hasSearch = highlightRef.current.size > 0;
+          const breathAmount = hasSearch ? 0.03 : 0.1;
+          const breath = 1 + Math.sin(t * 1.0 + phase) * breathAmount;
+          const fireScale = 1 + fire * 0.4;
+          obj.scale.setScalar(breath * fireScale);
+
+          // Fire glow: brighten the material
+          if (obj.material) {
+            if (fire > 0.05) {
+              obj.material.emissive = obj.material.emissive || new THREE.Color();
+              obj.material.emissive.setHex(0xffffff);
+              obj.material.emissiveIntensity = fire * 0.4;
+            } else if (obj.material.emissiveIntensity > 0) {
+              obj.material.emissiveIntensity = 0;
+            }
+          }
+
+          // Floating drift
+          const driftX = Math.sin(t * 0.3 + phase) * 0.15;
+          const driftY = Math.cos(t * 0.25 + phase * 1.3) * 0.15;
+          const driftZ = Math.sin(t * 0.2 + phase * 0.7) * 0.15;
+          obj.position.x = (node.x || 0) + driftX;
+          obj.position.y = (node.y || 0) + driftY;
+          obj.position.z = (node.z || 0) + driftZ;
+        }
+
+        // Auto-rotate only when idle (no search, no selection)
+        const ctrl = graph.controls();
+        if (ctrl) {
+          const idle = highlightRef.current.size === 0 && !selectedRef.current;
+          ctrl.autoRotate = idle;
+          if (ctrl.update) ctrl.update();
+        }
+
+        // Render
+        if (renderer && gScene && cam) {
+          renderer.render(gScene, cam);
+        }
+      };
+      animate();
+
+      // Store for cleanup
+      (graph as any).__animId = animId;
+      (graph as any).__fireInterval = fireInterval;
+      (graph as any).__reheatInterval = reheatInterval;
+      (graph as any).__fireMap = fireMap;
     });
 
     const handleResize = () => {
@@ -263,6 +394,10 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
     return () => {
       window.removeEventListener('resize', handleResize);
       if (graphRef.current) {
+        const g = graphRef.current as any;
+        if (g.__animId) cancelAnimationFrame(g.__animId);
+        if (g.__fireInterval) clearInterval(g.__fireInterval);
+        if (g.__reheatInterval) clearInterval(g.__reheatInterval);
         graphRef.current._destructor();
         graphRef.current = null;
       }
@@ -290,10 +425,13 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
     });
   }, [nodes, links, narrativeChain]);
 
-  // Refresh visuals on search change
+  // Refresh visuals on search change + clear fire
   useEffect(() => {
     if (!graphRef.current) return;
     const g = graphRef.current;
+    // Clear fire effects when search is active
+    const fm = (g as any).__fireMap as Map<number, number> | undefined;
+    if (fm && highlightedIds.size > 0) fm.clear();
     g.nodeColor(g.nodeColor())
      .linkColor(g.linkColor())
      .linkWidth(g.linkWidth())

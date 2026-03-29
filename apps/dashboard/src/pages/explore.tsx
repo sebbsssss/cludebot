@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useExploreData } from '../hooks/use-explore-data';
 import { MemoryGraph3D } from '../components/memory-graph-3d';
 import { MemoryDetailPanel } from '../components/memory-detail-panel';
@@ -35,6 +35,15 @@ export function Explore() {
   const [highlightedIds, setHighlightedIds] = useState<Set<number>>(new Set());
   const [searchResults, setSearchResults] = useState<Array<{ id: number; _score?: number; [key: string]: any }>>([]);
   const [narrativeChain, setNarrativeChain] = useState<number[]>([]);
+
+  // Esc to deselect
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedNode(null);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
 
   // Filter nodes by type
   const filteredNodes = useMemo(
@@ -248,10 +257,6 @@ export function Explore() {
       <ExploreChat
         onHighlight={setHighlightedIds}
         onNarrativeChain={setNarrativeChain}
-        onNodeReveal={(id) => {
-          setHighlightedIds(prev => new Set([...prev, id]));
-        }}
-        onStreamingDone={() => {}}
         onMemoryClick={handleMemoryClick}
         knownEntities={knownEntities}
         searchResults={searchResults}

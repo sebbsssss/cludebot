@@ -27,16 +27,14 @@ function extractNarrativeChain(text: string): number[] {
 interface Props {
   onHighlight: (ids: Set<number>) => void;
   onNarrativeChain: (chain: number[]) => void;
-  onNodeReveal: (id: number) => void;
-  onStreamingDone: () => void;
   onMemoryClick: (id: number) => void;
   onEntityClick?: (entity: string) => void;
-  knownEntities: Set<string>; // entity names from graph nodes
+  knownEntities: Set<string>;
   searchResults: Array<{ id: number; _score?: number; [key: string]: any }>;
   setSearchResults: (results: Array<{ id: number; _score?: number; [key: string]: any }>) => void;
 }
 
-export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStreamingDone, onMemoryClick, onEntityClick, knownEntities, searchResults, setSearchResults }: Props) {
+export function ExploreChat({ onHighlight, onNarrativeChain, onMemoryClick, onEntityClick, knownEntities, searchResults, setSearchResults }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
 
@@ -52,7 +50,8 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStr
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const contentRef = useRef('');
-  const revealedIdsRef = useRef<Set<number>>(new Set());
+  const rafRef = useRef<number>(0);
+  const lastUpdateRef = useRef(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -86,8 +85,6 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStr
     setInput('');
     setStreaming(true);
     contentRef.current = '';
-    revealedIdsRef.current = new Set();
-
     const abort = new AbortController();
     abortRef.current = abort;
 
@@ -99,28 +96,33 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStr
         history,
         (chunk) => {
           contentRef.current += chunk;
-          setMessages(prev =>
-            prev.map(m =>
-              m.id === assistantId ? { ...m, content: contentRef.current } : m,
-            ),
-          );
-          // Detect new Memory #ID references as they stream in
-          const matches = contentRef.current.matchAll(/\[Memory #(\d+)\]/g);
-          for (const match of matches) {
-            const id = parseInt(match[1]);
-            if (!revealedIdsRef.current.has(id)) {
-              revealedIdsRef.current.add(id);
-              onNodeReveal(id);
-            }
-          }
+
+          // Throttle UI updates to ~15fps — no highlighting during stream
+          const now = performance.now();
+          if (now - lastUpdateRef.current < 66) return;
+          lastUpdateRef.current = now;
+
+          if (rafRef.current) cancelAnimationFrame(rafRef.current);
+          rafRef.current = requestAnimationFrame(() => {
+            // Strip MEMORY_IDS line from display during streaming
+            const display = contentRef.current.replace(/\n?MEMORY_IDS:\s*\[[^\]]*\]?\s*$/, '');
+            setMessages(prev =>
+              prev.map(m =>
+                m.id === assistantId ? { ...m, content: display } : m,
+              ),
+            );
+          });
         },
-        (ids) => {
-          onHighlight(new Set(ids));
-          setSearchResults(ids.map(id => ({ id })));
+        () => {
+          // recalled_ids received — don't highlight, wait for done
         },
         (data) => {
-          const cleanContent = data.clean_content || contentRef.current;
+          // Cancel any pending RAF
+          if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+          const cleanContent = data.clean_content || contentRef.current.replace(/\n?MEMORY_IDS:\s*\[[^\]]*\]\s*$/, '').trim();
           const chain = extractNarrativeChain(cleanContent);
+
           setMessages(prev =>
             prev.map(m =>
               m.id === assistantId
@@ -128,10 +130,15 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStr
                 : m,
             ),
           );
-          onNarrativeChain(chain);
-          onStreamingDone();
-          if (data.memory_ids?.length > 0) {
+
+          // All highlighting happens here at the end — no mid-stream jank
+          if (chain.length > 0) {
+            onHighlight(new Set(chain));
+            onNarrativeChain(chain);
+            setSearchResults(chain.map(id => ({ id })));
+          } else if (data.memory_ids?.length > 0) {
             onHighlight(new Set(data.memory_ids));
+            onNarrativeChain(data.memory_ids);
             setSearchResults(data.memory_ids.map(id => ({ id })));
           }
         },
@@ -248,6 +255,12 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStr
       flexDirection: 'column',
       alignItems: 'center',
     }}>
+      <style>{`
+        @keyframes dotPulse {
+          0%, 60%, 100% { opacity: 0.2; transform: scale(1); }
+          30% { opacity: 1; transform: scale(1.3); }
+        }
+      `}</style>
       {/* Messages area — only when expanded */}
       {expanded && messages.length > 0 && (
         <div style={{
@@ -303,7 +316,14 @@ export function ExploreChat({ onHighlight, onNarrativeChain, onNodeReveal, onStr
                 whiteSpace: 'pre-wrap',
               }}>
                 {msg.role === 'assistant' ? renderContent(msg.content, msg.streaming) : msg.content}
-                {msg.streaming && <span style={{ opacity: 0.4, animation: 'blink 1s infinite' }}>|</span>}
+                {msg.streaming && !msg.content && (
+                  <span style={{ color: 'var(--text-faint)', letterSpacing: 2 }}>
+                    <span style={{ animation: 'dotPulse 1.4s infinite', animationDelay: '0s' }}>.</span>
+                    <span style={{ animation: 'dotPulse 1.4s infinite', animationDelay: '0.2s' }}>.</span>
+                    <span style={{ animation: 'dotPulse 1.4s infinite', animationDelay: '0.4s' }}>.</span>
+                  </span>
+                )}
+                {msg.streaming && msg.content && <span style={{ opacity: 0.3 }}>|</span>}
               </div>
             </div>
           ))}
