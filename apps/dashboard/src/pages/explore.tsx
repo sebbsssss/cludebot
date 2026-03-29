@@ -96,13 +96,11 @@ export function Explore() {
     if (node) setSelectedNode(node);
   }, [nodeMap]);
 
-  // Click entity → add/remove as persistent search filter
-  const [entityFilters, setEntityFilters] = useState<string[]>([]);
+  // Click entity → set as active perspective (single entity only)
+  const [activeEntity, setActiveEntity] = useState<string | null>(null);
 
   const handleEntityClick = useCallback((entity: string) => {
-    setEntityFilters(prev =>
-      prev.includes(entity) ? prev.filter(e => e !== entity) : [...prev, entity]
-    );
+    setActiveEntity(prev => prev === entity ? null : entity);
   }, []);
 
   const handleMemoryClick = useCallback((id: number) => {
@@ -268,8 +266,8 @@ export function Explore() {
         onNarrativeChain={setNarrativeChain}
         onMemoryClick={handleMemoryClick}
         onEntityClick={handleEntityClick}
-        entityFilters={entityFilters}
-        onRemoveEntityFilter={(e) => setEntityFilters(prev => prev.filter(x => x !== e))}
+        activeEntity={activeEntity}
+        onClearEntity={() => setActiveEntity(null)}
         knownEntities={knownEntities}
         searchResults={searchResults}
         setSearchResults={setSearchResults}

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/refs */
 import { useEffect, useRef, useCallback } from 'react';
-// @ts-expect-error 3d-force-graph callable vs new mismatch
+// @ts-ignore 3d-force-graph callable vs new mismatch
 import ForceGraph3D from '3d-force-graph';
 import * as THREE from 'three';
 import type { MemoryLink } from '../types/memory';
@@ -102,7 +102,7 @@ export function MemoryGraph3D({ nodes, links, highlightedIds, searchResults, nar
       const h = container.clientHeight;
       if (w === 0 || h === 0) return;
 
-      const graph = ForceGraph3D()(container)
+      const graph = (ForceGraph3D as any)()(container)
         .width(w)
         .height(h)
         .backgroundColor('rgba(0,0,0,0)')
