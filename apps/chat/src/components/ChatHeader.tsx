@@ -47,7 +47,7 @@ function BalanceBadge({
               ? "Top up coming soon"
               : "Free promo — click for details"
           }
-          className={`flex items-center gap-1 text-[10px] border rounded-full px-2 py-0.5 transition-colors ${
+          className={`flex items-center gap-1 text-[12px] border rounded-full px-2 py-0.5 transition-colors ${
             TOP_UP_DISABLED
               ? "text-zinc-500 border-zinc-600/30 bg-zinc-700/10 cursor-not-allowed opacity-60"
               : isEmpty
@@ -55,7 +55,7 @@ function BalanceBadge({
                 : "text-violet-300 border-violet-500/40 bg-violet-500/10 hover:bg-violet-500/18"
           }`}
         >
-          <Sparkles className="h-2.5 w-2.5" />
+          <Sparkles className="h-3 w-3" />
           {isEmpty ? "Limit reached" : "Free · Limited Time"}
         </button>
         <AnimatePresence>
@@ -68,26 +68,26 @@ function BalanceBadge({
               className="absolute top-full right-0 mt-1.5 w-44 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl p-2.5 z-50"
             >
               {TOP_UP_DISABLED ? (
-                <p className="text-[10px] text-zinc-400 leading-snug">
+                <p className="text-[12px] text-zinc-400 leading-snug">
                   Top up coming soon — stay tuned!
                 </p>
               ) : isEmpty ? (
-                <p className="text-[10px] text-red-400 leading-snug">
+                <p className="text-[12px] text-red-400 leading-snug">
                   Your free allowance is used up. Top up to continue.
                 </p>
               ) : (
                 <>
-                  <p className="text-[10px] text-violet-300 font-medium mb-1">
+                  <p className="text-[12px] text-violet-300 font-medium mb-1">
                     Free Promo Active
                   </p>
-                  <p className="text-[10px] text-zinc-400 leading-snug">
+                  <p className="text-[12px] text-zinc-400 leading-snug">
                     ${remaining.toFixed(2)} of ${total.toFixed(2)} free
                     remaining
                   </p>
                 </>
               )}
               {!TOP_UP_DISABLED && (
-                <p className="text-[9px] text-zinc-600 mt-1.5">
+                <p className="text-[11px] text-zinc-600 mt-1.5">
                   Click to top up
                 </p>
               )}
@@ -113,9 +113,9 @@ function BalanceBadge({
         onMouseEnter={() => TOP_UP_DISABLED && setShowTooltip(true)}
         onMouseLeave={() => TOP_UP_DISABLED && setShowTooltip(false)}
         title={TOP_UP_DISABLED ? "Top up coming soon" : "Click to top up USDC"}
-        className={`flex items-center gap-1 text-[10px] border rounded-full px-2 py-0.5 transition-colors ${colorClass}`}
+        className={`flex items-center gap-1 text-[12px] border rounded-full px-2 py-0.5 transition-colors ${colorClass}`}
       >
-        <Wallet className="h-2.5 w-2.5" />${balance.balance_usdc.toFixed(2)}
+        <Wallet className="h-3 w-3" />${balance.balance_usdc.toFixed(2)}
       </button>
       {TOP_UP_DISABLED && (
         <AnimatePresence>
@@ -127,7 +127,7 @@ function BalanceBadge({
               transition={{ duration: 0.12 }}
               className="absolute top-full right-0 mt-1.5 w-44 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl p-2.5 z-50"
             >
-              <p className="text-[10px] text-zinc-400 leading-snug">
+              <p className="text-[12px] text-zinc-400 leading-snug">
                 Top up coming soon — stay tuned!
               </p>
             </motion.div>
@@ -179,7 +179,7 @@ export function ChatHeader() {
           )}
 
           {/* Wallet address / auth mode */}
-          <span className="text-[10px] text-zinc-500">
+          <span className="text-[12px] text-zinc-400">
             {walletAddress
               ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
               : authMode}
@@ -195,7 +195,7 @@ export function ChatHeader() {
       ) : (
         <button
           onClick={login}
-          className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors px-3 py-1 border border-blue-500/30 rounded-full"
+          className="text-[12px] text-blue-400 hover:text-blue-300 transition-colors px-3 py-1 border border-blue-500/30 rounded-full"
         >
           Sign in
         </button>
@@ -203,9 +203,9 @@ export function ChatHeader() {
 
       <button
         onClick={() => setShowSettings(!showSettings)}
-        className="text-zinc-600 hover:text-zinc-400 transition-colors"
+        className="text-zinc-500 hover:text-zinc-300 transition-colors"
       >
-        <Settings className="h-3.5 w-3.5" />
+        <Settings className="h-4 w-4" />
       </button>
 
       <AnimatePresence>
@@ -216,7 +216,7 @@ export function ChatHeader() {
             exit={{ opacity: 0, y: -8 }}
             className="absolute top-12 right-4 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 p-3"
           >
-            <div className="text-[10px] text-zinc-400 mb-2 flex items-center gap-1">
+            <div className="text-[12px] text-zinc-400 mb-2 flex items-center gap-1">
               <Key className="h-3 w-3" /> Connect API Key
             </div>
             <div className="flex gap-1.5">
@@ -226,17 +226,17 @@ export function ChatHeader() {
                 onChange={(e) => setApiKeyInput(e.target.value)}
                 placeholder="clk_..."
                 onKeyDown={(e) => e.key === "Enter" && handleApiKeySubmit()}
-                className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-blue-500"
+                className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-[12px] text-white outline-none focus:border-blue-500"
               />
               <button
                 onClick={handleApiKeySubmit}
-                className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] rounded transition-colors"
+                className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[12px] rounded transition-colors"
               >
                 Go
               </button>
             </div>
             {apiKeyError && (
-              <p className="text-[9px] text-red-400 mt-1">{apiKeyError}</p>
+              <p className="text-[11px] text-red-400 mt-1">{apiKeyError}</p>
             )}
           </motion.div>
         )}

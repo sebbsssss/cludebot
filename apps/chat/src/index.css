@@ -84,6 +84,14 @@
   }
 }
 
+/* Hidden scrollbar */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* Markdown content styles */
 .markdown-content p { margin-bottom: 0.5em; }
 .markdown-content p:last-child { margin-bottom: 0; }

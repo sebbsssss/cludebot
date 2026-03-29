@@ -137,13 +137,14 @@ export function ChatInterface() {
   }, [clearMessages, setActiveId]);
 
   const hasMessages = settled.length > 0 || !!streamingMsg;
+  const hasUserMessages = settled.some(m => m.role === 'user');
 
   const openComparison = useCallback(() => setShowCostModal(true), []);
   const openHistory = useCallback(() => setShowTransactions(true), []);
   const toggleMemoryPills = useCallback(() => setShowMemoryPills(v => !v), []);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       {authenticated && (
         <Sidebar
           conversations={conversations}
@@ -162,7 +163,7 @@ export function ChatInterface() {
 
       {/* Main content */}
       <div
-        className={`flex flex-col min-h-screen items-center justify-center px-4 py-6 flex-1 transition-all duration-300 ${authenticated && !isMobile ? 'ml-[260px]' : 'ml-0'}`}
+        className={`flex flex-col h-screen items-center px-4 pt-16 pb-6 flex-1 transition-all duration-300 ${!hasUserMessages ? 'justify-center' : ''} ${authenticated && !isMobile ? 'ml-[260px]' : 'ml-0'}`}
       >
         {/* Header */}
         <div className="fixed top-0 right-0 z-50 p-4 flex items-center gap-2" style={{ left: authenticated && !isMobile ? 260 : 0 }}>
@@ -180,22 +181,19 @@ export function ChatInterface() {
           </div>
         </div>
 
-        <div className={`w-full max-w-2xl flex flex-col ${isMobile ? 'px-1' : ''}`} style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom, 0px)' } : undefined}>
+        <div className={`w-full max-w-3xl flex flex-col ${hasUserMessages ? 'flex-1' : ''} min-h-0 ${isMobile ? 'px-1' : ''}`} style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom, 0px)' } : undefined}>
           {/* Messages Area */}
-          <AnimatePresence>
-            {hasMessages && (
-              <motion.div
+          {hasMessages && (
+              <div
                 ref={messagesContainerRef}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="overflow-y-auto mb-3 space-y-3 max-h-[60vh] pb-2 relative z-10"
+                className={`overflow-y-auto mb-3 space-y-3 ${hasUserMessages ? 'flex-1' : ''} min-h-0 pb-2 relative z-10`}
               >
                 {/* Sentinel for IntersectionObserver scroll-up */}
                 <div ref={sentinelRef} className="h-px" />
 
                 {(hasMoreMessages || loadingMore) && (
                   <div className="flex justify-center py-1">
-                    <span className="text-[10px] text-zinc-600">
+                    <span className="text-[12px] text-zinc-500">
                       {loadingMore ? 'Loading…' : 'Scroll up for older messages'}
                     </span>
                   </div>
@@ -231,9 +229,8 @@ export function ChatInterface() {
                 )}
 
                 <div ref={messagesEndRef} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+          )}
 
           {/* Guest rate limit banner */}
           <GuestRateLimit remaining={guestRemaining} />
@@ -249,7 +246,7 @@ export function ChatInterface() {
               >
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 text-amber-400 text-xs flex items-center gap-2">
                   <span>Low balance: ${balance.toFixed(2)} remaining</span>
-                  <span className="ml-auto text-zinc-500 text-[10px] font-medium">
+                  <span className="ml-auto text-zinc-400 text-[12px] font-medium">
                     Top up coming soon
                   </span>
                 </div>
