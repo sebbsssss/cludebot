@@ -1428,6 +1428,7 @@ ${sections.join('\n')}` },
 
   // In dev mode, proxy /chat and /dashboard to Vite dev servers
   if (process.env.NODE_ENV !== 'production') {
+    // @ts-ignore — dev-proxy.ts is local-only, not committed
     import('./dev-proxy').then(({ setupDevProxy }) => setupDevProxy(app))
       .catch(err => log.warn({ err }, 'Dev proxy not available (install http-proxy-middleware)'));
   }
