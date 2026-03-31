@@ -145,8 +145,14 @@ export function useAuth(): AuthState {
     api.emitRefresh();
   }, [privyAuth, logout]);
 
+  // Stable ref for handleLogout — avoids effect re-running on identity changes
+  const handleLogoutRef = useRef(handleLogout);
+  handleLogoutRef.current = handleLogout;
+
   // On 401: refresh token silently, re-fetch data. Logout if refresh fails.
   useEffect(() => {
+    if (!privyAuth && !cortexAuth) return;
+
     api.onAuthExpired(() => {
       if (refreshingRef.current) return;
 
@@ -156,12 +162,12 @@ export function useAuth(): AuthState {
             api.setToken(newToken);
             api.emitRefresh();
           } else {
-            handleLogout();
+            handleLogoutRef.current();
           }
           return newToken;
         })
         .catch(() => {
-          handleLogout();
+          handleLogoutRef.current();
           return null;
         })
         .finally(() => {
@@ -170,7 +176,7 @@ export function useAuth(): AuthState {
     });
 
     return () => api.onAuthExpired(null);
-  }, [handleLogout]);
+  }, [privyAuth, cortexAuth]);
 
   const isAuthenticated = privyAuth || cortexAuth;
 
