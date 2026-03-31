@@ -114,11 +114,17 @@ export function useAuth(): AuthState {
     }
   }, [privyAuth, privyLogout]);
 
+  // Stable ref for logout — avoids effect re-running on identity changes
+  const logoutRef = useRef(logout);
+  logoutRef.current = logout;
+
   // On 401 (key revoked): logout gracefully
   useEffect(() => {
-    api.onAuthExpired(() => logout());
+    if (!cortexKey) return;
+
+    api.onAuthExpired(() => logoutRef.current());
     return () => api.onAuthExpired(null);
-  }, [logout]);
+  }, [cortexKey]);
 
   const loginWithApiKey = useCallback(async (apiKey: string): Promise<boolean> => {
     if (cortexKey) {
