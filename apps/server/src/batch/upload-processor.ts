@@ -79,7 +79,7 @@ async function extractNodes(
       },
     ],
     model: OPENROUTER_MODELS["llama-70b"],
-    maxTokens: 4096,
+    maxTokens: 16384,
     temperature: 0.2,
   });
 
