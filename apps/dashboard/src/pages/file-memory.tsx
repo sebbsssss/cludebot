@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../lib/api';
+import { useAuthContext } from '../hooks/AuthContext';
 
 interface Batch {
   batch_id: string;
@@ -34,6 +35,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function FileMemory() {
+  const { ready, authMode, walletAddress } = useAuthContext();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -59,8 +61,15 @@ export function FileMemory() {
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
+    if (authMode === 'privy' && !walletAddress) return;
+
     loadBatches();
-  }, [loadBatches]);
+    const unsubscribe = api.onRefresh(() => {
+      loadBatches();
+    });
+    return () => { unsubscribe(); };
+  }, [loadBatches, ready, authMode, walletAddress]);
 
   // Poll for processing batches (list + expanded detail)
   useEffect(() => {
