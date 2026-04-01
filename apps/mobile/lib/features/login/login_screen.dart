@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_provider.dart';
 import 'widgets/api_key_input.dart';
+import 'widgets/wallet_connect_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -84,14 +85,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
-                'Connect wallet instead',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
+              const WalletConnectButton(),
+              const SizedBox(height: 16),
               GestureDetector(
                 onTap: _continueAsGuest,
                 child: Text(
