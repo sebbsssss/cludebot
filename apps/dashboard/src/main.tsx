@@ -37,17 +37,16 @@ if (
             theme: "light",
             accentColor: "#2244ff",
             walletList: ["phantom", "solflare", "backpack"],
-            walletChainType: "solana-only",
           },
           loginMethods: ["wallet"],
-          solanaClusters: [
-            {
-              name: "mainnet-beta",
-              rpcUrl: "https://api.mainnet-beta.solana.com",
-            },
-          ],
+          solana: {
+            rpcs: {
+              'solana:mainnet': { rpc: "https://api.mainnet-beta.solana.com" },
+            } as any,
+          },
           embeddedWallets: {
-            createOnLogin: "off",
+            ethereum: { createOnLogin: "off" },
+            solana: { createOnLogin: "off" },
           },
           externalWallets: {
             solana: { connectors: solanaConnectors },
