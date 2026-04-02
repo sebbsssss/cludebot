@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
+import { useWallets } from '@privy-io/react-auth/solana';
 import { api } from '../lib/api';
 import type { AuthState, AuthMode } from './AuthContext';
 
