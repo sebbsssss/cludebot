@@ -1152,6 +1152,13 @@ async function updateMemoryAccess(ids: number[], sources: string[] = []): Promis
 
 // ---- ASSOCIATION GRAPH ---- //
 
+export type MemoryLinkRow = {
+  source_id: number;
+  target_id: number;
+  link_type: MemoryLinkType;
+  strength: number;
+};
+
 /**
  * Create a typed, weighted link between two memories.
  * Idempotent — upserts on (source_id, target_id, link_type).
@@ -1180,6 +1187,39 @@ export async function createMemoryLink(
 }
 
 /**
+ * Batch-create multiple memory links in a single upsert.
+ * Filters out self-links and deduplicates by (source, target, type).
+ */
+export async function createMemoryLinksBatch(links: MemoryLinkRow[]): Promise<void> {
+  // Filter self-links and deduplicate
+  const seen = new Set<string>();
+  const rows: Array<{ source_id: number; target_id: number; link_type: string; strength: number }> = [];
+  for (const link of links) {
+    if (link.source_id === link.target_id) continue;
+    const key = `${link.source_id}:${link.target_id}:${link.link_type}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push({
+      source_id: link.source_id,
+      target_id: link.target_id,
+      link_type: link.link_type,
+      strength: clamp(link.strength, 0, 1),
+    });
+  }
+
+  if (rows.length === 0) return;
+
+  const db = getDb();
+  const { error } = await db
+    .from('memory_links')
+    .upsert(rows, { onConflict: 'source_id,target_id,link_type' });
+
+  if (error) {
+    log.debug({ error: error.message, count: rows.length }, 'Batch link creation failed');
+  }
+}
+
+/**
  * Auto-link a new memory to related existing memories.
  * Uses vector similarity, concept overlap, and user overlap to find candidates.
  * Classifies link type via lightweight heuristics.
@@ -1187,10 +1227,13 @@ export async function createMemoryLink(
 async function autoLinkMemory(memoryId: number, opts: StoreMemoryOptions): Promise<void> {
   const db = getDb();
 
+  // Collect all links to batch-upsert at the end
+  const pendingLinks: MemoryLinkRow[] = [];
+
   // 1. Link evidence_ids as 'supports' links
   if (opts.evidenceIds && opts.evidenceIds.length > 0) {
     for (const evidenceId of opts.evidenceIds) {
-      await createMemoryLink(memoryId, evidenceId, 'supports', 0.8);
+      pendingLinks.push({ source_id: memoryId, target_id: evidenceId, link_type: 'supports', strength: 0.8 });
     }
   }
 
@@ -1260,9 +1303,8 @@ async function autoLinkMemory(memoryId: number, opts: StoreMemoryOptions): Promi
     }
   }
 
-  // 4. Classify link types and create links (limit to MAX_AUTO_LINKS)
+  // 4. Classify link types and collect links (limit to MAX_AUTO_LINKS)
   const concepts = opts.concepts || [];
-  let linksCreated = 0;
 
   for (const candidate of candidates.slice(0, MAX_AUTO_LINKS)) {
     if (candidate.id === memoryId) continue;
@@ -1270,12 +1312,13 @@ async function autoLinkMemory(memoryId: number, opts: StoreMemoryOptions): Promi
     const linkType = classifyLinkType(opts, candidate, concepts);
     const strength = candidate.similarity > 0 ? clamp(candidate.similarity, 0.3, 0.9) : 0.5;
 
-    await createMemoryLink(memoryId, candidate.id, linkType, strength);
-    linksCreated++;
+    pendingLinks.push({ source_id: memoryId, target_id: candidate.id, link_type: linkType, strength });
   }
 
-  if (linksCreated > 0) {
-    log.debug({ memoryId, linksCreated }, 'Auto-linked memory');
+  // 5. Batch-upsert all links in a single DB call
+  if (pendingLinks.length > 0) {
+    await createMemoryLinksBatch(pendingLinks);
+    log.debug({ memoryId, linksCreated: pendingLinks.length }, 'Auto-linked memory');
   }
 }
 
