@@ -1121,32 +1121,21 @@ async function updateMemoryAccess(ids: number[], sources: string[] = []): Promis
   if (ids.length === 0) return;
   const db = getDb();
 
-  // Single batch query: increment access_count, refresh last_accessed, boost decay
-  const { error } = await db.rpc('batch_boost_memory_access', { memory_ids: ids });
+  // Source-aware importance boosts: external sources get full reinforcement,
+  // internal sources (dreams, reflections) get gated boost to prevent confabulation spirals.
+  // Based on Source Monitoring Framework (Johnson et al.) and validation-gated Hebbian learning.
+  const importanceBoosts = ids.map((_, i) => {
+    const source = sources[i] || '';
+    return INTERNAL_MEMORY_SOURCES.has(source) ? INTERNAL_IMPORTANCE_BOOST : 0.02;
+  });
+
+  // Single RPC: increment access_count, refresh last_accessed, boost decay + importance
+  const { error } = await db.rpc('batch_boost_memory_access', {
+    memory_ids: ids,
+    importance_boosts: importanceBoosts,
+  });
   if (error) {
     log.warn({ error: error.message, ids }, 'Batch memory access update failed');
-  }
-
-  // Source-aware importance re-scoring (internal/external signal differentiation).
-  // External sources (user interactions, imports) get full reinforcement.
-  // Internal sources (dreams, reflections, consolidations) get gated reinforcement
-  // to prevent confabulation spirals where agent-generated memories self-amplify.
-  // Based on Source Monitoring Framework (Johnson et al.) and validation-gated Hebbian learning.
-  try {
-    for (let i = 0; i < ids.length; i++) {
-      const source = sources[i] || '';
-      const isInternal = INTERNAL_MEMORY_SOURCES.has(source);
-      const boostAmount = isInternal ? INTERNAL_IMPORTANCE_BOOST : 0.02;
-
-      await db.rpc('boost_memory_importance', {
-        memory_id: ids[i],
-        boost_amount: boostAmount,
-        max_importance: 1.0,
-      });
-    }
-  } catch (err) {
-    // Non-critical — RPC may not exist yet, will be created in next migration
-    log.debug({ err }, 'Importance re-scoring skipped (RPC may not exist)');
   }
 }
 
