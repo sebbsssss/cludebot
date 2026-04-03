@@ -29,7 +29,11 @@ export async function authenticateAgent(apiKey: string): Promise<AgentRegistrati
     .eq('is_active', true)
     .single();
 
-  if (error || !data) return null;
+  if (error) {
+    log.warn({ error: error.message, code: error.code }, 'agent auth query failed');
+    return null;
+  }
+  if (!data) return null;
 
   return data as AgentRegistration;
 }
