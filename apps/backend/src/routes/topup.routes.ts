@@ -10,11 +10,11 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { createHash, timingSafeEqual, randomBytes } from 'crypto';
-import { getDb, checkRateLimit } from '@clude/core/core/database';
-import { getConnection } from '@clude/core/core/solana-client';
-import { config } from '@clude/core/config';
-import { createChildLogger } from '@clude/core/core/logger';
-import { authenticateAgent } from '@clude/core/features/agent-tier';
+import { getDb, checkRateLimit } from '@clude/shared/core/database';
+import { getConnection } from '@clude/shared/core/solana-client';
+import { config } from '@clude/shared/config';
+import { createChildLogger } from '@clude/shared/core/logger';
+import { authenticateAgent } from '@clude/brain/features/agent-tier';
 import { Keypair, PublicKey } from '@solana/web3.js';
 
 const log = createChildLogger('topup');

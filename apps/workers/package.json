@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clude/core": "workspace:*"
+    "@clude/shared": "workspace:*",
+    "@clude/brain": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.19.11",

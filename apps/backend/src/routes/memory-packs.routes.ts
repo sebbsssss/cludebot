@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { getMemoryStats, getRecentMemories, storeMemory } from '@clude/core/memory';
-import { getDb } from '@clude/core/core/database';
-import { requirePrivyAuth, optionalPrivyAuth } from '@clude/core/auth/privy-auth';
-import { withOwnerWallet } from '@clude/core/core/owner-context';
-import { createChildLogger } from '@clude/core/core/logger';
+import { getMemoryStats, getRecentMemories, storeMemory } from '@clude/brain/memory';
+import { getDb } from '@clude/shared/core/database';
+import { requirePrivyAuth, optionalPrivyAuth } from '@clude/brain/auth/privy-auth';
+import { withOwnerWallet } from '@clude/shared/core/owner-context';
+import { createChildLogger } from '@clude/shared/core/logger';
 
 const log = createChildLogger('memory-packs-routes');
 

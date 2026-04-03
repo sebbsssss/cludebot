@@ -1,5 +1,5 @@
-import { config } from '@clude/core/config';
-import { createChildLogger } from '@clude/core/core/logger';
+import { config } from '@clude/shared/config';
+import { createChildLogger } from '@clude/shared/core/logger';
 
 const log = createChildLogger('workers');
 
@@ -9,7 +9,7 @@ async function main(): Promise<void> {
 
   // Initialize OpenRouter (required for inference in workers)
   if (config.openrouter.apiKey) {
-    const { initOpenRouter } = require('@clude/core/core/openrouter-client');
+    const { initOpenRouter } = require('@clude/shared/core/openrouter-client');
     initOpenRouter({
       apiKey: config.openrouter.apiKey,
       model: config.openrouter.model,
@@ -18,13 +18,13 @@ async function main(): Promise<void> {
 
   // Initialize Tavily web search
   if (config.tavily.apiKey) {
-    const { initWebSearch } = require('@clude/core/core/web-search');
+    const { initWebSearch } = require('@clude/shared/core/web-search');
     initWebSearch(config.tavily.apiKey);
   }
 
   // Wire bot personality into the LLM client
-  const { _setSystemPromptProvider, _setResponsePostProcessor } = require('@clude/core/core/claude-client');
-  const { getBasePrompt, getRandomCloser } = require('@clude/core/character/base-prompt');
+  const { _setSystemPromptProvider, _setResponsePostProcessor } = require('@clude/shared/core/claude-client');
+  const { getBasePrompt, getRandomCloser } = require('@clude/brain/character/base-prompt');
   _setSystemPromptProvider(getBasePrompt);
   _setResponsePostProcessor((text: string) => {
     const closer = getRandomCloser();
@@ -35,22 +35,22 @@ async function main(): Promise<void> {
   });
 
   // Initialize database
-  const { initDatabase } = require('@clude/core/core/database');
+  const { initDatabase } = require('@clude/shared/core/database');
   await initDatabase();
   log.info('Database initialized');
 
   // Set owner wallet if configured
   if (config.owner.wallet) {
-    const { _setOwnerWallet } = require('@clude/core/memory');
+    const { _setOwnerWallet } = require('@clude/brain/memory');
     _setOwnerWallet(config.owner.wallet);
   }
 
   // Register event handlers
-  const { registerEventHandlers } = require('@clude/core/events/handlers');
+  const { registerEventHandlers } = require('@clude/brain/events/handlers');
   registerEventHandlers();
 
   // Start all workers
-  const { startAllWorkers, stopAllWorkers } = require('@clude/core/workers');
+  const { startAllWorkers, stopAllWorkers } = require('@clude/brain/workers');
   await startAllWorkers();
 
   log.info('All workers running.');

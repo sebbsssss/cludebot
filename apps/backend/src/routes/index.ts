@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
-import { config } from '@clude/core/config';
-import { requirePrivyAuth } from '@clude/core/auth/privy-auth';
-import { verifyRoutes } from '@clude/core/verify-app/routes';
+import { config } from '@clude/shared/config';
+import { requirePrivyAuth } from '@clude/brain/auth/privy-auth';
+import { verifyRoutes } from '@clude/brain/verify-app/routes';
 import { agentRoutes } from './agent.routes.js';
 import { cortexRoutes } from './cortex.routes.js';
 import { graphRoutes } from './graph.routes.js';
@@ -16,7 +16,7 @@ import { compoundRoutes } from './compound.routes.js';
 import { memoryRoutes } from './memory.routes.js';
 import { memoryPacksRoutes } from './memory-packs.routes.js';
 import { demoRoutes } from './demo.routes.js';
-import { createChildLogger } from '@clude/core/core/logger';
+import { createChildLogger } from '@clude/shared/core/logger';
 import rateLimit from 'express-rate-limit';
 
 const log = createChildLogger('api');

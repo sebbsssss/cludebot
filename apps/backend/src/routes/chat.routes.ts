@@ -7,17 +7,17 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { createHash } from 'crypto';
-import { authenticateAgent, type AgentRegistration, findOrCreateAgentForWallet } from '@clude/core/features/agent-tier';
-import { requirePrivyAuth } from '@clude/core/auth/privy-auth';
-import { withOwnerWallet } from '@clude/core/core/owner-context';
-import { recallMemories, storeMemory } from '@clude/core/memory';
-import { checkInputContent } from '@clude/core/core/guardrails';
-import { checkRateLimit, getDb } from '@clude/core/core/database';
-import { createChildLogger } from '@clude/core/core/logger';
-import { config } from '@clude/core/config';
-import { detectTemporalConstraints, matchMemoriesTemporal } from '@clude/core/experimental/temporal-bonds';
-import { generateQueryEmbedding, isEmbeddingEnabled } from '@clude/core/core/embeddings';
-import { isOpenRouterEnabled, getOpenRouterConfig, OPENROUTER_MODELS } from '@clude/core/core/openrouter-client';
+import { authenticateAgent, type AgentRegistration, findOrCreateAgentForWallet } from '@clude/brain/features/agent-tier';
+import { requirePrivyAuth } from '@clude/brain/auth/privy-auth';
+import { withOwnerWallet } from '@clude/shared/core/owner-context';
+import { recallMemories, storeMemory } from '@clude/brain/memory';
+import { checkInputContent } from '@clude/shared/core/guardrails';
+import { checkRateLimit, getDb } from '@clude/shared/core/database';
+import { createChildLogger } from '@clude/shared/core/logger';
+import { config } from '@clude/shared/config';
+import { detectTemporalConstraints, matchMemoriesTemporal } from '@clude/brain/experimental/temporal-bonds';
+import { generateQueryEmbedding, isEmbeddingEnabled } from '@clude/shared/core/embeddings';
+import { isOpenRouterEnabled, getOpenRouterConfig, OPENROUTER_MODELS } from '@clude/shared/core/openrouter-client';
 import { streamText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';

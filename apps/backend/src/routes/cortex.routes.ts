@@ -10,8 +10,8 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID, createHash } from 'crypto';
-import { authenticateAgent, registerAgent, recordAgentInteraction, type AgentRegistration } from '@clude/core/features/agent-tier';
-import { withOwnerWallet } from '@clude/core/core/owner-context';
+import { authenticateAgent, registerAgent, recordAgentInteraction, type AgentRegistration } from '@clude/brain/features/agent-tier';
+import { withOwnerWallet } from '@clude/shared/core/owner-context';
 import {
   storeMemory,
   recallMemories,
@@ -22,11 +22,11 @@ import {
   getSelfModel,
   createMemoryLink,
   type MemoryType,
-} from '@clude/core/memory';
-import { findClinamen } from '@clude/core/memory/clinamen';
-import type { MemoryLinkType } from '@clude/core/utils/constants';
-import { checkRateLimit, getDb } from '@clude/core/core/database';
-import { createChildLogger } from '@clude/core/core/logger';
+} from '@clude/brain/memory';
+import { findClinamen } from '@clude/brain/memory/clinamen';
+import type { MemoryLinkType } from '@clude/shared/utils/constants';
+import { checkRateLimit, getDb } from '@clude/shared/core/database';
+import { createChildLogger } from '@clude/shared/core/logger';
 
 const log = createChildLogger('cortex-api');
 

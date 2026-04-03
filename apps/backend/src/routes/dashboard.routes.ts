@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { getDb } from '@clude/core/core/database';
-import { createChildLogger } from '@clude/core/core/logger';
-import { requirePrivyAuth } from '@clude/core/auth/privy-auth';
-import { executeTaskManually, AGENT_TYPE_CONFIGS } from '@clude/core/agents';
-import { config } from '@clude/core/config';
+import { getDb } from '@clude/shared/core/database';
+import { createChildLogger } from '@clude/shared/core/logger';
+import { requirePrivyAuth } from '@clude/brain/auth/privy-auth';
+import { executeTaskManually, AGENT_TYPE_CONFIGS } from '@clude/brain/agents';
+import { config } from '@clude/shared/config';
 
 const log = createChildLogger('dashboard');
 
@@ -117,7 +117,7 @@ export function dashboardRoutes(): Router {
       const authHeader = req.headers['authorization'];
       if (authHeader?.startsWith('Bearer clk_')) {
         const apiKey = authHeader.slice(7);
-        const { authenticateAgent } = require('@clude/core/features/agent-tier');
+        const { authenticateAgent } = require('@clude/brain/features/agent-tier');
         const agent = await authenticateAgent(apiKey);
         if (agent?.owner_wallet) {
           const { data, error } = await db

@@ -10,8 +10,10 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "paths": {
-      "@clude/core": ["../../packages/core/src"],
-      "@clude/core/*": ["../../packages/core/src/*"]
+      "@clude/shared": ["../../packages/shared/src"],
+      "@clude/shared/*": ["../../packages/shared/src/*"],
+      "@clude/brain": ["../../packages/brain/src"],
+      "@clude/brain/*": ["../../packages/brain/src/*"]
     }
   },
   "include": ["src/**/*"],

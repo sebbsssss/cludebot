@@ -1,10 +1,10 @@
 import express, { Request, Response } from 'express';
-import { config } from '@clude/core/config';
+import { config } from '@clude/shared/config';
 import { apiLimiter, corsMiddleware, securityHeaders, apiCacheControl, createCompression } from './middleware';
 import { mountApiRoutes } from './routes';
 import { staticRoutes } from './routes/static.routes';
-import { optionalPrivyAuth } from '@clude/core/auth/privy-auth';
-import { createChildLogger } from '@clude/core/core/logger';
+import { optionalPrivyAuth } from '@clude/brain/auth/privy-auth';
+import { createChildLogger } from '@clude/shared/core/logger';
 
 const log = createChildLogger('server');
 
@@ -21,7 +21,7 @@ export function createServer(): express.Application {
   // Health check — always return 200 so Railway marks the deploy healthy
   app.get('/health', async (_req: Request, res: Response) => {
     try {
-      const { getDb } = require('@clude/core/core/database');
+      const { getDb } = require('@clude/shared/core/database');
       const db = getDb();
       const { error } = await db.from('memories').select('id').limit(1);
       res.json({

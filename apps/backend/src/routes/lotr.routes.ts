@@ -7,15 +7,15 @@
  *   POST /api/lotr/explore — SSE chat scoped to LOTR memories
  */
 import { Router, Request, Response } from "express";
-import { withOwnerWallet } from "@clude/core/core/owner-context";
-import { recallMemories } from "@clude/core/memory";
-import { getDb, checkRateLimit } from "@clude/core/core/database";
-import { createChildLogger } from "@clude/core/core/logger";
-import { config } from "@clude/core/config";
+import { withOwnerWallet } from "@clude/shared/core/owner-context";
+import { recallMemories } from "@clude/brain/memory";
+import { getDb, checkRateLimit } from "@clude/shared/core/database";
+import { createChildLogger } from "@clude/shared/core/logger";
+import { config } from "@clude/shared/config";
 import {
   generateOpenRouterResponse,
   OPENROUTER_MODELS,
-} from "@clude/core/core/openrouter-client";
+} from "@clude/shared/core/openrouter-client";
 
 const log = createChildLogger("lotr-routes");
 

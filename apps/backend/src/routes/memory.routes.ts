@@ -1,16 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { createHash } from 'crypto';
-import { getMemoryStats, getRecentMemories } from '@clude/core/memory';
-import { getDb } from '@clude/core/core/database';
-import { verifyMemoTransaction } from '@clude/core/core/solana-client';
-import { getOpenRouterStats } from '@clude/core/core/openrouter-client';
-import { isWebSearchEnabled } from '@clude/core/core/web-search';
-import { requirePrivyAuth, optionalPrivyAuth } from '@clude/core/auth/privy-auth';
-import { requireOwnership, optionalOwnership } from '@clude/core/auth/require-ownership';
-import { traceMemory, explainMemory } from '@clude/core/memory/trace';
-import { withOwnerWallet } from '@clude/core/core/owner-context';
-import { createChildLogger } from '@clude/core/core/logger';
-import { checkRateLimit } from '@clude/core/core/database';
+import { getMemoryStats, getRecentMemories } from '@clude/brain/memory';
+import { getDb } from '@clude/shared/core/database';
+import { verifyMemoTransaction } from '@clude/shared/core/solana-client';
+import { getOpenRouterStats } from '@clude/shared/core/openrouter-client';
+import { isWebSearchEnabled } from '@clude/shared/core/web-search';
+import { requirePrivyAuth, optionalPrivyAuth } from '@clude/brain/auth/privy-auth';
+import { requireOwnership, optionalOwnership } from '@clude/brain/auth/require-ownership';
+import { traceMemory, explainMemory } from '@clude/brain/memory/trace';
+import { withOwnerWallet } from '@clude/shared/core/owner-context';
+import { createChildLogger } from '@clude/shared/core/logger';
+import { checkRateLimit } from '@clude/shared/core/database';
 
 const log = createChildLogger('memory-routes');
 
@@ -420,7 +420,7 @@ export function memoryRoutes(): Router {
   // Owner verification
   router.get('/owner', requirePrivyAuth, async (req: Request, res: Response) => {
     try {
-      const { getOwnerWallet } = require('@clude/core/memory');
+      const { getOwnerWallet } = require('@clude/brain/memory');
       const ownerWallet = getOwnerWallet();
 
       if (!ownerWallet) {

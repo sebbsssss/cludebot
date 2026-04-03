@@ -82,7 +82,7 @@ vi.mock('../../core/database', () => ({
 }));
 
 import { topupWebhookRoutes, topupApiRoutes } from '../topup.routes.js';
-import { config as _mockConfig } from '@clude/core/config';
+import { config as _mockConfig } from '@clude/shared/config';
 
 type Mutable<T> = { -readonly [K in keyof T]: Mutable<T[K]> };
 const mockConfig = _mockConfig as Mutable<typeof _mockConfig>;

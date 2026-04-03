@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { createHash } from 'crypto';
-import { storeMemory, recallMemories } from '@clude/core/memory';
-import { getDb, checkRateLimit } from '@clude/core/core/database';
-import { writeMemo } from '@clude/core/core/solana-client';
-import { checkInputContent } from '@clude/core/core/guardrails';
-import { withOwnerWallet } from '@clude/core/core/owner-context';
-import { createChildLogger } from '@clude/core/core/logger';
+import { storeMemory, recallMemories } from '@clude/brain/memory';
+import { getDb, checkRateLimit } from '@clude/shared/core/database';
+import { writeMemo } from '@clude/shared/core/solana-client';
+import { checkInputContent } from '@clude/shared/core/guardrails';
+import { withOwnerWallet } from '@clude/shared/core/owner-context';
+import { createChildLogger } from '@clude/shared/core/logger';
 
 const log = createChildLogger('demo-routes');
 
