@@ -3,7 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "../server/src/verify-app/public/**"]
+      "outputs": ["dist/**"]
     },
     "dev": {
       "cache": false,

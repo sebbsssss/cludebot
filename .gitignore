@@ -3,9 +3,9 @@ dist/
 .turbo/
 .env
 
-# Frontend built assets (built in Docker / vite build)
-apps/web/public/chat/
-apps/web/public/dashboard/
+# Frontend built assets (vite build output)
+apps/chat/dist/
+apps/dashboard/dist/
 apps/server/src/verify-app/public/
 *.db
 *.db-shm

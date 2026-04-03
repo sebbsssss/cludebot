@@ -12,7 +12,7 @@ export default defineConfig({
   envDir: '../..',
   base: '/chat/',
   build: {
-    outDir: '../web/public/chat',
+    outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       output: {
