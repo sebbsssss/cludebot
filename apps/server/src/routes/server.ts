@@ -1278,7 +1278,7 @@ ${sections.join('\n')}` },
   });
 
   // React dashboard at /dashboard (SPA with client-side routing)
-  const dashboardDir = path.join(webPublicDir, 'dashboard');
+  const dashboardDir = path.join(monorepoRoot, 'apps', 'dashboard', 'dist');
   app.use('/dashboard', express.static(dashboardDir, { maxAge: '1h', setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
   app.get('/dashboard/*', (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -1296,7 +1296,7 @@ ${sections.join('\n')}` },
   });
 
   // Chat interface at /chat (SPA with client-side routing)
-  const chatDir = path.join(webPublicDir, 'chat');
+  const chatDir = path.join(monorepoRoot, 'apps', 'chat', 'dist');
   const serveChatIndex = (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');

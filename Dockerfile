@@ -44,6 +44,8 @@ RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/apps/server/dist/ ./apps/server/dist/
 COPY --from=builder /app/apps/web/public/ ./apps/web/public/
+COPY --from=builder /app/apps/chat/dist/ ./apps/chat/dist/
+COPY --from=builder /app/apps/dashboard/dist/ ./apps/dashboard/dist/
 
 ENV NODE_ENV=production
 EXPOSE 3000
