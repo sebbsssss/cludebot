@@ -18,7 +18,7 @@ import { getDb } from "@clude/shared/core/database";
 import { createChildLogger } from "@clude/shared/core/logger";
 import { config } from "@clude/shared/config";
 import { isOpenRouterEnabled } from "@clude/shared/core/openrouter-client";
-import { drainPending } from "@clude/brain/workers/upload-processor";
+import { drainPending } from "@clude/brain/services/upload-processor";
 
 const log = createChildLogger("upload");
 

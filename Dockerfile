@@ -10,7 +10,8 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages/tsconfig/ ./packages/tsconfig/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/brain/package.json ./packages/brain/
-COPY apps/backend/package.json ./apps/backend/
+COPY apps/server/package.json ./apps/server/
+COPY apps/workers/package.json ./apps/workers/
 COPY apps/chat/package.json ./apps/chat/
 COPY apps/dashboard/package.json ./apps/dashboard/
 
@@ -19,7 +20,8 @@ RUN pnpm install --frozen-lockfile
 # Copy source
 COPY packages/shared/ ./packages/shared/
 COPY packages/brain/ ./packages/brain/
-COPY apps/backend/ ./apps/backend/
+COPY apps/server/ ./apps/server/
+COPY apps/workers/ ./apps/workers/
 COPY apps/chat/ ./apps/chat/
 COPY apps/dashboard/ ./apps/dashboard/
 COPY apps/web/ ./apps/web/
@@ -27,7 +29,8 @@ COPY apps/web/ ./apps/web/
 # Build backend (order matters: shared → brain → backend)
 RUN pnpm --filter @clude/shared build
 RUN pnpm --filter @clude/brain build
-RUN pnpm --filter @clude/backend build
+RUN pnpm --filter @clude/workers build
+RUN pnpm --filter @clude/server build
 
 # Build frontends
 ARG PRIVY_APP_ID
@@ -47,12 +50,14 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages/tsconfig/ ./packages/tsconfig/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/brain/package.json ./packages/brain/
-COPY apps/backend/package.json ./apps/backend/
+COPY apps/server/package.json ./apps/server/
+COPY apps/workers/package.json ./apps/workers/
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/packages/shared/dist/ ./packages/shared/dist/
 COPY --from=builder /app/packages/brain/dist/ ./packages/brain/dist/
-COPY --from=builder /app/apps/backend/dist/ ./apps/backend/dist/
+COPY --from=builder /app/apps/server/dist/ ./apps/server/dist/
+COPY --from=builder /app/apps/workers/dist/ ./apps/workers/dist/
 COPY --from=builder /app/apps/web/public/ ./apps/web/public/
 COPY --from=builder /app/apps/chat/dist/ ./apps/chat/dist/
 COPY --from=builder /app/apps/dashboard/dist/ ./apps/dashboard/dist/
@@ -60,4 +65,4 @@ COPY --from=builder /app/apps/dashboard/dist/ ./apps/dashboard/dist/
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["node", "apps/backend/dist/index.js"]
+CMD ["node", "apps/server/dist/index.js"]

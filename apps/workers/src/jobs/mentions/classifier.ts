@@ -1,5 +1,5 @@
 import { extractWalletAddress, isQuestion, cleanMentionText } from '@clude/shared/utils/text';
-import { isVestingQuestion, isCAQuestion } from '../../knowledge/tokenomics';
+import { isVestingQuestion, isCAQuestion } from '@clude/brain/knowledge/tokenomics';
 
 export type MentionType = 'question' | 'memory-recall' | 'vesting' | 'ca' | 'web-search' | 'general';
 

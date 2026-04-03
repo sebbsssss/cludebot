@@ -1,9 +1,9 @@
 import { TweetV2 } from 'twitter-api-v2';
 import { classifyMention } from './classifier';
-import { handleOnchainOpinion } from '../../features/onchain-opinion';
+import { handleOnchainOpinion } from '@clude/brain/features/onchain-opinion';
 import { claimForProcessing, markProcessed } from '@clude/shared/core/database';
-import { getCurrentMood } from '../../core-ext/price-oracle';
-import { getTierModifier, type HolderTier } from '../../character/tier-modifiers';
+import { getCurrentMood } from '@clude/brain/core-ext/price-oracle';
+import { getTierModifier, type HolderTier } from '@clude/brain/character/tier-modifiers';
 import { getTweetWithContext, getUsernameOrId } from '@clude/shared/core/x-client';
 import { config } from '@clude/shared/config';
 import {
@@ -12,13 +12,13 @@ import {
   formatMemoryContext,
   scoreImportanceWithLLM,
   moodToValence,
-} from '../../memory';
+} from '@clude/brain/memory';
 import { createChildLogger } from '@clude/shared/core/logger';
 import { cleanMentionText, extractTokenMentions } from '@clude/shared/utils/text';
-import { buildAndGenerate } from '../../services/response.service';
-import { replyAndMark } from '../../services/social.service';
+import { buildAndGenerate } from '@clude/brain/services/response.service';
+import { replyAndMark } from '@clude/brain/services/social.service';
 import { loadInstruction } from '@clude/shared/utils/env-persona';
-import { getVestingInfo, getCAResponse, CLUDE_CA, getTokenStatus } from '../../knowledge/tokenomics';
+import { getVestingInfo, getCAResponse, CLUDE_CA, getTokenStatus } from '@clude/brain/knowledge/tokenomics';
 import { checkInput, getCASpoofResponse, getTokenDeployResponse } from '@clude/shared/core/guardrails';
 import { webSearch, isWebSearchEnabled } from '@clude/shared/core/web-search';
 import { checkRateLimit, getDb } from '@clude/shared/core/database';

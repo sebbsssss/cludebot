@@ -1,16 +1,9 @@
 {
-  "name": "@clude/backend",
+  "name": "@clude/server",
   "version": "2.7.8",
   "private": true,
-  "description": "Clude backend — HTTP server + API routes",
+  "description": "Clude HTTP server — serves API routes + static files",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.build.json",

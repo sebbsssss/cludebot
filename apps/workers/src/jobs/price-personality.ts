@@ -1,9 +1,9 @@
 import { checkRateLimit } from '@clude/shared/core/database';
-import { getRecentMemories, getMemoryStats, type Memory } from '../memory';
+import { getRecentMemories, getMemoryStats, type Memory } from '@clude/brain/memory';
 import { config } from '@clude/shared/config';
 import { createChildLogger } from '@clude/shared/core/logger';
-import { buildAndGenerate } from '../services/response.service';
-import { tweet } from '../services/social.service';
+import { buildAndGenerate } from '@clude/brain/services/response.service';
+import { tweet } from '@clude/brain/services/social.service';
 import { pickRandom } from '@clude/shared/utils/text';
 
 const log = createChildLogger('price-personality');

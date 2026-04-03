@@ -5,7 +5,6 @@ const log = createChildLogger('workers');
 
 async function main(): Promise<void> {
   log.info('=== CLUDE WORKERS ===');
-  log.info('Starting background workers...');
 
   // Initialize OpenRouter (required for inference in workers)
   if (config.openrouter.apiKey) {
@@ -43,14 +42,32 @@ async function main(): Promise<void> {
   if (config.owner.wallet) {
     const { _setOwnerWallet } = require('@clude/brain/memory');
     _setOwnerWallet(config.owner.wallet);
+    log.info({ owner: config.owner.wallet.slice(0, 8) + '...' }, 'Owner wallet configured');
   }
 
-  // Register event handlers
+  // Register event handlers (wires webhook events to feature logic)
   const { registerEventHandlers } = require('@clude/brain/events/handlers');
   registerEventHandlers();
+  log.info('Event handlers registered');
 
-  // Start all workers
-  const { startAllWorkers, stopAllWorkers } = require('@clude/brain/workers');
+  // Load bot wallet if configured
+  const { getBotWallet } = require('@clude/shared/core/solana-client');
+  const { setGuardrailBotAddress } = require('@clude/shared/core/guardrails');
+  const wallet = getBotWallet();
+  if (wallet) {
+    const addr = wallet.publicKey.toBase58();
+    log.info({ address: addr }, 'Bot wallet loaded');
+    setGuardrailBotAddress(addr);
+  } else {
+    log.warn('No bot wallet configured — on-chain commits disabled');
+  }
+
+  // Recover stalled uploads
+  const { recoverStalled, drainPending } = require('@clude/brain/services/upload-processor');
+  recoverStalled().then(() => drainPending()).catch((err: any) => log.warn({ err }, 'Upload recovery failed'));
+
+  // Start all background jobs
+  const { startAllWorkers, stopAllWorkers } = require('./jobs');
   await startAllWorkers();
 
   log.info('All workers running.');
