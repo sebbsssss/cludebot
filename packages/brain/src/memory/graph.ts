@@ -1,6 +1,12 @@
+<<<<<<<< HEAD:packages/brain/src/memory/graph.ts
 import { getDb } from '@clude/shared/core/database';
 import { createChildLogger } from '@clude/shared/core/logger';
 import { generateEmbedding, isEmbeddingEnabled } from '@clude/shared/core/embeddings';
+========
+import { getDb } from '../core/database';
+import { createChildLogger } from '../core/logger';
+import { generateEmbedding, isEmbeddingEnabled } from '../core/embeddings';
+>>>>>>>> main:apps/server/src/memory/graph.ts
 import type { Memory, MemoryType } from './memory';
 
 const log = createChildLogger('memory-graph');
