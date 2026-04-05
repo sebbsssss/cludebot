@@ -2431,3 +2431,551 @@ abstract class _GreetingMeta implements GreetingMeta {
   _$$GreetingMetaImplCopyWith<_$GreetingMetaImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+UsageRecord _$UsageRecordFromJson(Map<String, dynamic> json) {
+  return _UsageRecord.fromJson(json);
+}
+
+/// @nodoc
+mixin _$UsageRecord {
+  String get date => throw _privateConstructorUsedError;
+  @JsonKey(name: 'prompt_tokens')
+  int get promptTokens => throw _privateConstructorUsedError;
+  @JsonKey(name: 'completion_tokens')
+  int get completionTokens => throw _privateConstructorUsedError;
+  @JsonKey(name: 'cost_usdc')
+  double get costUsdc => throw _privateConstructorUsedError;
+  @JsonKey(name: 'conversation_count')
+  int get conversationCount => throw _privateConstructorUsedError;
+
+  /// Serializes this UsageRecord to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of UsageRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $UsageRecordCopyWith<UsageRecord> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $UsageRecordCopyWith<$Res> {
+  factory $UsageRecordCopyWith(
+    UsageRecord value,
+    $Res Function(UsageRecord) then,
+  ) = _$UsageRecordCopyWithImpl<$Res, UsageRecord>;
+  @useResult
+  $Res call({
+    String date,
+    @JsonKey(name: 'prompt_tokens') int promptTokens,
+    @JsonKey(name: 'completion_tokens') int completionTokens,
+    @JsonKey(name: 'cost_usdc') double costUsdc,
+    @JsonKey(name: 'conversation_count') int conversationCount,
+  });
+}
+
+/// @nodoc
+class _$UsageRecordCopyWithImpl<$Res, $Val extends UsageRecord>
+    implements $UsageRecordCopyWith<$Res> {
+  _$UsageRecordCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of UsageRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? date = null,
+    Object? promptTokens = null,
+    Object? completionTokens = null,
+    Object? costUsdc = null,
+    Object? conversationCount = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            date: null == date
+                ? _value.date
+                : date // ignore: cast_nullable_to_non_nullable
+                      as String,
+            promptTokens: null == promptTokens
+                ? _value.promptTokens
+                : promptTokens // ignore: cast_nullable_to_non_nullable
+                      as int,
+            completionTokens: null == completionTokens
+                ? _value.completionTokens
+                : completionTokens // ignore: cast_nullable_to_non_nullable
+                      as int,
+            costUsdc: null == costUsdc
+                ? _value.costUsdc
+                : costUsdc // ignore: cast_nullable_to_non_nullable
+                      as double,
+            conversationCount: null == conversationCount
+                ? _value.conversationCount
+                : conversationCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$UsageRecordImplCopyWith<$Res>
+    implements $UsageRecordCopyWith<$Res> {
+  factory _$$UsageRecordImplCopyWith(
+    _$UsageRecordImpl value,
+    $Res Function(_$UsageRecordImpl) then,
+  ) = __$$UsageRecordImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String date,
+    @JsonKey(name: 'prompt_tokens') int promptTokens,
+    @JsonKey(name: 'completion_tokens') int completionTokens,
+    @JsonKey(name: 'cost_usdc') double costUsdc,
+    @JsonKey(name: 'conversation_count') int conversationCount,
+  });
+}
+
+/// @nodoc
+class __$$UsageRecordImplCopyWithImpl<$Res>
+    extends _$UsageRecordCopyWithImpl<$Res, _$UsageRecordImpl>
+    implements _$$UsageRecordImplCopyWith<$Res> {
+  __$$UsageRecordImplCopyWithImpl(
+    _$UsageRecordImpl _value,
+    $Res Function(_$UsageRecordImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of UsageRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? date = null,
+    Object? promptTokens = null,
+    Object? completionTokens = null,
+    Object? costUsdc = null,
+    Object? conversationCount = null,
+  }) {
+    return _then(
+      _$UsageRecordImpl(
+        date: null == date
+            ? _value.date
+            : date // ignore: cast_nullable_to_non_nullable
+                  as String,
+        promptTokens: null == promptTokens
+            ? _value.promptTokens
+            : promptTokens // ignore: cast_nullable_to_non_nullable
+                  as int,
+        completionTokens: null == completionTokens
+            ? _value.completionTokens
+            : completionTokens // ignore: cast_nullable_to_non_nullable
+                  as int,
+        costUsdc: null == costUsdc
+            ? _value.costUsdc
+            : costUsdc // ignore: cast_nullable_to_non_nullable
+                  as double,
+        conversationCount: null == conversationCount
+            ? _value.conversationCount
+            : conversationCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$UsageRecordImpl implements _UsageRecord {
+  const _$UsageRecordImpl({
+    required this.date,
+    @JsonKey(name: 'prompt_tokens') required this.promptTokens,
+    @JsonKey(name: 'completion_tokens') required this.completionTokens,
+    @JsonKey(name: 'cost_usdc') required this.costUsdc,
+    @JsonKey(name: 'conversation_count') required this.conversationCount,
+  });
+
+  factory _$UsageRecordImpl.fromJson(Map<String, dynamic> json) =>
+      _$$UsageRecordImplFromJson(json);
+
+  @override
+  final String date;
+  @override
+  @JsonKey(name: 'prompt_tokens')
+  final int promptTokens;
+  @override
+  @JsonKey(name: 'completion_tokens')
+  final int completionTokens;
+  @override
+  @JsonKey(name: 'cost_usdc')
+  final double costUsdc;
+  @override
+  @JsonKey(name: 'conversation_count')
+  final int conversationCount;
+
+  @override
+  String toString() {
+    return 'UsageRecord(date: $date, promptTokens: $promptTokens, completionTokens: $completionTokens, costUsdc: $costUsdc, conversationCount: $conversationCount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UsageRecordImpl &&
+            (identical(other.date, date) || other.date == date) &&
+            (identical(other.promptTokens, promptTokens) ||
+                other.promptTokens == promptTokens) &&
+            (identical(other.completionTokens, completionTokens) ||
+                other.completionTokens == completionTokens) &&
+            (identical(other.costUsdc, costUsdc) ||
+                other.costUsdc == costUsdc) &&
+            (identical(other.conversationCount, conversationCount) ||
+                other.conversationCount == conversationCount));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    date,
+    promptTokens,
+    completionTokens,
+    costUsdc,
+    conversationCount,
+  );
+
+  /// Create a copy of UsageRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UsageRecordImplCopyWith<_$UsageRecordImpl> get copyWith =>
+      __$$UsageRecordImplCopyWithImpl<_$UsageRecordImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$UsageRecordImplToJson(this);
+  }
+}
+
+abstract class _UsageRecord implements UsageRecord {
+  const factory _UsageRecord({
+    required final String date,
+    @JsonKey(name: 'prompt_tokens') required final int promptTokens,
+    @JsonKey(name: 'completion_tokens') required final int completionTokens,
+    @JsonKey(name: 'cost_usdc') required final double costUsdc,
+    @JsonKey(name: 'conversation_count') required final int conversationCount,
+  }) = _$UsageRecordImpl;
+
+  factory _UsageRecord.fromJson(Map<String, dynamic> json) =
+      _$UsageRecordImpl.fromJson;
+
+  @override
+  String get date;
+  @override
+  @JsonKey(name: 'prompt_tokens')
+  int get promptTokens;
+  @override
+  @JsonKey(name: 'completion_tokens')
+  int get completionTokens;
+  @override
+  @JsonKey(name: 'cost_usdc')
+  double get costUsdc;
+  @override
+  @JsonKey(name: 'conversation_count')
+  int get conversationCount;
+
+  /// Create a copy of UsageRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$UsageRecordImplCopyWith<_$UsageRecordImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+TopupRecord _$TopupRecordFromJson(Map<String, dynamic> json) {
+  return _TopupRecord.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TopupRecord {
+  String get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'amount_usdc')
+  double get amountUsdc => throw _privateConstructorUsedError;
+  String get chain => throw _privateConstructorUsedError;
+  @JsonKey(name: 'tx_hash')
+  String? get txHash => throw _privateConstructorUsedError;
+  String get status => throw _privateConstructorUsedError;
+  @JsonKey(name: 'created_at')
+  String get createdAt => throw _privateConstructorUsedError;
+
+  /// Serializes this TopupRecord to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TopupRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TopupRecordCopyWith<TopupRecord> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TopupRecordCopyWith<$Res> {
+  factory $TopupRecordCopyWith(
+    TopupRecord value,
+    $Res Function(TopupRecord) then,
+  ) = _$TopupRecordCopyWithImpl<$Res, TopupRecord>;
+  @useResult
+  $Res call({
+    String id,
+    @JsonKey(name: 'amount_usdc') double amountUsdc,
+    String chain,
+    @JsonKey(name: 'tx_hash') String? txHash,
+    String status,
+    @JsonKey(name: 'created_at') String createdAt,
+  });
+}
+
+/// @nodoc
+class _$TopupRecordCopyWithImpl<$Res, $Val extends TopupRecord>
+    implements $TopupRecordCopyWith<$Res> {
+  _$TopupRecordCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TopupRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? amountUsdc = null,
+    Object? chain = null,
+    Object? txHash = freezed,
+    Object? status = null,
+    Object? createdAt = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            amountUsdc: null == amountUsdc
+                ? _value.amountUsdc
+                : amountUsdc // ignore: cast_nullable_to_non_nullable
+                      as double,
+            chain: null == chain
+                ? _value.chain
+                : chain // ignore: cast_nullable_to_non_nullable
+                      as String,
+            txHash: freezed == txHash
+                ? _value.txHash
+                : txHash // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            status: null == status
+                ? _value.status
+                : status // ignore: cast_nullable_to_non_nullable
+                      as String,
+            createdAt: null == createdAt
+                ? _value.createdAt
+                : createdAt // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TopupRecordImplCopyWith<$Res>
+    implements $TopupRecordCopyWith<$Res> {
+  factory _$$TopupRecordImplCopyWith(
+    _$TopupRecordImpl value,
+    $Res Function(_$TopupRecordImpl) then,
+  ) = __$$TopupRecordImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    @JsonKey(name: 'amount_usdc') double amountUsdc,
+    String chain,
+    @JsonKey(name: 'tx_hash') String? txHash,
+    String status,
+    @JsonKey(name: 'created_at') String createdAt,
+  });
+}
+
+/// @nodoc
+class __$$TopupRecordImplCopyWithImpl<$Res>
+    extends _$TopupRecordCopyWithImpl<$Res, _$TopupRecordImpl>
+    implements _$$TopupRecordImplCopyWith<$Res> {
+  __$$TopupRecordImplCopyWithImpl(
+    _$TopupRecordImpl _value,
+    $Res Function(_$TopupRecordImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TopupRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? amountUsdc = null,
+    Object? chain = null,
+    Object? txHash = freezed,
+    Object? status = null,
+    Object? createdAt = null,
+  }) {
+    return _then(
+      _$TopupRecordImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        amountUsdc: null == amountUsdc
+            ? _value.amountUsdc
+            : amountUsdc // ignore: cast_nullable_to_non_nullable
+                  as double,
+        chain: null == chain
+            ? _value.chain
+            : chain // ignore: cast_nullable_to_non_nullable
+                  as String,
+        txHash: freezed == txHash
+            ? _value.txHash
+            : txHash // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        status: null == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as String,
+        createdAt: null == createdAt
+            ? _value.createdAt
+            : createdAt // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TopupRecordImpl implements _TopupRecord {
+  const _$TopupRecordImpl({
+    required this.id,
+    @JsonKey(name: 'amount_usdc') required this.amountUsdc,
+    required this.chain,
+    @JsonKey(name: 'tx_hash') this.txHash,
+    required this.status,
+    @JsonKey(name: 'created_at') required this.createdAt,
+  });
+
+  factory _$TopupRecordImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TopupRecordImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  @JsonKey(name: 'amount_usdc')
+  final double amountUsdc;
+  @override
+  final String chain;
+  @override
+  @JsonKey(name: 'tx_hash')
+  final String? txHash;
+  @override
+  final String status;
+  @override
+  @JsonKey(name: 'created_at')
+  final String createdAt;
+
+  @override
+  String toString() {
+    return 'TopupRecord(id: $id, amountUsdc: $amountUsdc, chain: $chain, txHash: $txHash, status: $status, createdAt: $createdAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TopupRecordImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.amountUsdc, amountUsdc) ||
+                other.amountUsdc == amountUsdc) &&
+            (identical(other.chain, chain) || other.chain == chain) &&
+            (identical(other.txHash, txHash) || other.txHash == txHash) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    amountUsdc,
+    chain,
+    txHash,
+    status,
+    createdAt,
+  );
+
+  /// Create a copy of TopupRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TopupRecordImplCopyWith<_$TopupRecordImpl> get copyWith =>
+      __$$TopupRecordImplCopyWithImpl<_$TopupRecordImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TopupRecordImplToJson(this);
+  }
+}
+
+abstract class _TopupRecord implements TopupRecord {
+  const factory _TopupRecord({
+    required final String id,
+    @JsonKey(name: 'amount_usdc') required final double amountUsdc,
+    required final String chain,
+    @JsonKey(name: 'tx_hash') final String? txHash,
+    required final String status,
+    @JsonKey(name: 'created_at') required final String createdAt,
+  }) = _$TopupRecordImpl;
+
+  factory _TopupRecord.fromJson(Map<String, dynamic> json) =
+      _$TopupRecordImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  @JsonKey(name: 'amount_usdc')
+  double get amountUsdc;
+  @override
+  String get chain;
+  @override
+  @JsonKey(name: 'tx_hash')
+  String? get txHash;
+  @override
+  String get status;
+  @override
+  @JsonKey(name: 'created_at')
+  String get createdAt;
+
+  /// Create a copy of TopupRecord
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TopupRecordImplCopyWith<_$TopupRecordImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}

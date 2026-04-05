@@ -259,6 +259,22 @@ class ApiClient {
             TopupStatus.fromJson(json as Map<String, dynamic>),
       );
 
+  Future<List<UsageRecord>> getUsageHistory() => _fetchJson(
+        '/api/chat/usage/history',
+        fromJson: (json) =>
+            ((json as Map<String, dynamic>)['records'] as List)
+                .map((e) => UsageRecord.fromJson(e as Map<String, dynamic>))
+                .toList(),
+      );
+
+  Future<List<TopupRecord>> getTopupHistory() => _fetchJson(
+        '/api/chat/topup/history',
+        fromJson: (json) =>
+            ((json as Map<String, dynamic>)['topups'] as List)
+                .map((e) => TopupRecord.fromJson(e as Map<String, dynamic>))
+                .toList(),
+      );
+
   // ---------------------------------------------------------------------------
   // Agents
   // ---------------------------------------------------------------------------

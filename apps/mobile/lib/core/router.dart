@@ -6,6 +6,7 @@ import '../features/chat/chat_screen.dart';
 import '../features/chat/guest_chat_screen.dart';
 import '../features/login/login_screen.dart';
 import '../features/memory/memory_screen.dart';
+import '../features/settings/history_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../shared/widgets/bottom_nav.dart';
 import 'auth/auth_provider.dart';
@@ -65,6 +66,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/topup',
         builder: (context, state) => const TopUpScreen(),
+      ),
+      GoRoute(
+        path: '/settings/history',
+        builder: (context, state) => const HistoryScreen(),
       ),
     ],
   );

@@ -86,8 +86,7 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             title: const Text('Usage History'),
             trailing: const Icon(Icons.chevron_right),
-            // spec 020 not yet implemented — no navigation
-            onTap: null,
+            onTap: () => context.push('/settings/history'),
           ),
           const Divider(),
 
