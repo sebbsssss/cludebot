@@ -199,10 +199,10 @@ class ApiClient {
             MemoryStats.fromJson(json as Map<String, dynamic>),
       );
 
-  Future<List<MemorySummary>> getRecentMemories({int limit = 20}) =>
+  Future<List<MemorySummary>> getRecentMemories({int limit = 20, int offset = 0}) =>
       _fetchJson(
         '/api/cortex/recent',
-        queryParameters: {'limit': limit},
+        queryParameters: {'limit': limit, 'offset': offset},
         fromJson: (json) {
           final data = json is Map ? (json['memories'] ?? json) : json;
           return (data as List<dynamic>)

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/models/memory_stats.dart';
+import '../../core/api/models/memory_summary.dart';
 import '../../core/auth/auth_provider.dart';
+import '../../shared/utils/relative_time.dart';
 import 'import_pack_sheet.dart';
 import 'memory_stats_provider.dart';
+import 'recent_memories_provider.dart';
 
 const kMemoryTypeColors = <String, Color>{
   'episodic': Color(0xFF2244FF),
@@ -69,12 +72,39 @@ class _AuthGate extends StatelessWidget {
   }
 }
 
-class _StatsBody extends ConsumerWidget {
+class _StatsBody extends ConsumerStatefulWidget {
   const _StatsBody();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_StatsBody> createState() => _StatsBodyState();
+}
+
+class _StatsBodyState extends ConsumerState<_StatsBody> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(recentMemoriesProvider.notifier).loadMore();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final asyncStats = ref.watch(memoryStatsProvider);
+    final recentState = ref.watch(recentMemoriesProvider);
 
     return asyncStats.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -96,18 +126,99 @@ class _StatsBody extends ConsumerWidget {
         ),
       ),
       data: (stats) => RefreshIndicator(
-        onRefresh: () => ref.read(memoryStatsProvider.notifier).refresh(),
+        onRefresh: () async {
+          await Future.wait([
+            ref.read(memoryStatsProvider.notifier).refresh(),
+            ref.read(recentMemoriesProvider.notifier).refresh(),
+          ]);
+        },
         child: CustomScrollView(
+          controller: _scrollController,
           slivers: [
             SliverToBoxAdapter(child: _TotalSection(stats: stats)),
             SliverToBoxAdapter(child: _ByTypeSection(stats: stats)),
             SliverToBoxAdapter(child: _MetricsSection(stats: stats)),
             if (stats.topTags.isNotEmpty)
               SliverToBoxAdapter(child: _TagsSection(stats: stats)),
+            // Recent memories section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                child: Text('Recent Memories',
+                    style: Theme.of(context).textTheme.titleSmall),
+              ),
+            ),
+            ..._buildRecentSlivers(recentState),
           ],
         ),
       ),
     );
+  }
+
+  List<Widget> _buildRecentSlivers(recentState) {
+    if (recentState.isLoading && recentState.items.isEmpty) {
+      return [
+        const SliverToBoxAdapter(
+          child: Center(child: Padding(
+            padding: EdgeInsets.all(32),
+            child: CircularProgressIndicator(),
+          )),
+        ),
+      ];
+    }
+
+    if (recentState.error != null && recentState.items.isEmpty) {
+      return [
+        SliverToBoxAdapter(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                children: [
+                  Text(recentState.error!),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () =>
+                        ref.read(recentMemoriesProvider.notifier).fetch(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    if (!recentState.isLoading && recentState.items.isEmpty) {
+      return [
+        const SliverToBoxAdapter(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: Text('No memories yet'),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    return [
+      SliverList.builder(
+        itemCount: recentState.items.length,
+        itemBuilder: (context, index) =>
+            MemoryTile(memory: recentState.items[index]),
+      ),
+      if (recentState.hasMore)
+        const SliverToBoxAdapter(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        ),
+    ];
   }
 }
 
@@ -264,6 +375,109 @@ class _TagsSection extends StatelessWidget {
                 .toList(),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// -- Type badge label mapping --
+const _typeBadgeLabels = <String, String>{
+  'episodic': 'EPI',
+  'semantic': 'SEM',
+  'procedural': 'PRO',
+  'self_model': 'SLF',
+};
+
+Color _importanceColor(double importance) {
+  if (importance >= 0.7) return Colors.green.shade400;
+  if (importance >= 0.4) return Colors.amber.shade400;
+  return Colors.red.shade400;
+}
+
+class MemoryTile extends StatefulWidget {
+  const MemoryTile({super.key, required this.memory});
+  final MemorySummary memory;
+
+  @override
+  State<MemoryTile> createState() => _MemoryTileState();
+}
+
+class _MemoryTileState extends State<MemoryTile> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final m = widget.memory;
+    final color = kMemoryTypeColors[m.memoryType] ?? Colors.grey;
+    final label = _typeBadgeLabels[m.memoryType] ??
+        m.memoryType.substring(0, 3).toUpperCase();
+    final dotSize = 4.0 + (m.importance.clamp(0.0, 1.0) * 6.0);
+
+    return InkWell(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withAlpha(38),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: color.withAlpha(100)),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    alignment: Alignment.topLeft,
+                    child: Text(
+                      m.summary,
+                      maxLines: _expanded ? null : 2,
+                      overflow: _expanded ? null : TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: dotSize,
+                        height: dotSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _importanceColor(m.importance),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        relativeTime(m.createdAt),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withAlpha(100),
+                            ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
