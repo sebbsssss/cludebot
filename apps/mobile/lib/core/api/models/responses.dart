@@ -132,3 +132,32 @@ class GreetingMeta with _$GreetingMeta {
   factory GreetingMeta.fromJson(Map<String, dynamic> json) =>
       _$GreetingMetaFromJson(json);
 }
+
+@freezed
+class UsageRecord with _$UsageRecord {
+  const factory UsageRecord({
+    required String date,
+    @JsonKey(name: 'prompt_tokens') required int promptTokens,
+    @JsonKey(name: 'completion_tokens') required int completionTokens,
+    @JsonKey(name: 'cost_usdc') required double costUsdc,
+    @JsonKey(name: 'conversation_count') required int conversationCount,
+  }) = _UsageRecord;
+
+  factory UsageRecord.fromJson(Map<String, dynamic> json) =>
+      _$UsageRecordFromJson(json);
+}
+
+@freezed
+class TopupRecord with _$TopupRecord {
+  const factory TopupRecord({
+    required String id,
+    @JsonKey(name: 'amount_usdc') required double amountUsdc,
+    required String chain,
+    @JsonKey(name: 'tx_hash') String? txHash,
+    required String status,
+    @JsonKey(name: 'created_at') required String createdAt,
+  }) = _TopupRecord;
+
+  factory TopupRecord.fromJson(Map<String, dynamic> json) =>
+      _$TopupRecordFromJson(json);
+}

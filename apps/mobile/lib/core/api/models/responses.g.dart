@@ -174,3 +174,41 @@ Map<String, dynamic> _$$GreetingMetaImplToJson(_$GreetingMetaImpl instance) =>
       'topics': instance.topics,
       'greeting_cost': instance.greetingCost,
     };
+
+_$UsageRecordImpl _$$UsageRecordImplFromJson(Map<String, dynamic> json) =>
+    _$UsageRecordImpl(
+      date: json['date'] as String,
+      promptTokens: (json['prompt_tokens'] as num).toInt(),
+      completionTokens: (json['completion_tokens'] as num).toInt(),
+      costUsdc: (json['cost_usdc'] as num).toDouble(),
+      conversationCount: (json['conversation_count'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$$UsageRecordImplToJson(_$UsageRecordImpl instance) =>
+    <String, dynamic>{
+      'date': instance.date,
+      'prompt_tokens': instance.promptTokens,
+      'completion_tokens': instance.completionTokens,
+      'cost_usdc': instance.costUsdc,
+      'conversation_count': instance.conversationCount,
+    };
+
+_$TopupRecordImpl _$$TopupRecordImplFromJson(Map<String, dynamic> json) =>
+    _$TopupRecordImpl(
+      id: json['id'] as String,
+      amountUsdc: (json['amount_usdc'] as num).toDouble(),
+      chain: json['chain'] as String,
+      txHash: json['tx_hash'] as String?,
+      status: json['status'] as String,
+      createdAt: json['created_at'] as String,
+    );
+
+Map<String, dynamic> _$$TopupRecordImplToJson(_$TopupRecordImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'amount_usdc': instance.amountUsdc,
+      'chain': instance.chain,
+      'tx_hash': instance.txHash,
+      'status': instance.status,
+      'created_at': instance.createdAt,
+    };
