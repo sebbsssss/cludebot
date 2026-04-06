@@ -1,13 +1,37 @@
 import { Router, Request, Response } from 'express';
 import { PublicKey } from '@solana/web3.js';
 import nacl from 'tweetnacl';
-import bs58 from 'bs58';
 import { findOrCreateAgentForWallet } from '@clude/brain/features/agent-tier';
 import { createChildLogger } from '@clude/shared/core/logger';
 import { getDb } from '@clude/shared/core/database';
 import { config } from '@clude/shared/config';
 
 const log = createChildLogger('wallet-auth');
+
+const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function decodeBase58(str: string): Uint8Array {
+  const bytes: number[] = [0];
+  for (const char of str) {
+    const idx = BASE58_ALPHABET.indexOf(char);
+    if (idx < 0) throw new Error(`Invalid base58 character: ${char}`);
+    let carry = idx;
+    for (let j = 0; j < bytes.length; j++) {
+      carry += bytes[j] * 58;
+      bytes[j] = carry & 0xff;
+      carry >>= 8;
+    }
+    while (carry > 0) {
+      bytes.push(carry & 0xff);
+      carry >>= 8;
+    }
+  }
+  // Handle leading '1's (base58 zeros)
+  for (const char of str) {
+    if (char !== '1') break;
+    bytes.push(0);
+  }
+  return new Uint8Array(bytes.reverse());
+}
 
 const MESSAGE_PREFIX = 'Sign in to Clude: ';
 const MAX_MESSAGE_AGE_SECONDS = 5 * 60;
@@ -54,7 +78,7 @@ export function walletAuthRoutes(): Router {
 
       // Verify signature — Phantom returns base58-encoded signatures
       const messageBytes = new TextEncoder().encode(message);
-      const signatureBytes = bs58.decode(signature);
+      const signatureBytes = decodeBase58(signature);
       const publicKeyBytes = new PublicKey(wallet).toBytes();
 
       const valid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
