@@ -244,6 +244,9 @@ importers:
       multer:
         specifier: ^2.1.1
         version: 2.1.1
+      tweetnacl:
+        specifier: ^1.0.3
+        version: 1.0.3
       unpdf:
         specifier: ^1.4.0
         version: 1.4.0
