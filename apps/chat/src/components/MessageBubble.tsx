@@ -177,9 +177,9 @@ export const SettledBubble = memo(function SettledBubble({
 
   return (
     <div className="flex justify-start">
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2 max-w-[80%]">
         <StaticAvatar size={24} />
-        <div className="flex flex-col gap-1 max-w-[80%]">
+        <div className="flex flex-col gap-1 min-w-0">
           <div className="bg-zinc-900/80 border border-blue-500/20 rounded-xl rounded-tl-sm px-3 py-2">
             {message.content ? (
               <Markdown content={message.content} />
@@ -214,7 +214,7 @@ export const StreamingBubble = memo(function StreamingBubble({ message }: Stream
       transition={{ duration: 0.25 }}
       className="flex justify-start"
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2 max-w-[80%]">
         {/* Live avatar — the ONLY LiquidMetal shaders in the app during streaming */}
         <div className="relative flex items-center justify-center flex-shrink-0 mt-0.5" style={{ width: 24, height: 24 }}>
           <div
@@ -235,7 +235,7 @@ export const StreamingBubble = memo(function StreamingBubble({ message }: Stream
           />
         </div>
 
-        <div className="flex flex-col gap-1 max-w-[80%]">
+        <div className="flex flex-col gap-1 min-w-0">
           <div className="bg-zinc-900/80 border border-blue-500/20 rounded-xl rounded-tl-sm px-3 py-2">
             {message.content ? (
               // Raw text during streaming — no markdown parsing per frame

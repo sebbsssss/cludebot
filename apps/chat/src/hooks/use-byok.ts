@@ -6,6 +6,14 @@ import { api } from '../lib/api';
 import type { BYOKProvider } from '../lib/types';
 
 const STORAGE_KEY = 'byok_keys';
+const SIG_STORAGE_KEY = 'byok_sig';
+
+/**
+ * Module-level promise to deduplicate concurrent getSignatureBytes calls.
+ * Survives React StrictMode double-mount and effect re-runs.
+ */
+let sigPromise: Promise<Uint8Array | null> | null = null;
+let sigPromiseWallet: string | null = null;
 
 /** Per-wallet, per-provider encrypted key storage shape in localStorage. */
 type StoredKeys = Record<string, Record<string, string>>; // wallet → provider → encrypted
@@ -96,14 +104,13 @@ export function useBYOK(): BYOKState {
   const [storedProviders, setStoredProviders] = useState<BYOKProvider[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const SIG_SESSION_KEY = 'byok_sig';
-
   const getSignatureBytes = useCallback(async (): Promise<Uint8Array | null> => {
     if (!walletAddress) return null;
 
-    // Check sessionStorage first
+    // Check localStorage first — signature is deterministic per wallet so
+    // persisting it avoids re-prompting the user on every browser session.
     try {
-      const cached = sessionStorage.getItem(SIG_SESSION_KEY);
+      const cached = localStorage.getItem(SIG_STORAGE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached) as { wallet: string; sig: string };
         if (parsed.wallet === walletAddress) {
@@ -112,22 +119,40 @@ export function useBYOK(): BYOKState {
       }
     } catch { /* ignore corrupt cache */ }
 
-    try {
-      const message = new TextEncoder().encode(BYOK_SIGN_MESSAGE);
-      const bytes = await signMessage(message, walletAddress);
-      try {
-        sessionStorage.setItem(SIG_SESSION_KEY, JSON.stringify({
-          wallet: walletAddress,
-          sig: btoa(String.fromCharCode(...bytes)),
-        }));
-      } catch { /* storage full */ }
-      return bytes;
-    } catch {
-      return null;
+    // Deduplicate: if a sign request is already in-flight for this wallet,
+    // reuse it instead of prompting the user again (React StrictMode
+    // double-mounts + wallets dependency can trigger multiple calls).
+    if (sigPromise && sigPromiseWallet === walletAddress) {
+      return sigPromise;
     }
+
+    sigPromiseWallet = walletAddress;
+    sigPromise = (async () => {
+      try {
+        const message = new TextEncoder().encode(BYOK_SIGN_MESSAGE);
+        const bytes = await signMessage(message, walletAddress);
+        try {
+          localStorage.setItem(SIG_STORAGE_KEY, JSON.stringify({
+            wallet: walletAddress,
+            sig: btoa(String.fromCharCode(...bytes)),
+          }));
+        } catch { /* storage full */ }
+        return bytes;
+      } catch {
+        return null;
+      } finally {
+        sigPromise = null;
+        sigPromiseWallet = null;
+      }
+    })();
+
+    return sigPromise;
   }, [walletAddress, signMessage]);
 
-  // On mount / wallet change: read stored keys and try to decrypt
+  // On mount / wallet change: read stored keys and try to decrypt.
+  // `wallets` is included so the effect re-runs once Privy reconnects
+  // wallets on reload. The module-level sigPromise deduplication ensures
+  // only one Phantom prompt even if the effect fires multiple times.
   useEffect(() => {
     if (!authenticated || !walletAddress) {
       setKeys({});
@@ -145,6 +170,8 @@ export function useBYOK(): BYOKState {
       api.clearBYOKKeys();
       return;
     }
+
+    if (wallets.length === 0) return;
 
     let cancelled = false;
     setLoading(true);
@@ -173,11 +200,8 @@ export function useBYOK(): BYOKState {
     })();
 
     return () => { cancelled = true; };
-  // `wallets` is included so the effect re-runs once Privy reconnects
-  // wallets on reload — without it, getSignatureBytes fails on the first
-  // (wallets-empty) attempt and never retries.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authenticated, walletAddress, getSignatureBytes, wallets]);
+  }, [authenticated, walletAddress, wallets]);
 
   const saveKey = useCallback(async (provider: BYOKProvider, key: string) => {
     if (!walletAddress) throw new Error('Wallet not connected');
@@ -204,6 +228,7 @@ export function useBYOK(): BYOKState {
 
   const clearAll = useCallback(() => {
     if (walletAddress) removeAllForWallet(walletAddress);
+    localStorage.removeItem(SIG_STORAGE_KEY);
     setKeys({});
     setStoredProviders([]);
     api.clearBYOKKeys();
