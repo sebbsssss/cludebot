@@ -28,6 +28,8 @@ mixin _$MemorySummary {
   double get importance => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   String get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'decay_factor')
+  double get decay => throw _privateConstructorUsedError;
 
   /// Serializes this MemorySummary to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -52,6 +54,7 @@ abstract class $MemorySummaryCopyWith<$Res> {
     String summary,
     double importance,
     @JsonKey(name: 'created_at') String createdAt,
+    @JsonKey(name: 'decay_factor') double decay,
   });
 }
 
@@ -75,6 +78,7 @@ class _$MemorySummaryCopyWithImpl<$Res, $Val extends MemorySummary>
     Object? summary = null,
     Object? importance = null,
     Object? createdAt = null,
+    Object? decay = null,
   }) {
     return _then(
       _value.copyWith(
@@ -98,6 +102,10 @@ class _$MemorySummaryCopyWithImpl<$Res, $Val extends MemorySummary>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as String,
+            decay: null == decay
+                ? _value.decay
+                : decay // ignore: cast_nullable_to_non_nullable
+                      as double,
           )
           as $Val,
     );
@@ -119,6 +127,7 @@ abstract class _$$MemorySummaryImplCopyWith<$Res>
     String summary,
     double importance,
     @JsonKey(name: 'created_at') String createdAt,
+    @JsonKey(name: 'decay_factor') double decay,
   });
 }
 
@@ -141,6 +150,7 @@ class __$$MemorySummaryImplCopyWithImpl<$Res>
     Object? summary = null,
     Object? importance = null,
     Object? createdAt = null,
+    Object? decay = null,
   }) {
     return _then(
       _$MemorySummaryImpl(
@@ -164,6 +174,10 @@ class __$$MemorySummaryImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as String,
+        decay: null == decay
+            ? _value.decay
+            : decay // ignore: cast_nullable_to_non_nullable
+                  as double,
       ),
     );
   }
@@ -178,6 +192,7 @@ class _$MemorySummaryImpl implements _MemorySummary {
     required this.summary,
     required this.importance,
     @JsonKey(name: 'created_at') required this.createdAt,
+    @JsonKey(name: 'decay_factor') this.decay = 0.5,
   });
 
   factory _$MemorySummaryImpl.fromJson(Map<String, dynamic> json) =>
@@ -195,10 +210,13 @@ class _$MemorySummaryImpl implements _MemorySummary {
   @override
   @JsonKey(name: 'created_at')
   final String createdAt;
+  @override
+  @JsonKey(name: 'decay_factor')
+  final double decay;
 
   @override
   String toString() {
-    return 'MemorySummary(id: $id, memoryType: $memoryType, summary: $summary, importance: $importance, createdAt: $createdAt)';
+    return 'MemorySummary(id: $id, memoryType: $memoryType, summary: $summary, importance: $importance, createdAt: $createdAt, decay: $decay)';
   }
 
   @override
@@ -213,13 +231,21 @@ class _$MemorySummaryImpl implements _MemorySummary {
             (identical(other.importance, importance) ||
                 other.importance == importance) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.decay, decay) || other.decay == decay));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, memoryType, summary, importance, createdAt);
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    memoryType,
+    summary,
+    importance,
+    createdAt,
+    decay,
+  );
 
   /// Create a copy of MemorySummary
   /// with the given fields replaced by the non-null parameter values.
@@ -242,6 +268,7 @@ abstract class _MemorySummary implements MemorySummary {
     required final String summary,
     required final double importance,
     @JsonKey(name: 'created_at') required final String createdAt,
+    @JsonKey(name: 'decay_factor') final double decay,
   }) = _$MemorySummaryImpl;
 
   factory _MemorySummary.fromJson(Map<String, dynamic> json) =
@@ -259,6 +286,9 @@ abstract class _MemorySummary implements MemorySummary {
   @override
   @JsonKey(name: 'created_at')
   String get createdAt;
+  @override
+  @JsonKey(name: 'decay_factor')
+  double get decay;
 
   /// Create a copy of MemorySummary
   /// with the given fields replaced by the non-null parameter values.
