@@ -13,6 +13,7 @@ _$MemorySummaryImpl _$$MemorySummaryImplFromJson(Map<String, dynamic> json) =>
       summary: json['summary'] as String,
       importance: (json['importance'] as num).toDouble(),
       createdAt: json['created_at'] as String,
+      decay: (json['decay_factor'] as num?)?.toDouble() ?? 0.5,
     );
 
 Map<String, dynamic> _$$MemorySummaryImplToJson(_$MemorySummaryImpl instance) =>
@@ -22,4 +23,5 @@ Map<String, dynamic> _$$MemorySummaryImplToJson(_$MemorySummaryImpl instance) =>
       'summary': instance.summary,
       'importance': instance.importance,
       'created_at': instance.createdAt,
+      'decay_factor': instance.decay,
     };

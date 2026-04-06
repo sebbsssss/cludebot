@@ -8,6 +8,7 @@ import '../../core/auth/auth_provider.dart';
 import '../../shared/utils/relative_time.dart';
 import 'entities_tab.dart';
 import 'force_graph_widget.dart';
+import 'health_tab.dart';
 import 'graph_provider.dart';
 import 'import_pack_sheet.dart';
 import 'memory_stats_provider.dart';
@@ -44,7 +45,7 @@ class MemoryPanelScreen extends ConsumerWidget {
     }
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Memory'),
@@ -63,6 +64,7 @@ class MemoryPanelScreen extends ConsumerWidget {
               Tab(text: 'Overview'),
               Tab(text: 'Graph'),
               Tab(text: 'Entities'),
+              Tab(text: 'Health'),
             ],
           ),
         ),
@@ -71,6 +73,7 @@ class MemoryPanelScreen extends ConsumerWidget {
             _StatsBody(),
             _GraphTab(),
             EntitiesTab(),
+            HealthTab(),
           ],
         ),
       ),

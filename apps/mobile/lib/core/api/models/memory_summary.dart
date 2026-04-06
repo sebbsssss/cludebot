@@ -11,6 +11,7 @@ class MemorySummary with _$MemorySummary {
     required String summary,
     required double importance,
     @JsonKey(name: 'created_at') required String createdAt,
+    @JsonKey(name: 'decay_factor') @Default(0.5) double decay,
   }) = _MemorySummary;
 
   factory MemorySummary.fromJson(Map<String, dynamic> json) =>
