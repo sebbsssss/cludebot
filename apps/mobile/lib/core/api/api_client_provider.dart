@@ -21,7 +21,7 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     return DemoApiClient();
   }
   final dio = Dio(BaseOptions(
-    baseUrl: Env.baseUrl,
+    baseUrl: Env.apiBaseUrl,
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(minutes: 5),
     headers: {'Content-Type': 'application/json'},

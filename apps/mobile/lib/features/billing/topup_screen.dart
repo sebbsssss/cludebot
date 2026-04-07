@@ -75,10 +75,10 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
 
   Future<void> _tryLaunchWallet(String url) async {
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
+    try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       setState(() => _walletLaunched = true);
-    } else {
+    } catch (_) {
       setState(() => _walletLaunched = false);
     }
   }
@@ -222,18 +222,21 @@ class _TopUpScreenState extends ConsumerState<TopUpScreen> {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (isSolana && s.solanaPayUrl != null) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: QrImageView(
-                data: s.solanaPayUrl!,
-                version: QrVersions.auto,
-                size: 220,
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: QrImageView(
+                  data: s.solanaPayUrl!,
+                  version: QrVersions.auto,
+                  size: 220,
+                ),
               ),
             ),
             const SizedBox(height: 16),

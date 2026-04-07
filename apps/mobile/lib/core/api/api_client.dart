@@ -300,7 +300,7 @@ class ApiClient {
   Future<List<UsageRecord>> getUsageHistory() => _fetchJson(
         '/api/chat/usage/history',
         fromJson: (json) =>
-            ((json as Map<String, dynamic>)['records'] as List)
+            ((json as Map<String, dynamic>)['records'] as List? ?? [])
                 .map((e) => UsageRecord.fromJson(e as Map<String, dynamic>))
                 .toList(),
       );
@@ -308,7 +308,7 @@ class ApiClient {
   Future<List<TopupRecord>> getTopupHistory() => _fetchJson(
         '/api/chat/topup/history',
         fromJson: (json) =>
-            ((json as Map<String, dynamic>)['topups'] as List)
+            ((json as Map<String, dynamic>)['topups'] as List? ?? [])
                 .map((e) => TopupRecord.fromJson(e as Map<String, dynamic>))
                 .toList(),
       );

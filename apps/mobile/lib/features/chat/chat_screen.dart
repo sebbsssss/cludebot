@@ -30,6 +30,16 @@ class _ConversationListScreenState
     extends ConsumerState<ConversationListScreen> {
   bool _isCreating = false;
 
+  @override
+  void initState() {
+    super.initState();
+    Future(() {
+      ref.read(modelsNotifierProvider.notifier).fetchModels().then((models) {
+        ref.read(selectedModelNotifierProvider.notifier).resolveDefault(models);
+      }).catchError((_) {});
+    });
+  }
+
   Future<void> _createConversation() async {
     if (_isCreating) return;
     setState(() => _isCreating = true);
