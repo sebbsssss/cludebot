@@ -221,7 +221,7 @@ class ApiClient {
       );
 
   Future<List<GraphEntity>> getEntities() => _fetchJson(
-        '/api/graph',
+        '/api/cortex/entities',
         fromJson: (json) {
           final map = json as Map<String, dynamic>;
           final entities = (map['entities'] ?? []) as List;
@@ -232,7 +232,7 @@ class ApiClient {
       );
 
   Future<List<GraphEntity>> searchEntities(String query) => _fetchJson(
-        '/api/graph/search',
+        '/api/cortex/entities/search',
         queryParameters: {'q': query},
         fromJson: (json) {
           final map = json as Map<String, dynamic>;
@@ -244,7 +244,7 @@ class ApiClient {
       );
 
   Future<EntityDetail> getEntityDetail(int id) => _fetchJson(
-        '/api/graph/entity/$id',
+        '/api/cortex/entities/$id',
         fromJson: (json) =>
             EntityDetail.fromJson(json as Map<String, dynamic>),
       );
@@ -318,7 +318,7 @@ class ApiClient {
   // ---------------------------------------------------------------------------
 
   Future<List<Agent>> listAgents() => _fetchJson(
-        '/api/dashboard/agents',
+        '/api/cortex/agents',
         fromJson: (json) =>
             (json as List<dynamic>).map((e) => Agent.fromJson(e as Map<String, dynamic>)).toList(),
       );

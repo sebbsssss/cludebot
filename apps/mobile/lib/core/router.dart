@@ -33,8 +33,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isGuestRoute = state.matchedLocation == '/guest';
       final hasAccess = auth.isAuthenticated || auth.isGuest;
 
-      debugPrint('[ROUTER] redirect: location=${state.matchedLocation}, isAuth=${auth.isAuthenticated}, isGuest=${auth.isGuest}, hasAccess=$hasAccess');
-
       if (!hasAccess && !isLoginRoute) return '/login';
       if (hasAccess && isLoginRoute) {
         return auth.isGuest ? '/guest' : '/chat';
