@@ -1850,6 +1850,68 @@ export async function scoreImportanceWithLLM(
   }
 }
 
+// ---- JEPA PHASE 4.5 HELPERS ---- //
+
+/**
+ * Returns the set of memory IDs already linked FROM the given memory
+ * (i.e. rows in memory_links where memory_a_id = memoryId).
+ */
+export async function fetchExistingLinkTargets(memoryId: number): Promise<Set<number>> {
+  const db = getDb();
+  const { data } = await db
+    .from('memory_links')
+    .select('memory_b_id')
+    .eq('memory_a_id', memoryId);
+  return new Set((data ?? []).map((r: { memory_b_id: number }) => r.memory_b_id));
+}
+
+/**
+ * Upserts a row in jepa_queried_memories marking this memory as queried now.
+ */
+export async function markJepaQueried(memoryId: number): Promise<void> {
+  const db = getDb();
+  await db
+    .from('jepa_queried_memories')
+    .upsert({ memory_id: memoryId, queried_at: new Date().toISOString() });
+}
+
+/**
+ * Returns the set of memory IDs that have been JEPA-queried at or after sinceMs (epoch ms).
+ */
+export async function fetchJepaQueriedSince(sinceMs: number): Promise<Set<number>> {
+  const db = getDb();
+  const { data } = await db
+    .from('jepa_queried_memories')
+    .select('memory_id')
+    .gte('queried_at', new Date(sinceMs).toISOString());
+  return new Set((data ?? []).map((r: { memory_id: number }) => r.memory_id));
+}
+
+/**
+ * Vector similarity search via the match_memories RPC.
+ * NOTE: query_embedding must be JSON-stringified per existing RPC convention.
+ * ownerWallet filtering is not forwarded to the RPC (no matching param in this
+ * codebase's match_memories signature); callers should filter client-side if needed.
+ */
+export async function matchByEmbedding(opts: {
+  embedding: number[]
+  threshold: number
+  limit: number
+  ownerWallet?: string
+}): Promise<Array<{ id: number; similarity: number }>> {
+  const db = getDb();
+  const { data } = await db.rpc('match_memories', {
+    query_embedding: JSON.stringify(opts.embedding),
+    match_threshold: opts.threshold,
+    match_count: opts.limit,
+    filter_owner: opts.ownerWallet ?? null,
+  });
+  return (data ?? []).map((r: { id: number; similarity: number }) => ({
+    id: r.id,
+    similarity: r.similarity,
+  }));
+}
+
 export function moodToValence(mood: string): number {
   switch (mood) {
     case 'PUMPING': return 0.3;
