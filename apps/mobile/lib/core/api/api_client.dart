@@ -78,7 +78,11 @@ class ApiClient {
       if (e.response?.statusCode == 429) {
         throw RateLimitException();
       }
-      final msg = e.response?.data?.toString() ?? e.message ?? 'Stream failed';
+      String msg = e.message ?? 'Stream failed';
+      final data = e.response?.data;
+      if (data is Map) {
+        msg = data['error']?.toString() ?? msg;
+      }
       throw ApiException(msg);
     }
 
@@ -169,8 +173,12 @@ class ApiClient {
     CancelToken? cancelToken,
   }) =>
       _streamSse(
-        '/api/chat/conversations/$conversationId/messages',
-        data: {'content': content, 'model': model},
+        '/api/chat/messages',
+        data: {
+          'conversationId': conversationId,
+          'content': content,
+          'model': model,
+        },
         cancelToken: cancelToken,
       );
 
