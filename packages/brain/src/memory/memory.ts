@@ -175,6 +175,8 @@ export interface Memory {
   encrypted: boolean;
   encryption_pubkey: string | null;
   owner_wallet?: string | null;
+  // Recall instrumentation — populated during recallMemories(), not persisted to DB
+  link_path?: Array<'vector' | 'bm25' | 'entity' | 'jepa'>;
 }
 
 /** Lightweight memory summary for progressive disclosure (no content field). */
@@ -731,6 +733,15 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
 
     if (candidates.length === 0) return [];
 
+    // Build link_path map — tracks which retrieval signals surfaced each memory
+    const linkPathMap = new Map<number, Set<'vector' | 'bm25' | 'entity' | 'jepa'>>();
+    const addLinkPath = (id: number, path: 'vector' | 'bm25' | 'entity' | 'jepa') => {
+      if (!linkPathMap.has(id)) linkPathMap.set(id, new Set());
+      linkPathMap.get(id)!.add(path);
+    };
+    for (const id of vectorScores.keys()) addLinkPath(id, 'vector');
+    for (const id of bm25Scores.keys()) addLinkPath(id, 'bm25');
+
     // Phase 4: Score and rank with enhanced composite formula
     const scoredOpts = vectorScores.size > 0 || bm25Scores.size > 0
       ? { ...opts, _vectorScores: vectorScores, _bm25Scores: bm25Scores }
@@ -757,6 +768,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
               memoryTypes: opts.memoryTypes,
             });
             for (const mem of entityMemories) {
+              addLinkPath(mem.id, 'entity');
               if (!resultIdSet.has(mem.id)) {
                 results.push({
                   ...mem,
@@ -782,6 +794,7 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
               });
               for (const mem of coMems) {
                 if (cooccurrenceAdded >= limit) break;
+                addLinkPath(mem.id, 'entity');
                 if (!resultIdSet.has(mem.id)) {
                   const normalizedStrength = Math.min(cooc.cooccurrence_count / 5, 1);
                   results.push({
@@ -843,6 +856,8 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
                 const weightedStrength = (l.strength || 0.5) * bondWeight;
                 const current = linkBoostMap.get(l.memory_id) || 0;
                 linkBoostMap.set(l.memory_id, Math.max(current, weightedStrength));
+                // Tag memories surfaced via graph links as 'jepa' (JEPA dream cycle populates these links)
+                addLinkPath(l.memory_id, 'jepa');
               }
 
               const graphScored = (graphMemories as Memory[]).map(mem => ({
@@ -916,12 +931,21 @@ export async function recallMemories(opts: RecallOptions): Promise<Memory[]> {
       reinforceCoRetrievedLinks(ids).catch(err => log.debug({ err }, 'Link reinforcement failed'));
     }
 
+    // Attach link_path instrumentation to each result (mutate in place to preserve _score type)
+    for (const m of results) {
+      const paths = linkPathMap.get(m.id);
+      if (paths && paths.size > 0) {
+        m.link_path = [...paths] as Array<'vector' | 'bm25' | 'entity' | 'jepa'>;
+      }
+    }
+
     log.debug({
       recalled: results.length,
       topScore: results[0]?._score?.toFixed(3),
       query: opts.query?.slice(0, 40),
       vectorAssisted: vectorScores.size > 0,
       typeSpread: [...new Set(results.map((m: Memory) => m.memory_type))].join(','),
+      jepaPaths: results.filter((m: Memory) => m.link_path?.includes('jepa')).length,
     }, 'Memories recalled');
 
     return results;
@@ -1848,6 +1872,68 @@ export async function scoreImportanceWithLLM(
     log.warn({ err }, 'LLM importance scoring failed, using fallback');
     return calculateImportance(fallbackOpts || {});
   }
+}
+
+// ---- JEPA PHASE 4.5 HELPERS ---- //
+
+/**
+ * Returns the set of memory IDs already linked FROM the given memory
+ * (i.e. rows in memory_links where memory_a_id = memoryId).
+ */
+export async function fetchExistingLinkTargets(memoryId: number): Promise<Set<number>> {
+  const db = getDb();
+  const { data } = await db
+    .from('memory_links')
+    .select('memory_b_id')
+    .eq('memory_a_id', memoryId);
+  return new Set((data ?? []).map((r: { memory_b_id: number }) => r.memory_b_id));
+}
+
+/**
+ * Upserts a row in jepa_queried_memories marking this memory as queried now.
+ */
+export async function markJepaQueried(memoryId: number): Promise<void> {
+  const db = getDb();
+  await db
+    .from('jepa_queried_memories')
+    .upsert({ memory_id: memoryId, queried_at: new Date().toISOString() });
+}
+
+/**
+ * Returns the set of memory IDs that have been JEPA-queried at or after sinceMs (epoch ms).
+ */
+export async function fetchJepaQueriedSince(sinceMs: number): Promise<Set<number>> {
+  const db = getDb();
+  const { data } = await db
+    .from('jepa_queried_memories')
+    .select('memory_id')
+    .gte('queried_at', new Date(sinceMs).toISOString());
+  return new Set((data ?? []).map((r: { memory_id: number }) => r.memory_id));
+}
+
+/**
+ * Vector similarity search via the match_memories RPC.
+ * NOTE: query_embedding must be JSON-stringified per existing RPC convention.
+ * ownerWallet filtering is not forwarded to the RPC (no matching param in this
+ * codebase's match_memories signature); callers should filter client-side if needed.
+ */
+export async function matchByEmbedding(opts: {
+  embedding: number[]
+  threshold: number
+  limit: number
+  ownerWallet?: string
+}): Promise<Array<{ id: number; similarity: number }>> {
+  const db = getDb();
+  const { data } = await db.rpc('match_memories', {
+    query_embedding: JSON.stringify(opts.embedding),
+    match_threshold: opts.threshold,
+    match_count: opts.limit,
+    filter_owner: opts.ownerWallet ?? null,
+  });
+  return (data ?? []).map((r: { id: number; similarity: number }) => ({
+    id: r.id,
+    similarity: r.similarity,
+  }));
 }
 
 export function moodToValence(mood: string): number {
