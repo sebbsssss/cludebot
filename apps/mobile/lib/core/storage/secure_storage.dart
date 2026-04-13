@@ -53,6 +53,14 @@ class SecureStorageService {
     }
   }
 
+  // Onboarding
+  Future<bool> isOnboardingComplete() async =>
+      (await _storage.read(key: StorageKeys.onboardingComplete)) == 'true';
+  Future<void> setOnboardingComplete() =>
+      _storage.write(key: StorageKeys.onboardingComplete, value: 'true');
+  Future<void> setOnboardingNotComplete() =>
+      _storage.delete(key: StorageKeys.onboardingComplete);
+
   /// Wipes all persisted auth state (called on logout).
   Future<void> clearAll() => _storage.deleteAll();
 }
