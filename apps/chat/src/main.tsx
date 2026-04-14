@@ -26,7 +26,7 @@ createRoot(document.getElementById('root')!).render(
           walletList: ['phantom', 'solflare', 'backpack'],
         },
         loginMethods: ['wallet', 'email'],
-        embeddedWallets: { solana: { createOnLogin: 'off' } },
+        embeddedWallets: { solana: { createOnLogin: 'users-without-wallets' } },
         externalWallets: {
           solana: { connectors: solanaConnectors },
         },

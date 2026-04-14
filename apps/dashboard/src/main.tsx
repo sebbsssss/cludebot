@@ -45,8 +45,7 @@ if (
             } as any,
           },
           embeddedWallets: {
-            ethereum: { createOnLogin: "off" },
-            solana: { createOnLogin: "off" },
+            solana: { createOnLogin: "users-without-wallets" },
           },
           externalWallets: {
             solana: { connectors: solanaConnectors },
