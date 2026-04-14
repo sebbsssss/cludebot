@@ -53,57 +53,38 @@ export function useAuth(): AuthState {
     setCortexReady(true);
   }, []);
 
-  // Privy auth: ONLY if cortex is not active or initializing
+  // Privy auth: auto-register to get a clk_* key (works for both wallet and email login)
   useEffect(() => {
     if (cortexInitRef.current || cortexAuth) return;
     if (!ready || !privyAuth || tokenReady) return;
 
-    const hasWallet = solanaWallets && solanaWallets.length > 0;
+    getAccessTokenRef.current().then(async (token) => {
+      if (!token) return;
+      try {
+        const wallet = walletAddress || undefined;
+        const res = await fetch(`${import.meta.env.VITE_API_BASE || ''}/api/chat/auto-register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(wallet ? { wallet } : {}),
+        });
+        if (!res.ok) throw new Error('Auto-register failed');
+        const data = await res.json();
 
-    if (hasWallet) {
-      // Existing wallet flow — use Privy JWT + wallet param (legacy mode)
-      setAuthMode('privy');
-      api.setMode('legacy');
-      getAccessTokenRef.current().then(token => {
-        if (token) {
-          api.setToken(token);
-          api.setWalletAddress(walletAddress);
-          setTokenReady(true);
-          if (walletAddress && !hasRefreshed.current) {
-            hasRefreshed.current = true;
-            api.emitRefresh();
-          }
-        }
-      });
-    } else {
-      // Email-only login — call auto-register to get clk_* key, use cortex mode
-      getAccessTokenRef.current().then(async (token) => {
-        if (!token) return;
-        try {
-          const res = await fetch(`${import.meta.env.VITE_API_BASE || ''}/api/chat/auto-register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: '{}',
-          });
-          if (!res.ok) throw new Error('Auto-register failed');
-          const data = await res.json();
-
-          cortexInitRef.current = true;
-          api.setToken(data.api_key);
-          api.setMode('cortex');
-          api.setWalletAddress(null);
-          localStorage.setItem('cortex_api_key', data.api_key);
-          setCortexAuth(true);
-          setAuthMode('cortex');
-          setTokenReady(true);
-          hasRefreshed.current = true;
-          api.emitRefresh();
-        } catch (err) {
-          console.error('Email auto-register failed:', err);
-        }
-      });
-    }
-  }, [ready, privyAuth, cortexAuth, tokenReady, walletAddress, solanaWallets]);
+        cortexInitRef.current = true;
+        api.setToken(data.api_key);
+        api.setMode('cortex');
+        api.setWalletAddress(null);
+        localStorage.setItem('cortex_api_key', data.api_key);
+        setCortexAuth(true);
+        setAuthMode('cortex');
+        setTokenReady(true);
+        hasRefreshed.current = true;
+        api.emitRefresh();
+      } catch (err) {
+        console.error('Auto-register failed:', err);
+      }
+    });
+  }, [ready, privyAuth, cortexAuth, tokenReady, walletAddress]);
 
   // Update wallet when it loads (Privy wallets are async)
   useEffect(() => {
