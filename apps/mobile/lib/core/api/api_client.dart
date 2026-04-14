@@ -58,13 +58,17 @@ class ApiClient {
     String path, {
     Object? data,
     CancelToken? cancelToken,
+    Map<String, dynamic>? extra,
   }) async* {
     final Response<ResponseBody> response;
     try {
       response = await _dio.post<ResponseBody>(
         path,
         data: data,
-        options: Options(responseType: ResponseType.stream),
+        options: Options(
+          responseType: ResponseType.stream,
+          extra: extra,
+        ),
         cancelToken: cancelToken,
       );
     } on DioException catch (e) {
@@ -94,13 +98,13 @@ class ApiClient {
   // ---------------------------------------------------------------------------
 
   Future<AutoRegisterResponse> autoRegister(
-    String privyToken,
-    String wallet,
-  ) =>
+    String privyToken, [
+    String? wallet,
+  ]) =>
       _fetchJson(
         '/api/chat/auto-register',
         method: 'POST',
-        data: {'wallet': wallet},
+        data: wallet != null ? {'wallet': wallet} : {},
         options: Options(
           headers: {'Authorization': 'Bearer $privyToken'},
           extra: {'skipAuth': true},
@@ -171,6 +175,7 @@ class ApiClient {
     String content,
     String model, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extra,
   }) =>
       _streamSse(
         '/api/chat/messages',
@@ -180,6 +185,7 @@ class ApiClient {
           'model': model,
         },
         cancelToken: cancelToken,
+        extra: extra,
       );
 
   Stream<SseEvent> sendGuestMessage(

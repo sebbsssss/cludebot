@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/error_view.dart';
 import '../../core/auth/auth_provider.dart';
 import '../balance/balance_chip.dart';
+import '../onboarding/onboarding.dart';
 import 'chat_provider.dart';
 import 'chat_state.dart';
 import 'conversation_list_provider.dart';
@@ -40,6 +43,14 @@ class _ConversationListScreenState
     });
   }
 
+  void _checkOnboarding() {
+    final conversations =
+        ref.read(conversationListNotifierProvider).valueOrNull;
+    if (conversations != null) {
+      ref.read(onboardingProvider.notifier).checkAndStart();
+    }
+  }
+
   Future<void> _createConversation() async {
     if (_isCreating) return;
     setState(() => _isCreating = true);
@@ -62,13 +73,25 @@ class _ConversationListScreenState
   @override
   Widget build(BuildContext context) {
     final asyncConversations = ref.watch(conversationListNotifierProvider);
+    final onboardingKeys = ref.watch(onboardingKeysProvider);
+
+    // Trigger onboarding check once conversations are loaded.
+    ref.listen(conversationListNotifierProvider, (prev, next) {
+      if (prev?.valueOrNull == null && next.valueOrNull != null) {
+        _checkOnboarding();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Conversations'),
+        title: Text('Conversations', key: onboardingKeys.greeting),
         centerTitle: false,
         titleSpacing: 20,
-        actions: const [ModelChip(), BalanceChip(), SizedBox(width: 8)],
+        actions: [
+          ModelChip(key: onboardingKeys.modelChip),
+          BalanceChip(key: onboardingKeys.balanceChip),
+          const SizedBox(width: 8),
+        ],
       ),
       body: asyncConversations.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -95,6 +118,7 @@ class _ConversationListScreenState
               ),
       ),
       floatingActionButton: FloatingActionButton(
+        key: onboardingKeys.fab,
         onPressed: _isCreating ? null : _createConversation,
         child: _isCreating
             ? const SizedBox(
@@ -245,6 +269,7 @@ class ActiveChatScreen extends ConsumerStatefulWidget {
 class _ActiveChatScreenState extends ConsumerState<ActiveChatScreen>
     with WidgetsBindingObserver {
   final _scrollController = ScrollController();
+  Timer? _step4Timeout;
 
   @override
   void initState() {
@@ -255,6 +280,7 @@ class _ActiveChatScreenState extends ConsumerState<ActiveChatScreen>
 
   @override
   void dispose() {
+    _step4Timeout?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
@@ -291,14 +317,48 @@ class _ActiveChatScreenState extends ConsumerState<ActiveChatScreen>
     final chatState = ref.watch(chatNotifierProvider(widget.conversationId));
     final selectedModelId = ref.watch(selectedModelNotifierProvider);
     final isStreaming = chatState.streamingMsg != null;
+    final onboardingKeys = ref.watch(onboardingKeysProvider);
 
-    // Show error via SnackBar.
+    // Show error via SnackBar + onboarding auto-advance.
     ref.listen<ChatState>(chatNotifierProvider(widget.conversationId),
         (prev, next) {
       if (next.error != null && prev?.error != next.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.error!)),
         );
+      }
+
+      final currentOnboarding = ref.read(onboardingProvider);
+      if (!currentOnboarding.isActive) return;
+
+      // Onboarding step 3: auto-advance when user sends a message.
+      if (currentOnboarding.currentStep == 3) {
+        final prevCount =
+            prev?.settled.where((m) => m.role == 'user').length ?? 0;
+        final nextCount = next.settled.where((m) => m.role == 'user').length;
+        if (nextCount > prevCount) {
+          ref.read(onboardingProvider.notifier).advanceStep();
+          // Start timeout for step 4 in case memoryIds never arrive.
+          _step4Timeout?.cancel();
+          _step4Timeout = Timer(const Duration(seconds: 10), () {
+            if (mounted) {
+              final s = ref.read(onboardingProvider);
+              if (s.isActive && s.currentStep == 4) {
+                ref.read(onboardingProvider.notifier).advanceStep();
+              }
+            }
+          });
+        }
+      }
+
+      // Onboarding step 4: auto-advance when assistant response has memoryIds.
+      if (currentOnboarding.currentStep == 4) {
+        final hasMemory = next.settled.any(
+            (m) => m.role == 'assistant' && m.memoryIds != null && m.memoryIds!.isNotEmpty);
+        if (hasMemory) {
+          _step4Timeout?.cancel();
+          ref.read(onboardingProvider.notifier).advanceStep();
+        }
       }
     });
 
@@ -348,15 +408,24 @@ class _ActiveChatScreenState extends ConsumerState<ActiveChatScreen>
                     ),
                   );
                 }
+                final bubble = MessageBubble(message: items[index]);
+                // Attach onboarding key to the latest assistant message for step 4.
+                final isStep4Target = index == 0 &&
+                    items[index] is SettledMessage &&
+                    (items[index] as SettledMessage).role == 'assistant';
                 return Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: MessageBubble(message: items[index]),
+                  child: isStep4Target
+                      ? KeyedSubtree(
+                          key: onboardingKeys.messageBubble, child: bubble)
+                      : bubble,
                 );
               },
             ),
           ),
           ChatInputBar(
+            key: onboardingKeys.chatInput,
             enabled: !isStreaming,
             onSubmit: (content) {
               final model = selectedModelId ?? chatState.model ?? 'claude-sonnet-4-20250514';

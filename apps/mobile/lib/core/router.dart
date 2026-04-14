@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/billing/topup_screen.dart';
+import '../features/byok/byok_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/chat/guest_chat_screen.dart';
 import '../features/login/login_screen.dart';
 import '../features/memory/memory_screen.dart';
+import '../features/onboarding/onboarding_overlay.dart';
 import '../features/settings/history_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../shared/widgets/bottom_nav.dart';
@@ -51,7 +53,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const GuestChatScreen(),
       ),
       ShellRoute(
-        builder: (context, state, child) => ScaffoldWithBottomNav(child: child),
+        builder: (context, state, child) => OnboardingOverlay(
+          child: ScaffoldWithBottomNav(child: child),
+        ),
         routes: [
           GoRoute(
             path: '/chat',
@@ -78,6 +82,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/topup',
         builder: (context, state) => const TopUpScreen(),
+      ),
+      GoRoute(
+        path: '/settings/byok',
+        builder: (context, state) => const ByokScreen(),
       ),
       GoRoute(
         path: '/settings/history',
