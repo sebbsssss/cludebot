@@ -29,20 +29,15 @@ class _OnboardingOverlayState extends ConsumerState<OnboardingOverlay> {
     final state = ref.watch(onboardingProvider);
     final keys = ref.watch(onboardingKeysProvider);
 
-    print('[OnboardingOverlay] isActive=${state.isActive}, step=${state.currentStep}');
     if (!state.isActive) return widget.child;
 
     final targetKey = keys.keyForStep(state.currentStep);
-    if (targetKey == null) {
-      print('[OnboardingOverlay] targetKey is null for step ${state.currentStep}');
-      return widget.child;
-    }
+    if (targetKey == null) return widget.child;
 
     // Target widget not yet rendered — show child only.
     // ref.watch(onboardingProvider) will rebuild when state changes,
     // and the target widget attaching the key triggers a natural rebuild.
     if (targetKey.currentContext == null) {
-      print('[OnboardingOverlay] targetKey.currentContext is null for step ${state.currentStep}');
       // Schedule a single post-frame check in case the key was just attached.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && targetKey.currentContext != null) {

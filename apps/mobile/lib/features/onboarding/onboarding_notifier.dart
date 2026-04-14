@@ -13,10 +13,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   Future<void> checkAndStart() async {
     final storage = _ref.read(secureStorageProvider);
     final isComplete = await storage.isOnboardingComplete();
-    print('[Onboarding] checkAndStart called, isComplete=$isComplete');
     if (isComplete) return;
-
-    print('[Onboarding] activating step 0');
     state = state.copyWith(isActive: true, currentStep: 0);
   }
 
