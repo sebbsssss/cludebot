@@ -158,40 +158,18 @@ export function useAuth(): AuthState {
   const handleLogoutRef = useRef(handleLogout);
   handleLogoutRef.current = handleLogout;
 
-  // On 401: refresh token silently, re-fetch data. Logout if refresh fails.
+  // On 401: logout. Only active after auth is fully ready (tokenReady)
+  // to avoid race conditions during auto-register.
   useEffect(() => {
+    if (!tokenReady) return;
     if (!privyAuth && !cortexAuth) return;
 
     api.onAuthExpired(() => {
-      // Cortex API keys can't be refreshed — a 401 means the key is invalid
-      if (cortexAuth) {
-        handleLogoutRef.current();
-        return;
-      }
-
-      if (refreshingRef.current) return;
-
-      refreshingRef.current = getAccessTokenRef.current()
-        .then((newToken) => {
-          if (newToken) {
-            api.setToken(newToken);
-            api.emitRefresh();
-          } else {
-            handleLogoutRef.current();
-          }
-          return newToken;
-        })
-        .catch(() => {
-          handleLogoutRef.current();
-          return null;
-        })
-        .finally(() => {
-          refreshingRef.current = null;
-        });
+      handleLogoutRef.current();
     });
 
     return () => api.onAuthExpired(null);
-  }, [privyAuth, cortexAuth]);
+  }, [privyAuth, cortexAuth, tokenReady]);
 
   const isAuthenticated = privyAuth || cortexAuth;
 
