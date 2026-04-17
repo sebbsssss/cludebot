@@ -1,6 +1,6 @@
 {
   "name": "@clude/shared",
-  "version": "2.7.8",
+  "version": "3.0.0",
   "private": true,
   "description": "Clude shared infrastructure — config, database, auth clients, utilities",
   "main": "dist/index.js",

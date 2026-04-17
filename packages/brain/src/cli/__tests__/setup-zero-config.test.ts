@@ -93,7 +93,7 @@ describe('installMcpConfig', () => {
     const written = JSON.parse(call[1] as string);
     expect(written.mcpServers['clude-memory']).toMatchObject({
       command: 'npx',
-      args: ['clude-bot', 'mcp-serve'],
+      args: ['clude', 'mcp-serve'],
       env: { CORTEX_API_KEY: 'clk_test', CLUDE_WALLET: 'wallet123' },
     });
   });

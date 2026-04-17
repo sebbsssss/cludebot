@@ -90,13 +90,13 @@ export function Setup() {
   }
 
   const installCmd = activeKey
-    ? `CORTEX_API_KEY=${activeKey} npx clude-bot setup`
-    : 'npx clude-bot setup';
+    ? `CORTEX_API_KEY=${activeKey} npx clude setup`
+    : 'npx clude setup';
 
   const mcpConfig = JSON.stringify({
     mcpServers: {
       'clude-memory': {
-        command: 'npx', args: ['clude-bot', 'mcp-serve'],
+        command: 'npx', args: ['clude', 'mcp-serve'],
         env: { CORTEX_API_KEY: activeKey || 'clk_...', CORTEX_HOST_URL: CORTEX_HOST },
       },
     },
@@ -292,9 +292,9 @@ export function Setup() {
               }}>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>Node.js SDK</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-faint)' }}><code>npm install clude-bot</code> — use the Cortex SDK in your own agent</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-faint)' }}><code>npm install clude</code> — use the Cortex SDK in your own agent</div>
                 </div>
-                <CopyBtn text="npm install clude-bot" label="Copy" />
+                <CopyBtn text="npm install clude" label="Copy" />
               </div>
               <div style={{
                 padding: '14px 16px', border: '1px solid var(--border)',
