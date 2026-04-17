@@ -1,4 +1,4 @@
-// SDK exports — available when imported as a library: import { Cortex } from 'clude-bot'
+// SDK exports — available when imported as a library: import { Cortex } from 'clude'
 export { Cortex } from '@clude/brain/sdk';
 export type {
   CortexConfig,

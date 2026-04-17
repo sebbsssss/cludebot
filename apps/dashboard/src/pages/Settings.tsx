@@ -9,7 +9,7 @@ type IDE = 'claude-desktop' | 'claude-code' | 'cursor';
 function getMcpSnippet(apiKey: string): string {
   const entry = {
     command: 'npx',
-    args: ['clude-bot', 'mcp-serve'],
+    args: ['clude', 'mcp-serve'],
     env: {
       CORTEX_API_KEY: apiKey,
       CORTEX_HOST_URL: CORTEX_HOST,
