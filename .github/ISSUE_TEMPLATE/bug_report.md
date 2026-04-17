@@ -27,7 +27,7 @@ What actually happened. Include error messages or stack traces if available.
 ## Environment
 
 - **Node.js version**: (e.g. 22.x)
-- **clude-bot version**: (e.g. 2.4.0)
+- **clude version**: (e.g. 2.4.0)
 - **OS**: (e.g. macOS 15, Ubuntu 24.04)
 - **Supabase**: (hosted / self-hosted)
 - **Embedding provider**: (voyage / openai / none)

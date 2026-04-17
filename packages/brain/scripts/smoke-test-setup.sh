@@ -1,8 +1,8 @@
 #!/bin/bash
-# Smoke test for `npx clude-bot setup` against a deployment with Privy configured.
+# Smoke test for `npx clude setup` against a deployment with Privy configured.
 #
 # Requirements:
-#   - Built clude-bot dist: pnpm --filter @clude/brain build
+#   - Built clude dist: pnpm --filter @clude/brain build
 #   - CORTEX_HOST_URL pointing to a deployment with Privy configured
 #   - jq installed for JSON parsing
 #

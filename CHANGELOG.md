@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [3.0.0] — 2026-04-17
+
+### Changed
+- **BREAKING: npm package renamed from `clude-bot` to `clude`.** Users should now run `npx clude setup` (previously `npx clude-bot setup`) and `npm install clude` (previously `npm install clude-bot`). The `clude-bot` package will be deprecated on npm with a redirect notice. Existing installs continue to work.
+- **BREAKING: CLI binary renamed from `clude-bot` to `clude`.** After installing, the command is now `clude <subcommand>`.
+
+### Migration
+- Replace `npx clude-bot <cmd>` with `npx clude <cmd>` in scripts, docs, and MCP configs.
+- In `import { Cortex } from 'clude-bot'` → `from 'clude'`.
+- MCP args `["clude-bot", "mcp-serve"]` → `["clude", "mcp-serve"]`.
+- Config files (`~/.clude/config.json`, `~/.clude/brain.db`, `CLUDE_*` env vars) are unchanged — no user-side data migration needed.
+
 ## [2.6.0] — 2026-03-02
 
 ### Added
