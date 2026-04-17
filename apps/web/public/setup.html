@@ -1134,7 +1134,7 @@ async function register() {
           <ol style="margin:8px 0 0 18px;padding:0">
             <li>Switch to a different network (mobile hotspot or VPN)</li>
             <li>Ask your IT admin to whitelist <code style="background:rgba(0,0,0,0.06);padding:2px 5px;border-radius:3px">clude.io</code></li>
-            <li>Use the CLI instead: <code style="background:rgba(0,0,0,0.06);padding:2px 5px;border-radius:3px">npx clude-bot setup</code></li>
+            <li>Use the CLI instead: <code style="background:rgba(0,0,0,0.06);padding:2px 5px;border-radius:3px">npx clude setup</code></li>
           </ol>
         </div>`;
     } else {
@@ -1192,7 +1192,7 @@ function getConfigJson() {
     mcpServers: {
       'clude-memory': {
         command: 'npx',
-        args: ['clude-bot', 'mcp-serve'],
+        args: ['clude', 'mcp-serve'],
         env,
       }
     }

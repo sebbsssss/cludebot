@@ -5,18 +5,18 @@
  * on CLUDE infrastructure, isolated by your API key.
  *
  * Get a key:
- *   npx clude-bot register
+ *   npx clude register
  *
  * Usage:
  *   CORTEX_API_KEY=clk_... npx tsx examples/hosted-mode.ts
  */
 
-import { Cortex } from 'clude-bot';
+import { Cortex } from 'clude';
 
 async function main() {
   const apiKey = process.env.CORTEX_API_KEY;
   if (!apiKey) {
-    console.error('Set CORTEX_API_KEY env var. Get one with: npx clude-bot register');
+    console.error('Set CORTEX_API_KEY env var. Get one with: npx clude register');
     process.exit(1);
   }
 

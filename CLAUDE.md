@@ -2,7 +2,7 @@
 
 ## What This Repo Is
 
-1. **npm SDK** (`clude-bot`) — persistent cognitive memory for AI agents. Consumers import `Cortex` and call `recall`/`store`.
+1. **npm SDK** (`clude`) — persistent cognitive memory for AI agents. Consumers import `Cortex` and call `recall`/`store`.
 2. **Autonomous bot** — @Cludebot on X/Twitter, running 24/7.
 3. **Web apps** — `apps/chat/` (user-facing) and `apps/dashboard/` (admin). Independent React 19 + Vite + Tailwind v4 apps.
 4. **Mobile app** — `apps/mobile/` Flutter app with Riverpod, GoRouter, Freezed.
