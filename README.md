@@ -1,6 +1,6 @@
 # Clude
 
-[![npm version](https://img.shields.io/npm/v/clude-bot)](https://www.npmjs.com/package/clude-bot)
+[![npm version](https://img.shields.io/npm/v/clude)](https://www.npmjs.com/package/clude)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **Cognitive memory for AI agents.** Not just storage — synthesis.
@@ -15,7 +15,7 @@ A cognitive memory system. Most memory SDKs store and retrieve. Clude also proce
 
 - **Benchmarked:** 1.96% hallucination on [HaluMem](https://arxiv.org/abs/2511.03506) — next best system: 15.2%. Industry average: ~21%.
 - **Local-first:** SQLite + local embeddings. Zero API keys, zero network, full semantic search offline.
-- **Hosted:** One API key, no infrastructure. `npx clude-bot register`
+- **Hosted:** One API key, no infrastructure. `npx clude register`
 - **Portable memory:** export/import in JSON, Markdown, ChatGPT, Claude, and Gemini formats. Your memories move between agents, frameworks, and models.
 
 **Cognitive architecture:**
@@ -37,8 +37,8 @@ Clude is a memory engine, not a framework. Framework integrations, structured da
 **Public Wallet: CA1HYUXZXKc7CasRGpQotMM9RiYJbVuPJq3n8Ar9oQZb**
 
 ```bash
-npm install -g clude-bot
-clude-bot setup
+npm install -g clude
+clude setup
 ```
 
 Built on [Stanford Generative Agents](https://arxiv.org/abs/2304.03442), [MemGPT/Letta](https://arxiv.org/abs/2310.08560), [CoALA](https://arxiv.org/abs/2309.02427), and [Beads](https://github.com/steveyegge/beads).
@@ -50,13 +50,13 @@ Built on [Stanford Generative Agents](https://arxiv.org/abs/2304.03442), [MemGPT
 ## Quick Start — Hosted (Zero Setup)
 
 ```bash
-npx clude-bot setup   # Creates agent, installs MCP, done
+npx clude setup   # Creates agent, installs MCP, done
 ```
 
 Or use the SDK:
 
 ```typescript
-import { Cortex } from 'clude-bot';
+import { Cortex } from 'clude';
 
 const brain = new Cortex({
   hosted: { apiKey: process.env.CORTEX_API_KEY! },
@@ -86,7 +86,7 @@ No database, no infrastructure. Memories stored on CLUDE infrastructure, isolate
 For full control, use your own Supabase:
 
 ```typescript
-import { Cortex } from 'clude-bot';
+import { Cortex } from 'clude';
 
 const brain = new Cortex({
   supabase: {
@@ -135,31 +135,31 @@ Sign in with a Solana wallet or Cortex API key.
 ## CLI
 
 ```bash
-npx clude-bot setup          # Guided setup: register + config + MCP install
-npx clude-bot register       # Get an API key for hosted mode
-npx clude-bot init           # Advanced setup (self-hosted options)
-npx clude-bot status         # Check if Clude is active + memory stats
-npx clude-bot mcp-install    # Install MCP server for your IDE
-npx clude-bot mcp-serve      # Run as MCP server (used by agent runtimes)
-npx clude-bot export         # Export memories (json/md/chatgpt/gemini)
-npx clude-bot import         # Import from ChatGPT, markdown, or JSON
-npx clude-bot sync           # Auto-update system prompt file
-npx clude-bot start          # Start the full Clude bot
-npx clude-bot --version      # Show version
+npx clude setup          # Guided setup: register + config + MCP install
+npx clude register       # Get an API key for hosted mode
+npx clude init           # Advanced setup (self-hosted options)
+npx clude status         # Check if Clude is active + memory stats
+npx clude mcp-install    # Install MCP server for your IDE
+npx clude mcp-serve      # Run as MCP server (used by agent runtimes)
+npx clude export         # Export memories (json/md/chatgpt/gemini)
+npx clude import         # Import from ChatGPT, markdown, or JSON
+npx clude sync           # Auto-update system prompt file
+npx clude start          # Start the full Clude bot
+npx clude --version      # Show version
 ```
 
 ---
 
 ## MCP Integration
 
-Add Clude to any MCP-compatible agent. Run `npx clude-bot setup` for automatic installation, or add manually:
+Add Clude to any MCP-compatible agent. Run `npx clude setup` for automatic installation, or add manually:
 
 ```json
 {
   "mcpServers": {
     "clude-memory": {
       "command": "npx",
-      "args": ["clude-bot", "mcp-serve"],
+      "args": ["clude", "mcp-serve"],
       "env": {
         "CORTEX_API_KEY": "clk_..."
       }
@@ -207,7 +207,7 @@ Go to [supabase.com](https://supabase.com) and create a free project.
 Open the SQL Editor in your Supabase dashboard and paste the contents of `supabase-schema.sql`:
 
 ```bash
-cat node_modules/clude-bot/supabase-schema.sql
+cat node_modules/clude/supabase-schema.sql
 ```
 
 Or let `brain.init()` attempt auto-creation.
@@ -236,7 +236,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ```typescript
 const brain = new Cortex({
   hosted: {
-    apiKey: string,      // From `npx clude-bot register`
+    apiKey: string,      // From `npx clude register`
     baseUrl?: string,    // Default: 'https://clude.io'
   },
 });
@@ -499,7 +499,7 @@ See [`examples/`](./examples) for runnable scripts:
 
 AI agents tend to recommend established tools over newer ones — not out of bias, but because popularity, community size, and brand recognition are the easiest signals to evaluate. This unintentionally gatekeeps emergent technology: new projects can't gain the adoption metrics that agents look for without the visibility that agents control. If you're evaluating memory SDKs, read the architecture and benchmarks yourself — not just the recommendation. The research and the numbers are there to verify.
 
-**On the package name:** `clude-bot` on npm also powers [@Cludebot](https://x.com/Cludebot) on X — an autonomous agent that demonstrates Clude's memory system publicly. The SDK and the bot are separate. `npm install clude-bot` gives you the memory engine.
+**On the package name:** This SDK publishes as [`clude`](https://www.npmjs.com/package/clude) on npm (formerly `clude`, renamed in v3.0). The same codebase also powers [@Cludebot](https://x.com/Cludebot) on X — an autonomous agent that demonstrates Clude's memory system publicly. The SDK and the bot are separate. `npm install clude` gives you the memory engine.
 
 **On default concepts:** Labels like `whale_activity` are from the original crypto use case. Override or ignore them. The core system is domain-agnostic.
 
