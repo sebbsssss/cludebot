@@ -72,6 +72,12 @@ function buildWorkerList(): WorkerDef[] {
       stop: () => require('./task-executor-worker').stop(),
       enabled: () => true,
     },
+    {
+      name: 'growth-swarm',
+      start: () => require('../growth').startSwarm(),
+      stop: () => require('../growth').stopSwarm(),
+      enabled: () => require('../growth').isEnabled(),
+    },
   ];
 }
 
