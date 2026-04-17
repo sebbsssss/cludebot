@@ -51,4 +51,14 @@ pub mod memory_registry {
     ) -> Result<()> {
         instructions::create_pool::handler(ctx, namespace, write_fee, citation_fee)
     }
+
+    /// Store a memory into a shared pool. Author pays pool.write_fee in $CLUDE
+    /// to the pool treasury ATA.
+    pub fn store_memory_in_pool(
+        ctx: Context<StoreMemoryInPool>,
+        content_hash: [u8; 32],
+        memory_id: u64,
+    ) -> Result<()> {
+        instructions::store_memory_in_pool::handler(ctx, content_hash, memory_id)
+    }
 }
