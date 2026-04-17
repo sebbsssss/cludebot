@@ -73,7 +73,7 @@ function detectMode(): { mode: string; details: string } {
   if (hasLocal) {
     return { mode: 'local', details: MEMORIES_FILE };
   }
-  return { mode: 'not configured', details: 'Run: npx clude-bot setup' };
+  return { mode: 'not configured', details: 'Run: npx clude setup' };
 }
 
 function printLocalStatus(): void {
@@ -234,7 +234,7 @@ function checkMcpInstalled(): void {
 
   if (!found) {
     printWarn('MCP not detected in any IDE config');
-    printInfo('Run: npx clude-bot mcp-install');
+    printInfo('Run: npx clude mcp-install');
   }
   console.log('');
 }
@@ -261,8 +261,8 @@ export async function runStatus(): Promise<void> {
   } else {
     printWarn('Clude is not configured yet.\n');
     printInfo('Get started:');
-    console.log(`    ${c.cyan}npx clude-bot setup${c.reset}              ${c.dim}Guided setup (recommended)${c.reset}`);
-    console.log(`    ${c.cyan}npx clude-bot mcp-install --local${c.reset} ${c.dim}Quick local install${c.reset}\n`);
+    console.log(`    ${c.cyan}npx clude setup${c.reset}              ${c.dim}Guided setup (recommended)${c.reset}`);
+    console.log(`    ${c.cyan}npx clude mcp-install --local${c.reset} ${c.dim}Quick local install${c.reset}\n`);
   }
 
   // Memory types reference

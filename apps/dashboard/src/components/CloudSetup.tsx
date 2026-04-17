@@ -16,7 +16,7 @@ interface RegistrationResult {
 function getMcpConfig(apiKey: string): string {
   const entry = {
     command: 'npx',
-    args: ['clude-bot', 'mcp-serve'],
+    args: ['clude', 'mcp-serve'],
     env: {
       CORTEX_API_KEY: apiKey,
       CORTEX_HOST_URL: CORTEX_HOST,
@@ -546,10 +546,10 @@ export function CloudSetup({ onBack }: { onBack: () => void }) {
                   Or auto-install via terminal
                 </div>
                 <code style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  npx clude-bot setup
+                  npx clude setup
                 </code>
               </div>
-              <CopyButton text="npx clude-bot setup" />
+              <CopyButton text="npx clude setup" />
             </div>
 
             {/* Done */}

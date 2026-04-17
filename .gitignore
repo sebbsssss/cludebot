@@ -3,6 +3,9 @@ dist/
 .turbo/
 .env
 
+# Publish build artifacts copied to repo root by scripts/build-publish.mjs
+/supabase-schema.sql
+
 # Frontend built assets (vite build output)
 apps/chat/dist/
 apps/dashboard/dist/
