@@ -152,7 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 onSubmitted: (_) => _submitEmail(),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
 
               // Continue with a wallet
               const WalletConnectButton(),
