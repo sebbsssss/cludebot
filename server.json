@@ -3,16 +3,16 @@
   "name": "io.github.sebbsssss/clude",
   "description": "Portable agent memory anchored on Solana. Local SQLite + vector recall, open export.",
   "repository": {
-    "url": "https://github.com/sebbsssss/cludebot",
+    "url": "https://github.com/sebbsssss/clude",
     "source": "github"
   },
-  "version": "3.0.2",
+  "version": "3.0.3",
   "websiteUrl": "https://clude.io",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@clude/sdk",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "runtimeHint": "npx",
       "runtimeArguments": [
         {

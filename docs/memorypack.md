@@ -205,6 +205,6 @@ unknown `record_schema`). `1.0` will freeze the record shape above.
 
 ## Feedback
 
-File issues at https://github.com/sebbsssss/cluude-bot/issues with
+File issues at https://github.com/sebbsssss/clude/issues with
 label `memorypack`. PRs welcome, especially from non-Clude memory
 systems that want to implement the reader.

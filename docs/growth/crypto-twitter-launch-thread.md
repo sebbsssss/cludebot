@@ -50,7 +50,7 @@ Clude-specific.
 Any memory vendor can implement the reader. We actively want that
 — portability is only real if someone else validates it.
 
-Spec: github.com/sebbsssss/cluude-bot/blob/main/docs/memorypack.md
+Spec: github.com/sebbsssss/clude/blob/main/docs/memorypack.md
 
 **5/**
 Why Solana memo, not a token?

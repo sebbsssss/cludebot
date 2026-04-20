@@ -13,7 +13,7 @@ web-form flows; none of them have a working API route for community servers.
 | Language | TypeScript |
 | License | MIT |
 | Homepage | https://clude.io |
-| Repository | https://github.com/sebbsssss/cludebot |
+| Repository | https://github.com/sebbsssss/clude |
 | Docs | https://clude.io/docs |
 | Author / publisher | sebbsssss |
 | Tags | memory, persistence, portability, solana, ed25519, embedding, vector-search, local-first |
@@ -89,7 +89,7 @@ Stats as of submission:
 - **URL:** https://mcp.so/submit
 - **Flow:** sign in with GitHub, click "Submit Server"
 - **Fields:**
-  - GitHub repo: `sebbsssss/cludebot`
+  - GitHub repo: `sebbsssss/clude`
   - Name: `Clude`
   - Description: use the **medium description** above
   - Category: `Memory` (or `Knowledge` if Memory isn't listed)
@@ -104,7 +104,7 @@ Stats as of submission:
 - **URL:** https://mcpservers.org/submit
 - **Flow:** GitHub OAuth, then a single form
 - **Fields:**
-  - Repository URL: `https://github.com/sebbsssss/cludebot`
+  - Repository URL: `https://github.com/sebbsssss/clude`
   - Short description: use the **short description** (≤100 chars)
   - Long description: use the **medium description**
   - Homepage: `https://clude.io`
@@ -122,14 +122,14 @@ Stats as of submission:
   repos. Two steps to speed up indexing and get the badge:
 
 **a)** Submit the repo URL via the "Suggest a server" link at the bottom of the
-  servers page. Just paste `https://github.com/sebbsssss/cludebot`.
+  servers page. Just paste `https://github.com/sebbsssss/clude`.
 
 **b)** Once glama scans and assigns a slug (usually within 24h), the repo shows
-  at `https://glama.ai/mcp/servers/sebbsssss/cludebot`. Add the score badge to
-  the top of cluude-bot's README:
+  at `https://glama.ai/mcp/servers/sebbsssss/clude`. Add the score badge to
+  the top of clude's README:
 
 ```md
-[![Glama MCP Score](https://glama.ai/mcp/servers/sebbsssss/cludebot/badges/score.svg)](https://glama.ai/mcp/servers/sebbsssss/cludebot)
+[![Glama MCP Score](https://glama.ai/mcp/servers/sebbsssss/clude/badges/score.svg)](https://glama.ai/mcp/servers/sebbsssss/clude)
 ```
 
   Having the badge back-links from our repo, which bumps glama's recognition

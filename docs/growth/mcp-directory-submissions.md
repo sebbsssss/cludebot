@@ -12,7 +12,7 @@ target repo PRs.
 **Binary:** `clude` (via `npx @clude/sdk mcp-serve` or `npx clude mcp-serve`)
 **Homepage:** https://clude.io
 **Docs:** https://clude.io/docs
-**Repo:** https://github.com/sebbsssss/cluude-bot
+**Repo:** https://github.com/sebbsssss/clude
 **License:** MIT
 **Author:** Clude team / sebbsssss
 **Category:** Memory / Knowledge
@@ -62,9 +62,9 @@ Claude Desktop in one step.
 - **Submission block (paste as list item):**
 
 ```md
-- [Clude](https://github.com/sebbsssss/cluude-bot) — Persistent,
+- [Clude](https://github.com/sebbsssss/clude) — Persistent,
   portable memory for agents. Local SQLite + vector search, anchored
-  on Solana for tamper-evidence, exportable as [MemoryPack](https://github.com/sebbsssss/cluude-bot/blob/main/docs/memorypack.md).
+  on Solana for tamper-evidence, exportable as [MemoryPack](https://github.com/sebbsssss/clude/blob/main/docs/memorypack.md).
 ```
 
 - **PR title:** `Add Clude to community servers`
@@ -78,7 +78,7 @@ Claude Desktop in one step.
 - **Submission block:**
 
 ```md
-- [Clude](https://github.com/sebbsssss/cluude-bot) 🔐 🦀 🪟 🍎 🐧 —
+- [Clude](https://github.com/sebbsssss/clude) 🔐 🦀 🪟 🍎 🐧 —
   Portable, on-chain-anchored agent memory. SQLite + vector recall,
   Solana memo commits, MemoryPack export format.
 ```
