@@ -32,30 +32,46 @@ All scores reported as percentages. n = number of Q/A pairs evaluated (glob data
 
 | System | AR (n=300) | LRU (n=71) | CR (n=100) |
 |---|---|---|---|
-| **Clude + gpt-4o-mini** | EM 1.3  /  F1 13.4  /  **recall 24.4** | EM 0.0  /  **substring 59.2**  /  **recall 73.6** | **EM 55.0  /  F1 56.4  /  recall 56.3** |
-| mem0 + gpt-4o-mini | pending | pending | pending |
-| Letta + gpt-4o-mini | pending | pending | pending |
-| Cognee | pending | pending | pending |
-| Embedding RAG (text-embedding-3-large) | pending | pending | pending |
-| BM25 | pending | pending | pending |
-| No memory (gpt-4o-mini alone) | pending | pending | pending |
+| **Clude + gpt-4o-mini** | EM 1.3  /  F1 13.4  /  recall 24.4 | EM 0.0  /  substring 59.2  /  recall 73.6 | EM 55.0  /  F1 56.4  /  recall 56.3 |
+| **BM25 + gpt-4o-mini** | **EM 6.0  /  F1 25.0  /  recall 47.8** | **EM 0.0  /  substring 60.6  /  recall 78.3** | **EM 80.0  /  F1 81.4  /  recall 81.3** |
+| mem0 + gpt-4o-mini | 🏃 running | queued | queued |
+| Letta-API + gpt-4o-mini | queued | queued | queued |
+| Embedding RAG (text-embedding-3-large) | pending (faiss fix) | pending | pending |
+| No-memory baseline (gpt-4o-mini alone) | failed (TPM) — retry | queued | queued |
 
-**Reading the Clude row:**
-- **CR** is Clude's strongest axis — 55% EM on Factconsolidation_sh_6k, confirming the pre-registered evaluator prediction that the dream cycle + contradiction resolution is genuinely novel.
-- **LRU** — 73.6% recall of correct context, 59.2% substring_match on answers. Low EM (0) reflects Clude's verbose answers mismatching terse-answer benchmark format, not a capability issue.
-- **AR** — hardest (LongMemEval_s 400k-context needle-in-haystack). 24.4% recall is an honest number for this difficulty; without memory this would be near 0.
+**Honest read of the MABench rows:**
+
+- **BM25 wins all three MABench competencies.** This is a real finding, not a bug. BM25's literal keyword match is more precise than Clude's graph expansion when the benchmark answers are single-token exact facts in relatively short passages.
+- Clude's **CR 55% / BM25's 80%** gap is the most striking. Factconsolidation_sh_6k has 6k-token contexts where BM25's precision wins. Clude's dream-cycle graph adds useful structure *over longer horizons*, but the benchmark passages are too short for that edge to materialize.
+- Clude's **AR 1.3%** is low because LongMemEval_s's 400k-token haystacks are where single-session retrieval from a memory graph is especially hard — the graph has to re-index everything on every question. On the *same dataset*, a different evaluation (LongMemEval's native judge-based scoring at n=500) is re-running under `scripts/longmemeval-benchmark-openai.ts` — that number will land separately.
 
 ## Multi-hop Results (Cognee benchmark family)
 
-Standard HotPotQA-style scoring (exact_match, token-F1, substring match). All runs at n=50, gpt-4o-mini answerer, Clude as memory layer.
+Standard HotPotQA-style scoring (exact_match, token-F1, substring match). All runs at n=50, gpt-4o-mini answerer.
 
-| Dataset | n | Exact Match | F1 | Substring |
-|---|---|---|---|---|
-| **HotPotQA** (dev distractor) | 50 | **62.0%** | **75.5%** | **72.0%** |
-| **2WikiMultiHop** | 50 | **58.0%** | **68.2%** | **72.0%** |
-| **MuSiQue** (ans dev) | 50 | 20.0% | 33.8% | 28.0% |
+| Dataset | Clude | BM25 | Delta |
+|---|---|---|---|
+| HotPotQA (dev distractor) | EM **62.0**  F1 **75.5**  SUB 72.0 | EM 58.0  F1 72.7  SUB 72.0 | Clude +4 EM |
+| 2WikiMultiHop | EM 58.0  F1 **68.2**  SUB 72.0 | EM 58.0  F1 66.4  SUB 72.0 | tie (Clude +1.8 F1) |
+| MuSiQue (ans dev) | EM 20.0  F1 33.8  SUB 28.0 | EM **26.0**  F1 **44.7**  SUB **38.0** | BM25 +6 EM |
 
-HotPotQA and 2Wiki numbers are strong for a system not specifically tuned for these tasks — 60%+ EM puts Clude in the same range as dedicated multi-hop retrievers. MuSiQue is intentionally harder (explicit multi-step composed questions); 20% EM is on par with published SOTA for this dataset with standard retrievers.
+**Honest read of the multi-hop rows:**
+
+Across six datasets (3 MABench + 3 multi-hop), BM25 wins four, Clude wins one (HotPot), and one is tied (2Wiki). **This is not a story about Clude beating keyword retrieval on academic benchmarks.** It is a story about *what the benchmarks actually test vs. what Clude is designed for*:
+
+- These benchmarks feed the system a context block at question time. They test *within-context retrieval* — essentially "given these documents, find the answer."
+- Clude is designed for the *cross-session* case — memory that accumulates, decays, resolves contradictions, and retains provenance over weeks or months of conversation. None of these benchmarks put the memory through that regime.
+
+For the cross-session regime, we ran three benchmarks more aligned with Clude's thesis:
+
+## Cross-session / Personalization Benchmarks
+
+| Benchmark | What it tests | Clude result | Status |
+|---|---|---|---|
+| **LongMemEval** (S-variant, n=500) | Long-term chat memory across sessions | **[run in progress — PID 1741]** | gpt-4o-mini reader via shim; ETA 6-12 hrs |
+| **PERMA** (MINE-USTC, n=10 country users) | Preference consistency across multi-session multi-domain interactions | **[run in progress — PID 6020]** | ETA 2-4 hrs |
+| **AMemGym** (AGI-Eval) | Conversational memory, Write/Read/Utilization diagnostics | **[integration in progress]** | subagent working |
+| *Prior: LongMemEval with Sonnet reader (Feb 2026)* | Same as above, different LLM | **80.4% (Phase 3 judge)** | committed to repo, different LLM so not apples-to-apples with the above |
 
 ## Novel Test: Verifiable Provenance Recall
 
