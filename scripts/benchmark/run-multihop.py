@@ -130,6 +130,28 @@ def parse_musique(path: Path) -> list:
     return out
 
 
+# ── BM25 local retriever (for head-to-head with Clude on multi-hop) ────
+class BM25Retriever:
+    """Thin wrapper around langchain_community's BM25 retriever so the main
+    loop can call retrieve(question) -> list[str] uniformly."""
+
+    def __init__(self):
+        self._store = {}  # context_id -> retriever
+
+    def store(self, context_id: str, chunks: list[str]) -> None:
+        from langchain_community.retrievers import BM25Retriever as _BM25
+        self._store[context_id] = _BM25.from_texts(chunks)
+        self._store[context_id].k = 10
+
+    def recall(self, context_id: str, query: str, k: int = 10) -> list[str]:
+        r = self._store.get(context_id)
+        if r is None:
+            return []
+        r.k = k
+        docs = r.get_relevant_documents(query)
+        return [d.page_content for d in docs]
+
+
 # ── Clude adapter I/O ──────────────────────────────────────────────────
 def clude_health() -> bool:
     try:
@@ -234,7 +256,7 @@ def substring_match(pred: str, gold: str) -> float:
 
 
 # ── Main per-dataset runner ────────────────────────────────────────────
-def run_one(dataset_key: str, n: int, client: OpenAI) -> dict:
+def run_one(dataset_key: str, n: int, client: OpenAI, retriever: str = "clude") -> dict:
     spec = DATASETS[dataset_key]
     dest = DATA_DIR / spec["filename"]
 
@@ -249,13 +271,15 @@ def run_one(dataset_key: str, n: int, client: OpenAI) -> dict:
     items = parser(dest)
     print(f"[{dataset_key}] loaded {len(items)} items")
     items = items[:n]
-    print(f"[{dataset_key}] evaluating first {len(items)} items (--n)")
+    print(f"[{dataset_key}] evaluating first {len(items)} items (--n), retriever={retriever}")
 
     system = (
         "You answer multi-hop questions using provided context. "
         "Give a short, direct answer — typically 1-5 words. "
         "If the context is insufficient, say so briefly."
     )
+
+    bm25 = BM25Retriever() if retriever == "bm25" else None
 
     results = []
     t0 = time.time()
@@ -265,8 +289,12 @@ def run_one(dataset_key: str, n: int, client: OpenAI) -> dict:
         # Chunk context into ~500-word pieces for storage
         paras = [p.strip() for p in item["context"].split("\n\n") if p.strip()]
         try:
-            clude_store(ctx_id, paras)
-            retrieved = clude_recall(ctx_id, item["question"], k=10)
+            if retriever == "bm25":
+                bm25.store(ctx_id, paras)
+                retrieved = bm25.recall(ctx_id, item["question"], k=10)
+            else:
+                clude_store(ctx_id, paras)
+                retrieved = clude_recall(ctx_id, item["question"], k=10)
             retrieved_str = "\n\n".join(
                 c if isinstance(c, str) else c.get("content", "")
                 for c in retrieved
@@ -314,7 +342,8 @@ def run_one(dataset_key: str, n: int, client: OpenAI) -> dict:
         "substring_match": sum(x["substring_match"] for x in results) / len(results),
     }
 
-    out_path = OUT_DIR / f"{dataset_key}_n{len(items)}_results.json"
+    suffix = f"_{retriever}" if retriever != "clude" else ""
+    out_path = OUT_DIR / f"{dataset_key}_n{len(items)}{suffix}_results.json"
     out_path.write_text(json.dumps({
         "dataset": dataset_key,
         "n": len(items),
@@ -334,6 +363,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--dataset", choices=["hotpot", "2wiki", "musique", "all"], required=True)
     p.add_argument("--n", type=int, default=25, help="Samples per dataset")
+    p.add_argument("--retriever", choices=["clude", "bm25"], default="clude", help="Memory backend")
     args = p.parse_args()
 
     # .env load (simple)
@@ -349,7 +379,7 @@ def main():
         print("ERROR: OPENAI_API_KEY not set")
         sys.exit(1)
 
-    if not clude_health():
+    if args.retriever == "clude" and not clude_health():
         print(f"ERROR: clude-adapter not reachable at {CLUDE_URL}")
         print("Start it: npx tsx experiments/MemoryAgentBench/clude-adapter/server.ts")
         sys.exit(1)
@@ -360,7 +390,7 @@ def main():
     summary = []
     for t in targets:
         try:
-            summary.append(run_one(t, args.n, client))
+            summary.append(run_one(t, args.n, client, retriever=args.retriever))
         except Exception as e:
             print(f"[{t}] CRASHED: {e}")
             summary.append({"dataset": t, "error": str(e)})
