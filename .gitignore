@@ -49,6 +49,7 @@ clu294-upload.py
 package-lock.json
 misc/scripts/.longmemeval-cache/
 misc/scripts/longmemeval-*.ts
+!misc/scripts/longmemeval-benchmark-openai-v2.ts
 misc/src
 
 # AI spec-driven development (local dev aids, not committed)
