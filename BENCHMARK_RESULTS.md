@@ -32,13 +32,20 @@ All scores reported as percentages (EM/F1/rougeL_recall). gpt-4o-mini is the sha
 
 | System | AR | LRU | CR |
 |---|---|---|---|
-| **Clude** | 1.3 / 13.4 / 24.4 | 0.0 / 9.9 / **73.6** | 55.0 / 56.4 / 56.3 |
-| **BM25** | **6.0 / 25.0 / 47.8** | 0.0 / 11.5 / 78.3 | 80.0 / 81.4 / 81.3 |
-| **mem0** | 3.3 / 14.4 / 18.7 | 0.0 / 9.3 / 58.0 | 14.0 / 17.2 / 16.5 |
-| **No-memory** (gpt-4o-mini alone) | n=4 only (TPM crashed) | 0.0 / 9.6 / 75.0 | **87.0 / 87.4 / 87.3** |
-| Cognee | **blocked** — dep tree intractable in Py 3.14 venv; separate Py 3.11 venv spun up, running | | |
-| Letta-API | **blocked** — letta_client API drift post-pin, CreateBlock import fails under Python 3.14 | | |
+| **Clude** | 1.3 / 13.4 / 24.4 (n=300) | 0.0 / 9.9 / **73.6** (n=71) | 55.0 / 56.4 / 56.3 (n=100) |
+| **BM25** | **6.0 / 25.0 / 47.8** (n=300) | 0.0 / 11.5 / 78.3 (n=71) | 80.0 / 81.4 / 81.3 (n=100) |
+| **mem0** | 3.3 / 14.4 / 18.7 (n=300) | 0.0 / 9.3 / 58.0 (n=71) | 14.0 / 17.2 / 16.5 (n=100) |
+| **Cognee** | 0.0 / 19.3 / **46.8** (n=60, partial) | — (crashed on startup) | 12.0 / 23.0 / 43.6 (n=100) |
+| **No-memory** (gpt-4o-mini alone) | n=4 only (TPM crashed) | 0.0 / 9.6 / 75.0 (n=71) | **87.0 / 87.4 / 87.3** (n=100) |
+| Letta-API | **blocked** — letta_client API drift; CreateBlock import fails in Py 3.14 | | |
 | Embedding RAG | **blocked** — MABench's embedding code uses older langchain API, incompatible with pinned 0.3.27 | | |
+
+### Cognee operational notes
+
+- Required a **separate Python 3.11 venv** (Py 3.14 is incompatible with cognee's dep tree; pip install cognee fails there)
+- Needed 4 patches to MABench's `agent.py` and `initialization.py` to fix asyncio event-loop scoping and `context_id` mismatches; without these Cognee scored 0 on every query
+- Crashed partway through AR with `RuntimeError: asyncio.Lock bound to different event loop` — fixable but defers to post-hackathon. Partial n=60 numbers reported above
+- Observable: Cognee is **~20 seconds per chunk** for knowledge-graph extraction (gpt-4o-mini). Orders of magnitude slower than BM25 or Clude
 
 ### Honest read — the surprising finding
 
@@ -46,7 +53,9 @@ All scores reported as percentages (EM/F1/rougeL_recall). gpt-4o-mini is the sha
 
 > Memory systems earn their keep only when context exceeds the LLM's window. On in-context tasks, just read the context.
 
-BM25 (80%) beats Clude (55%) and mem0 (14%) on CR, but none beat no-memory. Clude's dream-cycle advantage is real, just not in THIS regime.
+BM25 (80%) beats Clude (55%), mem0 (14%), and Cognee (12%), but none beat no-memory. Clude's dream-cycle advantage is real, just not in THIS regime.
+
+**Graph-based systems vs keyword:** Cognee (graph-RAG) and Clude (graph + dream cycle) take different architectural bets. On CR specifically, both significantly trail BM25's simple keyword precision. On AR, Cognee's recall (46.8, partial) is comparable to BM25 (47.8) — also beating Clude's 24.4. Different tradeoffs; neither graph approach dominates.
 
 ## Multi-hop Results (Cognee benchmark family)
 
