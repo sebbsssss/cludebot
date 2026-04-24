@@ -259,6 +259,8 @@ export function useChat() {
       model: meta?.model,
       cost: meta?.cost,
       tokens: meta?.tokens,
+      frontier_tokens: meta?.frontier_tokens,
+      frontier_model: meta?.frontier_model,
       receipt: meta?.receipt,
       isGreeting: meta?.isGreeting,
       greetingMeta: meta?.greetingMeta,
