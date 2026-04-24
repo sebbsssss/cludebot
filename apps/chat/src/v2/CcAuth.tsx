@@ -1,31 +1,77 @@
 import { useState } from 'react';
+import { useLoginWithEmail } from '@privy-io/react-auth';
 import { useAuthContext } from '../hooks/AuthContext';
 import { CcWordmark } from './atoms';
 
 /**
  * Logged-out screen.
  *
- * The design shows an email magic-link form; in this app Privy owns the
- * actual magic-link/wallet flow, so the form's submit just opens the
- * Privy modal via `useAuthContext().login()`. Email input is kept for
- * visual continuity but not sent anywhere.
+ * The design mocked an email magic-link flow; we wire it to Privy's headless
+ * `useLoginWithEmail()` so the user enters their email once in our form,
+ * Privy delivers a 6-digit OTP to their inbox, and they enter it inline —
+ * no second Privy modal, no double email entry.
+ *
+ * Wallet sign-in falls back to the generic Privy modal (`login()`) since
+ * wallet pairing can't be headless the same way.
  */
 export function CcAuth({ theme }: { theme: 'light' | 'dark' }) {
   const { login } = useAuthContext();
+  const { sendCode, loginWithCode, state } = useLoginWithEmail();
+
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  // Local card step — lets the user go back to "change email" even though
+  // Privy's OtpFlowState is still `awaiting-code-input`.
+  const [step, setStep] = useState<'email' | 'code'>('email');
 
-  const submit = (e: React.FormEvent) => {
+  // Privy's OtpFlowState status used to disable buttons while in-flight.
+  const statusName: string = (state as any)?.status ?? 'initial';
+  const sendingCode = statusName === 'sending-code' || pending;
+  const submittingCode = statusName === 'submitting-code';
+
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    // Privy's modal handles the actual auth. Visual delay is just UX polish —
-    // we don't mock success; Privy either resolves or the user closes the modal.
+    const trimmed = email.trim();
+    if (!trimmed || sendingCode) return;
+    setError(null);
+    setPending(true);
     try {
-      login();
+      await sendCode({ email: trimmed });
+      setStep('code');
+    } catch (err: any) {
+      setError(err?.message || 'Could not send code. Try again.');
     } finally {
-      setTimeout(() => setSubmitting(false), 600);
+      setPending(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (!trimmed || trimmed.length < 4) return;
+    setError(null);
+    setPending(true);
+    try {
+      await loginWithCode({ code: trimmed });
+      // Auth resolves through Privy → useAuth() → V2App switches to CcChat.
+    } catch (err: any) {
+      setError(err?.message || 'Invalid code. Check your inbox and try again.');
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email.trim() || sendingCode) return;
+    setCode('');
+    setError(null);
+    try {
+      await sendCode({ email: email.trim() });
+    } catch (err: any) {
+      setError(err?.message || 'Could not resend code.');
     }
   };
 
@@ -97,57 +143,125 @@ export function CcAuth({ theme }: { theme: 'light' | 'dark' }) {
           <div className="cc-auth__card">
             <div>
               <h2 className="cc-auth__title">
-                {mode === 'login' ? 'Welcome back.' : 'Start your memory.'}
+                {step === 'code'
+                  ? 'Check your inbox.'
+                  : mode === 'login'
+                  ? 'Welcome back.'
+                  : 'Start your memory.'}
               </h2>
               <p className="cc-auth__desc">
-                {mode === 'login'
-                  ? 'Sign in with a magic link or wallet. Your memories are waiting — typed, decayed, and ready to recall.'
+                {step === 'code'
+                  ? `We sent a 6‑digit code to ${email}. Enter it below to continue.`
+                  : mode === 'login'
+                  ? 'Sign in with a one‑time code or wallet. Your memories are waiting — typed, decayed, and ready to recall.'
                   : 'One email is all we need. Your memory starts fresh — yours, portable, never shared.'}
               </p>
             </div>
 
-            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <div className="cc-auth__field">
-                <label className="cc-auth__label">Email</label>
-                <input
-                  className="cc-auth__input"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@domain.dev"
-                  autoFocus
-                />
-              </div>
-              <button
-                className="cc-auth__primary"
-                type="submit"
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <>
-                    <span className="cc-spinner" /> opening Privy…
-                  </>
-                ) : (
-                  <>
-                    {mode === 'login' ? 'Continue with Privy' : 'Create account'}{' '}
-                    <span className="cc-arrow">→</span>
-                  </>
-                )}
-              </button>
-              <div className="cc-auth__divider">or</div>
-              <button
-                type="button"
-                className="cc-auth__primary"
+            {step === 'email' ? (
+              <form onSubmit={handleSendCode} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div className="cc-auth__field">
+                  <label className="cc-auth__label">Email</label>
+                  <input
+                    className="cc-auth__input"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@domain.dev"
+                    autoFocus
+                    required
+                  />
+                </div>
+                <button className="cc-auth__primary" type="submit" disabled={sendingCode || !email.trim()}>
+                  {sendingCode ? (
+                    <>
+                      <span className="cc-spinner" /> sending code…
+                    </>
+                  ) : (
+                    <>
+                      {mode === 'login' ? 'Send one-time code' : 'Create account'}{' '}
+                      <span className="cc-arrow">→</span>
+                    </>
+                  )}
+                </button>
+                <div className="cc-auth__divider">or</div>
+                <button
+                  type="button"
+                  className="cc-auth__primary"
+                  style={{
+                    background: 'transparent',
+                    color: 'var(--fg-1)',
+                    borderColor: 'var(--line-strong)',
+                  }}
+                  onClick={() => login()}
+                >
+                  Sign in with wallet <span className="cc-arrow">→</span>
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div className="cc-auth__field">
+                  <label className="cc-auth__label">6-digit code</label>
+                  <input
+                    className="cc-auth__input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]*"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                    placeholder="123456"
+                    autoFocus
+                    required
+                    style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.3em', textAlign: 'center', fontSize: 20 }}
+                  />
+                </div>
+                <button
+                  className="cc-auth__primary"
+                  type="submit"
+                  disabled={pending || submittingCode || code.length < 4}
+                >
+                  {pending || submittingCode ? (
+                    <>
+                      <span className="cc-spinner" /> verifying…
+                    </>
+                  ) : (
+                    <>
+                      Continue <span className="cc-arrow">→</span>
+                    </>
+                  )}
+                </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14 }}>
+                  <button
+                    type="button"
+                    className="cc-auth__magic__resend"
+                    onClick={() => {
+                      setCode('');
+                      setError(null);
+                      setStep('email');
+                    }}
+                  >
+                    ← Change email
+                  </button>
+                  <button type="button" className="cc-auth__magic__resend" onClick={handleResend}>
+                    ↺ Resend code
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {error && (
+              <div
                 style={{
-                  background: 'transparent',
-                  color: 'var(--fg-1)',
-                  borderColor: 'var(--line-strong)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--clude-danger)',
+                  marginTop: -8,
                 }}
-                onClick={() => login()}
               >
-                Sign in with wallet <span className="cc-arrow">→</span>
-              </button>
-            </form>
+                {error}
+              </div>
+            )}
 
             <div className="cc-auth__legal">
               By continuing you agree to the <a href="/">Terms</a> and{' '}

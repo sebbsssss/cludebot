@@ -12,8 +12,8 @@ import { CcMessage, type V2Message } from './CcMessage';
 import { CcComposer } from './CcComposer';
 import { CcMemoryPanel } from './CcMemoryPanel';
 import { CcMemoryPill } from './CcMemoryPill';
-import { V2_FALLBACK_MEMORIES } from './data';
-import { MEMORY_COLORS, type V2Memory, type V2Theme, type V2Thread } from './types';
+import { V2_FALLBACK_MEMORIES, toV2Model } from './data';
+import { MEMORY_COLORS, type V2Memory, type V2Model, type V2Theme, type V2Thread } from './types';
 
 function threadGroupFor(updatedAt: string): V2Thread['group'] {
   const t = new Date(updatedAt).getTime();
@@ -109,10 +109,35 @@ export function CcChat({
   const memHook = useMemory();
   const isMobile = useIsMobile();
 
-  const [model, setModel] = useState('clude-cortex-7b');
+  // Real model catalog — fetched once on mount from /api/chat/models so the
+  // picker only ever surfaces IDs the server accepts. Pulled via api.getModels()
+  // which already caches results.
+  const [models, setModels] = useState<V2Model[]>([]);
+  const [model, setModel] = useState<string>('');
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [showCitations, setShowCitations] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getModels()
+      .then((list) => {
+        if (cancelled) return;
+        const mapped = list.map(toV2Model);
+        setModels(mapped);
+        // Pick the server's default, or first free model, or first entry.
+        const preferred =
+          mapped.find((m) => m.default) || mapped.find((m) => m.free) || mapped[0];
+        if (preferred) setModel(preferred.id);
+      })
+      .catch(() => {
+        // Stay empty; picker renders nothing until server responds.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Load messages for the active conversation (new or selected).
   const switchedRef = useRef<string | null>(null);
@@ -192,7 +217,7 @@ export function CcChat({
 
   const handleSend = useCallback(
     async (text: string) => {
-      if (isStreaming) return;
+      if (isStreaming || !model) return;
       if (!activeId) {
         const promise = createConversation(model);
         await sendMessage(text, promise, model);
@@ -204,6 +229,7 @@ export function CcChat({
   );
 
   const handleNewChat = useCallback(async () => {
+    if (!model) return;
     switchedRef.current = null;
     await createConversation(model);
   }, [createConversation, model]);
@@ -247,6 +273,7 @@ export function CcChat({
           title={topbarTitle}
           subtitle={`◉ Active · ${msgCount} message${msgCount === 1 ? '' : 's'}`}
           savedToday={savedTokToday}
+          models={models}
           model={model}
           onModelChange={setModel}
           onToggleMemory={() => setMemoryOpen((v) => !v)}

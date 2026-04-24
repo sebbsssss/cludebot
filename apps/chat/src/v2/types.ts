@@ -13,8 +13,10 @@ export interface V2Model {
   id: string;
   name: string;
   sub: string;
-  tag: 'CLUDE' | 'FRONT' | 'OSS';
-  oss: boolean;
+  /** Short chip label — usually the tier (FREE/PRO) or a custom tag. */
+  tag: string;
+  /** True for free/open models — swaps the picker dot color. */
+  free: boolean;
   default?: boolean;
 }
 

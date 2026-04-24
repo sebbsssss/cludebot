@@ -1,17 +1,29 @@
+import type { ChatModel } from '../lib/types';
 import type { V2Memory, V2Model, V2Thread } from './types';
 
-// Catalog shown in the model picker. Mirrors the design prototype until the
-// server /models list is wired into the v2 surface.
-export const V2_MODELS: V2Model[] = [
-  { id: 'clude-cortex-7b',  name: 'clude-cortex-7b',  sub: 'Clude · Memory-augmented · 7B',       tag: 'CLUDE', oss: true,  default: true },
-  { id: 'claude-opus-4.5',  name: 'claude-opus-4.5',  sub: 'Anthropic · Frontier · 200k ctx',     tag: 'FRONT', oss: false },
-  { id: 'gpt-5',            name: 'gpt-5',            sub: 'OpenAI · Frontier · 256k ctx',        tag: 'FRONT', oss: false },
-  { id: 'gemini-2.5-pro',   name: 'gemini-2.5-pro',   sub: 'Google · Frontier · 2M ctx',          tag: 'FRONT', oss: false },
-  { id: 'llama-4-maverick', name: 'llama-4-maverick', sub: 'Meta · Open weights · 400B-MoE',      tag: 'OSS',   oss: true  },
-  { id: 'qwen3-72b',        name: 'qwen3-72b',        sub: 'Alibaba · Open weights · 72B',        tag: 'OSS',   oss: true  },
-  { id: 'deepseek-r2',      name: 'deepseek-r2',      sub: 'DeepSeek · Open weights · Reasoning', tag: 'OSS',   oss: true  },
-  { id: 'mistral-large-3',  name: 'mistral-large-3',  sub: 'Mistral · Open weights · 123B',       tag: 'OSS',   oss: true  },
-];
+/**
+ * Convert a server `ChatModel` into the shape the v2 picker consumes.
+ * The design bundle shipped with invented IDs (e.g. "clude-cortex-7b");
+ * we only surface what the server actually accepts on /api/chat/messages.
+ */
+export function toV2Model(m: ChatModel): V2Model {
+  const ctxLabel =
+    m.context >= 1_000_000
+      ? `${Math.round(m.context / 1_000_000)}M ctx`
+      : m.context >= 1_000
+      ? `${Math.round(m.context / 1_000)}k ctx`
+      : `${m.context} ctx`;
+  const privacyLabel = m.privacy === 'private' ? 'Private' : 'Anonymized';
+  const tierLabel = m.tier === 'free' ? 'Free' : 'Pro';
+  return {
+    id: m.id,
+    name: m.name,
+    sub: `${tierLabel} · ${privacyLabel} · ${ctxLabel}`,
+    tag: m.tier.toUpperCase(),
+    free: m.tier === 'free',
+    default: m.default,
+  };
+}
 
 // Fallback demo memories shown when the live recall feed is empty or loading.
 export const V2_FALLBACK_MEMORIES: V2Memory[] = [
@@ -22,7 +34,8 @@ export const V2_FALLBACK_MEMORIES: V2Memory[] = [
   { id: 'm005', type: 'episodic',   content: 'Debugged a race condition in the lidar driver last Tuesday', importance: 0.66, decay: 0.82, timestamp: '3d ago',  accessed: 4  },
 ];
 
-// Onboarding interest pills — seed semantic memories.
+// Onboarding interest pills — seed semantic memories (kept for when/if we
+// wire the post-register flow; unused today).
 export const V2_INTERESTS = [
   'Rust', 'TypeScript', 'ROS 2', 'robotics', 'Zenoh/DDS', 'embedded',
   'React', 'agents/MCP', 'Solana', 'systems programming', 'ML research', 'product eng',
