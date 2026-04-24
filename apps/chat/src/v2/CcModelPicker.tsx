@@ -1,21 +1,23 @@
 import { useState } from 'react';
-import { MEMORY_COLORS } from './types';
-import { V2_MODELS } from './data';
+import { MEMORY_COLORS, type V2Model } from './types';
 
 /**
- * Model picker — dropdown variant only for v1 of the v2 surface.
- * The design explores segmented + ⌘K-palette variants; we'll add those if
- * we promote the route out of staging.
+ * Model picker — dropdown variant only for v1 of the v2 surface. Consumes
+ * the real `/api/chat/models` catalog (passed in as `models`), so every
+ * option is a model the server actually accepts on /api/chat/messages.
  */
 export function CcModelPicker({
+  models,
   value,
   onChange,
 }: {
+  models: V2Model[];
   value: string;
   onChange: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const current = V2_MODELS.find((m) => m.id === value) || V2_MODELS[0];
+  const current = models.find((m) => m.id === value) || models[0];
+  if (!current) return null;
 
   return (
     <div className="cc-mpick cc-mpick--dropdown">
@@ -26,7 +28,7 @@ export function CcModelPicker({
       >
         <span
           className="cc-mpick__optdot"
-          style={{ background: current.oss ? MEMORY_COLORS.semantic : 'var(--brand)' }}
+          style={{ background: current.free ? MEMORY_COLORS.semantic : 'var(--brand)' }}
         />
         <span>{current.name}</span>
         <span className="cc-mpick__chev">▾</span>
@@ -38,7 +40,7 @@ export function CcModelPicker({
             onClick={() => setOpen(false)}
           />
           <div className="cc-mpick__menu">
-            {V2_MODELS.map((m) => (
+            {models.map((m) => (
               <button
                 key={m.id}
                 type="button"
@@ -54,7 +56,7 @@ export function CcModelPicker({
                     background:
                       m.id === value
                         ? 'var(--brand)'
-                        : m.oss
+                        : m.free
                         ? MEMORY_COLORS.semantic
                         : 'var(--fg-4)',
                   }}
@@ -63,7 +65,7 @@ export function CcModelPicker({
                   <div className="cc-mpick__optname">{m.name}</div>
                   <div className="cc-mpick__optsub">{m.sub}</div>
                 </span>
-                <span className={`cc-mpick__opttag ${m.oss ? 'is-oss' : ''}`}>{m.tag}</span>
+                <span className={`cc-mpick__opttag ${m.free ? 'is-oss' : ''}`}>{m.tag}</span>
               </button>
             ))}
           </div>

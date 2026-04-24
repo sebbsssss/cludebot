@@ -1,10 +1,12 @@
 import { CcSavingsChip } from './atoms';
 import { CcModelPicker } from './CcModelPicker';
+import type { V2Model } from './types';
 
 export function CcTopbar({
   title,
   subtitle,
   savedToday,
+  models,
   model,
   onModelChange,
   onToggleMemory,
@@ -15,6 +17,7 @@ export function CcTopbar({
   title: string;
   subtitle: string;
   savedToday: number;
+  models: V2Model[];
   model: string;
   onModelChange: (id: string) => void;
   onToggleMemory: () => void;
@@ -32,7 +35,7 @@ export function CcTopbar({
       </div>
       <div className="cc-topbar__right">
         {savedToday > 0 && <CcSavingsChip saved={savedToday} />}
-        <CcModelPicker value={model} onChange={onModelChange} />
+        <CcModelPicker models={models} value={model} onChange={onModelChange} />
         <button
           type="button"
           onClick={onToggleTheme}
