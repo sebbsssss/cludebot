@@ -41,6 +41,14 @@ export interface ChatMessageMetadata {
   memories_used?: number;
   memory_ids?: number[];
   tokens?: MessageTokens;
+  /**
+   * Estimated prompt tokens a frontier model would have used without Clude's
+   * memory compression. Populated by the server when known; when present and
+   * larger than `tokens.prompt`, the v2 UI renders a per-message savings footer.
+   */
+  frontier_tokens?: number;
+  /** Model ID the frontier_tokens estimate is benchmarked against (e.g. claude-opus-4.5). */
+  frontier_model?: string;
   cost?: MessageCost;
   receipt?: MessageReceipt;
   // Greeting-specific
@@ -61,6 +69,8 @@ export interface SettledMessage {
   readonly model?: string;
   readonly cost?: MessageCost;
   readonly tokens?: MessageTokens;
+  readonly frontier_tokens?: number;
+  readonly frontier_model?: string;
   readonly receipt?: MessageReceipt;
   readonly isGreeting?: boolean;
   readonly greetingMeta?: GreetingMeta;
