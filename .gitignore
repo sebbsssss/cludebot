@@ -24,12 +24,14 @@ scripts/.longmemeval-cache/
 .agents/
 docs/superpowers/
 
-# Local experiments / prototypes (not part of the monorepo)
-Clude-Chat-Agent/
-chat/
-clude/
-agents/
-experiments/
+# Local experiments / prototypes (not part of the monorepo).
+# Anchored to the repo root so they don't accidentally match apps/chat/,
+# apps/server/agents/, etc.
+/Clude-Chat-Agent/
+/chat/
+/clude/
+/agents/
+/experiments/
 # programs/ — un-ignored 2026-04-17 for Colosseum Frontier hackathon (memory-registry Anchor program is load-bearing)
 programs/**/target/
 programs/**/Cargo.lock
