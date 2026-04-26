@@ -1,11 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuthContext } from '../hooks/AuthContext';
+import { useBalance } from '../hooks/useBalance';
 import { useChat } from '../hooks/use-chat';
 import { useConversations } from '../hooks/useConversations';
 import { useMemory } from '../hooks/useMemory';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { api } from '../lib/api';
 import type { SettledMessage } from '../hooks/use-chat';
+
+// Heavy modal — pulls in @solana/web3.js + @solana/pay + framer-motion.
+// Lazy-load so it doesn't bloat the main v2 bundle until the user opts in.
+const TopUpModal = lazy(() =>
+  import('../components/TopUpModal').then((m) => ({ default: m.TopUpModal })),
+);
 import { CcSidebar } from './CcSidebar';
 import { CcTopbar } from './CcTopbar';
 import { CcMessage, type V2Message } from './CcMessage';
@@ -108,6 +115,12 @@ export function CcChat({
   } = useConversations();
   const memHook = useMemory();
   const isMobile = useIsMobile();
+  const { balance, pollUntilUpdated } = useBalance();
+  const balanceUsdc = balance?.balance_usdc ?? null;
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  // The minimum USDC we treat as "enough to use a Pro model" — matches the
+  // smallest practical message cost. Anything lower triggers a top-up prompt.
+  const PRO_MIN_BALANCE = 0.05;
 
   // Real model catalog — fetched once on mount from /api/chat/models so the
   // picker only ever surfaces IDs the server accepts. Pulled via api.getModels()
@@ -138,6 +151,20 @@ export function CcChat({
       cancelled = true;
     };
   }, []);
+
+  // Selecting a Pro model with insufficient balance auto-opens the top-up.
+  // We don't reject the selection — the user gets to fund first, then the
+  // model stays selected and they can send.
+  const handleModelChange = useCallback(
+    (id: string) => {
+      const next = models.find((m) => m.id === id);
+      setModel(id);
+      if (next && !next.free && balanceUsdc !== null && balanceUsdc < PRO_MIN_BALANCE) {
+        setTopUpOpen(true);
+      }
+    },
+    [models, balanceUsdc],
+  );
 
   // Load messages for the active conversation (new or selected).
   const switchedRef = useRef<string | null>(null);
@@ -216,6 +243,17 @@ export function CcChat({
   const handleSend = useCallback(
     async (text: string) => {
       if (isStreaming || !model) return;
+      // Block Pro-model sends with insufficient balance — open top-up instead.
+      const current = models.find((m) => m.id === model);
+      if (
+        current &&
+        !current.free &&
+        balanceUsdc !== null &&
+        balanceUsdc < PRO_MIN_BALANCE
+      ) {
+        setTopUpOpen(true);
+        return;
+      }
       if (!activeId) {
         const promise = createConversation(model);
         await sendMessage(text, promise, model);
@@ -223,7 +261,7 @@ export function CcChat({
         await sendMessage(text, activeId, model);
       }
     },
-    [activeId, createConversation, sendMessage, model, isStreaming],
+    [activeId, createConversation, sendMessage, model, models, balanceUsdc, isStreaming],
   );
 
   const handleNewChat = useCallback(async () => {
@@ -271,9 +309,11 @@ export function CcChat({
           title={topbarTitle}
           subtitle={`◉ Active · ${msgCount} message${msgCount === 1 ? '' : 's'}`}
           savedToday={savedTokToday}
+          balance={balanceUsdc}
+          onTopUp={() => setTopUpOpen(true)}
           models={models}
           model={model}
-          onModelChange={setModel}
+          onModelChange={handleModelChange}
           onToggleMemory={() => setMemoryOpen((v) => !v)}
           memoryOpen={memoryOpen}
           theme={theme}
@@ -320,6 +360,17 @@ export function CcChat({
             onToggleCitations={setShowCitations}
           />
         </>
+      )}
+
+      {topUpOpen && (
+        <Suspense fallback={null}>
+          <TopUpModal
+            open={topUpOpen}
+            onClose={() => setTopUpOpen(false)}
+            currentBalance={balanceUsdc}
+            onSuccess={(prev) => pollUntilUpdated(prev)}
+          />
+        </Suspense>
       )}
     </div>
   );
