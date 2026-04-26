@@ -1,8 +1,8 @@
 # MemoryPack v0.1 — Portable Agent Memory Format
 
-**Status:** Draft
+**Status:** Draft, reference implementation shipping in `@clude/sdk ≥ 3.0.4`
 **Authors:** Clude team
-**Last updated:** 2026-04-16
+**Last updated:** 2026-04-26
 
 ## Motivation
 
@@ -12,39 +12,36 @@ because every vendor stores memory in a proprietary shape, behind a
 proprietary API, on a proprietary cluster.
 
 MemoryPack is an open, file-level format for moving agent memory between
-systems. It is intentionally simple: a JSONL stream of signed memory
-records, optional anchors to a public chain, and a manifest. Any agent
-runtime that implements the reader can ingest a MemoryPack produced by
-any other runtime.
+systems. It is intentionally simple: a directory of JSONL records, a
+manifest, optional ed25519 signatures, optional on-chain anchors. Any
+agent runtime that implements the reader can ingest a MemoryPack
+produced by any other runtime.
 
-Clude uses MemoryPack as the wire format for its `clude export` /
-`clude import` commands, and as the canonical shape committed on-chain
-via Solana memo. Nothing about the format is Clude-specific — vendors
-are invited to implement and extend it.
+Clude uses MemoryPack as the wire format for `clude export --format
+memorypack` and `clude import <pack-dir>`. Nothing about the format is
+Clude-specific — vendors are invited to implement and extend it.
 
 ## Design goals
 
-1. **Self-describing.** A MemoryPack file is usable without the producer.
-2. **Signed.** Each record carries a producer signature; receivers MAY
-   verify against a DID or wallet public key.
-3. **Chain-anchorable but not chain-dependent.** Records MAY include a
-   transaction reference; readers MUST work when that field is absent.
-4. **Append-only friendly.** Records are independent. Merging two packs
-   is concatenation plus de-duplication.
-5. **Human-readable.** JSONL. A `cat | jq` pipeline is the reference
-   debugger.
+1. **Self-describing.** A MemoryPack directory is usable without the producer.
+2. **Signed.** Each record MAY carry an ed25519 signature over its line hash; receivers verify against a wallet public key.
+3. **Chain-anchorable but not chain-dependent.** Records MAY include a transaction reference; readers MUST work when that field is absent.
+4. **Append-only friendly.** Records are independent. Merging two packs is concatenation plus de-duplication.
+5. **Human-readable.** JSONL. A `cat records.jsonl | jq` pipeline is the reference debugger.
 
-## File layout
+## File layout (v0.1)
 
-A MemoryPack is a directory (or a `.tar.zst`) containing:
+A MemoryPack is a **directory** containing:
 
 ```
 ./manifest.json         # required, describes the pack
 ./records.jsonl         # required, one memory per line
-./signatures.jsonl      # optional, detached signatures keyed by record hash
+./signatures.jsonl      # optional, ed25519 signatures keyed by record hash
 ./anchors.jsonl         # optional, on-chain proofs
-./blobs/                # optional, binary payloads referenced by hash
 ```
+
+`.tar.zst` compression, `blobs/` attachments, and automated chain
+verification are specified but **not yet implemented** — see Roadmap.
 
 ### `manifest.json`
 
@@ -53,7 +50,7 @@ A MemoryPack is a directory (or a `.tar.zst`) containing:
   "memorypack_version": "0.1",
   "producer": {
     "name": "clude",
-    "version": "3.0.1",
+    "version": "3.0.3",
     "agent_id": "agent_01HZ...",
     "did": "did:pkh:solana:7xK3...",
     "public_key": "7xK3...base58"
@@ -66,22 +63,22 @@ A MemoryPack is a directory (or a `.tar.zst`) containing:
 }
 ```
 
-- `record_schema` is a free-form identifier; receivers that don't
-  recognise it MAY fall back to the minimal shape described below.
-- `did` is recommended in the
-  [`did:pkh`](https://github.com/w3c-ccg/did-pkh) form for wallet keys.
+- `record_schema` is a free-form identifier; receivers that don't recognise it MAY fall back to the minimal shape described below.
+- `signature_algorithm` is only set when `signatures.jsonl` is present.
+- `did` is recommended in the [`did:pkh`](https://github.com/w3c-ccg/did-pkh) form for wallet keys.
 
 ### `records.jsonl`
 
-One JSON object per line. Minimal shape (the subset every reader MUST
-handle):
+One JSON object per line, with **stable key order** — hashes depend on the exact byte sequence. Reference: `packages/brain/src/memorypack/writer.ts:serializeRecord`.
+
+Minimal shape readers MUST handle:
 
 ```json
 {
   "id": "01HZRF...ULID",
   "created_at": "2026-04-16T06:12:33Z",
   "kind": "episodic",
-  "content": "User confirmed they want the newsletter cadence to stay weekly.",
+  "content": "User confirmed weekly newsletter cadence.",
   "tags": ["preferences", "product:newsletter"],
   "importance": 0.72,
   "source": "chat"
@@ -92,22 +89,21 @@ Extended fields producers MAY emit (readers MUST ignore unknown keys):
 
 | Field | Shape | Notes |
 |---|---|---|
+| `summary` | `string` | short-form for recall ranking |
 | `embedding` | `number[]` | base-model hint; readers re-embed as needed |
 | `embedding_model` | `string` | e.g. `text-embedding-3-small` |
 | `metadata` | `object` | free-form; reserved keys prefixed `mp:` |
-| `summary` | `string` | short-form for recall ranking |
 | `access_count` | `integer` | for producers that track decay |
 | `last_accessed_at` | `RFC3339` | for decay scoring |
 | `parent_ids` | `string[]` | compaction lineage |
 | `compacted_from` | `string[]` | IDs rolled up into this record |
+| `blob_ref` | `sha256:...` | binary attachment, resolved via `blobs/` (v0.2) |
 
-`kind` is one of `episodic | semantic | procedural | relational`. Vendor
-extensions SHOULD use `kind: "x-vendor-name"`.
+`kind` is one of `episodic | semantic | procedural | relational`. Vendor extensions SHOULD use `kind: "x-vendor-name"`.
 
 ### `signatures.jsonl`
 
-One signature per record, keyed by `record_hash` (SHA-256 of the exact
-record line as it appears in `records.jsonl`, trailing newline excluded):
+Each line is one detached signature, keyed by record hash:
 
 ```json
 {
@@ -118,12 +114,17 @@ record line as it appears in `records.jsonl`, trailing newline excluded):
 }
 ```
 
-Receivers that verify signatures MUST reject records where
-`record_hash` is present in `signatures.jsonl` but the signature does
-not verify. Records without a signature entry are accepted as unsigned
-(compatibility with non-crypto producers).
+**Record hash computation:** the UTF-8 bytes of the record's JSONL line, excluding any trailing newline, SHA-256'd, prefixed with `sha256:`. Reference implementation: `packages/brain/src/memorypack/sign.ts:hashRecordLine`.
+
+**Verification rule:** when `signatures.jsonl` is present, the reference reader requires **every** record to have a matching valid signature. If any signature is invalid OR any record lacks a signature, the reader rejects the pack.
+
+This is stricter than "signatures are per-record optional." Reason: a tamperer who mutates a record line changes its hash, orphaning the original signature. Treating the mutated record as "unsigned" would silently accept it. We reject. If a producer has legitimate mixed signed/unsigned records, they should distribute them as separate packs.
+
+Packs without `signatures.jsonl` are accepted as unsigned.
 
 ### `anchors.jsonl`
+
+On-chain proofs (optional):
 
 ```json
 {
@@ -135,76 +136,93 @@ not verify. Records without a signature entry are accepted as unsigned
 }
 ```
 
-- `memo-v1`: the on-chain memo is the exact string
-  `clude:v1:<record_hash>` (53 bytes, well under Solana's 566-byte memo
-  cap).
-- Readers MAY fetch the transaction to confirm the memo matches.
+**`memo-v1`:** the on-chain memo payload is the exact string `clude:v1:sha256:<hex>`, 73 bytes for a SHA-256 hash. Fits well under Solana's 566-byte memo cap.
 
-### `blobs/`
-
-If a record references a binary blob (e.g. image attached to a memory),
-the content is stored at `blobs/<sha256>.<ext>` and referenced from the
-record as `"blob_ref": "sha256:..."`.
+Chain anchor verification — fetching the tx and confirming the memo matches `clude:v1:sha256:<record_hash_hex>` — is **specified but not yet implemented in the reader**. Use `solscan` or an explorer to verify manually today. See Roadmap.
 
 ## Read algorithm
 
+The reference reader (`packages/brain/src/memorypack/reader.ts`) implements:
+
 ```
-1. Parse manifest.json; reject if memorypack_version > 0.x.
-2. Stream records.jsonl line by line.
-3. For each record:
-   a. If signatures.jsonl exists, compute sha256 of the line,
-      look up signature, verify against manifest public_key.
-      Reject on mismatch.
-   b. If anchors.jsonl exists AND verify-chain=true, fetch tx,
-      confirm memo contains `clude:v1:<record_hash>`.
-   c. Insert into local store using native schema mapping.
-4. Re-embed if local embedding model != manifest.embedding_model.
+1. Parse manifest.json. Reject if memorypack_version is not 0.x.
+2. Stream records.jsonl; each line becomes one MemoryPackRecord.
+3. If signatures.jsonl exists:
+   a. Load the public key from manifest.producer.public_key
+      (or the caller's override).
+   b. For each signature entry, verify it against the public key.
+      Reject on any failure.
+   c. For each record line, compute its hash and confirm a matching
+      verified signature exists. Reject on any missing match.
+4. Load anchors.jsonl if present (returned to caller; verification
+   deferred to v0.2).
+5. Re-embed downstream if local embedding model differs from
+   manifest.embedding_model.
 ```
 
 ## Write algorithm
 
+The reference writer (`packages/brain/src/memorypack/writer.ts`) implements:
+
 ```
-1. Emit manifest.json with producer identity.
-2. For each memory: serialize to one JSONL line (stable key order).
-3. Hash the line (sha256), sign with producer private key, append to
-   signatures.jsonl.
-4. If on-chain anchoring is enabled, submit memo tx, append result
-   to anchors.jsonl.
+1. Emit manifest.json with producer identity, record_count, and
+   signature_algorithm iff a secret key is provided.
+2. For each memory: serialize to one JSONL line via serializeRecord()
+   (stable key order).
+3. If secretKey provided: hash the line (sha256, UTF-8, no trailing
+   newline), sign with ed25519, append signature entry.
+4. Write records.jsonl and (if signing) signatures.jsonl.
+5. Append caller-provided anchors.jsonl entries if supplied.
 ```
 
 ## Versioning
 
-`memorypack_version` uses semver-ish strings. Readers MUST accept all
-`0.x` versions on a best-effort basis (ignore unknown fields, warn on
-unknown `record_schema`). `1.0` will freeze the record shape above.
+`memorypack_version` uses semver-ish strings. Readers MUST accept all `0.x` versions on a best-effort basis (ignore unknown fields, warn on unknown `record_schema`). `1.0` will freeze the record shape above.
+
+## If Clude disappears tomorrow — recovery semantics
+
+The on-chain anchor is **a receipt, not storage**. The Solana memo carries the SHA-256 of the memory content; the content itself lives in the producer's database (Supabase, local SQLite, or wherever the agent was hosted). Practical recovery:
+
+- **Local mode (`CLUDE_LOCAL=true`):** memories live in `~/.clude/memories.json`. Clude going down doesn't touch them. The on-chain anchor lets a third party later verify your local copy wasn't tampered with.
+- **Exported MemoryPack:** if you ever ran `clude export --format memorypack <dir>` and kept the directory, you have everything needed to re-import into any MemoryPack-compatible system.
+- **Hosted mode, no export:** if both Clude and your hosted Supabase die and you never exported, the on-chain hash alone is not enough to reconstruct content. The hash proves what you remembered; it cannot recreate it.
+
+The primitive we ship today is **portability + authenticity**, not distributed content storage. For customers who need content-level on-chain guarantees (compliance archival, regulatory long-term hold), see the Roadmap entry for content anchoring.
 
 ## Reference implementations
 
-- **Clude CLI (`@clude/sdk` ≥ 3.1):** `clude export > mypack.tar.zst`
-  and `clude import mypack.tar.zst`. Uses `record_schema:
-  clude-memory-v3`.
-- **`@clude/memorypack` (planned):** framework-agnostic TS reader and
-  writer.
+- **`@clude/sdk` ≥ 3.0.4:**
+  - `clude export --format memorypack <dir>` — writes a v0.1 directory (signed if a wallet keypair is configured, unsigned otherwise).
+  - `clude import <dir>` — auto-detects `manifest.json` and uses the MemoryPack reader with signature verification + tamper rejection.
+  - On-chain memo writes use `clude:v1:sha256:<hex>` (memo-v1).
+  - Module exports: `@clude/brain/memorypack` → `writeMemoryPack`, `readMemoryPack`, `hashRecordLine`, `signHash`, `verifyHash`.
+- **`@clude/memorypack` (planned v0.2):** framework-agnostic standalone TS reader/writer with no Clude dependencies, publishable to npm so third-party memory vendors can implement the spec without installing the rest of Clude.
 
 ## Non-goals
 
-- Real-time sync. MemoryPack is a snapshot/stream format; sync is a
-  higher layer.
-- Access control. Receivers decide who can read; MemoryPack only
-  establishes authenticity.
-- Embedding portability at vector level. We ship embeddings as a hint,
-  not a contract.
+- Real-time sync. MemoryPack is a snapshot format; sync is a higher layer.
+- Access control. Receivers decide who can read; MemoryPack only establishes authenticity.
+- Embedding portability at vector level. Embeddings ship as a hint; readers re-embed against their own model as needed.
+- Content-level on-chain storage. The chain holds hashes, not content. See Roadmap for opt-in content anchoring.
+
+## Roadmap
+
+Tracked as GitHub issues with the `memorypack` label:
+
+- **`.tar.zst` compressed packs.** Today writer emits directories only. Reader will learn to auto-extract tarballs.
+- **Chain anchor verification in the reader.** `verify-chain: true` option fetches each anchor's Solana tx and confirms the memo payload. Gated by an RPC dependency; today callers verify manually.
+- **`blobs/` attachment storage.** Referenced via `blob_ref: sha256:...` in records.
+- **Daily auto-snapshot.** Background `clude daemon` writes a dated pack to `~/.clude/snapshots/` so users don't lose memory if they forget to export.
+- **Standalone `clude verify <pack>` command.** Validates a pack against just a wallet pubkey, no Clude server required — for auditors and long-term preservation.
+- **Content anchoring.** Opt-in `--anchor-content` that stores encrypted content via IPFS/Arweave and commits the CID rather than just the hash.
+- **`@clude/memorypack` standalone npm package.** Splits the reader/writer into a zero-dependency package so competing vendors can implement the spec without installing Clude.
 
 ## Open questions
 
-- Should `anchor_chain` support Ethereum / Bitcoin attestation out of
-  the box, or leave those to vendor extensions?
-- Do we want a compressed "compact" mode for packs >100MB?
-- How do revocations work — is it a separate `revocations.jsonl` or do
-  we rely on the producer re-issuing?
+- Should `anchor_chain` support Ethereum / Bitcoin attestation natively, or leave those to vendor extensions?
+- Streaming reader API for packs > 100MB?
+- Revocations — `revocations.jsonl` or producer re-issuing?
 
 ## Feedback
 
-File issues at https://github.com/sebbsssss/clude/issues with
-label `memorypack`. PRs welcome, especially from non-Clude memory
-systems that want to implement the reader.
+File issues at https://github.com/sebbsssss/clude/issues with label `memorypack`. PRs welcome, especially from non-Clude memory systems that want to implement the reader.
