@@ -843,12 +843,17 @@ body {
   border: 0;
   outline: none;
   resize: none;
-  font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.5;
+  /* System font stack first — matches Claude/ChatGPT input feel, falls back
+     to Funnel Sans if the OS lacks the preferred faces. */
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, var(--font-sans), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: -0.003em;
   color: var(--fg-1);
-  padding: 4px 0;
-  min-height: 28px;
+  padding: 6px 0;
+  min-height: 24px;
   max-height: 200px;
   width: 100%;
 }
