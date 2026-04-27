@@ -75,6 +75,19 @@ export function staticRoutes(): Router {
     next();
   });
 
+  // Clude Maison — auction house. Bare /maison hits the prototype's
+  // index.html; assets (palazzo.jsx, lot-data.js, styles.css, fonts/,
+  // assets/) are served by the express.static mount on apps/web/public/
+  // which already covers the /maison/ subdirectory.
+  router.get('/maison', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/maison/index.html';
+    next();
+  });
+  router.get('/maison/', (req: Request, _res: Response, next: express.NextFunction) => {
+    req.url = '/maison/index.html';
+    next();
+  });
+
   // ── React SPAs ────────────────────────────────────────────────────
 
   // Dashboard SPA at /dashboard

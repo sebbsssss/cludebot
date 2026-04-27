@@ -11,6 +11,7 @@ import { persistentMemoryRoutes } from './persistent-memory.routes.js';
 import { uploadRoutes } from './upload.routes.js';
 import { exploreRoutes } from './explore.routes.js';
 import { lotrRoutes } from './lotr.routes.js';
+import { maisonRoutes } from './maison.routes.js';
 import { topupWebhookRoutes, topupApiRoutes } from './topup.routes.js';
 import { dashboardRoutes } from './dashboard.routes.js';
 import { compoundRoutes } from './compound.routes.js';
@@ -94,6 +95,11 @@ export function mountApiRoutes(app: express.Application): void {
 
   // LOTR Guest Brain (campaign — temporary, no auth required)
   app.use('/api/lotr', lotrRoutes());
+
+  // Clude Maison auction house (public lot + bidding API).
+  // In-memory state — single Railway instance only. Real auction
+  // settlement / Supabase persistence is a follow-up.
+  app.use('/api/maison', apiLimiter, maisonRoutes());
 
   // Chat API (memory-augmented chat with OpenRouter inference)
   app.use('/api/chat', chatRoutes());

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Clude Maison — Lot 0047, truth_terminal</title>
+<link rel="icon" href="/favicon.svg" />
+<link rel="stylesheet" href="/maison/styles.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;0,6..96,800;1,6..96,400;1,6..96,500;1,6..96,600&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #1a1814; }
+  body { display: flex; justify-content: center; }
+  #stage {
+    width: 1280px;
+    transform-origin: top center;
+    will-change: transform;
+  }
+  /* Subtle gallery surround on wide viewports */
+  @media (min-width: 1320px) {
+    body { background: linear-gradient(180deg, #1a1814 0%, #0f0e0c 100%); padding: 0; }
+    #stage { box-shadow: 0 0 80px rgba(0,0,0,0.6); }
+  }
+  /* Inline loading shroud — matches palette so the page never flashes */
+  #boot {
+    width: 1280px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #B8924A;
+    font-family: "Bodoni Moda", Georgia, serif;
+    font-style: italic;
+    letter-spacing: 0.3em;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div id="stage"><div id="root"><div id="boot">CLUDE MAISON · loading lot</div></div></div>
+
+<script>
+(function () {
+  const stage = document.getElementById("stage");
+  const DESIGN_W = 1280;
+  function fit() {
+    const vw = document.documentElement.clientWidth;
+    const scale = Math.min(1, vw / DESIGN_W);
+    stage.style.transform = "scale(" + scale + ")";
+    const root = document.getElementById("root");
+    if (root && root.firstChild) {
+      stage.style.height = (root.firstChild.offsetHeight * scale) + "px";
+    }
+  }
+  window.addEventListener("resize", fit);
+  window.addEventListener("load", fit);
+  setTimeout(fit, 100);
+  setTimeout(fit, 500);
+  setTimeout(fit, 1500);
+  // Re-fit when lot data lands and the React tree mounts
+  window.addEventListener("maison:rendered", fit);
+})();
+</script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="/maison/lot-data.js"></script>
+<script type="text/babel" src="/maison/palazzo.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+(async function bootMaison() {
+  const LOT_NUMBER = "0047";
+  // 1. Try to load live lot from the API. Fall back to bundled snapshot.
+  try {
+    window.LOT = await window.maisonApi.fetchLot(LOT_NUMBER);
+  } catch (err) {
+    console.warn("[maison] API unreachable, using offline fallback", err);
+    window.LOT = window.LOT_FALLBACK;
+  }
+
+  // 2. Wait for palazzo.jsx to finish compiling. Babel-standalone
+  // appends async-compiled output, so on slow networks the
+  // <script src="palazzo.jsx"> tag may not have run by the time we
+  // get here.
+  while (!window.PalazzoLot) {
+    await new Promise((r) => setTimeout(r, 30));
+  }
+
+  // 3. Mount React.
+  const root = document.getElementById("root");
+  // Strip the boot shroud
+  root.innerHTML = "";
+  function App() { return <window.PalazzoLot />; }
+  ReactDOM.createRoot(root).render(<App />);
+  // Re-fit the stage now that the tree is mounted
+  requestAnimationFrame(() => window.dispatchEvent(new Event("maison:rendered")));
+})();
+</script>
+</body>
+</html>
