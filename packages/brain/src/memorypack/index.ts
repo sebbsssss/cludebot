@@ -7,6 +7,14 @@ export type { WriterOptions, WriterEncryption, WriterBlob } from './writer.js';
 export { readMemoryPack } from './reader.js';
 export type { ReaderResult, ReaderOptions } from './reader.js';
 export {
+  verifyChainAnchors,
+  expectedMemoForRecordHash,
+} from './chain-verify.js';
+export type {
+  VerifyChainAnchorsOptions,
+  VerifyChainAnchorsResult,
+} from './chain-verify.js';
+export {
   hashRecordLine,
   hashBuffer,
   signHash,
