@@ -32,7 +32,7 @@ import bs58Mod from 'bs58';
 const bs58 = bs58Mod.default || bs58Mod;
 
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
-const TIER_PRICE_USDC = { personal: 5, pro: 19, agent: 59 };
+const TIER_PRICE_USDC = { personal: 5, pro: 19 };
 
 function arg(name, fallback) {
   const i = argv.indexOf(`--${name}`);
@@ -51,11 +51,11 @@ const api = arg('api', 'https://clude.io');
 const dryRun = flag('dry-run');
 
 if (!keypairPath || !tier || !hotPubkeyStr) {
-  console.error('usage: sign-billing-upgrade.mjs --keypair <path> --tier personal|pro|agent --hot <pubkey> [--rpc URL] [--api URL] [--dry-run]');
+  console.error('usage: sign-billing-upgrade.mjs --keypair <path> --tier personal|pro --hot <pubkey> [--rpc URL] [--api URL] [--dry-run]');
   exit(1);
 }
 if (!(tier in TIER_PRICE_USDC)) {
-  console.error(`unknown tier ${tier}; must be personal | pro | agent`);
+  console.error(`unknown tier ${tier}; must be personal | pro`);
   exit(1);
 }
 

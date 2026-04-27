@@ -49,8 +49,12 @@
     .hero p { color: var(--mute); max-width: 580px; margin: 0 auto; font-size: 17px; }
 
     .cards {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      display: grid; grid-template-columns: repeat(3, 1fr);
       gap: 16px; margin-bottom: 56px;
+      max-width: 880px; margin-left: auto; margin-right: auto;
+    }
+    @media (max-width: 760px) {
+      .cards { grid-template-columns: 1fr; max-width: 480px; }
     }
     .card {
       background: var(--paper); border: 1px solid var(--line);
@@ -197,36 +201,24 @@
         <button class="cta" data-tier="pro" data-price="19">Upgrade — $19 USDC</button>
       </div>
 
-      <div class="card">
-        <span class="name">Agent</span>
-        <div class="price">$59<small>/mo</small></div>
-        <div class="price-sub">USDC, billed monthly</div>
-        <ul>
-          <li>Everything in Pro</li>
-          <li>Up to 1,000,000 memories/day</li>
-          <li>For autonomous agents at scale</li>
-          <li>Multi-agent treasury sharing</li>
-          <li>Persona marketplace access</li>
-        </ul>
-        <button class="cta" data-tier="agent" data-price="59">Upgrade — $59 USDC</button>
-      </div>
     </section>
 
     <section class="compare">
       <h2>What you get at every tier</h2>
       <table>
         <thead>
-          <tr><th>Feature</th><th class="center">Free</th><th class="center">Personal</th><th class="center">Pro</th><th class="center">Agent</th></tr>
+          <tr><th>Feature</th><th class="center">Free</th><th class="center">Personal</th><th class="center">Pro</th></tr>
         </thead>
         <tbody>
-          <tr><td>Local memory store</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td></tr>
-          <tr><td>MemoryPack export</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td></tr>
-          <tr><td>On-chain anchoring</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td></tr>
-          <tr><td>Daily memory quota</td><td class="center mono">200</td><td class="center mono">5k</td><td class="center mono">50k</td><td class="center mono">1M</td></tr>
-          <tr><td>Cloud sync</td><td class="center">—</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td></tr>
-          <tr><td>Hosted recall API</td><td class="center">—</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td></tr>
-          <tr><td>Content anchoring (IPFS)</td><td class="center">—</td><td class="center">—</td><td class="center">✓</td><td class="center">✓</td></tr>
-          <tr><td>Multi-agent treasury</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td class="center">✓</td></tr>
+          <tr><td>Local memory store</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td></tr>
+          <tr><td>MemoryPack export</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td></tr>
+          <tr><td>On-chain anchoring</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓</td></tr>
+          <tr><td>Daily memory quota</td><td class="center mono">200</td><td class="center mono">5k</td><td class="center mono">50k</td></tr>
+          <tr><td>Cloud sync across devices</td><td class="center">—</td><td class="center">✓</td><td class="center">✓</td></tr>
+          <tr><td>Hosted recall API</td><td class="center">—</td><td class="center">✓</td><td class="center">✓</td></tr>
+          <tr><td>Hosted dream cycles</td><td class="center">—</td><td class="center">✓</td><td class="center">✓</td></tr>
+          <tr><td>Content anchoring (IPFS)</td><td class="center">—</td><td class="center">—</td><td class="center">✓</td></tr>
+          <tr><td>Email support</td><td class="center">—</td><td class="center">—</td><td class="center">✓</td></tr>
         </tbody>
       </table>
     </section>
@@ -276,7 +268,7 @@
     // (or window.solflare) with the same interface we use below.
 
     const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
-    const TIER_PRICE_USDC = { personal: 5, pro: 19, agent: 59 };
+    const TIER_PRICE_USDC = { personal: 5, pro: 19 };
 
     // Hot wallet pubkey is fetched from the public stats endpoint so
     // we never hardcode it in two places.

@@ -12,27 +12,24 @@ describe('Tier semantics', () => {
   it('rank ordering is monotonic', () => {
     expect(TIER_RANK.free).toBeLessThan(TIER_RANK.personal);
     expect(TIER_RANK.personal).toBeLessThan(TIER_RANK.pro);
-    expect(TIER_RANK.pro).toBeLessThan(TIER_RANK.agent);
   });
 
   it('meetsTier returns true for higher or equal tiers', () => {
-    expect(meetsTier('agent', 'personal')).toBe(true);
+    expect(meetsTier('pro', 'personal')).toBe(true);
     expect(meetsTier('personal', 'personal')).toBe(true);
     expect(meetsTier('free', 'personal')).toBe(false);
-    expect(meetsTier('pro', 'agent')).toBe(false);
+    expect(meetsTier('personal', 'pro')).toBe(false);
   });
 
   it('prices are in micro-USDC and below industry standard', () => {
     // Below Cursor / ChatGPT Plus / Mem.ai which sit at $20 / $20 / $14.
     expect(TIER_PRICE_MICRO_USDC.personal).toBe(5_000_000n);  // $5
     expect(TIER_PRICE_MICRO_USDC.pro).toBe(19_000_000n);      // $19
-    expect(TIER_PRICE_MICRO_USDC.agent).toBe(59_000_000n);    // $59
   });
 
   it('daily quotas scale by ~10x per tier', () => {
     expect(TIER_DAILY_MEMORY_QUOTA.personal).toBeGreaterThan(TIER_DAILY_MEMORY_QUOTA.free);
     expect(TIER_DAILY_MEMORY_QUOTA.pro).toBeGreaterThan(TIER_DAILY_MEMORY_QUOTA.personal);
-    expect(TIER_DAILY_MEMORY_QUOTA.agent).toBeGreaterThan(TIER_DAILY_MEMORY_QUOTA.pro);
   });
 });
 

@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS user_tiers (
   id BIGSERIAL PRIMARY KEY,
   identity_kind TEXT NOT NULL CHECK (identity_kind IN ('email', 'wallet')),
   identity_value TEXT NOT NULL,
-  tier TEXT NOT NULL CHECK (tier IN ('free', 'personal', 'pro', 'agent')),
+  tier TEXT NOT NULL CHECK (tier IN ('free', 'personal', 'pro')),
   source TEXT NOT NULL,                -- 'stripe' | 'direct_usdc' | 'comped'
   external_id TEXT,                    -- Stripe sub id or USDC tx sig
   active_until TIMESTAMPTZ,            -- null = active until cancelled

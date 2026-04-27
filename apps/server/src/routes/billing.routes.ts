@@ -30,7 +30,7 @@ const log = createChildLogger('billing');
 
 interface UpgradeRequest {
   wallet: string;            // base58 Solana pubkey
-  tier: Tier;                // 'personal' | 'pro' | 'agent'
+  tier: Tier;                // 'personal' | 'pro'
   tx_sig: string;            // signature of USDC transfer to sink hot wallet
   signed_message: string;    // base58 ed25519 sig over canonical msg, proves wallet intent
 }
