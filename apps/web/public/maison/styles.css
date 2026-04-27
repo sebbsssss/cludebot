@@ -1,0 +1,46 @@
+/* Clude Maison — shared base */
+@font-face {
+  font-family: "Inconsolata";
+  src: url("./fonts/Inconsolata-Variable.ttf") format("truetype-variations");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Clude anchor */
+  --clude-blue: #2244FF;
+  --clude-blue-soft: #EEF0FF;
+  --clude-blue-tint: rgba(34, 68, 255, 0.08);
+
+  /* Maison palette — parchment + ink + gilt */
+  --parchment: #F2EBDA;
+  --parchment-2: #ECE3CE;
+  --parchment-3: #E5DABE;
+  --ivory: #F8F2E2;
+  --ink: #1A1814;
+  --ink-2: #3A352B;
+  --ink-3: #6B6557;
+  --ink-4: #9A9385;
+  --rule: rgba(26, 24, 20, 0.18);
+  --rule-soft: rgba(26, 24, 20, 0.10);
+  --gilt: #B8924A;
+  --gilt-deep: #8E6B2E;
+  --gilt-light: #D9B670;
+  --terracotta: #9B4A2D;
+  --lagoon: #1F4D54;
+
+  /* Bodoni stack */
+  --serif-display: "Bodoni Moda", "Bodoni 72", "Didot", "Playfair Display", "Times New Roman", serif;
+  --serif: "Bodoni Moda", "Cardo", "EB Garamond", Georgia, serif;
+  --mono: "Inconsolata", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+/* Tabular nums helper */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* No selection styling weirdness inside artboards */
+.artboard-content ::selection { background: var(--ink); color: var(--parchment); }
