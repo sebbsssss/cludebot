@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "clude-memory": {
+      "command": "npx",
+      "args": [
+        "clude-bot",
+        "mcp-serve"
+      ],
+      "env": {
+        "CORTEX_API_KEY": "clk_db5b3c331443e93d7e1a2944e8ceffd2758b522e6532862c",
+        "CORTEX_HOST_URL": "https://clude.io",
+        "CLUDE_WALLET": "DgCMC6vJMdSB5tik1PqM42Csvag8kk1doH3uhANkYxGt",
+        "CLUDE_AGENT_NAME": "cluude-bot"
+      }
+    }
+  }
+}

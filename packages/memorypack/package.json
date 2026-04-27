@@ -1,0 +1,63 @@
+{
+  "name": "@clude/memorypack",
+  "version": "0.1.0",
+  "description": "Portable agent memory format — reference reader/writer for the MemoryPack v0.1 spec. No Clude dependencies.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
+    "./sign": {
+      "types": "./dist/sign.d.ts",
+      "default": "./dist/sign.js"
+    },
+    "./writer": {
+      "types": "./dist/writer.d.ts",
+      "default": "./dist/writer.js"
+    },
+    "./reader": {
+      "types": "./dist/reader.d.ts",
+      "default": "./dist/reader.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "memorypack",
+    "agent-memory",
+    "portable-memory",
+    "ed25519",
+    "solana",
+    "ai-agent",
+    "memory",
+    "open-format"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebbsssss/clude.git",
+    "directory": "packages/memorypack"
+  },
+  "homepage": "https://github.com/sebbsssss/clude/blob/main/docs/memorypack.md",
+  "license": "MIT",
+  "dependencies": {
+    "tweetnacl": "^1.0.3",
+    "bs58": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

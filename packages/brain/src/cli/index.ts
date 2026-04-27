@@ -51,6 +51,12 @@ if (command === 'setup') {
     console.error('Import failed:', err.message);
     process.exit(1);
   });
+} else if (command === 'verify') {
+  const { runVerify } = require('./verify');
+  runVerify().catch((err: Error) => {
+    console.error('Verify failed:', err.message);
+    process.exit(1);
+  });
 } else if (command === 'sync') {
   const { runSync } = require('./sync');
   runSync().catch((err: Error) => {
@@ -98,8 +104,9 @@ if (command === 'setup') {
   console.log(`    ${c.cyan}npx @clude/sdk register${c.reset}      Get an API key only`);
   console.log(`    ${c.cyan}npx @clude/sdk mcp-install${c.reset}   Install MCP server for your IDE`);
   console.log(`    ${c.cyan}npx @clude/sdk inject-instructions${c.reset}  Write usage instructions to CLAUDE.md`);
-  console.log(`    ${c.cyan}npx @clude/sdk export${c.reset}        Export memories (json/md/chatgpt/gemini)`);
-  console.log(`    ${c.cyan}npx @clude/sdk import${c.reset}        Import from ChatGPT export, markdown, JSON`);
+  console.log(`    ${c.cyan}npx @clude/sdk export${c.reset}        Export memories (json/md/chatgpt/gemini/memorypack)`);
+  console.log(`    ${c.cyan}npx @clude/sdk import${c.reset}        Import from ChatGPT export, markdown, JSON, MemoryPack`);
+  console.log(`    ${c.cyan}npx @clude/sdk verify${c.reset}        Verify a MemoryPack against a wallet pubkey`);
   console.log(`    ${c.cyan}npx @clude/sdk sync${c.reset}          Auto-update system prompt file`);
   console.log(`    ${c.cyan}npx @clude/sdk ship "msg"${c.reset}    Broadcast to Telegram channel`);
   console.log(`    ${c.cyan}npx @clude/sdk doctor${c.reset}        Run diagnostics`);
