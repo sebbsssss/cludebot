@@ -28,8 +28,11 @@ CREATE TABLE IF NOT EXISTS user_tiers (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (identity_kind, identity_value)
 );
-CREATE INDEX IF NOT EXISTS idx_user_tiers_active
-  ON user_tiers(tier, active_until) WHERE active_until IS NULL OR active_until > NOW();
+-- No NOW() in the predicate — Postgres requires IMMUTABLE functions
+-- in partial-index predicates. The composite index covers the
+-- "active tier" lookup well enough; the optimizer adds a runtime
+-- filter on active_until at query time.
+CREATE INDEX IF NOT EXISTS idx_user_tiers_active ON user_tiers(tier, active_until);
 
 -- Audit log of every USDC → $CLUDE swap. Source of truth for the
 -- public treasury dashboard.
