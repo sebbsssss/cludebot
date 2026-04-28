@@ -37,12 +37,8 @@ let injectedPrivyUser: { userId: string } | null = { userId: 'did:privy:abc' };
 let injectedWallet: string | null = 'OwnerWallet11111111111111111111111111111111';
 
 vi.mock('@clude/brain/auth/privy-auth', () => ({
-  requirePrivyAuth: (req: Request, res: Response, next: NextFunction) => {
-    if (!injectedPrivyUser) {
-      res.status(401).json({ error: 'unauth' });
-      return;
-    }
-    (req as any).privyUser = injectedPrivyUser;
+  optionalPrivyAuth: (req: Request, _res: Response, next: NextFunction) => {
+    if (injectedPrivyUser) (req as any).privyUser = injectedPrivyUser;
     next();
   },
 }));
@@ -63,15 +59,15 @@ vi.mock('@clude/brain/auth/privy-admin-client', () => ({
   deletePrivyUser: (...args: any[]) => mockDeletePrivyUser(...args),
 }));
 
-// ── Flexible DB mock: each .from(table).delete()….eq()… chain resolves
-//    against a queue of { error?, count? } items in call order. Tests push
-//    fixtures matching the route's table-iteration order. ──
-type DbResult = { error?: any; count?: number };
+// ── Flexible DB mock: each chain resolves against a queue of
+//    { data?, error?, count? } items in call order. Tests push fixtures in
+//    the order the route will hit them. ──
+type DbResult = { data?: any; error?: any; count?: number };
 const dbQueue: DbResult[] = [];
 const fromCalls: string[] = [];
 
 function dequeue(): Promise<DbResult> {
-  return Promise.resolve(dbQueue.shift() ?? { error: null, count: 0 });
+  return Promise.resolve(dbQueue.shift() ?? { data: null, error: null, count: 0 });
 }
 
 function chainBuilder(): any {
@@ -149,15 +145,8 @@ beforeEach(() => {
 });
 
 describe('DELETE /api/account', () => {
-  it('returns 401 when unauthenticated and performs no deletes', async () => {
+  it('returns 401 when no owner wallet can be resolved (no auth)', async () => {
     injectedPrivyUser = null;
-    const r = await req(server, 'DELETE', '/api/account');
-    expect(r.status).toBe(401);
-    expect(fromCalls).toHaveLength(0);
-    expect(mockDeletePrivyUser).not.toHaveBeenCalled();
-  });
-
-  it('returns 401 when no owner wallet can be resolved', async () => {
     injectedWallet = null;
     const r = await req(server, 'DELETE', '/api/account');
     expect(r.status).toBe(401);
@@ -221,14 +210,28 @@ describe('DELETE /api/account', () => {
     expect(r.body.error).toMatch(/privy|account/i);
   });
 
-  it('skips Privy delete for legacy users without a privyUser (e.g. API-key-only) and still returns 204', async () => {
+  it('cortex-key path: when no Privy JWT, fetches privy_did from agent_keys before wiping', async () => {
     injectedPrivyUser = null;
-    // Simulate require-ownership succeeding via Cortex API key:
-    // the test rig still gates on injectedPrivyUser, so widen here.
-    // We special-case: re-mock the auth middleware to allow no privyUser
-    // but still set verifiedWallet via injectedWallet.
-    // (See route impl: when req.privyUser is absent it should not call Privy.)
-    // The current rig blocks at requirePrivyAuth though — so this is
-    // documented behavior: the route is Privy-only. Skip this case for now.
+    // First DB hit: agent_keys lookup returns the DID.
+    dbQueue.push({ data: { privy_did: 'did:privy:fromrow' }, error: null });
+    // Then 7 cascade deletes succeed.
+    for (let i = 0; i < 20; i++) dbQueue.push({ error: null, count: 0 });
+
+    const r = await req(server, 'DELETE', '/api/account');
+
+    expect(r.status).toBe(204);
+    expect(fromCalls[0]).toBe('agent_keys'); // lookup happens first
+    expect(mockDeletePrivyUser).toHaveBeenCalledWith('did:privy:fromrow');
+  });
+
+  it('cortex-key path with no privy_did on row: wipes data and skips Privy → 204', async () => {
+    injectedPrivyUser = null;
+    dbQueue.push({ data: { privy_did: null }, error: null });
+    for (let i = 0; i < 20; i++) dbQueue.push({ error: null, count: 0 });
+
+    const r = await req(server, 'DELETE', '/api/account');
+
+    expect(r.status).toBe(204);
+    expect(mockDeletePrivyUser).not.toHaveBeenCalled();
   });
 });

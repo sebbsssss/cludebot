@@ -16,7 +16,7 @@
  * owner-scoped tables. Dashboard tables are shared tooling, not user data.
  */
 import { Router, Request, Response } from 'express';
-import { requirePrivyAuth } from '@clude/brain/auth/privy-auth';
+import { optionalPrivyAuth } from '@clude/brain/auth/privy-auth';
 import { requireOwnership } from '@clude/brain/auth/require-ownership';
 import { deletePrivyUser } from '@clude/brain/auth/privy-admin-client';
 import { getDb } from '@clude/shared/core/database';
@@ -44,11 +44,10 @@ export function accountRoutes(): Router {
 
   router.delete(
     '/',
-    requirePrivyAuth,
+    optionalPrivyAuth,
     requireOwnership,
     async (req: Request, res: Response) => {
       const ownerWallet = req.verifiedWallet;
-      const privyUserId = req.privyUser?.userId;
 
       if (!ownerWallet) {
         res.status(401).json({ error: 'Could not resolve owner wallet' });
@@ -56,6 +55,29 @@ export function accountRoutes(): Router {
       }
 
       const db = getDb();
+
+      // Resolve Privy DID before wiping. Prefer the JWT (free) and fall back
+      // to agent_keys.privy_did, which the cortex-key auth path doesn't surface.
+      // Must happen BEFORE the cascade deletes agent_keys.
+      let privyUserId: string | null = req.privyUser?.userId ?? null;
+      if (!privyUserId) {
+        // No is_active filter: even a deactivated row can carry the DID we
+        // need to wipe from Privy.
+        const { data: agent, error: lookupErr } = await db
+          .from('agent_keys')
+          .select('privy_did')
+          .eq('owner_wallet', ownerWallet)
+          .limit(1)
+          .maybeSingle();
+        if (lookupErr) {
+          log.warn(
+            { err: lookupErr, ownerWallet },
+            'Account-delete: privy_did lookup failed; will skip Privy delete',
+          );
+        }
+        privyUserId = (agent?.privy_did as string | null) ?? null;
+      }
+
       const wiped: { table: string; deletedCount: number }[] = [];
 
       for (const t of OWNER_TABLES) {
