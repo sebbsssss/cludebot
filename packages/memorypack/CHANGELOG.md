@@ -2,6 +2,28 @@
 
 All notable changes to `@clude/memorypack` are documented here. The package follows [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-04-28
+
+Streaming reader for packs that don't fit in memory.
+
+### Added
+
+- `streamMemoryPack(path, opts)` — returns `{ manifest, anchors, records: AsyncIterable<StreamedRecord>, warnings }`.
+- `StreamReaderOptions`, `StreamedRecord`, `StreamMemoryPackResult` — exported types.
+
+### Behaviour
+
+- Manifest, signatures, and anchors are loaded eagerly (small files). Signatures are verified up front so the call to `streamMemoryPack` can throw on tampering before the iterator yields a single record.
+- Records are streamed line-by-line via Node `readline` from `records.jsonl`. Per-record cost is one `JSON.parse` + one sha256 + one signature lookup + (optionally) one xsalsa20-poly1305 decrypt.
+- Tarballs (`.tar.zst`) are extracted to a temp directory first; the temp dir is cleaned up after iteration completes (success or throw).
+- Memory footprint is bounded — the only state retained across the iteration is the signature map (typically < 1% of pack size) and the manifest. The 5000-record bounded-heap test caps peak heap delta under 10 MB.
+
+### Limitations (deferred to v0.4)
+
+- True streaming through tar (no temp-dir extraction). Today's tarball flow extracts the whole pack first.
+- Lazy blob resolution. The streaming reader does not load `blobs/`. Callers that need blobs alongside records should use `readMemoryPack` instead.
+- Resource leak on abandoned iterators. If a consumer breaks out of the `for await` loop without exhausting it, the temp dir for tarballs is not cleaned up until process exit. Acceptable for v0.3; v0.4 should expose a `Symbol.asyncDispose` handle.
+
 ## [0.2.0] — 2026-04-28
 
 First standalone release. Mirrors the v0.2 reference implementation merged into the main Clude repo via PRs #103–#108.

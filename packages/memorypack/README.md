@@ -70,6 +70,32 @@ const { verified, warnings } = await verifyChainAnchors(result.anchors, {
 });
 ```
 
+### Stream large packs
+
+`readMemoryPack` loads everything into memory — fine for the typical case, painful past ~100MB. Use `streamMemoryPack` to iterate records line-by-line with bounded memory:
+
+```ts
+import { streamMemoryPack } from '@clude/memorypack';
+
+const { manifest, records, anchors, warnings } = await streamMemoryPack(path, {
+  // Optional — same options as readMemoryPack
+  decryptionKey: aesKey32,
+  strictSignatures: true,
+});
+
+console.log(`pack created ${manifest.created_at}, ${manifest.record_count} records`);
+
+for await (const { record, hash, verified } of records) {
+  // Process one record at a time. Hash + signature already verified.
+  await indexer.add(record);
+}
+
+// `warnings` is populated as the iterator runs. Read after iteration completes.
+console.log(warnings);
+```
+
+Signature semantics match the eager reader: when `signatures.jsonl` is present, every record must verify, and the iterator throws on the first mismatch. Encrypted records decrypt on the fly when `decryptionKey` is supplied. Tarballs (`.tar.zst`) auto-extract before streaming.
+
 ## What's in v0.2
 
 | Feature | API |
@@ -81,6 +107,7 @@ const { verified, warnings } = await verifyChainAnchors(result.anchors, {
 | ed25519 record signing (mandatory when sigs present) | `WriterOptions.secretKey` |
 | Chain anchor verification (Solana SPL Memo) | `verifyChainAnchors()` |
 | Schema-evolution fallback (minimal-shape readers) | `result.minimalRecords` |
+| **Streaming reader for large packs** | `streamMemoryPack` (async iterator) |
 | Reference test vectors (deterministic fixture) | `src/__tests__/fixtures.ts` |
 
 Full spec: [docs/memorypack.md](https://github.com/sebbsssss/clude/blob/main/docs/memorypack.md).
@@ -112,6 +139,6 @@ Post-v0.2 (tracked in the [main repo](https://github.com/sebbsssss/clude)):
 
 - Production IPFS / Arweave content anchoring
 - Multi-chain anchors (Ethereum L2, Bitcoin OP_RETURN)
-- Streaming reader for packs > 100MB
+- True streaming through tar (today the reader extracts to a temp dir first)
 - Revocations format
 - `clude verify` CLI distributed alongside this package
