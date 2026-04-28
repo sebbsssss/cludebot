@@ -11,7 +11,9 @@
     "noEmit": true,
     "paths": {
       "@clude/shared": ["../shared/src"],
-      "@clude/shared/*": ["../shared/src/*"]
+      "@clude/shared/*": ["../shared/src/*"],
+      "@clude/memorypack": ["../memorypack/src"],
+      "@clude/memorypack/*": ["../memorypack/src/*"]
     }
   },
   "include": ["src/**/*"],

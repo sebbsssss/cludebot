@@ -8,7 +8,7 @@
 import {
   readMemoryPack,
   verifyChainAnchors,
-} from '../memorypack/index.js';
+} from '@clude/memorypack';
 import { c } from './banner.js';
 
 interface Args {
