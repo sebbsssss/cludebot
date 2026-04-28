@@ -45,6 +45,7 @@ import {
   MemoryPackAnchor,
   MemoryPackManifest,
   MemoryPackRecord,
+  MemoryPackRevocation,
   MemoryPackSignature,
 } from './types.js';
 import {
@@ -52,6 +53,7 @@ import {
   decryptString,
   hashRecordLine,
   verifyHash,
+  verifyRevocation,
 } from './sign.js';
 
 export interface StreamReaderOptions {
@@ -78,6 +80,10 @@ export interface StreamMemoryPackResult {
   manifest: MemoryPackManifest;
   /** Eager-loaded — typically small. */
   anchors: MemoryPackAnchor[];
+  /** Eager-loaded + signature-verified. v0.3+ packs only. */
+  revocations: MemoryPackRevocation[];
+  /** sha256 hashes of records that have at least one valid revocation. */
+  revokedRecordHashes: Set<string>;
   /** Async iterator that yields records one at a time. */
   records: AsyncIterable<StreamedRecord>;
   /**
@@ -185,6 +191,44 @@ export async function streamMemoryPack(
     }
   }
 
+  // ── revocations (eager + verified up front) ──
+  const revocations: MemoryPackRevocation[] = [];
+  const revokedRecordHashes = new Set<string>();
+  const revocationsPath = join(dir, 'revocations.jsonl');
+  if (existsSync(revocationsPath)) {
+    const expectedSigner = opts.publicKey ?? manifest.producer.public_key;
+    const revLines = readFileSync(revocationsPath, 'utf-8').split('\n').filter((l) => l.length > 0);
+    for (const line of revLines) {
+      let entry: MemoryPackRevocation;
+      try {
+        entry = JSON.parse(line) as MemoryPackRevocation;
+      } catch {
+        warnings.push('revocations.jsonl: skipping malformed line');
+        continue;
+      }
+      if (expectedSigner && entry.public_key !== expectedSigner) {
+        warnings.push(
+          `revocation for ${entry.record_hash} signed by unexpected key ${entry.public_key} — rejected`,
+        );
+        continue;
+      }
+      const ok = verifyRevocation(
+        entry.record_hash,
+        entry.revoked_at,
+        entry.signature,
+        entry.public_key,
+      );
+      if (!ok) {
+        warnings.push(
+          `revocation for ${entry.record_hash} signature failed verification — rejected`,
+        );
+        continue;
+      }
+      revocations.push(entry);
+      revokedRecordHashes.add(entry.record_hash);
+    }
+  }
+
   // ── records.jsonl exists check ──
   const recordsPath = join(dir, 'records.jsonl');
   if (!existsSync(recordsPath)) {
@@ -259,6 +303,8 @@ export async function streamMemoryPack(
   return {
     manifest,
     anchors,
+    revocations,
+    revokedRecordHashes,
     records: iterate(),
     warnings,
   };

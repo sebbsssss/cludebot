@@ -61,6 +61,59 @@ export function verifyHash(hash: string, signature: string, publicKey: string): 
 }
 
 // ────────────────────────────────────────────────────────────────────
+// Revocations — signed soft-delete protocol (v0.3)
+//
+// Canonical signed payload (UTF-8): `revoke:v1:<record_hash>:<revoked_at>`
+// Same ed25519 + bs58 envelope as `signHash` / `verifyHash`, so a
+// producer's existing keypair signs both records and revocations.
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * Build the canonical bytes a revocation signs over. Exposed so external
+ * implementations can reproduce it without re-deriving the format.
+ */
+export function revocationPayload(record_hash: string, revoked_at: string): string {
+  return `revoke:v1:${record_hash}:${revoked_at}`;
+}
+
+/**
+ * Sign a revocation. Returns the base58-prefixed detached signature.
+ */
+export function signRevocation(
+  record_hash: string,
+  revoked_at: string,
+  secretKey: Uint8Array,
+): string {
+  const messageBytes = Buffer.from(revocationPayload(record_hash, revoked_at), 'utf-8');
+  const sig = nacl.sign.detached(messageBytes, secretKey);
+  return `base58:${bs58.encode(sig)}`;
+}
+
+/**
+ * Verify a revocation. Returns true iff the signature was produced by
+ * the secret key corresponding to `publicKey` over the canonical
+ * `revoke:v1:<record_hash>:<revoked_at>` bytes.
+ */
+export function verifyRevocation(
+  record_hash: string,
+  revoked_at: string,
+  signature: string,
+  publicKey: string,
+): boolean {
+  try {
+    const messageBytes = Buffer.from(revocationPayload(record_hash, revoked_at), 'utf-8');
+    const sigRaw = signature.startsWith('base58:')
+      ? signature.slice('base58:'.length)
+      : signature;
+    const sigBytes = bs58.decode(sigRaw);
+    const pkBytes = bs58.decode(publicKey);
+    return nacl.sign.detached.verify(messageBytes, sigBytes, pkBytes);
+  } catch {
+    return false;
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────
 // xsalsa20-poly1305 — pack-level encryption (v0.2)
 //
 // We use NaCl's `secretbox` primitive: xsalsa20 stream cipher +

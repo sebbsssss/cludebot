@@ -1,6 +1,7 @@
 import {
   existsSync,
   mkdirSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -13,6 +14,7 @@ import {
   MemoryPackBlobIndex,
   MemoryPackManifest,
   MemoryPackRecord,
+  MemoryPackRevocation,
   MemoryPackSignature,
 } from './types.js';
 import {
@@ -22,6 +24,7 @@ import {
   hashBuffer,
   hashRecordLine,
   signHash,
+  signRevocation,
 } from './sign.js';
 
 // ────────────────────────────────────────────────────────────────────
@@ -160,7 +163,7 @@ function writeDirectory(
   // pack. Only removes our own well-known files; foreign files in the
   // target dir are left alone.
   if (existsSync(dir)) {
-    for (const f of ['manifest.json', 'records.jsonl', 'signatures.jsonl', 'anchors.jsonl']) {
+    for (const f of ['manifest.json', 'records.jsonl', 'signatures.jsonl', 'anchors.jsonl', 'revocations.jsonl']) {
       const p = join(dir, f);
       if (existsSync(p)) rmSync(p, { force: true });
     }
@@ -348,4 +351,92 @@ function writeTarball(
   } finally {
     rmSync(tmpRoot, { recursive: true, force: true });
   }
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Revocations — append-only soft-delete protocol (v0.3)
+//
+// `appendRevocations` is intentionally separate from `writeMemoryPack`.
+// Records and signatures are immutable; revocations are added post-hoc.
+// The function appends signed entries to revocations.jsonl without
+// touching records.jsonl, signatures.jsonl, anchors.jsonl, or
+// manifest.json.
+//
+// Tarball mode is NOT supported in v0.3. Operators with .tar.zst packs
+// should: (1) extract, (2) appendRevocations, (3) re-tarball via
+// writeMemoryPack with format: 'tarball'. Direct append-to-tarball is
+// v0.4.
+// ────────────────────────────────────────────────────────────────────
+
+export interface RevocationInput {
+  /** sha256:<hex> of the record being revoked. */
+  record_hash: string;
+  /** Free-form, optional. */
+  reason?: string;
+}
+
+export interface AppendRevocationsOptions {
+  /** 64-byte ed25519 secret key — same one that signed the records. */
+  secretKey: Uint8Array;
+  /** base58-encoded ed25519 public key. */
+  publicKey: string;
+  /**
+   * Override the timestamp source for deterministic test vectors.
+   * Default: `() => new Date().toISOString()`.
+   */
+  clock?: () => string;
+}
+
+/**
+ * Append signed revocations to a MemoryPack directory. Returns the
+ * full revocation entries that were written.
+ *
+ * Idempotent at the (record_hash, revoked_at) level: callers passing
+ * the same input twice will get duplicate entries because the
+ * `revoked_at` differs. To dedupe, pre-check via `readMemoryPack`'s
+ * `revokedRecordHashes` set.
+ *
+ * Throws if `packDir` is a tarball or doesn't contain manifest.json.
+ */
+export function appendRevocations(
+  packDir: string,
+  revocations: RevocationInput[],
+  opts: AppendRevocationsOptions,
+): MemoryPackRevocation[] {
+  if (/\.tar\.zst$/i.test(packDir)) {
+    throw new Error('appendRevocations: tarball packs are not supported in v0.3 — extract, append, re-tarball');
+  }
+  if (!existsSync(packDir) || !statSync(packDir).isDirectory()) {
+    throw new Error(`appendRevocations: ${packDir} is not a directory`);
+  }
+  if (!existsSync(join(packDir, 'manifest.json'))) {
+    throw new Error(`appendRevocations: ${packDir} is missing manifest.json`);
+  }
+  if (revocations.length === 0) return [];
+
+  const clock = opts.clock ?? (() => new Date().toISOString());
+
+  const built: MemoryPackRevocation[] = revocations.map((r) => {
+    const revoked_at = clock();
+    const signature = signRevocation(r.record_hash, revoked_at, opts.secretKey);
+    return {
+      record_hash: r.record_hash,
+      revoked_at,
+      reason: r.reason,
+      signature,
+      algorithm: 'ed25519',
+      public_key: opts.publicKey,
+    };
+  });
+
+  const path = join(packDir, 'revocations.jsonl');
+  const existing = existsSync(path) ? readFileSync(path, 'utf-8') : '';
+  const trailingNewline = existing.length === 0 || existing.endsWith('\n');
+  const appended =
+    (trailingNewline ? existing : existing + '\n') +
+    built.map((r) => JSON.stringify(r)).join('\n') +
+    '\n';
+  writeFileSync(path, appended);
+
+  return built;
 }

@@ -146,6 +146,37 @@ export interface MemoryPackAnchor {
 }
 
 /**
+ * revocations.jsonl — one signed revocation per revoked record (v0.3).
+ *
+ * Soft-delete protocol. Records in records.jsonl remain signed and
+ * chain-anchored — you can't "delete" them without breaking the audit
+ * trail. A revocation is a separate signed assertion that says: "as of
+ * `revoked_at`, the producer no longer attests to this record's
+ * content." Application layers decide whether to surface revoked
+ * content as `[redacted]`, omit it entirely, or display with a flag.
+ *
+ * Canonical signed payload (UTF-8): `revoke:v1:<record_hash>:<revoked_at>`
+ *
+ * Forward-only: revocations cannot be revoked. If a producer changes
+ * their mind, they should re-issue the record in a new pack.
+ *
+ * Verification: same ed25519 + bs58 envelope as record signatures, so
+ * the same producer keypair signs both. The reader rejects revocations
+ * whose signature doesn't verify.
+ */
+export interface MemoryPackRevocation {
+  /** sha256:<hex> of the record being revoked. */
+  record_hash: string;
+  /** RFC3339 timestamp; included in the signed payload. */
+  revoked_at: string;
+  /** Free-form, optional. Common values: 'user-erasure', 'pii-leak', 'correction'. */
+  reason?: string;
+  signature: string;
+  algorithm: 'ed25519';
+  public_key: string;
+}
+
+/**
  * blobs/index.jsonl — one entry per attached blob.
  *
  * `byte_size` and `content_type` are over the *stored* bytes (which may

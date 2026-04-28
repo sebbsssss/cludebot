@@ -2,8 +2,15 @@ export * from './types.js';
 export {
   serializeRecord,
   writeMemoryPack,
+  appendRevocations,
 } from './writer.js';
-export type { WriterOptions, WriterEncryption, WriterBlob } from './writer.js';
+export type {
+  WriterOptions,
+  WriterEncryption,
+  WriterBlob,
+  RevocationInput,
+  AppendRevocationsOptions,
+} from './writer.js';
 export { readMemoryPack } from './reader.js';
 export type { ReaderResult, ReaderOptions } from './reader.js';
 export { streamMemoryPack } from './stream.js';
@@ -25,6 +32,9 @@ export {
   hashBuffer,
   signHash,
   verifyHash,
+  signRevocation,
+  verifyRevocation,
+  revocationPayload,
   encryptString,
   decryptString,
   encryptBuffer,
