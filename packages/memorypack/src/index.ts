@@ -6,6 +6,12 @@ export {
 export type { WriterOptions, WriterEncryption, WriterBlob } from './writer.js';
 export { readMemoryPack } from './reader.js';
 export type { ReaderResult, ReaderOptions } from './reader.js';
+export { streamMemoryPack } from './stream.js';
+export type {
+  StreamReaderOptions,
+  StreamedRecord,
+  StreamMemoryPackResult,
+} from './stream.js';
 export {
   verifyChainAnchors,
   expectedMemoForRecordHash,
