@@ -2,6 +2,30 @@
 
 All notable changes to `@clude/memorypack` are documented here. The package follows [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-04-28
+
+Signed revocations — soft-delete protocol for GDPR right-to-erasure, PII leaks, and corrections.
+
+### Added
+
+- `appendRevocations(packDir, revocations, opts)` — appends signed entries to `revocations.jsonl` without touching records, signatures, manifest, or anchors. Append-only, forward-only.
+- `signRevocation` / `verifyRevocation` / `revocationPayload` — primitives for vendors that want to operate below the writer.
+- `MemoryPackRevocation` type and `revocations.jsonl` file in the spec.
+- `result.revocations` and `result.revokedRecordHashes` on both `readMemoryPack` and `streamMemoryPack`.
+
+### Behaviour
+
+- Canonical signed payload: `revoke:v1:<record_hash>:<revoked_at>`, ed25519 + bs58. Same envelope as record signatures, so a producer's existing keypair signs both.
+- The reader **rejects** revocations whose `public_key` doesn't match `manifest.producer.public_key` (or the caller's `publicKey` override). Mismatch becomes a warning, not a throw — one bad entry shouldn't poison the audit trail.
+- The reader **rejects** revocations whose signature doesn't verify. Same warning-not-throw posture.
+- Records stay in `result.records` after revocation. Soft-delete: applications decide whether to surface as `[redacted]`, omit, or display with a flag. The reader exposes `revokedRecordHashes` for filtering.
+- `writeMemoryPack` clears any prior `revocations.jsonl` on re-export. Callers wanting carry-over must explicitly re-`appendRevocations` after writing.
+
+### Limitations (deferred to v0.5)
+
+- Tarball packs are not supported by `appendRevocations` — operators must extract, append, then re-tarball. Direct append-to-tarball is v0.5.
+- Chain-anchored revocations. The signed entry is local-only; pinning revocation timestamps to a chain (so a producer can't backdate a revocation) is a future enhancement.
+
 ## [0.3.0] — 2026-04-28
 
 Streaming reader for packs that don't fit in memory.

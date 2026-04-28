@@ -96,6 +96,28 @@ console.log(warnings);
 
 Signature semantics match the eager reader: when `signatures.jsonl` is present, every record must verify, and the iterator throws on the first mismatch. Encrypted records decrypt on the fly when `decryptionKey` is supplied. Tarballs (`.tar.zst`) auto-extract before streaming.
 
+### Revoke records (soft-delete)
+
+Records and their signatures are immutable — you cannot delete a record without breaking the audit trail. For GDPR right-to-erasure, PII leaks, and corrections, MemoryPack supports **signed revocations**: a separate signed assertion that says "as of this date, the producer no longer attests to this record."
+
+```ts
+import { appendRevocations, readMemoryPack } from '@clude/memorypack';
+
+appendRevocations(packDir, [
+  { record_hash: 'sha256:9f6c...', reason: 'user-erasure' },
+], {
+  secretKey: producerSecretKey,
+  publicKey: producerPublicKey,
+});
+
+const result = readMemoryPack(packDir);
+result.revokedRecordHashes.has('sha256:9f6c...'); // → true
+```
+
+Revocations are append-only and forward-only — once revoked, always revoked. The signed payload is `revoke:v1:<record_hash>:<revoked_at>`, signed by the same producer keypair that signed the record. Readers reject revocations signed by other keys or with broken signatures (warning, not throw — one bad entry shouldn't poison the trail).
+
+Records remain in `result.records` after revocation; apps decide whether to surface as `[redacted]`, omit, or display with a flag.
+
 ## What's in v0.2
 
 | Feature | API |
@@ -108,6 +130,7 @@ Signature semantics match the eager reader: when `signatures.jsonl` is present, 
 | Chain anchor verification (Solana SPL Memo) | `verifyChainAnchors()` |
 | Schema-evolution fallback (minimal-shape readers) | `result.minimalRecords` |
 | **Streaming reader for large packs** | `streamMemoryPack` (async iterator) |
+| **Signed revocations (soft-delete)** | `appendRevocations`, `result.revokedRecordHashes` |
 | Reference test vectors (deterministic fixture) | `src/__tests__/fixtures.ts` |
 
 Full spec: [docs/memorypack.md](https://github.com/sebbsssss/clude/blob/main/docs/memorypack.md).
@@ -140,5 +163,5 @@ Post-v0.2 (tracked in the [main repo](https://github.com/sebbsssss/clude)):
 - Production IPFS / Arweave content anchoring
 - Multi-chain anchors (Ethereum L2, Bitcoin OP_RETURN)
 - True streaming through tar (today the reader extracts to a temp dir first)
-- Revocations format
+- Tarball-aware `appendRevocations` (today only directory packs)
 - `clude verify` CLI distributed alongside this package

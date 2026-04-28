@@ -14,6 +14,7 @@ import {
   MemoryPackManifest,
   MemoryPackMinimalRecord,
   MemoryPackRecord,
+  MemoryPackRevocation,
   MemoryPackSignature,
 } from './types.js';
 import {
@@ -22,6 +23,7 @@ import {
   hashBuffer,
   hashRecordLine,
   verifyHash,
+  verifyRevocation,
 } from './sign.js';
 
 // ────────────────────────────────────────────────────────────────────
@@ -49,6 +51,15 @@ export interface ReaderResult {
    * needs an RPC and is therefore out of band.
    */
   verifiedAnchors: Set<string>;
+  /**
+   * Revocations that verified against the producer's public key. The
+   * record itself remains in `records` — soft-delete semantics. Apps
+   * that want to hide revoked content should filter using
+   * `revokedRecordHashes`.
+   */
+  revocations: MemoryPackRevocation[];
+  /** sha256 hashes of records that have at least one valid revocation. */
+  revokedRecordHashes: Set<string>;
   /**
    * Minimal projection consumers SHOULD prefer — the spec says readers
    * MUST handle this shape even when they don't recognise the
@@ -203,6 +214,50 @@ function readDirectory(dir: string, opts: ReaderOptions): ReaderResult {
     }
   }
 
+  // ── revocations.jsonl ──
+  // Soft-delete protocol: revoked records remain in records.jsonl with
+  // their signatures intact. Apps decide what to do with revoked content;
+  // we just expose `revokedRecordHashes` for filtering.
+  const revocations: MemoryPackRevocation[] = [];
+  const revokedRecordHashes = new Set<string>();
+  const revocationsPath = join(dir, 'revocations.jsonl');
+  if (existsSync(revocationsPath)) {
+    const expectedSigner = opts.publicKey ?? manifest.producer.public_key;
+    const revLines = readFileSync(revocationsPath, 'utf-8').split('\n').filter((l) => l.length > 0);
+    for (const line of revLines) {
+      let entry: MemoryPackRevocation;
+      try {
+        entry = JSON.parse(line) as MemoryPackRevocation;
+      } catch {
+        warnings.push(`revocations.jsonl: skipping malformed line`);
+        continue;
+      }
+      // The revocation MUST be signed by the producer (or caller-overridden
+      // public key). Mismatch → reject the entry, push a warning. We don't
+      // throw because one bad entry shouldn't poison the whole audit trail.
+      if (expectedSigner && entry.public_key !== expectedSigner) {
+        warnings.push(
+          `revocation for ${entry.record_hash} signed by unexpected key ${entry.public_key} — rejected`,
+        );
+        continue;
+      }
+      const ok = verifyRevocation(
+        entry.record_hash,
+        entry.revoked_at,
+        entry.signature,
+        entry.public_key,
+      );
+      if (!ok) {
+        warnings.push(
+          `revocation for ${entry.record_hash} signature failed verification — rejected`,
+        );
+        continue;
+      }
+      revocations.push(entry);
+      revokedRecordHashes.add(entry.record_hash);
+    }
+  }
+
   // ── blobs ──
   const verifiedBlobs = new Set<string>();
   const blobsDir = join(dir, 'blobs', 'sha256');
@@ -315,6 +370,8 @@ function readDirectory(dir: string, opts: ReaderOptions): ReaderResult {
     anchors,
     verifiedBlobs,
     verifiedAnchors: new Set<string>(),
+    revocations,
+    revokedRecordHashes,
     minimalRecords,
     warnings,
   };
