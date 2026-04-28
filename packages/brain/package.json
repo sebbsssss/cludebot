@@ -2,7 +2,7 @@
   "name": "@clude/brain",
   "version": "3.0.1",
   "private": true,
-  "description": "Clude brain — memory, dreams, agents, personality, SDK",
+  "description": "Clude brain \u2014 memory, dreams, agents, personality, SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -43,6 +43,7 @@
     "@ai-sdk/openai": "^3.0.49",
     "@ai-sdk/xai": "^3.0.75",
     "@anthropic-ai/sdk": "^0.39.0",
+    "@clude/memorypack": "workspace:*",
     "@clude/shared": "workspace:*",
     "@huggingface/transformers": "^4.1.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
