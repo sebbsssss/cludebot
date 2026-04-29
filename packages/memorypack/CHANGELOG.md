@@ -2,6 +2,74 @@
 
 All notable changes to `@clude/memorypack` are documented here. The package follows [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] — 2026-04-29
+
+Chain-anchored revocations. Pin the `revoked_at` of a soft-deleted record to a Solana transaction so a producer can't backdate a deletion claim.
+
+### Added
+
+- `revocation_anchors.jsonl` file in the spec.
+- `MemoryPackRevocationAnchor` type and `anchor_format: "memo-revoke-v1"`.
+- `expectedRevocationMemo(record_hash, revoked_at)` — exposes the canonical on-chain memo string a producer should commit, mirroring `expectedMemoForRecordHash`.
+- `appendRevocationAnchors(packDir, anchors)` — append-only writer (directory-only, mirroring `appendRevocations`).
+- `verifyRevocationAnchors(anchors, opts)` — Solana RPC verifier. Same semantics as `verifyChainAnchors`: SPL Memo program required, exact-match the memo bytes, signer-binding via `expectedSigner`, optional `cluster` cross-check via `getGenesisHash`, sequential by default to keep RPC pressure low.
+- `result.revocationAnchors` and `result.verifiedRevocationAnchors` on both `readMemoryPack` and `streamMemoryPack`.
+- CLI surfaces a "Revocation anchors" panel when present, and verifies them under `--verify-chain`. `--strict-chain` makes any mismatch a fail.
+
+### On-chain memo format
+
+```
+revoke:v1:sha256:<record_hex>:<revoked_at>
+```
+
+~95 bytes for SHA-256 + RFC3339, well under Solana's 566-byte memo cap.
+
+### Reader semantics
+
+- `revocation_anchors.jsonl` is loaded eagerly but **not RPC-verified by `readMemoryPack`** — chain verification is out of band, like `verifyChainAnchors`.
+- The reader cross-checks that each anchor's `(record_hash, revoked_at)` pair matches a verified entry in `revocations.jsonl`. Anchors with no matching pair are **skipped with a warning** — they cannot prove anything if there's no signed revocation backing them.
+- Anchors with unsupported `anchor_format` are skipped with a warning (forward-safe for future memo versions).
+- Malformed JSON lines are skipped with a warning.
+- One bad anchor never throws — keeps the audit trail intact.
+
+### Writer hygiene
+
+`writeMemoryPack` now also clears prior `revocation_anchors.jsonl` alongside `revocations.jsonl` and the rest. Re-export means "fresh pack."
+
+### Tests
+
+12 new tests in this PR (83 total in the package, all green):
+
+- `expectedRevocationMemo` formatting + size bounds
+- `appendRevocationAnchors`: shape, append-not-overwrite, tarball reject, missing-manifest reject, no-op on empty input
+- Reader: exposes anchors, skips mismatched pair, skips unsupported format, skips malformed lines
+- Stream: exposes anchors alongside the iterator
+- Writer: wipes prior `revocation_anchors.jsonl` on re-export
+
+Solana RPC verification (`verifyRevocationAnchors`) is structurally identical to the v0.2 `verifyChainAnchors` and shares its untested-with-mocks status. Mocking @solana/web3.js is a separate testing-infra PR.
+
+### Producer flow
+
+```ts
+// 1. Soft-delete (already shipped in 0.4.0)
+appendRevocations(dir, [{ record_hash, reason: 'gdpr' }], { secretKey, publicKey });
+
+// 2. Send a Solana tx with memo `revoke:v1:sha256:<hex>:<rfc3339>`
+//    using whatever wallet/lib you prefer. Use expectedRevocationMemo()
+//    to get the exact bytes.
+
+// 3. Record the chain anchor
+appendRevocationAnchors(dir, [{
+  record_hash, revoked_at, chain: 'solana-mainnet', tx, slot,
+}]);
+```
+
+### Limitations (deferred to v0.7)
+
+- Tarball-aware `appendRevocationAnchors` — operators with `.tar.zst` packs still need extract / append / re-tarball.
+- @solana/web3.js mocking infrastructure — adds confidence to RPC-touching code.
+- Backdating-detection: today the verifier confirms the memo bytes but doesn't compare the chain block timestamp to `revoked_at`. A future option `maxClockSkew` could reject anchors whose block time is hours/days off from the signed timestamp.
+
 ## [0.5.0] — 2026-04-28
 
 Standalone CLI verifier. Auditors can install `@clude/memorypack` alone (~30 KB) and run `npx @clude/memorypack verify <pack>` without touching the rest of Clude.

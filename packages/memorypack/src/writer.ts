@@ -15,6 +15,7 @@ import {
   MemoryPackManifest,
   MemoryPackRecord,
   MemoryPackRevocation,
+  MemoryPackRevocationAnchor,
   MemoryPackSignature,
 } from './types.js';
 import {
@@ -163,7 +164,14 @@ function writeDirectory(
   // pack. Only removes our own well-known files; foreign files in the
   // target dir are left alone.
   if (existsSync(dir)) {
-    for (const f of ['manifest.json', 'records.jsonl', 'signatures.jsonl', 'anchors.jsonl', 'revocations.jsonl']) {
+    for (const f of [
+      'manifest.json',
+      'records.jsonl',
+      'signatures.jsonl',
+      'anchors.jsonl',
+      'revocations.jsonl',
+      'revocation_anchors.jsonl',
+    ]) {
       const p = join(dir, f);
       if (existsSync(p)) rmSync(p, { force: true });
     }
@@ -435,6 +443,75 @@ export function appendRevocations(
   const appended =
     (trailingNewline ? existing : existing + '\n') +
     built.map((r) => JSON.stringify(r)).join('\n') +
+    '\n';
+  writeFileSync(path, appended);
+
+  return built;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Revocation anchors — chain-anchored timing proofs (v0.6)
+//
+// `appendRevocationAnchors` is the writer-side companion to
+// `verifyRevocationAnchors`. The producer (or whoever else holds the
+// pack):
+//   1. Already wrote a revocations.jsonl entry via appendRevocations.
+//   2. Issued a Solana tx with memo `revoke:v1:sha256:<hex>:<rfc3339>`
+//      using whatever Solana wallet/lib they prefer. We don't ship a
+//      tx-builder here.
+//   3. Calls this function with the tx signature.
+// The append goes to revocation_anchors.jsonl.
+// ────────────────────────────────────────────────────────────────────
+
+export interface RevocationAnchorInput {
+  record_hash: string;
+  revoked_at: string;
+  chain: string;
+  tx: string;
+  slot?: number;
+}
+
+/**
+ * Append chain-anchor entries to revocation_anchors.jsonl.
+ *
+ * The (record_hash, revoked_at) pair MUST match an existing entry in
+ * revocations.jsonl — otherwise the chain anchor is meaningless. This
+ * function does not enforce that cross-check (callers shouldn't have
+ * to load the whole revocations file just to append); the verifier
+ * does enforce it.
+ *
+ * Tarball mode is NOT supported in v0.6, mirroring appendRevocations.
+ */
+export function appendRevocationAnchors(
+  packDir: string,
+  anchors: RevocationAnchorInput[],
+): MemoryPackRevocationAnchor[] {
+  if (/\.tar\.zst$/i.test(packDir)) {
+    throw new Error('appendRevocationAnchors: tarball packs are not supported in v0.6 — extract, append, re-tarball');
+  }
+  if (!existsSync(packDir) || !statSync(packDir).isDirectory()) {
+    throw new Error(`appendRevocationAnchors: ${packDir} is not a directory`);
+  }
+  if (!existsSync(join(packDir, 'manifest.json'))) {
+    throw new Error(`appendRevocationAnchors: ${packDir} is missing manifest.json`);
+  }
+  if (anchors.length === 0) return [];
+
+  const built: MemoryPackRevocationAnchor[] = anchors.map((a) => ({
+    record_hash: a.record_hash,
+    revoked_at: a.revoked_at,
+    chain: a.chain,
+    tx: a.tx,
+    slot: a.slot,
+    anchor_format: 'memo-revoke-v1',
+  }));
+
+  const path = join(packDir, 'revocation_anchors.jsonl');
+  const existing = existsSync(path) ? readFileSync(path, 'utf-8') : '';
+  const trailingNewline = existing.length === 0 || existing.endsWith('\n');
+  const appended =
+    (trailingNewline ? existing : existing + '\n') +
+    built.map((a) => JSON.stringify(a)).join('\n') +
     '\n';
   writeFileSync(path, appended);
 

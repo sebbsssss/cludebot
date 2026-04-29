@@ -46,6 +46,7 @@ import {
   MemoryPackManifest,
   MemoryPackRecord,
   MemoryPackRevocation,
+  MemoryPackRevocationAnchor,
   MemoryPackSignature,
 } from './types.js';
 import {
@@ -84,6 +85,8 @@ export interface StreamMemoryPackResult {
   revocations: MemoryPackRevocation[];
   /** sha256 hashes of records that have at least one valid revocation. */
   revokedRecordHashes: Set<string>;
+  /** Chain anchors for revocations (v0.6+). Loaded but not RPC-verified. */
+  revocationAnchors: MemoryPackRevocationAnchor[];
   /** Async iterator that yields records one at a time. */
   records: AsyncIterable<StreamedRecord>;
   /**
@@ -229,6 +232,41 @@ export async function streamMemoryPack(
     }
   }
 
+  // ── revocation_anchors.jsonl (eager) ──
+  const revocationAnchors: MemoryPackRevocationAnchor[] = [];
+  const revAnchorsPath = join(dir, 'revocation_anchors.jsonl');
+  if (existsSync(revAnchorsPath)) {
+    const validPairs = new Set(
+      revocations.map((r) => `${r.record_hash}@${r.revoked_at}`),
+    );
+    const anchorLines = readFileSync(revAnchorsPath, 'utf-8')
+      .split('\n')
+      .filter((l) => l.length > 0);
+    for (const line of anchorLines) {
+      let entry: MemoryPackRevocationAnchor;
+      try {
+        entry = JSON.parse(line) as MemoryPackRevocationAnchor;
+      } catch {
+        warnings.push('revocation_anchors.jsonl: skipping malformed line');
+        continue;
+      }
+      if (entry.anchor_format !== 'memo-revoke-v1') {
+        warnings.push(
+          `revocation anchor ${entry.tx} has unsupported format '${entry.anchor_format}' — skipped`,
+        );
+        continue;
+      }
+      const pair = `${entry.record_hash}@${entry.revoked_at}`;
+      if (!validPairs.has(pair)) {
+        warnings.push(
+          `revocation anchor ${entry.tx} pair (${entry.record_hash}, ${entry.revoked_at}) does not match any verified revocation — skipped`,
+        );
+        continue;
+      }
+      revocationAnchors.push(entry);
+    }
+  }
+
   // ── records.jsonl exists check ──
   const recordsPath = join(dir, 'records.jsonl');
   if (!existsSync(recordsPath)) {
@@ -305,6 +343,7 @@ export async function streamMemoryPack(
     anchors,
     revocations,
     revokedRecordHashes,
+    revocationAnchors,
     records: iterate(),
     warnings,
   };

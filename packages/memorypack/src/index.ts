@@ -3,6 +3,7 @@ export {
   serializeRecord,
   writeMemoryPack,
   appendRevocations,
+  appendRevocationAnchors,
 } from './writer.js';
 export type {
   WriterOptions,
@@ -10,6 +11,7 @@ export type {
   WriterBlob,
   RevocationInput,
   AppendRevocationsOptions,
+  RevocationAnchorInput,
 } from './writer.js';
 export { readMemoryPack } from './reader.js';
 export type { ReaderResult, ReaderOptions } from './reader.js';
@@ -21,11 +23,15 @@ export type {
 } from './stream.js';
 export {
   verifyChainAnchors,
+  verifyRevocationAnchors,
   expectedMemoForRecordHash,
+  expectedRevocationMemo,
 } from './chain-verify.js';
 export type {
   VerifyChainAnchorsOptions,
   VerifyChainAnchorsResult,
+  VerifyRevocationAnchorsOptions,
+  VerifyRevocationAnchorsResult,
 } from './chain-verify.js';
 export {
   hashRecordLine,

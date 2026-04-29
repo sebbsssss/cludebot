@@ -15,6 +15,7 @@ import {
   MemoryPackMinimalRecord,
   MemoryPackRecord,
   MemoryPackRevocation,
+  MemoryPackRevocationAnchor,
   MemoryPackSignature,
 } from './types.js';
 import {
@@ -60,6 +61,18 @@ export interface ReaderResult {
   revocations: MemoryPackRevocation[];
   /** sha256 hashes of records that have at least one valid revocation. */
   revokedRecordHashes: Set<string>;
+  /**
+   * Chain-anchor entries declared for revocations (v0.6+). Loaded but
+   * NOT verified by readMemoryPack — out-of-band like `anchors`.
+   * Callers wanting timing proofs invoke `verifyRevocationAnchors()`
+   * separately.
+   */
+  revocationAnchors: MemoryPackRevocationAnchor[];
+  /**
+   * Hashes whose revocation was confirmed on-chain. ALWAYS empty unless
+   * the caller separately invokes `verifyRevocationAnchors()`.
+   */
+  verifiedRevocationAnchors: Set<string>;
   /**
    * Minimal projection consumers SHOULD prefer — the spec says readers
    * MUST handle this shape even when they don't recognise the
@@ -258,6 +271,48 @@ function readDirectory(dir: string, opts: ReaderOptions): ReaderResult {
     }
   }
 
+  // ── revocation_anchors.jsonl (v0.6+) ──
+  // Eager-load only — no RPC call. verifyRevocationAnchors is the
+  // on-chain step, deliberately out of band. The reader checks
+  // structural integrity: each anchor's (record_hash, revoked_at)
+  // pair must match an entry in revocations.jsonl, otherwise the
+  // anchor is meaningless.
+  const revocationAnchors: MemoryPackRevocationAnchor[] = [];
+  const revAnchorsPath = join(dir, 'revocation_anchors.jsonl');
+  if (existsSync(revAnchorsPath)) {
+    // Build a quick lookup of (record_hash, revoked_at) pairs we trust
+    // from the verified revocations above.
+    const validPairs = new Set(
+      revocations.map((r) => `${r.record_hash}@${r.revoked_at}`),
+    );
+    const anchorLines = readFileSync(revAnchorsPath, 'utf-8')
+      .split('\n')
+      .filter((l) => l.length > 0);
+    for (const line of anchorLines) {
+      let entry: MemoryPackRevocationAnchor;
+      try {
+        entry = JSON.parse(line) as MemoryPackRevocationAnchor;
+      } catch {
+        warnings.push('revocation_anchors.jsonl: skipping malformed line');
+        continue;
+      }
+      if (entry.anchor_format !== 'memo-revoke-v1') {
+        warnings.push(
+          `revocation anchor ${entry.tx} has unsupported format '${entry.anchor_format}' — skipped`,
+        );
+        continue;
+      }
+      const pair = `${entry.record_hash}@${entry.revoked_at}`;
+      if (!validPairs.has(pair)) {
+        warnings.push(
+          `revocation anchor ${entry.tx} pair (${entry.record_hash}, ${entry.revoked_at}) does not match any verified revocation — skipped`,
+        );
+        continue;
+      }
+      revocationAnchors.push(entry);
+    }
+  }
+
   // ── blobs ──
   const verifiedBlobs = new Set<string>();
   const blobsDir = join(dir, 'blobs', 'sha256');
@@ -372,6 +427,8 @@ function readDirectory(dir: string, opts: ReaderOptions): ReaderResult {
     verifiedAnchors: new Set<string>(),
     revocations,
     revokedRecordHashes,
+    revocationAnchors,
+    verifiedRevocationAnchors: new Set<string>(),
     minimalRecords,
     warnings,
   };
