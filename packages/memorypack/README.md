@@ -140,6 +140,30 @@ Revocations are append-only and forward-only — once revoked, always revoked. T
 
 Records remain in `result.records` after revocation; apps decide whether to surface as `[redacted]`, omit, or display with a flag.
 
+### Anchor revocations on-chain (v0.6)
+
+A signed `revoked_at` is just self-attestation — a producer could backdate. Pin the timestamp to a Solana transaction whose memo is `revoke:v1:sha256:<hex>:<rfc3339>`:
+
+```ts
+import { appendRevocationAnchors, expectedRevocationMemo } from '@clude/memorypack';
+
+// 1. Get the canonical memo bytes for your tx
+const memo = expectedRevocationMemo(recordHash, revokedAt);
+
+// 2. Send a Solana tx with that memo via your preferred wallet/lib
+
+// 3. Record the chain anchor
+appendRevocationAnchors(packDir, [{
+  record_hash: recordHash,
+  revoked_at: revokedAt,
+  chain: 'solana-mainnet',
+  tx: signature,
+  slot,
+}]);
+```
+
+`npx @clude/memorypack verify <pack> --verify-chain` checks both record anchors and revocation anchors against the RPC. Memo bytes must match exactly; the producer's wallet must be among the tx signers.
+
 ## What's in v0.2
 
 | Feature | API |
@@ -153,6 +177,7 @@ Records remain in `result.records` after revocation; apps decide whether to surf
 | Schema-evolution fallback (minimal-shape readers) | `result.minimalRecords` |
 | **Streaming reader for large packs** | `streamMemoryPack` (async iterator) |
 | **Signed revocations (soft-delete)** | `appendRevocations`, `result.revokedRecordHashes` |
+| **Chain-anchored revocations** | `appendRevocationAnchors`, `verifyRevocationAnchors` |
 | **Standalone CLI verifier** | `npx @clude/memorypack verify <pack>` |
 | Reference test vectors (deterministic fixture) | `src/__tests__/fixtures.ts` |
 
@@ -186,5 +211,6 @@ Post-v0.2 (tracked in the [main repo](https://github.com/sebbsssss/clude)):
 - Production IPFS / Arweave content anchoring
 - Multi-chain anchors (Ethereum L2, Bitcoin OP_RETURN)
 - True streaming through tar (today the reader extracts to a temp dir first)
-- Tarball-aware `appendRevocations` (today only directory packs)
-- Chain-anchored revocations (so revocation timestamps can't be backdated)
+- Tarball-aware `appendRevocations` / `appendRevocationAnchors` (today both are directory-only)
+- @solana/web3.js test mocks for `verifyChainAnchors` / `verifyRevocationAnchors`
+- Backdating detection (compare on-chain block timestamp to signed `revoked_at`)

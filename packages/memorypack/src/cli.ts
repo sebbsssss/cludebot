@@ -11,7 +11,7 @@
 // Run with no args to see the help text.
 
 import { readMemoryPack } from './reader.js';
-import { verifyChainAnchors } from './chain-verify.js';
+import { verifyChainAnchors, verifyRevocationAnchors } from './chain-verify.js';
 
 // ── Tiny ANSI helpers (no deps) ────────────────────────────────────
 const isTTY = process.stdout.isTTY;
@@ -166,6 +166,7 @@ async function runVerify(args: Args): Promise<number> {
     verifiedBlobs,
     revocations,
     revokedRecordHashes,
+    revocationAnchors,
     minimalRecords,
     warnings,
   } = result;
@@ -199,6 +200,9 @@ async function runVerify(args: Args): Promise<number> {
     console.log(`  ${c.bold('Revocations')}`);
     console.log(`    verified:    ${c.green(String(revocations.length))}`);
     console.log(`    distinct records affected: ${revokedRecordHashes.size}`);
+    if (revocationAnchors.length > 0) {
+      console.log(`    chain anchors declared: ${revocationAnchors.length}`);
+    }
     console.log();
   }
 
@@ -227,6 +231,31 @@ async function runVerify(args: Args): Promise<number> {
     }
   }
   console.log();
+
+  // Revocation anchors verification (only when --verify-chain is set
+  // AND revocation_anchors.jsonl declared at least one entry).
+  if (args.verifyChain && revocationAnchors.length > 0) {
+    console.log(`  ${c.bold('Revocation anchors')}`);
+    console.log(`    declared:    ${revocationAnchors.length}`);
+    process.stdout.write('    fetching:    ');
+    try {
+      const expectedSigner = args.publicKey ?? manifest.producer.public_key;
+      const { verified, warnings: revWarnings } = await verifyRevocationAnchors(revocationAnchors, {
+        rpcUrl: args.rpcUrl,
+        cluster: args.cluster,
+        expectedSigner,
+        strict: args.strictChain,
+      });
+      console.log(`${c.green(String(verified.size))}/${revocationAnchors.length} verified on-chain`);
+      for (const w of revWarnings) console.log(`    ${c.yellow('warn:')} ${w}`);
+      if (verified.size < revocationAnchors.length) chainFailed = true;
+    } catch (e: any) {
+      console.log(c.red('FAILED'));
+      console.error(`    ${c.red(e.message)}`);
+      chainFailed = true;
+    }
+    console.log();
+  }
 
   // Encryption / minimal diagnostic
   if (manifest.encryption) {

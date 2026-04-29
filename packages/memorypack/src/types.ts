@@ -177,6 +177,34 @@ export interface MemoryPackRevocation {
 }
 
 /**
+ * revocation_anchors.jsonl — chain-anchored proof that a revocation
+ * was committed at a specific block height (v0.6).
+ *
+ * Soft-delete primitive (revocations.jsonl) is signed by the producer,
+ * but the producer can self-attest any `revoked_at` they want. A
+ * chain anchor pins the timestamp to a Solana transaction whose memo
+ * carries the canonical `revoke:v1:sha256:<record_hex>:<revoked_at>`.
+ *
+ * Verifiers fetch the tx, parse the SPL Memo, exact-match the payload,
+ * and check that the producer signed the tx. The block timestamp then
+ * gives a tamper-evident lower bound on when the revocation could have
+ * been committed.
+ *
+ * Optional. A revocation without a chain anchor is still valid — just
+ * less verifiable on timing.
+ */
+export interface MemoryPackRevocationAnchor {
+  /** sha256:<hex> of the record. */
+  record_hash: string;
+  /** RFC3339 timestamp from the corresponding revocations.jsonl entry. */
+  revoked_at: string;
+  chain: string;
+  tx: string;
+  slot?: number;
+  anchor_format: 'memo-revoke-v1';
+}
+
+/**
  * blobs/index.jsonl — one entry per attached blob.
  *
  * `byte_size` and `content_type` are over the *stored* bytes (which may
