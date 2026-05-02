@@ -542,6 +542,22 @@ export function topupApiRoutes(): Router {
     // Format: solana:<recipient>?amount=<amount>&spl-token=<mint>&reference=<ref>&memo=<wallet>
     const solanaPayUrl = `solana:${TREASURY}?amount=${amount_usdc}&spl-token=${USDC_MINT}&reference=${reference}&memo=${wallet}`;
 
+    // Fetch a recent blockhash server-side so the browser doesn't need a
+    // working Solana RPC. Browsers usually can't reach the public mainnet
+    // endpoint (CORS/403); this lets the wallet flow build the tx using a
+    // blockhash we trust. Best-effort — if it fails, the client falls back
+    // to its own RPC (and may surface the existing error).
+    let recentBlockhash: string | undefined;
+    if ((chain || 'solana') === 'solana') {
+      try {
+        const conn = getConnection();
+        const { blockhash } = await conn.getLatestBlockhash('confirmed');
+        recentBlockhash = blockhash;
+      } catch (err) {
+        log.warn({ err }, 'getLatestBlockhash failed — client will need to fetch its own');
+      }
+    }
+
     log.info({ wallet, amount_usdc, reference, intentId: intent.id }, 'Top-up intent created');
 
     res.json({
@@ -552,6 +568,7 @@ export function topupApiRoutes(): Router {
       dest_address: TREASURY,
       reference,
       solana_pay_url: solanaPayUrl,
+      recent_blockhash: recentBlockhash,
     });
   });
 

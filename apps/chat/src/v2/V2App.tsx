@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAuthContext } from '../hooks/AuthContext';
+import { useMemory } from '../hooks/useMemory';
 import { CcAuth } from './CcAuth';
 import { CcChat } from './CcChat';
+import { CcOnboarding } from './CcOnboarding';
 import './styles/colors_and_type.css';
 import './styles/chat-styles.css';
 import type { V2Theme } from './types';
@@ -13,6 +15,9 @@ const THEME_KEY = 'v2_theme';
 // wallet connect, or "Continue" for already-signed-in sessions) the flag
 // sticks through page refreshes for the remainder of the session.
 const ENTERED_KEY = 'v2_entered';
+// Persistent across sessions. Set when the user finishes onboarding (any path,
+// including "just start chatting"). Returning users skip onboarding entirely.
+const ONBOARDED_KEY = 'v2_onboarded';
 
 /**
  * Clude Chat v2 — top-level route.
@@ -98,6 +103,95 @@ export function V2App() {
   // product entry, not a shortcut into the main /chat session state.
   if (!hasEntered || !auth.authenticated) {
     return <CcAuth theme={theme} onEntered={markEntered} />;
+  }
+
+  return <PostAuthRouter theme={theme} setTheme={setTheme} />;
+}
+
+/**
+ * Decides between onboarding and chat once the user is past auth. Pulled out
+ * so `useMemory()` only mounts after authentication — its API calls assume
+ * an authenticated session and would 401 otherwise.
+ */
+function PostAuthRouter({
+  theme,
+  setTheme,
+}: {
+  theme: V2Theme;
+  setTheme: (t: V2Theme) => void;
+}) {
+  const memHook = useMemory();
+  const [flagged, setFlagged] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem(ONBOARDED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Bail after a short window so a server hiccup on stats doesn't trap the
+  // user on the loading screen forever — proceed with whatever we have.
+  const [statsTimeout, setStatsTimeout] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setStatsTimeout(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Returning v1 users (memories already exist) skip onboarding — they're
+  // not first-run even without the flag. Compute inline so we don't flash
+  // the onboarding screen for a frame while a useEffect catches up.
+  const hasMemories = (memHook.stats?.total ?? 0) > 0;
+  const effectivelyOnboarded = flagged || hasMemories;
+
+  // Backfill the flag for v1 users so future sessions don't depend on the
+  // stats round-trip. Side-effect only — doesn't influence routing this render.
+  useEffect(() => {
+    if (hasMemories && !flagged) {
+      try {
+        localStorage.setItem(ONBOARDED_KEY, 'true');
+      } catch {}
+    }
+  }, [hasMemories, flagged]);
+
+  // Stats loaded means we know memory state. Otherwise wait briefly for
+  // stats — only relevant when flag isn't set; once flagged, route immediately.
+  const statsKnown = memHook.stats !== null || statsTimeout;
+  if (!flagged && !statsKnown) {
+    return (
+      <div
+        className="cc-app"
+        data-theme={theme}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          background: 'var(--bg-1)',
+          color: 'var(--fg-3)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          letterSpacing: '0.3em',
+          textTransform: 'uppercase',
+        }}
+      >
+        CLUDE · loading memory
+      </div>
+    );
+  }
+
+  if (!effectivelyOnboarded) {
+    return (
+      <CcOnboarding
+        theme={theme}
+        onComplete={() => {
+          try {
+            localStorage.setItem(ONBOARDED_KEY, 'true');
+          } catch {}
+          setFlagged(true);
+        }}
+      />
+    );
   }
 
   return <CcChat theme={theme} setTheme={setTheme} />;

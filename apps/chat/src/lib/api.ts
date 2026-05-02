@@ -262,6 +262,9 @@ class ChatAPI {
     amount_usdc: number;
     chain: string;
     dest_address: string;
+    reference?: string;
+    solana_pay_url?: string;
+    recent_blockhash?: string;
   }> {
     return this.fetchJson(`${API_BASE}/api/chat/topup/intent`, {
       method: 'POST',

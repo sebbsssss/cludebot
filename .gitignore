@@ -25,8 +25,11 @@ scripts/.longmemeval-cache/
 docs/superpowers/
 
 # Local experiments / prototypes (not part of the monorepo)
+# Anchor the rule with a leading slash so it only matches the top-level
+# `chat/` experiment dir — bare `chat/` was matching `apps/chat/` and
+# silently swallowing new files added under the monorepo's chat app.
 Clude-Chat-Agent/
-chat/
+/chat/
 clude/
 agents/
 experiments/
