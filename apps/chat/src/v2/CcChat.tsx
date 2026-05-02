@@ -1,18 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
 import { useAuthContext } from '../hooks/AuthContext';
+import { useBalance } from '../hooks/useBalance';
 import { useChat } from '../hooks/use-chat';
 import { useConversations } from '../hooks/useConversations';
 import { useMemory } from '../hooks/useMemory';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { api } from '../lib/api';
 import type { SettledMessage } from '../hooks/use-chat';
+
+// Heavy modal — pulls in @solana/web3.js + @solana/pay + framer-motion.
+// Lazy-load so it doesn't bloat the main v2 bundle until the user opts in.
+const TopUpModal = lazy(() =>
+  import('../components/TopUpModal').then((m) => ({ default: m.TopUpModal })),
+);
 import { CcSidebar } from './CcSidebar';
 import { CcTopbar } from './CcTopbar';
 import { CcMessage, type V2Message } from './CcMessage';
 import { CcComposer } from './CcComposer';
 import { CcMemoryPanel } from './CcMemoryPanel';
 import { CcMemoryPill } from './CcMemoryPill';
-import { V2_FALLBACK_MEMORIES, toV2Model } from './data';
+import { toV2Model } from './data';
 import { MEMORY_COLORS, type V2Memory, type V2Model, type V2Theme, type V2Thread } from './types';
 
 function threadGroupFor(updatedAt: string): V2Thread['group'] {
@@ -93,6 +101,10 @@ export function CcChat({
   setTheme: (t: V2Theme) => void;
 }) {
   const auth = useAuthContext();
+  // Pull the linked email straight from Privy — chat's AuthContext doesn't
+  // surface it today and we want it for the sidebar profile row.
+  const { user: privyUser } = usePrivy();
+  const email = privyUser?.email?.address ?? null;
   const {
     settled,
     streamingMsg,
@@ -108,6 +120,12 @@ export function CcChat({
   } = useConversations();
   const memHook = useMemory();
   const isMobile = useIsMobile();
+  const { balance, pollUntilUpdated } = useBalance();
+  const balanceUsdc = balance?.balance_usdc ?? null;
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  // The minimum USDC we treat as "enough to use a Pro model" — matches the
+  // smallest practical message cost. Anything lower triggers a top-up prompt.
+  const PRO_MIN_BALANCE = 0.05;
 
   // Real model catalog — fetched once on mount from /api/chat/models so the
   // picker only ever surfaces IDs the server accepts. Pulled via api.getModels()
@@ -138,6 +156,30 @@ export function CcChat({
       cancelled = true;
     };
   }, []);
+
+  const walletReady = !!walletAddress;
+
+  // Selecting a Pro model with insufficient balance auto-opens the top-up.
+  // We don't reject the selection — the user gets to fund first, then the
+  // model stays selected and they can send. Suppress the auto-open while
+  // the embedded wallet is still provisioning so the user doesn't bounce
+  // into a modal that immediately errors with "No Solana wallet connected."
+  const handleModelChange = useCallback(
+    (id: string) => {
+      const next = models.find((m) => m.id === id);
+      setModel(id);
+      if (
+        next &&
+        !next.free &&
+        balanceUsdc !== null &&
+        balanceUsdc < PRO_MIN_BALANCE &&
+        walletReady
+      ) {
+        setTopUpOpen(true);
+      }
+    },
+    [models, balanceUsdc, walletReady],
+  );
 
   // Load messages for the active conversation (new or selected).
   const switchedRef = useRef<string | null>(null);
@@ -198,9 +240,7 @@ export function CcChat({
 
   const backgroundMemories = useMemo<V2Memory[]>(() => {
     const recalledSet = new Set(recalledMemories.map((m) => m.id));
-    const bg = recentV2.filter((m) => !recalledSet.has(m.id));
-    if (bg.length === 0 && recentV2.length === 0) return V2_FALLBACK_MEMORIES;
-    return bg;
+    return recentV2.filter((m) => !recalledSet.has(m.id));
   }, [recentV2, recalledMemories]);
 
   const savedTokToday = useMemo(() => {
@@ -218,6 +258,20 @@ export function CcChat({
   const handleSend = useCallback(
     async (text: string) => {
       if (isStreaming || !model) return;
+      // Block Pro-model sends with insufficient balance — open top-up instead.
+      // Same wallet-readiness guard as the model picker: if the embedded wallet
+      // hasn't provisioned yet, opening the modal would just error.
+      const current = models.find((m) => m.id === model);
+      if (
+        current &&
+        !current.free &&
+        balanceUsdc !== null &&
+        balanceUsdc < PRO_MIN_BALANCE &&
+        walletReady
+      ) {
+        setTopUpOpen(true);
+        return;
+      }
       if (!activeId) {
         const promise = createConversation(model);
         await sendMessage(text, promise, model);
@@ -225,7 +279,7 @@ export function CcChat({
         await sendMessage(text, activeId, model);
       }
     },
-    [activeId, createConversation, sendMessage, model, isStreaming],
+    [activeId, createConversation, sendMessage, model, models, balanceUsdc, walletReady, isStreaming],
   );
 
   const handleNewChat = useCallback(async () => {
@@ -253,11 +307,10 @@ export function CcChat({
       {showSidebar && (
         <CcSidebar
           user={{
-            name: auth.walletAddress
-              ? `${auth.walletAddress.slice(0, 4)}…${auth.walletAddress.slice(-4)}`
-              : 'Guest',
-            email: walletAddress || undefined,
+            name: email ? email.split('@')[0] : 'Guest',
+            email: email || undefined,
           }}
+          walletAddress={walletAddress}
           threads={threads}
           onNewChat={handleNewChat}
           onSelect={(id) => {
@@ -273,9 +326,12 @@ export function CcChat({
           title={topbarTitle}
           subtitle={`◉ Active · ${msgCount} message${msgCount === 1 ? '' : 's'}`}
           savedToday={savedTokToday}
+          balance={balanceUsdc}
+          onTopUp={() => setTopUpOpen(true)}
+          walletReady={walletReady}
           models={models}
           model={model}
-          onModelChange={setModel}
+          onModelChange={handleModelChange}
           onToggleMemory={() => setMemoryOpen((v) => !v)}
           memoryOpen={memoryOpen}
           theme={theme}
@@ -316,7 +372,6 @@ export function CcChat({
             totals={{
               stored: memHook.stats?.total ?? recentV2.length,
               savedTokToday,
-              halluRate: 1.96,
             }}
             onClose={() => setMemoryOpen(false)}
             showCitations={showCitations}
@@ -324,6 +379,21 @@ export function CcChat({
           />
         </>
       )}
+
+      {/*
+        Always-mounted so framer-motion's enter/exit animations can play and
+        the modal's Privy/Solana hooks have time to initialize before first
+        open. Visibility is driven by `open` instead of conditional render —
+        same pattern as v1's ChatHeader.
+      */}
+      <Suspense fallback={null}>
+        <TopUpModal
+          open={topUpOpen}
+          onClose={() => setTopUpOpen(false)}
+          currentBalance={balanceUsdc}
+          onSuccess={(prev) => pollUntilUpdated(prev)}
+        />
+      </Suspense>
     </div>
   );
 }
