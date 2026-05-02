@@ -23,7 +23,7 @@
 //      devnet RPC can't accept a mainnet anchor (or vice versa).
 
 import { Connection, PublicKey, type GetVersionedTransactionConfig } from '@solana/web3.js';
-import { MemoryPackAnchor } from './types.js';
+import { MemoryPackAnchor, MemoryPackRevocationAnchor } from './types.js';
 
 // Canonical SPL Memo programs.
 //   v3 (current): MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr
@@ -226,6 +226,162 @@ async function verifyOne(
 export function expectedMemoForRecordHash(recordHash: string): string {
   // record_hash is "sha256:<hex>"; the on-chain memo is "clude:v1:sha256:<hex>".
   return `clude:v1:${recordHash}`;
+}
+
+/**
+ * The exact memo string a producer should commit on-chain to anchor
+ * a revocation. Format: `revoke:v1:sha256:<hex>:<rfc3339>`.
+ *
+ * Pinning the timestamp to a chain transaction means a producer can't
+ * later claim a revocation happened earlier than it actually did —
+ * the block timestamp gives an honest lower bound.
+ */
+export function expectedRevocationMemo(recordHash: string, revokedAt: string): string {
+  return `revoke:v1:${recordHash}:${revokedAt}`;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Revocation anchor verification (v0.6)
+// ────────────────────────────────────────────────────────────────────
+
+export interface VerifyRevocationAnchorsOptions extends VerifyChainAnchorsOptions {
+  // Same options shape as verifyChainAnchors — reuse for symmetry.
+}
+
+export interface VerifyRevocationAnchorsResult {
+  /** record_hashes whose revocation anchor verified on-chain. */
+  verified: Set<string>;
+  warnings: string[];
+}
+
+/**
+ * Verify a list of revocation anchors against a Solana RPC.
+ *
+ * Mirrors `verifyChainAnchors` but:
+ *   1. Memo format is `revoke:v1:sha256:<hex>:<rfc3339>` (encodes both
+ *      the record and the timestamp the producer claims).
+ *   2. anchor_format is `memo-revoke-v1`.
+ *
+ * The (record_hash, revoked_at) pair from each anchor MUST match the
+ * memo bytes on-chain. A tx with an off-by-one timestamp doesn't
+ * verify — the producer can't backdate by editing revocations.jsonl.
+ */
+export async function verifyRevocationAnchors(
+  anchors: MemoryPackRevocationAnchor[],
+  opts: VerifyRevocationAnchorsOptions,
+): Promise<VerifyRevocationAnchorsResult> {
+  const verified = new Set<string>();
+  const warnings: string[] = [];
+  if (anchors.length === 0) return { verified, warnings };
+
+  const conn = new Connection(opts.rpcUrl, { commitment: 'confirmed' });
+
+  if (opts.cluster) {
+    try {
+      const genesis = await conn.getGenesisHash();
+      const expected = GENESIS_HASHES[opts.cluster];
+      if (!expected) {
+        const msg = `unknown cluster '${opts.cluster}' — cannot cross-check genesis`;
+        if (opts.strict) throw new Error(msg);
+        warnings.push(msg);
+      } else if (genesis !== expected) {
+        const msg = `cluster mismatch: rpc reports genesis ${genesis}, expected ${expected} for ${opts.cluster}`;
+        if (opts.strict) throw new Error(msg);
+        warnings.push(msg);
+        return { verified, warnings };
+      }
+    } catch (e) {
+      const msg = `getGenesisHash failed: ${(e as Error).message}`;
+      if (opts.strict) throw new Error(msg);
+      warnings.push(msg);
+    }
+  }
+
+  for (const anchor of anchors) {
+    try {
+      await verifyOneRevocation(anchor, conn, opts, verified);
+    } catch (e) {
+      const msg = `${anchor.tx} → ${(e as Error).message}`;
+      if (opts.strict) throw new Error(msg);
+      warnings.push(msg);
+    }
+  }
+
+  return { verified, warnings };
+}
+
+async function verifyOneRevocation(
+  anchor: MemoryPackRevocationAnchor,
+  conn: Connection,
+  opts: VerifyRevocationAnchorsOptions,
+  verified: Set<string>,
+): Promise<void> {
+  if (anchor.anchor_format !== 'memo-revoke-v1') {
+    throw new Error(`unsupported anchor_format '${anchor.anchor_format}'`);
+  }
+
+  const cfg: GetVersionedTransactionConfig = {
+    commitment: 'confirmed',
+    maxSupportedTransactionVersion: 0,
+  };
+  const tx = await conn.getTransaction(anchor.tx, cfg);
+  if (!tx) throw new Error('transaction not found');
+
+  const message = tx.transaction.message as unknown as {
+    accountKeys?: PublicKey[];
+    getAccountKeys?: (opts: { accountKeysFromLookups?: unknown }) => {
+      staticAccountKeys: PublicKey[];
+    };
+    header: { numRequiredSignatures: number };
+    instructions?: Array<{ programIdIndex: number; data: unknown }>;
+    compiledInstructions?: Array<{ programIdIndex: number; data: unknown }>;
+  };
+  let accountKeys: PublicKey[];
+  if (Array.isArray(message.accountKeys)) {
+    accountKeys = message.accountKeys;
+  } else if (typeof message.getAccountKeys === 'function') {
+    accountKeys = message.getAccountKeys({
+      accountKeysFromLookups: tx.meta?.loadedAddresses,
+    }).staticAccountKeys;
+  } else {
+    throw new Error('cannot resolve account keys from transaction message');
+  }
+
+  const numSigners = message.header.numRequiredSignatures;
+  const signerKeys = accountKeys.slice(0, numSigners).map((k) => k.toBase58());
+
+  const expectedMemo = expectedRevocationMemo(anchor.record_hash, anchor.revoked_at);
+  const instructions = message.compiledInstructions ?? message.instructions ?? [];
+
+  let memoInstructionFound = false;
+  let memoMatched = false;
+  for (const ix of instructions) {
+    const programId = accountKeys[ix.programIdIndex]?.toBase58();
+    if (!programId || !MEMO_PROGRAM_IDS.has(programId)) continue;
+    memoInstructionFound = true;
+    const dataStr = decodeMemoInstructionData(ix.data);
+    if (dataStr === expectedMemo) {
+      memoMatched = true;
+      break;
+    }
+  }
+
+  if (!memoInstructionFound) {
+    throw new Error('no SPL Memo program instruction in transaction');
+  }
+  if (!memoMatched) {
+    throw new Error(`no Memo instruction with data exactly equal to "${expectedMemo}"`);
+  }
+
+  if (opts.expectedSigner) {
+    if (!signerKeys.includes(opts.expectedSigner)) {
+      throw new Error(
+        `expectedSigner ${opts.expectedSigner} is not among tx signers [${signerKeys.join(', ')}]`,
+      );
+    }
+  }
+
+  verified.add(anchor.record_hash);
 }
 
 /**

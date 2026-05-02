@@ -17,7 +17,7 @@ import {
   writeMemoryPack,
   type MemoryPackRecord,
   ENCRYPTION_KEY_BYTES,
-} from '../memorypack/index.js';
+} from '@clude/memorypack';
 
 interface Args {
   out?: string;

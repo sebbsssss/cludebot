@@ -8,11 +8,15 @@ import {
   findSimilarEntities,
   type EntityType,
 } from '@clude/brain/memory/graph';
+import { storeMemory, createMemoryLink } from '@clude/brain/memory';
+import { withOwnerWallet } from '@clude/shared/core/owner-context';
 import { getDb } from '@clude/shared/core/database';
 import { requirePrivyAuth } from '@clude/brain/auth/privy-auth';
 import { optionalOwnership } from '@clude/brain/auth/require-ownership';
 
 const log = createChildLogger('graph-routes');
+
+type ResolutionChoice = 'adopt-newer' | 'adopt-older' | 'keep-both' | 'manual';
 
 export function graphRoutes(): Router {
   const router = Router();
@@ -367,6 +371,156 @@ export function graphRoutes(): Router {
     } catch (err) {
       log.error({ err }, 'Memory graph endpoint error');
       res.status(500).json({ error: 'Failed to fetch memory graph' });
+    }
+  });
+
+  // POST /resolve-contradiction — manually resolve a contradiction pair.
+  // Mirrors the dream cycle's resolution phase but driven by an explicit user choice.
+  // Body: { wallet?, memoryAId, memoryBId, choice, resolutionText? }
+  router.post('/resolve-contradiction', async (req: Request, res: Response) => {
+    try {
+      const wallet = req.verifiedWallet
+        || (req.query.wallet as string)
+        || (req.body && typeof req.body.wallet === 'string' ? req.body.wallet : undefined);
+
+      const { memoryAId, memoryBId, choice, resolutionText } = req.body ?? {};
+
+      if (!Number.isInteger(memoryAId) || !Number.isInteger(memoryBId)) {
+        res.status(400).json({ error: 'memoryAId and memoryBId must be integers' });
+        return;
+      }
+      if (memoryAId === memoryBId) {
+        res.status(400).json({ error: 'memoryAId and memoryBId must differ' });
+        return;
+      }
+      const validChoices: ResolutionChoice[] = ['adopt-newer', 'adopt-older', 'keep-both', 'manual'];
+      if (!validChoices.includes(choice)) {
+        res.status(400).json({ error: `choice must be one of ${validChoices.join(', ')}` });
+        return;
+      }
+      const trimmedText = typeof resolutionText === 'string' ? resolutionText.trim() : '';
+      if (choice === 'manual' && trimmedText.length === 0) {
+        res.status(400).json({ error: 'resolutionText is required when choice=manual' });
+        return;
+      }
+
+      const result = await withOwnerWallet(wallet ?? null, async () => {
+        const db = getDb();
+
+        // Fetch both memories under the owner scope.
+        let memQuery = db.from('memories').select('*').in('id', [memoryAId, memoryBId]);
+        if (wallet) memQuery = memQuery.eq('owner_wallet', wallet);
+        const { data: memories, error: memErr } = await memQuery;
+        if (memErr) {
+          return { ok: false as const, status: 500, error: 'Failed to fetch memories' };
+        }
+        if (!memories || memories.length !== 2) {
+          return { ok: false as const, status: 404, error: 'Memory pair not found in this wallet scope' };
+        }
+
+        // Order: older first (memA), newer second (memB).
+        const [m1, m2] = memories;
+        const aIsOlder = new Date(m1.created_at).getTime() <= new Date(m2.created_at).getTime();
+        const memA = aIsOlder ? m1 : m2;
+        const memB = aIsOlder ? m2 : m1;
+
+        // Verify a contradicts link actually exists between this pair.
+        const { data: links, error: linkErr } = await db
+          .from('memory_links')
+          .select('source_id, target_id, link_type')
+          .eq('link_type', 'contradicts')
+          .in('source_id', [memA.id, memB.id])
+          .in('target_id', [memA.id, memB.id]);
+        if (linkErr) {
+          return { ok: false as const, status: 500, error: 'Failed to verify contradiction link' };
+        }
+        const hasContradiction = (links || []).some((l) =>
+          (l.source_id === memA.id && l.target_id === memB.id) ||
+          (l.source_id === memB.id && l.target_id === memA.id),
+        );
+        if (!hasContradiction) {
+          return { ok: false as const, status: 409, error: 'No contradicts link between these memories' };
+        }
+
+        // Pick resolution text + loser-decay target based on choice.
+        let text: string;
+        let loser: typeof memA | null = null;
+        switch (choice as ResolutionChoice) {
+          case 'adopt-newer':
+            text = `Adopted newer memory; older view marked as outdated.`;
+            loser = memA;
+            break;
+          case 'adopt-older':
+            text = `Adopted older memory; newer view rejected.`;
+            loser = memB;
+            break;
+          case 'keep-both':
+            text = `Both memories retained intentionally; the disagreement is acknowledged.`;
+            loser = null;
+            break;
+          case 'manual':
+            text = trimmedText.slice(0, 500);
+            loser = null;
+            break;
+        }
+
+        const resolutionId = await storeMemory({
+          type: 'semantic',
+          content: `Contradiction resolved (manual): ${text}`,
+          summary: text.slice(0, 300),
+          tags: ['contradiction_resolution', 'manual_resolution', 'belief_update'],
+          importance: 0.7,
+          emotionalValence: 0,
+          source: 'manual_resolution',
+          evidenceIds: [memA.id, memB.id],
+        });
+        if (!resolutionId) {
+          return { ok: false as const, status: 500, error: 'Failed to store resolution memory' };
+        }
+
+        await Promise.all([
+          createMemoryLink(resolutionId, memA.id, 'resolves', 0.85),
+          createMemoryLink(resolutionId, memB.id, 'resolves', 0.85),
+        ]);
+
+        let loserNewDecay: number | null = null;
+        if (loser) {
+          loserNewDecay = Math.max(0.05, loser.decay_factor * 0.8);
+          const { error: decayErr } = await db
+            .from('memories')
+            .update({ decay_factor: loserNewDecay })
+            .eq('id', loser.id);
+          if (decayErr) {
+            log.warn({ err: decayErr.message, memoryId: loser.id }, 'Failed to accelerate decay on loser');
+          }
+        }
+
+        return {
+          ok: true as const,
+          resolutionId,
+          choice: choice as ResolutionChoice,
+          text,
+          loserId: loser?.id ?? null,
+          loserNewDecay,
+        };
+      });
+
+      if (!result.ok) {
+        res.status(result.status).json({ error: result.error });
+        return;
+      }
+
+      res.json({
+        resolutionId: result.resolutionId,
+        choice: result.choice,
+        text: result.text,
+        loserId: result.loserId,
+        loserNewDecay: result.loserNewDecay,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      log.error({ err }, 'Resolve contradiction error');
+      res.status(500).json({ error: 'Failed to resolve contradiction' });
     }
   });
 

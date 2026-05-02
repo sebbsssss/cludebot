@@ -157,18 +157,28 @@ export function CcChat({
     };
   }, []);
 
+  const walletReady = !!walletAddress;
+
   // Selecting a Pro model with insufficient balance auto-opens the top-up.
   // We don't reject the selection — the user gets to fund first, then the
-  // model stays selected and they can send.
+  // model stays selected and they can send. Suppress the auto-open while
+  // the embedded wallet is still provisioning so the user doesn't bounce
+  // into a modal that immediately errors with "No Solana wallet connected."
   const handleModelChange = useCallback(
     (id: string) => {
       const next = models.find((m) => m.id === id);
       setModel(id);
-      if (next && !next.free && balanceUsdc !== null && balanceUsdc < PRO_MIN_BALANCE) {
+      if (
+        next &&
+        !next.free &&
+        balanceUsdc !== null &&
+        balanceUsdc < PRO_MIN_BALANCE &&
+        walletReady
+      ) {
         setTopUpOpen(true);
       }
     },
-    [models, balanceUsdc],
+    [models, balanceUsdc, walletReady],
   );
 
   // Load messages for the active conversation (new or selected).
@@ -249,12 +259,15 @@ export function CcChat({
     async (text: string) => {
       if (isStreaming || !model) return;
       // Block Pro-model sends with insufficient balance — open top-up instead.
+      // Same wallet-readiness guard as the model picker: if the embedded wallet
+      // hasn't provisioned yet, opening the modal would just error.
       const current = models.find((m) => m.id === model);
       if (
         current &&
         !current.free &&
         balanceUsdc !== null &&
-        balanceUsdc < PRO_MIN_BALANCE
+        balanceUsdc < PRO_MIN_BALANCE &&
+        walletReady
       ) {
         setTopUpOpen(true);
         return;
@@ -266,7 +279,7 @@ export function CcChat({
         await sendMessage(text, activeId, model);
       }
     },
-    [activeId, createConversation, sendMessage, model, models, balanceUsdc, isStreaming],
+    [activeId, createConversation, sendMessage, model, models, balanceUsdc, walletReady, isStreaming],
   );
 
   const handleNewChat = useCallback(async () => {
@@ -315,6 +328,7 @@ export function CcChat({
           savedToday={savedTokToday}
           balance={balanceUsdc}
           onTopUp={() => setTopUpOpen(true)}
+          walletReady={walletReady}
           models={models}
           model={model}
           onModelChange={handleModelChange}
@@ -366,16 +380,20 @@ export function CcChat({
         </>
       )}
 
-      {topUpOpen && (
-        <Suspense fallback={null}>
-          <TopUpModal
-            open={topUpOpen}
-            onClose={() => setTopUpOpen(false)}
-            currentBalance={balanceUsdc}
-            onSuccess={(prev) => pollUntilUpdated(prev)}
-          />
-        </Suspense>
-      )}
+      {/*
+        Always-mounted so framer-motion's enter/exit animations can play and
+        the modal's Privy/Solana hooks have time to initialize before first
+        open. Visibility is driven by `open` instead of conditional render —
+        same pattern as v1's ChatHeader.
+      */}
+      <Suspense fallback={null}>
+        <TopUpModal
+          open={topUpOpen}
+          onClose={() => setTopUpOpen(false)}
+          currentBalance={balanceUsdc}
+          onSuccess={(prev) => pollUntilUpdated(prev)}
+        />
+      </Suspense>
     </div>
   );
 }

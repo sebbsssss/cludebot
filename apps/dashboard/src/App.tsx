@@ -13,6 +13,7 @@ import { Settings } from './pages/Settings';
 import { Setup } from './pages/Setup';
 import { FileMemory } from './pages/file-memory';
 import { Explore } from './pages/explore';
+import { Wiki } from './pages/Wiki/Wiki';
 import LiveGraph from './pages/showcase/LiveGraph';
 
 function AuthenticatedApp() {
@@ -24,6 +25,7 @@ function AuthenticatedApp() {
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/entities" element={<EntityMap />} />
           <Route path="/brain" element={<Explore />} />
+          <Route path="/wiki" element={<Wiki />} />
           <Route path="/decay" element={<DecayHeatmap />} />
           <Route path="/packs" element={<MemoryPacks />} />
           <Route path="/file-memory" element={<FileMemory />} />
@@ -47,6 +49,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/showcase/graph" element={<LiveGraph />} />
+        <Route path="/showcase/wiki" element={<Wiki showcase />} />
         <Route path="/showcase/*" element={<Navigate to="/showcase/graph" replace />} />
       </Routes>
     );

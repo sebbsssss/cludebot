@@ -435,6 +435,31 @@ class CludeAPI {
     return this.fetch(this.appendWallet(`/api/graph/memory-graph?limit=${limit}`));
   }
 
+  /**
+   * Manually resolve a contradiction pair. Mirrors the dream cycle's resolution
+   * phase but driven by an explicit user choice.
+   */
+  async resolveContradiction(opts: {
+    memoryAId: number;
+    memoryBId: number;
+    choice: 'adopt-newer' | 'adopt-older' | 'keep-both' | 'manual';
+    resolutionText?: string;
+  }): Promise<{
+    resolutionId: number;
+    choice: string;
+    text: string;
+    loserId: number | null;
+    loserNewDecay: number | null;
+  }> {
+    if (this.mode === 'cortex') {
+      throw new Error('Contradiction resolution requires self-hosted mode');
+    }
+    return this.fetch(this.appendWallet('/api/graph/resolve-contradiction'), {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    });
+  }
+
   // ── File Upload / Scene Extraction ──
 
   /** Check if current wallet has access to file upload feature */
@@ -513,9 +538,10 @@ class CludeAPI {
           return [{
             id: stats.agent_id,
             name: stats.agent_name || stats.agent_id,
-            wallet_address: stats.owner_wallet || null,
+            wallet_address: stats.owner_wallet || '',
+            api_endpoint: '',
             created_at: stats.registered_at || new Date().toISOString(),
-            last_active: stats.last_used || null,
+            last_active: stats.last_used || '',
             memory_count: stats.total_memories || 0,
           }];
         }

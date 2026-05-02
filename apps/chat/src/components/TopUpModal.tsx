@@ -92,9 +92,21 @@ function createAtaIdempotentInstruction(payer: PublicKey, ata: PublicKey, owner:
   });
 }
 
-async function buildSolanaUsdcTx(senderAddress: string, destAddress: string, amountUsdc: number): Promise<Uint8Array> {
-  const conn = new Connection(SOLANA_RPC_URL, 'confirmed');
-  const { blockhash } = await conn.getLatestBlockhash('confirmed');
+async function buildSolanaUsdcTx(
+  senderAddress: string,
+  destAddress: string,
+  amountUsdc: number,
+  presetBlockhash?: string,
+): Promise<Uint8Array> {
+  // Prefer a server-supplied blockhash — the public mainnet RPC blocks browsers
+  // (CORS / 403), so client-side getLatestBlockhash fails in production unless
+  // VITE_SOLANA_RPC_URL is set to a paid provider. Fall back to client RPC only
+  // if the server didn't include one.
+  let blockhash = presetBlockhash;
+  if (!blockhash) {
+    const conn = new Connection(SOLANA_RPC_URL, 'confirmed');
+    blockhash = (await conn.getLatestBlockhash('confirmed')).blockhash;
+  }
   const sender = new PublicKey(senderAddress);
   const dest = new PublicKey(destAddress);
   const sourceAta = findAta(sender, USDC_MINT);
@@ -265,11 +277,23 @@ export function TopUpModal({ open, onClose, currentBalance, onSuccess }: Props) 
       return;
     }
 
-    // 2. Build unsigned transaction (requires Solana RPC for blockhash)
+    // 2. Build unsigned transaction. Prefer the server-supplied blockhash —
+    // the public mainnet RPC 403s browser requests, so falling back to a
+    // browser-side getLatestBlockhash usually fails in prod.
     let txBytes: Uint8Array;
     try {
-      console.log('[TopUp] Building tx:', { sender: walletAddress, dest: intent.dest_address, amount: effectiveAmount });
-      txBytes = await buildSolanaUsdcTx(walletAddress, intent.dest_address, effectiveAmount);
+      console.log('[TopUp] Building tx:', {
+        sender: walletAddress,
+        dest: intent.dest_address,
+        amount: effectiveAmount,
+        usingServerBlockhash: !!intent.recent_blockhash,
+      });
+      txBytes = await buildSolanaUsdcTx(
+        walletAddress,
+        intent.dest_address,
+        effectiveAmount,
+        intent.recent_blockhash,
+      );
       console.log('[TopUp] Tx built successfully, size:', txBytes.length, 'bytes');
     } catch (err: any) {
       console.error('[TopUp] Transaction build failed (RPC/blockhash):', err);

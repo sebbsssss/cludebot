@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { path: '/timeline', label: 'Timeline', icon: '▤' },
   { path: '/entities', label: 'Entities', icon: '◎' },
   { path: '/brain', label: 'Brain', icon: '◈' },
+  { path: '/wiki', label: 'Brain Wiki', icon: '▥' },
   { path: '/decay', label: 'Decay', icon: '◇' },
   { path: '/packs', label: 'Memory Packs', icon: '▦' },
   { path: '/settings', label: 'Settings', icon: '⚙' },
@@ -39,7 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [walletAddress]);
 
-  const hideChatWidget = ['/brain', '/explore'].includes(location.pathname);
+  const hideChatWidget = ['/brain', '/explore', '/wiki'].includes(location.pathname);
 
   const displayName = email
     ? email

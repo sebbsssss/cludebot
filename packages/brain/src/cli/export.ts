@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
 import { printSuccess, printError, printInfo, printDivider, c } from './banner';
-import { writeMemoryPack, MemoryPackRecord } from '../memorypack/index.js';
+import { writeMemoryPack, MemoryPackRecord } from '@clude/memorypack';
 
 function getFlag(args: string[], flag: string): string | undefined {
   const idx = args.indexOf(flag);

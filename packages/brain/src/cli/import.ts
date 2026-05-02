@@ -1,7 +1,7 @@
 import { readFileSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { printSuccess, printError, printInfo, printDivider, c } from './banner';
-import { readMemoryPack } from '../memorypack/index.js';
+import { readMemoryPack } from '@clude/memorypack';
 
 function hasFlag(args: string[], flag: string): boolean {
   return args.includes(flag);

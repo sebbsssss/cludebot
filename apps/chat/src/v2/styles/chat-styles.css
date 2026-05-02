@@ -513,12 +513,12 @@ body {
   min-height: 0;
 }
 .cc-scroll__inner {
-  max-width: 760px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 40px 28px 0;
+  padding: 24px 24px 0;
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 22px;
 }
 
 /* ----- Memory pill (subtle 1-line) ----- */
@@ -580,12 +580,11 @@ body {
 .cc-msg__head {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   color: var(--fg-3);
 }
 .cc-msg__role {
@@ -595,24 +594,30 @@ body {
 .cc-msg__sep { color: var(--fg-4); }
 
 .cc-msg__body {
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.65;
+  /* System stack matches the composer textarea — chat surfaces feel native
+     when the message body shares the typeface of the input that produced it
+     (Claude/ChatGPT/Linear pattern). Funnel Sans is reserved for marketing
+     surfaces (auth hero, headings) where its character is an asset. */
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, var(--font-sans), sans-serif;
+  font-size: 14.5px;
+  line-height: 1.55;
+  letter-spacing: -0.003em;
   color: var(--fg-1);
   text-wrap: pretty;
 }
-.cc-msg__body p { margin: 0 0 12px; }
+.cc-msg__body p { margin: 0 0 10px; }
 .cc-msg__body p:last-child { margin-bottom: 0; }
 .cc-msg__body code {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12.5px;
   background: var(--bg-2);
   padding: 1px 5px;
   border-radius: 2px;
   border: 1px solid var(--line);
 }
 .cc-msg__body ul {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   padding-left: 20px;
 }
 .cc-msg__body li { margin-bottom: 4px; }
@@ -621,13 +626,13 @@ body {
   background: var(--clude-black);
   color: var(--clude-offwhite);
   border: 1px solid var(--line-strong);
-  padding: 14px 16px;
+  padding: 12px 14px;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.55;
   overflow-x: auto;
   border-radius: 2px;
-  margin: 12px 0;
+  margin: 10px 0;
 }
 
 /* Memory citations */
@@ -1561,9 +1566,9 @@ body {
 .cc-mobile .cc-side { display: none; }
 .cc-mobile .cc-mempanel { width: 100%; max-width: 100%; border-left: 0; }
 .cc-mobile .cc-topbar { padding: 12px 16px; }
-.cc-mobile .cc-scroll__inner { padding: 24px 16px 0; max-width: 100%; }
+.cc-mobile .cc-scroll__inner { padding: 18px 14px 0; max-width: 100%; gap: 18px; }
 .cc-mobile .cc-composer { padding: 10px 14px 18px; }
-.cc-mobile .cc-msg__body { font-size: 15px; }
+.cc-mobile .cc-msg__body { font-size: 14.5px; }
 .cc-mobile .cc-mpill { font-size: 10px; padding: 6px 10px 6px 8px; }
 .cc-mobile .cc-auth { grid-template-columns: 1fr; }
 .cc-mobile .cc-auth__hero { display: none; }
@@ -1575,3 +1580,321 @@ body {
 /* Small helpers */
 .cc-hide { display: none !important; }
 .cc-flex-grow { flex: 1; }
+
+/* =========================================================================
+   Onboarding (post-auth, pre-chat) — Personal / Compliance dual-mode
+   ========================================================================= */
+.cc-onb {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  background: var(--bg-1);
+  color: var(--fg-1);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 32px clamp(20px, 5vw, 48px) 64px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.cc-onb__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+.cc-onb__step {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.cc-onb__hero { margin-bottom: 28px; }
+.cc-onb__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin-bottom: 12px;
+}
+.cc-onb__h1 {
+  font-family: var(--font-sans);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  color: var(--fg-1);
+  margin: 0 0 14px;
+}
+.cc-onb__h1-em {
+  font-style: italic;
+  color: var(--brand);
+  font-weight: 700;
+}
+.cc-onb__lede {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--fg-2);
+  margin: 0;
+  max-width: 56ch;
+}
+
+/* Tabs */
+.cc-onb__tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 4px;
+  margin-bottom: 24px;
+  width: fit-content;
+}
+.cc-onb__tab {
+  padding: 8px 18px;
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.cc-onb__tab:hover { color: var(--fg-1); }
+.cc-onb__tab.is-active {
+  background: var(--bg-1);
+  color: var(--fg-1);
+  box-shadow: var(--shadow-1);
+}
+
+/* Panel */
+.cc-onb__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+}
+.cc-onb__field { display: flex; flex-direction: column; gap: 8px; }
+.cc-onb__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.cc-onb__hint {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-3);
+  margin: 0;
+}
+
+.cc-onb__input,
+.cc-onb__textarea {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, var(--font-sans), sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg-1);
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  padding: 10px 12px;
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.cc-onb__input:focus,
+.cc-onb__textarea:focus {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+.cc-onb__textarea--lg { min-height: 160px; font-family: var(--font-mono); font-size: 13px; }
+.cc-onb__input::placeholder,
+.cc-onb__textarea::placeholder { color: var(--fg-4); }
+
+/* Pills (Personal mode) */
+.cc-onb__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.cc-onb__pill {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+}
+.cc-onb__pill:hover {
+  background: var(--bg-3);
+  color: var(--fg-1);
+}
+.cc-onb__pill.is-active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--fg-on-brand);
+}
+
+/* Drop zone (Compliance mode) */
+.cc-onb__drop {
+  display: block;
+  padding: 28px 16px;
+  background: var(--bg-2);
+  border: 1.5px dashed var(--line-strong);
+  border-radius: 2px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.cc-onb__drop:hover { border-color: var(--brand); }
+.cc-onb__drop.is-over {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+.cc-onb__drop__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--fg-2);
+}
+.cc-onb__drop__icon {
+  font-size: 22px;
+  color: var(--brand);
+  line-height: 1;
+}
+.cc-onb__drop__inner strong { color: var(--brand); font-weight: 600; }
+.cc-onb__drop__sub {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  margin-top: 2px;
+}
+
+.cc-onb__files {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cc-onb__files li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-2);
+}
+.cc-onb__file__name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fg-1);
+}
+.cc-onb__file__size {
+  color: var(--fg-3);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.cc-onb__file__rm {
+  background: transparent;
+  border: 0;
+  color: var(--fg-3);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.cc-onb__file__rm:hover { color: var(--clude-danger); }
+
+/* Errors */
+.cc-onb__error {
+  margin-top: 16px;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid var(--clude-danger);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--clude-danger);
+}
+
+/* Footer / actions */
+.cc-onb__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  margin-top: 24px;
+}
+.cc-onb__primary {
+  padding: 14px 20px;
+  background: var(--fg-1);
+  color: var(--bg-1);
+  border: 0;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.cc-onb__primary:disabled { opacity: 0.35; cursor: not-allowed; }
+.cc-onb__alt {
+  background: transparent;
+  border: 0;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  padding: 6px;
+  text-decoration: none;
+}
+.cc-onb__alt:hover { color: var(--fg-1); text-decoration: underline; }
+.cc-onb__alt:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Mobile tweaks */
+.cc-mobile .cc-onb { padding: 24px 16px 48px; }
+.cc-mobile .cc-onb__h1 { font-size: 26px; }
+.cc-mobile .cc-onb__panel { padding: 18px; }
