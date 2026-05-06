@@ -42,8 +42,7 @@ function TopNav() {
           <a className="topnav__link" href="/docs">Docs</a>
         </nav>
         <div className="topnav__right">
-          <a className="topnav__link" href="/dashboard">Sign in</a>
-          <a className="btn btn--brand" href="#install">Get started →</a>
+          <a className="btn btn--brand" href="/dashboard">Sign in →</a>
         </div>
       </div>
     </header>
